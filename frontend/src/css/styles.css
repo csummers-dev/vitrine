@@ -1,0 +1,653 @@
+@layer reset, theme, base, components, utilities, app;
+@import "normalize.css/normalize.css" layer(reset);
+@import "vue-toastification/dist/index.css" layer(components);
+@import "./tokens.css";
+@import "./_variables.css";
+@import "./_buttons.css";
+@import "./_inputs.css";
+@import "./_shell.css";
+@import "./_share.css";
+@import "./fonts.css";
+@import "./base.css";
+@import "./header.css";
+@import "./listing.css";
+@import "./listing-icons.css";
+@import "./upload-files.css";
+@import "./dashboard.css";
+@import "./epubReader.css";
+@import "./mdPreview.css";
+@import "./context-menu.css";
+@import "./dark-icon-colors.css";
+@import "./videojs-skin.css";
+
+/* For testing only
+ :focus {
+  outline: 2px solid crimson !important;
+  border-radius: 3px !important;
+} */
+
+.link {
+  color: var(--blue);
+}
+
+#loading {
+  background: var(--background);
+}
+#loading .spinner > div {
+  background: var(--iconPrimary);
+}
+
+main .spinner {
+  display: block;
+  text-align: center;
+  line-height: 0;
+  padding: 1em 0;
+}
+
+main .spinner > div {
+  width: 0.8em;
+  height: 0.8em;
+  margin: 0 0.1em;
+  font-size: 1em;
+  background: var(--iconPrimary);
+  border-radius: 100%;
+  display: inline-block;
+  animation: sk-bouncedelay 1.4s infinite ease-in-out both;
+}
+
+main .spinner .bounce1 {
+  animation-delay: -0.32s;
+}
+
+main .spinner .bounce2 {
+  animation-delay: -0.16s;
+}
+
+.delayed {
+  animation: delayed linear 100ms;
+}
+
+@keyframes delayed {
+  0% {
+    opacity: 0;
+  }
+  99% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* * * * * * * * * * * * * * * *
+ *            ACTION           *
+ * * * * * * * * * * * * * * * */
+
+.action {
+  display: inline-block;
+  cursor: pointer;
+  transition: 0.2s ease all;
+  border: 0;
+  margin: 0;
+  color: var(--action);
+  border-radius: 50%;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+  vertical-align: middle;
+  text-align: left;
+  position: relative;
+}
+
+.action.disabled,
+.action[disabled] {
+  opacity: 0.2;
+  cursor: not-allowed;
+}
+
+.action i {
+  padding: 0.4em;
+  transition: 0.1s ease-in-out all;
+  border-radius: 50%;
+}
+
+.action:hover {
+  background-color: var(--hover);
+}
+
+.action ul {
+  position: absolute;
+  top: 0;
+  color: #7d7d7d;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex-direction: column;
+  display: flex;
+}
+
+.action ul li {
+  line-height: 1;
+  padding: 0.7em;
+  transition: 0.1s ease background-color;
+}
+
+.action ul li:hover {
+  background-color: var(--divider);
+}
+
+#click-overlay {
+  display: none;
+  position: fixed;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+}
+
+#click-overlay.active {
+  visibility: visible;
+}
+
+.action .counter {
+  display: block;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: var(--blue);
+  color: var(--iconSecondary);
+  border-radius: 50%;
+  font-size: 0.75em;
+  width: 1.8em;
+  height: 1.8em;
+  text-align: center;
+  line-height: 1.55em;
+  font-weight: bold;
+  border: 2px solid var(--borderPrimary);
+}
+
+
+/* EDITOR */
+
+#editor-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background-color: var(--background);
+  position: fixed;
+  padding-top: 4em;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  z-index: 9998;
+  overflow: hidden;
+}
+
+#editor-container .bar {
+  background: var(--surfacePrimary);
+}
+
+#editor-container #editor {
+  flex: 1;
+}
+
+#editor-container .breadcrumbs {
+  height: 2.3em;
+  padding: 0 1em;
+  position: relative;
+  top: 0;
+}
+
+/*** RTL - flip and position arrow of path ***/
+html[dir="rtl"] .breadcrumbs .chevron {
+  transform: scaleX(-1) translateX(16em);
+}
+
+#editor-container .breadcrumbs span {
+  font-size: 0.75rem;
+}
+
+#editor-container .breadcrumbs i {
+  font-size: 1rem;
+}
+
+/* * * * * * * * * * * * * * * *
+ *            FOOTER           *
+ * * * * * * * * * * * * * * * */
+
+.credits {
+  font-size: 0.6em;
+  margin: 3em 2.5em;
+  color: #a5a5a5;
+}
+
+.credits > span {
+  display: block;
+  margin: 0.3em 0;
+}
+
+.credits a,
+.credits a:hover {
+  color: inherit;
+  cursor: pointer;
+}
+
+/* * * * * * * * * * * * * * * *
+ *          ANIMATIONS         *
+ * * * * * * * * * * * * * * * */
+
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* * * * * * * * * * * * * * * *
+ *         SETTINGS TUS        *
+ * * * * * * * * * * * * * * * */
+
+.tusConditionalSettings input:disabled {
+  background-color: #ddd;
+  color: #999;
+  cursor: not-allowed;
+}
+
+/* * * * * * * * * * * * * * * *
+ *         SETTINGS RULES      *
+ * * * * * * * * * * * * * * * */
+
+.rules > div {
+  display: flex;
+  align-items: center;
+  margin: 0.5rem 0;
+}
+
+.rules input[type="checkbox"] {
+  margin-right: 0.2rem;
+}
+
+.rules input[type="text"] {
+  border: 1px solid#ddd;
+  padding: 0.2rem;
+}
+
+.rules label {
+  margin-right: 0.5rem;
+}
+
+.rules button {
+  margin-left: auto;
+}
+
+.rules button.delete {
+  padding: 0.2rem 0.5rem;
+  margin-left: 0.5rem;
+}
+
+/* * * * * * * * * * * * * * * *
+ *         RTL overrides       *
+ * * * * * * * * * * * * * * * */
+
+html[dir="rtl"] .card-content textarea {
+  direction: ltr;
+  text-align: left;
+}
+
+html[dir="rtl"] .card-content .small + input {
+  direction: ltr;
+  text-align: left;
+}
+
+html[dir="rtl"] .card.floating .card-content .file-list {
+  direction: ltr;
+  text-align: left;
+}
+
+/* ── Toast wrapper overrides (vue-toastification) ───────────────────────
+   Tighten the default toast chrome so it matches the rest of the design
+   system instead of looking like a stock notification card. Applies to
+   every toast (success / error / info / warning). */
+.Vue-Toastification__container {
+  max-width: 420px;
+}
+
+.Vue-Toastification__toast {
+  border-radius: 10px !important;
+  min-height: 0 !important;
+  padding: 10px 12px !important;
+  font-family: var(--font-sans, system-ui) !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+  box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.22) !important;
+  margin-bottom: 10px !important;
+}
+
+.Vue-Toastification__toast--success {
+  background: #047857 !important;
+}
+
+.Vue-Toastification__toast--error {
+  background: #b91c1c !important;
+}
+
+.Vue-Toastification__toast--info {
+  background: var(--color-accent, #5e6ad2) !important;
+}
+
+.Vue-Toastification__toast--warning {
+  background: #b45309 !important;
+}
+
+.Vue-Toastification__toast-body {
+  padding: 0 !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: 500 !important;
+  line-height: inherit !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.Vue-Toastification__icon {
+  width: 16px !important;
+  height: 16px !important;
+  margin-right: 8px !important;
+  flex-shrink: 0;
+}
+
+.Vue-Toastification__close-button {
+  font-size: 16px !important;
+  font-weight: 400 !important;
+  opacity: 0.7 !important;
+  padding: 0 0 0 8px !important;
+  align-self: center !important;
+  flex-shrink: 0;
+  transition: opacity 0.1s ease !important;
+}
+
+.Vue-Toastification__close-button:hover {
+  opacity: 1 !important;
+}
+
+.Vue-Toastification__progress-bar {
+  height: 2px !important;
+  background: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* ── prefers-reduced-motion (Stage 11a) ─────────────────────────────────
+   Respect the OS-level reduced-motion preference. Transforms, animations,
+   and scroll-behavior get neutered globally. We don't strip ALL transitions
+   (color/opacity changes still feel natural without motion); only the
+   movement-bearing transforms get killed. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Skip-to-content link (Stage 11a) ────────────────────────────────────
+   Hidden by default; revealed when focused via keyboard tab. First link in
+   the document so it's always the first stop on Tab. Targets #main, which
+   needs to exist on every page layout. */
+.skip-link {
+  position: fixed;
+  top: -100px;
+  left: 12px;
+  z-index: 10000;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--color-accent, #5e6ad2);
+  color: white;
+  font-family: var(--font-sans, system-ui);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  box-shadow: 0 4px 12px -2px rgba(94, 106, 210, 0.4);
+  transition: top 0.12s ease;
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  top: 12px;
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+/* ── Shared form primitives (Stage 11c) ───────────────────────────────
+   Used by Settings helper components (Themes / Languages / AceEditorTheme /
+   Commands) so a bare <select> / <input> they render picks up design-system
+   chrome automatically without each parent having to wrap-and-style. */
+
+.fb-select {
+  width: 100%;
+  height: 34px;
+  padding: 0 32px 0 10px;
+  border: 1px solid var(--color-line, #ececec);
+  border-radius: 6px;
+  background-color: var(--color-surface, #fff);
+  /* Custom dropdown chevron — replaces the default OS arrow */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px 12px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--color-ink-1, #18181b);
+  outline: none;
+  cursor: pointer;
+  transition:
+    border-color 0.1s ease,
+    box-shadow 0.1s ease;
+}
+
+.fb-select:focus {
+  border-color: var(--color-accent, #5e6ad2);
+  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+}
+
+.fb-select:disabled {
+  background-color: var(--color-canvas, #fafaf9);
+  color: var(--color-ink-3, #a1a1aa);
+  cursor: not-allowed;
+}
+
+/* Dark-mode: brighten the chevron so it stays visible on dark surface */
+html.dark .fb-select {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+}
+
+/* Generic input chrome — matches .fb-select for visual cohesion */
+.fb-input {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--color-line, #ececec);
+  border-radius: 6px;
+  background: var(--color-surface, #fff);
+  font: inherit;
+  font-size: 13px;
+  color: var(--color-ink-1, #18181b);
+  outline: none;
+  transition:
+    border-color 0.1s ease,
+    box-shadow 0.1s ease;
+}
+
+.fb-input:focus {
+  border-color: var(--color-accent, #5e6ad2);
+  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+}
+
+.fb-input--mono {
+  font-family: var(--font-mono, monospace);
+  font-size: 12.5px;
+}
+
+/* ── Shared confirm-prompt chrome (Stage 11c) ─────────────────────────
+   Used by ShareDelete / DeleteUser / DiscardEditorChanges / Replace —
+   small confirms that render inside BaseModal. Same visual language as
+   ConfirmDialog / CurrentPassword so all modals feel cohesive. */
+
+.confirm-prompt {
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-line, #ececec);
+  border-radius: 12px;
+  box-shadow:
+    0 24px 48px -12px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  font-family: var(--font-sans, system-ui);
+  color: var(--color-ink-1, #18181b);
+}
+
+.confirm-prompt__body {
+  display: flex;
+  gap: 14px;
+  padding: 18px 18px 16px;
+}
+
+.confirm-prompt__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.confirm-prompt__icon.is-danger {
+  background: #fef2f2;
+  color: #dc2626;
+}
+.confirm-prompt__icon.is-warn {
+  background: rgba(217, 119, 6, 0.12);
+  color: #d97706;
+}
+.confirm-prompt__icon.is-info {
+  background: var(--color-accent-soft, rgba(94, 106, 210, 0.1));
+  color: var(--color-accent, #5e6ad2);
+}
+
+/* Dark-mode tinting for status chips (red/amber backgrounds need brighter
+   alpha to read against dark canvas). */
+html.dark .confirm-prompt__icon.is-danger {
+  background: rgba(220, 38, 38, 0.18);
+  color: #f87171;
+}
+html.dark .confirm-prompt__icon.is-warn {
+  background: rgba(217, 119, 6, 0.2);
+  color: #fbbf24;
+}
+
+.confirm-prompt__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.confirm-prompt__title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.005em;
+  color: var(--color-ink-1, #18181b);
+}
+
+.confirm-prompt__message {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--color-ink-2, #52525b);
+}
+
+.confirm-prompt__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--color-line, #ececec);
+  background: var(--color-canvas, #fafaf9);
+}
+
+.confirm-prompt__btn {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    background-color 0.1s ease,
+    border-color 0.1s ease,
+    color 0.1s ease;
+}
+
+.confirm-prompt__btn:focus-visible {
+  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline-offset: 1px;
+}
+
+.confirm-prompt__btn--ghost {
+  background: var(--color-surface, #fff);
+  border-color: var(--color-line, #ececec);
+  color: var(--color-ink-2, #52525b);
+}
+.confirm-prompt__btn--ghost:hover {
+  background: var(--color-elevated, #f4f4f5);
+  color: var(--color-ink-1, #18181b);
+}
+
+.confirm-prompt__btn--primary {
+  background: var(--color-accent, #5e6ad2);
+  border-color: var(--color-accent, #5e6ad2);
+  color: white;
+}
+.confirm-prompt__btn--primary:hover {
+  background: var(--color-accent-strong, #4f5ac4);
+  border-color: var(--color-accent-strong, #4f5ac4);
+}
+
+.confirm-prompt__btn--danger {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: white;
+}
+.confirm-prompt__btn--danger:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.confirm-prompt__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Mobile toast positioning (Stage 11f) ───────────────────────────────
+   On narrow viewports, lift the toast container above the bottom multi-
+   select pill so the two never overlap. Targets vue-toastification's
+   bottom container variant; falls back gracefully if the user picks a
+   different position later. */
+@media (max-width: 540px) {
+  .Vue-Toastification__container--bottom,
+  .Vue-Toastification__container--bottom-left,
+  .Vue-Toastification__container--bottom-center,
+  .Vue-Toastification__container--bottom-right {
+    bottom: 72px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+}

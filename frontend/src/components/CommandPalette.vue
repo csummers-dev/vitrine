@@ -1,0 +1,589 @@
+<template>
+  <Teleport to="body">
+    <Transition name="palette">
+      <div
+        v-if="isOpen"
+        class="cmd-palette__scrim"
+        @click.self="close"
+        @keydown.esc.stop="close"
+      >
+        <div
+          class="cmd-palette"
+          ref="paletteEl"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Command palette"
+          @click.stop
+        >
+          <!-- Input row -->
+          <div class="cmd-palette__input-row">
+            <Icon name="search" :size="16" class="cmd-palette__input-icon" />
+            <input
+              ref="inputEl"
+              v-model="query"
+              type="text"
+              autocomplete="off"
+              spellcheck="false"
+              :placeholder="placeholder"
+              class="cmd-palette__input"
+              @keydown="onInputKeydown"
+            />
+            <kbd class="cmd-palette__kbd">esc</kbd>
+          </div>
+
+          <!-- Results -->
+          <div ref="resultsEl" class="cmd-palette__results">
+            <div v-if="flatResults.length === 0" class="cmd-palette__empty">
+              <Icon name="search-x" :size="18" :stroke-width="1.4" />
+              <span>No results for &ldquo;{{ query }}&rdquo;</span>
+            </div>
+
+            <template v-for="group in groupedResults" :key="group.id">
+              <div class="cmd-palette__group-header">
+                {{ group.label }}
+              </div>
+              <button
+                v-for="cmd in group.items"
+                :key="cmd.id"
+                type="button"
+                :class="[
+                  'cmd-palette__row',
+                  selectedIndex === cmd._flatIndex &&
+                    'cmd-palette__row--selected',
+                ]"
+                :data-flat-index="cmd._flatIndex"
+                @click="run(cmd)"
+                @mousemove="selectedIndex = cmd._flatIndex"
+              >
+                <Icon
+                  :name="cmd.icon"
+                  :size="15"
+                  :stroke-width="1.6"
+                  class="cmd-palette__row-icon"
+                />
+                <span class="cmd-palette__row-label">{{ cmd.label }}</span>
+                <span v-if="cmd.hint" class="cmd-palette__row-hint">{{
+                  cmd.hint
+                }}</span>
+              </button>
+            </template>
+          </div>
+
+          <!-- Footer -->
+          <div class="cmd-palette__footer">
+            <span class="cmd-palette__footer-item">
+              <kbd>↑</kbd><kbd>↓</kbd> navigate
+            </span>
+            <span class="cmd-palette__footer-item"> <kbd>↵</kbd> run </span>
+            <span class="cmd-palette__footer-item"> <kbd>esc</kbd> close </span>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+</template>
+
+<script setup lang="ts">
+import { computed, nextTick, onUnmounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import Icon from "@/components/Icon.vue";
+import { useCommandPalette } from "@/composables/useCommandPalette";
+import { useFocusTrap } from "@/composables/useFocusTrap";
+import { useAuthStore } from "@/stores/auth";
+import { useFileStore } from "@/stores/file";
+import { useLayoutStore } from "@/stores/layout";
+import { search } from "@/api";
+import { fileIcon } from "@/utils/fileIcon";
+import {
+  buildStaticCommands,
+  fuzzyScore,
+  groupLabel,
+  groupOrder,
+  type Command,
+  type CommandGroup,
+} from "@/utils/commands";
+
+interface ScoredCommand extends Command {
+  _score: number;
+  _flatIndex: number;
+}
+
+interface ResultGroup {
+  id: CommandGroup;
+  label: string;
+  items: ScoredCommand[];
+}
+
+const { isOpen, query, close } = useCommandPalette();
+
+const router = useRouter();
+const route = useRoute();
+const authStore = useAuthStore();
+const fileStore = useFileStore();
+const layoutStore = useLayoutStore();
+
+// File search state (live results streamed in from the backend).
+const fileResults = ref<Command[]>([]);
+let searchAbortController: AbortController | null = null;
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+const MAX_FILE_RESULTS = 12;
+const SEARCH_MIN_CHARS = 2;
+const SEARCH_DEBOUNCE_MS = 180;
+
+const cancelSearch = () => {
+  if (searchAbortController) {
+    searchAbortController.abort();
+    searchAbortController = null;
+  }
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = null;
+  }
+};
+
+const runSearch = async (q: string) => {
+  cancelSearch();
+  fileResults.value = [];
+  if (q.length < SEARCH_MIN_CHARS) return;
+
+  searchDebounceTimer = setTimeout(async () => {
+    searchAbortController = new AbortController();
+    const ctrl = searchAbortController;
+    // Pass the raw `route.path` (e.g. "/files/Documents/Projects/"). The
+    // search API internally calls `removePrefix()` which strips the first
+    // two path segments — pre-stripping here causes it to strip one too
+    // many and search the wrong folder.
+    const base = route.path;
+    try {
+      await search(base, q, ctrl.signal, (item) => {
+        if (ctrl.signal.aborted) return;
+        if (fileResults.value.length >= MAX_FILE_RESULTS) return;
+        const itemUrl = item.url;
+        fileResults.value.push({
+          id: `file:${item.path}`,
+          group: "files",
+          label: item.name,
+          hint: item.path,
+          icon: fileIcon({
+            isDir: item.isDir,
+            type: item.type,
+            name: item.name,
+          }),
+          run: () => void router.push(itemUrl),
+        });
+      });
+    } catch (err: unknown) {
+      // Abort errors are expected — swallow them. Anything else is logged
+      // but shouldn't bubble (the static commands stay usable).
+      if (err instanceof Error && err.name !== "AbortError") {
+        console.warn("Command palette search failed:", err);
+      }
+    }
+  }, SEARCH_DEBOUNCE_MS);
+};
+
+watch(query, (q) => {
+  if (!isOpen.value) return;
+  runSearch(q.trim());
+});
+
+onUnmounted(() => cancelSearch());
+
+const inputEl = ref<HTMLInputElement | null>(null);
+const paletteEl = ref<HTMLElement | null>(null);
+const resultsEl = ref<HTMLElement | null>(null);
+const selectedIndex = ref(0);
+
+const placeholder = computed(() => {
+  const folder = fileStore.req?.name;
+  return folder
+    ? `Search ${folder} or run a command…`
+    : "Search files or run a command…";
+});
+
+// Rebuild commands each time the palette opens (cheap; ensures fresh perms).
+const commands = computed<Command[]>(() => {
+  if (!isOpen.value) return [];
+  // File results first so they appear at the top of the merged list. The
+  // grouping pass below preserves group order, so this is just to seed the
+  // list — group sort puts `files` group on top anyway.
+  return [
+    ...fileResults.value,
+    ...buildStaticCommands({
+      router,
+      authStore,
+      fileStore,
+      layoutStore,
+    }),
+  ];
+});
+
+const groupedResults = computed<ResultGroup[]>(() => {
+  const q = query.value.trim();
+  const scored: ScoredCommand[] = [];
+
+  for (const cmd of commands.value) {
+    // Score against label + keywords; take the best.
+    let best: number | null = fuzzyScore(q, cmd.label);
+    if (cmd.keywords) {
+      for (const kw of cmd.keywords) {
+        const s = fuzzyScore(q, kw);
+        if (s !== null && (best === null || s > best)) best = s;
+      }
+    }
+    if (q === "") best = 0; // show everything when no query
+    if (best === null) continue;
+    scored.push({ ...cmd, _score: best, _flatIndex: 0 });
+  }
+
+  // When there's a query, sort by score desc and ignore group order.
+  // When empty, preserve registry order within group.
+  if (q !== "") {
+    scored.sort((a, b) => b._score - a._score);
+  }
+
+  // Group, preserving the sorted order within each group.
+  const byGroup = new Map<CommandGroup, ScoredCommand[]>();
+  for (const cmd of scored) {
+    if (!byGroup.has(cmd.group)) byGroup.set(cmd.group, []);
+    byGroup.get(cmd.group)!.push(cmd);
+  }
+
+  const groups: ResultGroup[] = [];
+  let flatIdx = 0;
+  for (const groupId of groupOrder()) {
+    const items = byGroup.get(groupId);
+    if (!items || items.length === 0) continue;
+    for (const item of items) {
+      item._flatIndex = flatIdx++;
+    }
+    groups.push({
+      id: groupId,
+      label: groupLabel(groupId),
+      items,
+    });
+  }
+  return groups;
+});
+
+const flatResults = computed<ScoredCommand[]>(() =>
+  groupedResults.value.flatMap((g) => g.items)
+);
+
+// Reset selection whenever the result set changes so the first item is always
+// highlighted (and selectedIndex never points past the end).
+watch(
+  flatResults,
+  (list) => {
+    if (list.length === 0) {
+      selectedIndex.value = 0;
+    } else if (selectedIndex.value >= list.length) {
+      selectedIndex.value = 0;
+    }
+  },
+  { flush: "post" }
+);
+
+// Focus trap: cycles Tab inside the palette and restores focus to
+// whatever was focused before (typically the ⌘K trigger, the inline
+// Search button, or the page itself) when the palette closes.
+useFocusTrap(paletteEl, isOpen);
+
+// Open lifecycle: focus input, reset state, scroll list to top. The
+// focus trap above focuses the palette container; we then push focus
+// specifically into the input so the user can start typing immediately.
+watch(isOpen, async (open) => {
+  if (!open) {
+    cancelSearch();
+    fileResults.value = [];
+    return;
+  }
+  selectedIndex.value = 0;
+  await nextTick();
+  inputEl.value?.focus();
+  if (resultsEl.value) resultsEl.value.scrollTop = 0;
+});
+
+// Keep the selected row scrolled into view as the user navigates.
+watch(selectedIndex, async () => {
+  await nextTick();
+  if (!resultsEl.value) return;
+  const el = resultsEl.value.querySelector(
+    `[data-flat-index="${selectedIndex.value}"]`
+  ) as HTMLElement | null;
+  if (!el) return;
+  const containerTop = resultsEl.value.scrollTop;
+  const containerBottom = containerTop + resultsEl.value.clientHeight;
+  const elTop = el.offsetTop;
+  const elBottom = elTop + el.offsetHeight;
+  if (elTop < containerTop) {
+    resultsEl.value.scrollTop = elTop - 8;
+  } else if (elBottom > containerBottom) {
+    resultsEl.value.scrollTop = elBottom - resultsEl.value.clientHeight + 8;
+  }
+});
+
+const onInputKeydown = (event: KeyboardEvent) => {
+  switch (event.key) {
+    case "ArrowDown":
+      event.preventDefault();
+      if (flatResults.value.length === 0) return;
+      selectedIndex.value =
+        (selectedIndex.value + 1) % flatResults.value.length;
+      break;
+    case "ArrowUp":
+      event.preventDefault();
+      if (flatResults.value.length === 0) return;
+      selectedIndex.value =
+        (selectedIndex.value - 1 + flatResults.value.length) %
+        flatResults.value.length;
+      break;
+    case "Home":
+      event.preventDefault();
+      selectedIndex.value = 0;
+      break;
+    case "End":
+      event.preventDefault();
+      selectedIndex.value = Math.max(0, flatResults.value.length - 1);
+      break;
+    case "Enter": {
+      event.preventDefault();
+      const cmd = flatResults.value[selectedIndex.value];
+      if (cmd) run(cmd);
+      break;
+    }
+    case "Escape":
+      event.preventDefault();
+      close();
+      break;
+  }
+};
+
+const run = async (cmd: Command) => {
+  // Close first so the command's side-effects (route changes, modals) take
+  // over a clean stage.
+  close();
+  try {
+    await cmd.run();
+  } catch (err) {
+    console.error("Command failed:", cmd.id, err);
+  }
+};
+</script>
+
+<style scoped>
+.cmd-palette__scrim {
+  position: fixed;
+  inset: 0;
+  /* Solid scrim — no backdrop-filter. The palette content re-renders on
+     every keystroke (filter-as-you-type) and a blurred backdrop forces a
+     re-rasterize of everything behind on each frame. Slightly darker
+     overlay compensates for the loss of the blur effect. */
+  background: rgba(0, 0, 0, 0.42);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 96px 16px 16px;
+  z-index: 1000;
+}
+
+.cmd-palette {
+  width: 100%;
+  max-width: 640px;
+  max-height: min(520px, calc(100vh - 112px));
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-line, #ececec);
+  border-radius: 12px;
+  box-shadow:
+    0 24px 48px -12px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+/* ── Input row ──────────────────────────────────────────────────────── */
+.cmd-palette__input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-line, #ececec);
+}
+
+.cmd-palette__input-icon {
+  color: var(--color-ink-3, #a1a1aa);
+  flex-shrink: 0;
+}
+
+.cmd-palette__input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  outline: none;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--color-ink-1, #18181b);
+  padding: 0;
+  min-width: 0;
+}
+
+.cmd-palette__input::placeholder {
+  color: var(--color-ink-3, #a1a1aa);
+}
+
+.cmd-palette__kbd {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--color-elevated, #f4f4f5);
+  border: 1px solid var(--color-line, #ececec);
+  color: var(--color-ink-2, #52525b);
+  flex-shrink: 0;
+}
+
+/* ── Results ────────────────────────────────────────────────────────── */
+.cmd-palette__results {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 6px 8px;
+  scroll-behavior: smooth;
+}
+
+.cmd-palette__group-header {
+  padding: 10px 10px 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-ink-3, #a1a1aa);
+}
+
+.cmd-palette__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: 13.5px;
+  color: var(--color-ink-1, #18181b);
+  transition: background-color 0.06s ease;
+}
+
+.cmd-palette__row--selected {
+  background: var(--color-elevated, #f4f4f5);
+}
+
+.cmd-palette__row-icon {
+  color: var(--color-ink-2, #52525b);
+  flex-shrink: 0;
+}
+
+.cmd-palette__row--selected .cmd-palette__row-icon {
+  color: var(--color-accent, #5e6ad2);
+}
+
+.cmd-palette__row-label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cmd-palette__row-hint {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: var(--color-ink-3, #a1a1aa);
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: var(--color-elevated, #f4f4f5);
+  border: 1px solid var(--color-line, #ececec);
+  flex-shrink: 0;
+}
+
+.cmd-palette__row--selected .cmd-palette__row-hint {
+  background: var(--color-surface, #fff);
+}
+
+/* ── Empty state ────────────────────────────────────────────────────── */
+.cmd-palette__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 40px 16px;
+  color: var(--color-ink-3, #a1a1aa);
+  font-size: 13px;
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────── */
+.cmd-palette__footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--color-line, #ececec);
+  background: var(--color-canvas, #fafaf9);
+  font-size: 11.5px;
+  color: var(--color-ink-3, #a1a1aa);
+}
+
+.cmd-palette__footer-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cmd-palette__footer-item kbd {
+  font-family: var(--font-mono, monospace);
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-line, #ececec);
+  color: var(--color-ink-2, #52525b);
+  line-height: 1.3;
+}
+
+/* ── Transitions ────────────────────────────────────────────────────── */
+.palette-enter-active,
+.palette-leave-active {
+  transition: opacity 0.12s ease;
+}
+.palette-enter-active .cmd-palette,
+.palette-leave-active .cmd-palette {
+  transition:
+    transform 0.16s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.12s ease;
+}
+.palette-enter-from,
+.palette-leave-to {
+  opacity: 0;
+}
+.palette-enter-from .cmd-palette,
+.palette-leave-to .cmd-palette {
+  transform: translateY(-8px) scale(0.98);
+  opacity: 0;
+}
+
+/* Mobile: full-width sheet at the top */
+@media (max-width: 540px) {
+  .cmd-palette__scrim {
+    padding: 16px 8px;
+  }
+  .cmd-palette {
+    max-height: min(420px, calc(100vh - 32px));
+  }
+}
+</style>

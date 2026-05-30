@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@theme {
+  --color-accent: #5e6ad2;
+  --color-accent-strong: #4f5ac4;
+  --color-accent-soft: rgba(94, 106, 210, 0.1);
+  --color-accent-ring: rgba(94, 106, 210, 0.3);
+
+  --color-canvas: #fafaf9;
+  --color-surface: #ffffff;
+  --color-elevated: #f4f4f5;
+
+  --color-ink-1: #18181b;
+  --color-ink-2: #52525b;
+  --color-ink-3: #a1a1aa;
+  --color-ink-4: #d4d4d8;
+
+  --color-line: #ececec;
+  --color-line-strong: #d4d4d8;
+
+  --color-hover: rgba(24, 24, 27, 0.045);
+  --color-selected: rgba(94, 106, 210, 0.08);
+
+  /* Always-dark contrast surface for floating pills/toasts that should
+     stand out against the page regardless of theme. In light mode this is
+     near-black; in dark mode it's a touch lighter than canvas so it still
+     reads as elevated rather than blending in. */
+  --color-inverse-surface: #18181b;
+
+  --font-sans: "Inter Variable", "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+}
+
+/* ── Dark mode tokens (Stage 11b) ────────────────────────────────────────
+   Activated by `html.dark`. The plumbing in `utils/theme.ts` toggles the
+   class based on user preference or system setting. Token names are
+   identical to the light variant so every component using `var(--color-…)`
+   adapts automatically without per-component dark variants.
+
+   Design choices:
+   - `canvas` is the page background (deepest dark)
+   - `surface` is one step up (panels, cards)
+   - `elevated` is one step up again (hover bg, chips, inputs)
+   - ink scale inverts: ink-1 brightest, ink-4 dimmest
+   - accent stays the same lilac so the brand reads consistently
+   - hover uses white at low alpha (vs. dark on light) */
+html.dark {
+  --color-accent-soft: rgba(94, 106, 210, 0.16);
+  --color-accent-ring: rgba(94, 106, 210, 0.45);
+
+  --color-canvas: #0e0e10;
+  --color-surface: #18181b;
+  --color-elevated: #27272a;
+
+  --color-ink-1: #fafafa;
+  --color-ink-2: #d4d4d8;
+  --color-ink-3: #a1a1aa;
+  --color-ink-4: #52525b;
+
+  --color-line: #27272a;
+  --color-line-strong: #3f3f46;
+
+  --color-hover: rgba(255, 255, 255, 0.05);
+  --color-selected: rgba(94, 106, 210, 0.18);
+
+  /* In dark mode the pill should be a touch lighter than canvas (#0e0e10)
+     so it reads as a floating element, not a flat patch. */
+  --color-inverse-surface: #27272a;
+
+  /* Native form control hint — picks dark scrollbars, date pickers, etc. */
+  color-scheme: dark;
+}

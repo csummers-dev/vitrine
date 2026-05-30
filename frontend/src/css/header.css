@@ -1,0 +1,438 @@
+/*
+ * Stage 2 (Shell): the <header> element's layout is now driven by the
+ * HeaderBar.vue component using Tailwind utilities. This file keeps only
+ * the legacy rules that still apply to children inside the header:
+ *   - hiding Action button labels (icon-only buttons in the toolbar)
+ *   - styling the native <title> element if used in a slot
+ * Plus the entire Search component styling (it remains hand-rolled until
+ * Stage 5 when the command palette is introduced).
+ */
+
+header .overlay {
+  width: 0;
+  height: 0;
+}
+
+header a,
+header a:hover {
+  color: inherit;
+}
+
+header .action span {
+  display: none;
+}
+
+/* Slim action buttons inside the new HeaderBar */
+header .action {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-ink-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
+}
+
+header .action:hover {
+  background-color: var(--color-hover);
+  color: var(--color-ink-1);
+}
+
+header .action svg {
+  width: 16px;
+  height: 16px;
+}
+
+header .action .counter {
+  background: var(--color-accent);
+  border-color: var(--color-canvas);
+}
+
+/* New header-bar button (replaces .action in toolbar; matches mockup) */
+.hb-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: var(--radius-sm, 6px);
+  color: var(--color-ink-2, #52525b);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  position: relative;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.hb-btn:hover {
+  background: var(--color-hover, rgba(24, 24, 27, 0.045));
+  color: var(--color-ink-1, #18181b);
+}
+
+.hb-btn--danger:hover {
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+}
+
+.hb-btn__badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background: var(--color-accent, #5e6ad2);
+  color: white;
+  border-radius: 9999px;
+  font-size: 9px;
+  font-weight: 700;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 4px;
+  line-height: 14px;
+  text-align: center;
+  border: 1.5px solid var(--color-canvas, #fafaf9);
+  font-variant-numeric: tabular-nums;
+}
+
+/* * * * * * * * * * * * * *
+ *          SEARCH         *
+ * * * * * * * * * * * * * */
+
+#search {
+  position: relative;
+  height: 32px;
+  width: 380px;
+  max-width: 380px;
+}
+
+/* Responsive: shrink search at narrower viewports */
+@media (max-width: 1280px) {
+  #search {
+    width: 280px;
+    max-width: 280px;
+  }
+}
+
+@media (max-width: 960px) {
+  #search {
+    width: 200px;
+    max-width: 200px;
+  }
+}
+
+@media (max-width: 800px) {
+  /* Below 800px, collapse to icon-button width (label hidden via CSS below) */
+  #search {
+    width: 36px;
+    max-width: 36px;
+  }
+  #search .search-trigger__label,
+  #search .search-kbd {
+    display: none;
+  }
+  .search-trigger {
+    padding: 0;
+    justify-content: center;
+  }
+
+  /* When active at narrow widths, the 36px container has no room to render the
+     input form. Float the active state across the full header width as an
+     overlay (header has `sticky top-0` which provides the positioning context).
+     The result dropdown anchors to #search, so it follows along automatically. */
+  #search.active {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+    max-width: none;
+    height: 32px;
+    z-index: 30;
+  }
+}
+
+/* Inactive: button-shaped trigger */
+.search-trigger {
+  width: 100%;
+  height: 100%;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-surface, var(--surfacePrimary));
+  border: 1px solid var(--color-line, var(--borderPrimary));
+  border-radius: var(--radius-md, 8px);
+  cursor: pointer;
+  color: var(--color-ink-3, var(--textPrimary));
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.search-trigger:hover {
+  background: var(--color-elevated, var(--surfaceSecondary));
+  border-color: var(--color-line-strong, var(--borderSecondary));
+}
+
+.search-trigger__label {
+  flex: 1;
+  text-align: left;
+  font-size: 12.5px;
+  color: var(--color-ink-3, var(--textPrimary));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#search .search-count {
+  font-size: 11px;
+  color: var(--color-ink-3, var(--textPrimary));
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+#search .search-kbd {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 1px 5px;
+  border-radius: var(--radius-sm, 6px);
+  background: var(--color-elevated, #f4f4f5);
+  border: 1px solid var(--color-line, #ececec);
+  color: var(--color-ink-2, #52525b);
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+/* Active: input form (expanded state — background + accent border) */
+#search #input {
+  background: var(--color-surface, var(--surfacePrimary));
+  border: 1px solid var(--color-accent, var(--accent));
+  display: flex;
+  height: 100%;
+  padding: 0 0.6em;
+  gap: 0.4em;
+  border-radius: var(--radius-md, 8px);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+  align-items: center;
+  z-index: 2;
+}
+
+/* Focus ring: only when the input actually has focus */
+#search #input:focus-within {
+  box-shadow: 0 0 0 3px var(--color-accent-ring, var(--accent-ring));
+}
+
+#search #input > svg,
+#search #input > .icon {
+  color: var(--color-ink-3, var(--textPrimary));
+  flex-shrink: 0;
+}
+
+#search #input:hover {
+  background: var(--color-surface, var(--surfacePrimary));
+  border-color: var(--color-line-strong, var(--borderSecondary));
+}
+
+#search #input input::placeholder {
+  color: var(--color-ink-3, var(--textPrimary));
+}
+
+#search #input input {
+  font-size: 13px;
+  color: var(--color-ink-1, var(--textSecondary));
+}
+
+#search #input > .action,
+#search #input > i {
+  margin-right: 0.3em;
+  user-select: none;
+}
+
+#search input {
+  width: 100%;
+  border: 0;
+  background-color: transparent;
+  padding: 0;
+}
+
+#search #result {
+  visibility: hidden;
+  background: var(--color-surface, var(--surfacePrimary));
+  border: 1px solid var(--color-line, var(--borderPrimary));
+  border-radius: var(--radius-md, 8px);
+  box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(16, 24, 40, 0.08));
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-height: 0;
+  padding: 0;
+  color: var(--color-ink-1, var(--textPrimary));
+  transition:
+    max-height 0.15s ease,
+    visibility 0.15s ease,
+    padding 0.15s ease;
+  overflow-x: hidden;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+#search.active #result {
+  visibility: visible;
+  padding: 6px;
+  max-height: 60vh;
+}
+
+html[dir="rtl"] #search #result {
+  direction: ltr;
+  text-align: right;
+}
+
+html[dir="rtl"] #search #result ul > * {
+  direction: ltr;
+  text-align: left;
+}
+
+/* ── Results list — design-system-aligned rows ─────────────────── */
+#search .search-results {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+#search .search-results li {
+  margin: 0;
+}
+
+#search .search-result-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: var(--radius-md, 8px);
+  color: var(--color-ink-1, #18181b);
+  text-decoration: none;
+  transition: background-color 0.08s ease;
+}
+
+#search .search-result-row:hover,
+#search .search-result-row:focus-visible {
+  background: var(--color-elevated, #f4f4f5);
+  color: var(--color-ink-1, #18181b);
+  outline: none;
+}
+
+/* Colored squircle icon — matches the file listing's `.item__icon` */
+#search .search-result-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md, 8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+#search .search-result-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  gap: 1px;
+}
+
+#search .search-result-name {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--color-ink-1, #18181b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#search .search-result-path {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--color-ink-3, #a1a1aa);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Empty state */
+#search .search-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px 16px;
+  color: var(--color-ink-3, #a1a1aa);
+  font-size: 12.5px;
+}
+
+#search .boxes {
+  border: 1px solid var(--borderPrimary);
+  border-radius: var(--radius-md);
+  background: var(--surfacePrimary);
+  margin: 1em 0;
+}
+
+#search .boxes h3 {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.95em;
+  color: var(--textSecondary);
+  padding: 0.5em 0.75em;
+}
+
+html[dir="rtl"] #search .boxes h3 {
+  text-align: right;
+}
+
+#search .boxes > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75em;
+  padding: 0.5em 0.75em 0.75em;
+}
+
+#search .boxes > div > div {
+  background: var(--accent);
+  color: #fff;
+  text-align: center;
+  width: 10em;
+  padding: 1em;
+  cursor: pointer;
+  flex-grow: 1;
+  border-radius: var(--radius-md);
+  transition: 0.15s ease background;
+}
+
+#search .boxes > div > div:hover {
+  background: var(--accent-strong);
+}
+
+#search .boxes p {
+  margin: 0.5em 0 0;
+}
+
+#search .boxes svg {
+  color: #fff !important;
+  width: 2.5em;
+  height: 2.5em;
+}

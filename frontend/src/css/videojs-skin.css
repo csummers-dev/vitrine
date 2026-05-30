@@ -1,0 +1,165 @@
+/* ── video.js skin: filebrowser pretty (Preview P3) ──────────────────
+   Heavy override of the default video.js chrome to match the mockup-
+   preview-video.html design. Targets:
+     - Control-bar gradient (no more black-on-black bar)
+     - Accent scrubber + progress
+     - Round play button on center load
+     - Tokenized button colors (white-on-rgba for in-frame contrast)
+     - 36 px tap targets
+   Lives at the global level (not scoped to a component) because video.js
+   renders its controls into a deep tree of its own classes. */
+
+/* ── Control bar gradient + spacing ─────────────────────────────── */
+.video-js .vjs-control-bar {
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.72) 0%,
+    rgba(0, 0, 0, 0.36) 65%,
+    transparent 100%
+  );
+  height: 56px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+}
+
+/* ── Buttons (play / mute / fullscreen / etc.) ─────────────────── */
+.video-js .vjs-button {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.video-js .vjs-button > .vjs-icon-placeholder::before {
+  font-size: 18px;
+  line-height: 36px;
+}
+.video-js .vjs-button:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+}
+.video-js .vjs-button:focus-visible {
+  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.45));
+  outline-offset: 1px;
+  border-radius: 8px;
+}
+
+/* Center play button (shown before first play / on pause) */
+.video-js .vjs-big-play-button {
+  background: rgba(0, 0, 0, 0.50);
+  border: 0;
+  border-radius: 999px;
+  width: 64px;
+  height: 64px;
+  line-height: 64px;
+  margin-top: -32px;
+  margin-left: -32px;
+  top: 50%;
+  left: 50%;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition: background-color 120ms ease, transform 120ms ease;
+}
+.video-js:hover .vjs-big-play-button,
+.video-js .vjs-big-play-button:focus {
+  background: rgba(0, 0, 0, 0.68);
+}
+
+/* ── Scrubber (the progress bar at the top of the control row) ── */
+.video-js .vjs-progress-control {
+  height: 24px;
+  margin: 0 8px;
+}
+.video-js .vjs-progress-holder {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.20);
+  margin: 0;
+}
+.video-js .vjs-play-progress {
+  background: var(--color-accent, #5e6ad2);
+  border-radius: 999px;
+}
+.video-js .vjs-play-progress::before {
+  content: "";
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--color-accent, #5e6ad2);
+  box-shadow: 0 0 0 4px rgba(94, 106, 210, 0.32);
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0;
+}
+.video-js .vjs-load-progress {
+  background: rgba(255, 255, 255, 0.32);
+  border-radius: 999px;
+}
+.video-js .vjs-load-progress div {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+/* ── Volume slider ─────────────────────────────────────────────── */
+.video-js .vjs-volume-bar {
+  background: rgba(255, 255, 255, 0.20);
+  border-radius: 999px;
+}
+.video-js .vjs-volume-level {
+  background: white;
+  border-radius: 999px;
+}
+
+/* ── Time display ──────────────────────────────────────────────── */
+.video-js .vjs-time-control {
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  line-height: 36px;
+  padding: 0 6px;
+  color: rgba(255, 255, 255, 0.90);
+}
+.video-js .vjs-time-divider {
+  color: rgba(255, 255, 255, 0.60);
+}
+
+/* ── Menus (speed, captions, etc.) ─────────────────────────────── */
+.video-js .vjs-menu .vjs-menu-content {
+  background: rgba(0, 0, 0, 0.80);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: var(--font-sans, system-ui);
+  font-size: 12.5px;
+  padding: 4px;
+  min-width: 96px;
+}
+.video-js .vjs-menu li {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+.video-js .vjs-menu li.vjs-selected {
+  background: var(--color-accent, #5e6ad2);
+  color: white;
+}
+.video-js .vjs-menu li:hover:not(.vjs-selected) {
+  background: rgba(255, 255, 255, 0.10);
+}
+
+/* ── Loading spinner: replace the spinning ring with our motion ── */
+.video-js .vjs-loading-spinner {
+  border-top-color: var(--color-accent, #5e6ad2);
+}
+
+/* ── Captions text background — softened so subs don't fight chrome */
+.video-js .vjs-text-track-display .vjs-text-track-cue {
+  background: rgba(0, 0, 0, 0.66) !important;
+  font-family: var(--font-sans, system-ui) !important;
+  border-radius: 4px;
+  padding: 2px 6px !important;
+}

@@ -1,0 +1,95 @@
+/* Modern dropdown context menu (Stage 4) */
+.context-menu {
+  position: absolute;
+  background: var(--color-surface, var(--surfacePrimary));
+  min-width: 200px;
+  max-width: 260px;
+  border: 1px solid var(--color-line, var(--borderPrimary));
+  border-radius: var(--radius-md, 8px);
+  box-shadow:
+    var(--shadow-lg, 0 10px 15px -3px rgba(16, 24, 40, 0.08)),
+    0 0 0 1px rgba(16, 24, 40, 0.02);
+  z-index: 9999;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  animation: contextMenuIn 0.12s ease-out;
+}
+
+@keyframes contextMenuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-2px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.context-menu .action {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px 6px 8px;
+  border-radius: var(--radius-sm, 6px);
+  background: transparent;
+  color: var(--color-ink-1, var(--textSecondary));
+  border: 0;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  transition: background-color 0.1s ease;
+  position: relative;
+}
+
+.context-menu .action:hover {
+  background: var(--color-hover, var(--hover));
+}
+
+/* Show the labels (header.css hides them for the top bar) */
+.context-menu .action span {
+  display: inline;
+  color: var(--color-ink-1, var(--textSecondary));
+  font-size: 13px;
+}
+
+.context-menu .action svg {
+  width: 15px;
+  height: 15px;
+  color: var(--color-ink-2, var(--textPrimary));
+  flex-shrink: 0;
+}
+
+/* Counter badge (e.g. download count for selected items) */
+.context-menu .action .counter {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  left: auto;
+  background: var(--color-accent, var(--accent));
+  color: white;
+  border-radius: var(--radius-full, 9999px);
+  font-size: 10.5px;
+  font-weight: 600;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  line-height: 18px;
+  text-align: center;
+  border: 0;
+}
+
+/* Danger items (delete) */
+.context-menu #delete-button:hover {
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--color-red, var(--red));
+}
+
+.context-menu #delete-button:hover svg {
+  color: var(--color-red, var(--red));
+}

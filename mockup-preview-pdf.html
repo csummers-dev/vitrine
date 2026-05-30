@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>filebrowser · preview redesign · pdf</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style type="text/tailwindcss">
+    @theme {
+      --color-canvas: #fafaf9;
+      --color-surface: #ffffff;
+      --color-elevated: #f4f4f5;
+      --color-ink-1: #18181b;
+      --color-ink-2: #52525b;
+      --color-ink-3: #a1a1aa;
+      --color-ink-4: #d4d4d8;
+      --color-line: #ececec;
+      --color-line-strong: #d4d4d8;
+      --color-accent: #5e6ad2;
+      --color-accent-strong: #4f5ac4;
+      --color-accent-soft: rgba(94, 106, 210, 0.10);
+      --color-accent-ring: rgba(94, 106, 210, 0.30);
+      --color-hover: rgba(24, 24, 27, 0.045);
+      --color-selected: rgba(94, 106, 210, 0.08);
+      --color-rose-soft: rgba(244, 63, 94, 0.16);
+      --color-rose-strong: #be123c;
+
+      --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+  </style>
+
+  <style>
+    html, body {
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    body {
+      letter-spacing: -0.006em;
+      font-feature-settings: "cv11", "ss01", "ss03";
+    }
+    .tabular { font-variant-numeric: tabular-nums; }
+    .mono { font-family: var(--font-mono); }
+
+    /* Stage backdrop — same dotted paper as image/audio. */
+    .stage-paper {
+      background-color: var(--color-canvas);
+      background-image:
+        radial-gradient(rgba(24,24,27,0.05) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    /* PDF "page" — white card with a faint hairline. In production this
+       gets replaced by whatever PDF rendering strategy we settle on
+       (PDF.js canvas, browser embed, etc.). The chrome is ours, the
+       page content is theirs. */
+    .pdf-page {
+      width: 720px;
+      max-width: 100%;
+      aspect-ratio: 8.5 / 11;
+      background: white;
+      border: 1px solid var(--color-line);
+      border-radius: 6px;
+      box-shadow: 0 24px 48px -12px rgba(0,0,0,0.18);
+      padding: 56px 64px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #18181b;
+      overflow: hidden;
+    }
+    .pdf-page h1 {
+      font-size: 22px;
+      font-weight: 600;
+      margin: 0 0 10px;
+      letter-spacing: -0.01em;
+    }
+    .pdf-page .meta {
+      font-size: 11.5px;
+      color: #a1a1aa;
+      margin-bottom: 24px;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+    .pdf-page h2 {
+      font-size: 14px;
+      font-weight: 600;
+      margin: 18px 0 8px;
+      color: #27272a;
+    }
+    .pdf-page p {
+      margin: 0 0 12px;
+      color: #3f3f46;
+    }
+
+    /* Rose squircle for PDF files (matches locked file-icon system) */
+    .file-icon-pdf {
+      background: var(--color-rose-soft);
+      color: var(--color-rose-strong);
+    }
+
+    /* Thumbnail rail — small page previews on the left, like Preview.app
+       or Acrobat. Scrolls vertically. */
+    .pdf-thumb {
+      position: relative;
+      width: 64px;
+      aspect-ratio: 8.5 / 11;
+      background: white;
+      border: 1px solid var(--color-line);
+      border-radius: 3px;
+      cursor: pointer;
+      transition: border-color 120ms ease, transform 120ms ease;
+      flex-shrink: 0;
+    }
+    .pdf-thumb:hover {
+      border-color: var(--color-line-strong);
+      transform: scale(1.04);
+    }
+    .pdf-thumb.is-active {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 2px var(--color-accent-soft);
+    }
+    .pdf-thumb__num {
+      position: absolute;
+      bottom: -16px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      color: var(--color-ink-3);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Stage nav arrows (same as image / audio / video) */
+    .stage-nav {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-line);
+      color: var(--color-ink-2);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px -4px rgba(0,0,0,0.12);
+      transition: background-color 120ms ease, color 120ms ease;
+    }
+    .stage-nav:hover {
+      background: var(--color-elevated);
+      color: var(--color-ink-1);
+    }
+  </style>
+</head>
+<body class="bg-canvas text-ink-1 h-screen overflow-hidden antialiased">
+
+<div class="flex flex-col h-full">
+
+  <!-- ─── Toolbar (canonical shell) ─────────────────────────────────── -->
+  <header class="h-12 border-b border-line bg-canvas flex items-center px-3 gap-2 shrink-0 z-10">
+    <button class="h-8 px-2.5 rounded-md hover:bg-hover flex items-center gap-1.5 text-[13px] text-ink-2 transition" title="Back">
+      <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+      <span class="max-md:hidden">Back</span>
+    </button>
+    <div class="w-px h-5 bg-line mx-1"></div>
+
+    <div class="flex items-center gap-2 min-w-0 flex-1">
+      <div class="file-icon-pdf w-7 h-7 rounded-md flex items-center justify-center shrink-0">
+        <i data-lucide="file-text" class="w-3.5 h-3.5" style="stroke-width:1.8"></i>
+      </div>
+      <div class="min-w-0">
+        <div class="text-[13px] font-semibold text-ink-1 leading-tight truncate">
+          quarterly-report-Q1-2024.pdf
+        </div>
+        <div class="text-[11px] text-ink-3 tabular leading-tight">
+          1 of 4 in Documents / Reports
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-1.5 shrink-0">
+
+      <!-- Page counter chip — PDF-specific, clickable to jump to a page -->
+      <div class="h-7 px-2 rounded-md border border-line bg-surface flex items-center gap-1.5">
+        <input
+          type="text"
+          value="3"
+          class="w-6 text-center text-[12px] tabular text-ink-1 bg-transparent border-0 outline-none focus:outline-2 focus:outline-accent rounded"
+          aria-label="Current page"
+        />
+        <span class="text-[12px] tabular text-ink-3">/ 18</span>
+      </div>
+
+      <!-- Zoom controls (same chrome as image) -->
+      <div class="h-7 px-1 rounded-md border border-line bg-surface flex items-center gap-0.5">
+        <button class="w-6 h-6 rounded flex items-center justify-center text-ink-2 hover:text-ink-1 hover:bg-hover transition" title="Zoom out">
+          <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i>
+        </button>
+        <span class="text-[11.5px] tabular text-ink-2 px-1.5 min-w-[44px] text-center">100%</span>
+        <button class="w-6 h-6 rounded flex items-center justify-center text-ink-2 hover:text-ink-1 hover:bg-hover transition" title="Zoom in">
+          <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+
+      <!-- Fit-width / fit-page toggle (PDF-specific) -->
+      <button class="h-7 w-7 rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 hover:text-ink-1 flex items-center justify-center transition" title="Fit width">
+        <i data-lucide="move-horizontal" class="w-3.5 h-3.5"></i>
+      </button>
+
+      <!-- Find in PDF (PDF-specific) -->
+      <button class="h-7 w-7 rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 hover:text-ink-1 flex items-center justify-center transition" title="Find in document">
+        <i data-lucide="search" class="w-3.5 h-3.5"></i>
+      </button>
+
+      <div class="w-px h-5 bg-line mx-0.5"></div>
+
+      <button class="h-7 px-2 rounded-md border border-line bg-surface hover:bg-elevated text-[13px] text-ink-2 flex items-center gap-1.5 transition" title="Download">
+        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+        <span class="max-md:hidden">Download</span>
+      </button>
+      <button class="h-7 px-2 rounded-md border border-line bg-surface hover:bg-elevated text-[13px] text-ink-2 flex items-center gap-1.5 transition" title="Share">
+        <i data-lucide="share" class="w-3.5 h-3.5"></i>
+        <span class="max-md:hidden">Share</span>
+      </button>
+      <button class="w-7 h-7 rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 flex items-center justify-center transition" title="More">
+        <i data-lucide="ellipsis" class="w-3.5 h-3.5"></i>
+      </button>
+
+      <div class="w-px h-5 bg-line mx-0.5"></div>
+
+      <button class="w-7 h-7 rounded-md bg-selected text-accent flex items-center justify-center transition" title="Hide details">
+        <i data-lucide="panel-right-close" class="w-3.5 h-3.5"></i>
+      </button>
+      <button class="w-7 h-7 rounded-md hover:bg-hover text-ink-2 hover:text-ink-1 flex items-center justify-center transition ml-1" title="Close (Esc)">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <div class="flex-1 flex min-h-0 overflow-hidden">
+
+    <!-- ─── LEFT: Thumbnail rail (PDF-specific) ─────────────────────
+         Borrowed from Preview.app / Acrobat — small page previews on
+         the left so the user can jump to any page. Hidden on narrow
+         viewports (toolbar input is enough). -->
+    <aside class="w-[92px] border-r border-line bg-canvas px-4 py-4 shrink-0 overflow-y-auto max-md:hidden flex flex-col items-center gap-6">
+      <div class="pdf-thumb">
+        <span class="pdf-thumb__num">1</span>
+      </div>
+      <div class="pdf-thumb">
+        <span class="pdf-thumb__num">2</span>
+      </div>
+      <div class="pdf-thumb is-active">
+        <span class="pdf-thumb__num">3</span>
+      </div>
+      <div class="pdf-thumb">
+        <span class="pdf-thumb__num">4</span>
+      </div>
+      <div class="pdf-thumb">
+        <span class="pdf-thumb__num">5</span>
+      </div>
+      <div class="pdf-thumb">
+        <span class="pdf-thumb__num">6</span>
+      </div>
+      <div class="pdf-thumb">
+        <span class="pdf-thumb__num">7</span>
+      </div>
+      <div class="pdf-thumb">
+        <span class="pdf-thumb__num">8</span>
+      </div>
+    </aside>
+
+    <!-- ─── STAGE: PDF page ─────────────────────────────────────── -->
+    <section class="flex-1 flex flex-col min-w-0 min-h-0 stage-paper relative">
+      <div class="flex-1 flex items-start justify-center min-h-0 relative px-12 py-8 overflow-y-auto">
+
+        <!-- Single page rendered. In production this would be a PDF.js
+             canvas, an <object data=...>, or whatever rendering strategy
+             we settle on. Chrome is ours; page content is the PDF's. -->
+        <article class="pdf-page">
+          <div class="meta">Q1 2024 · CONFIDENTIAL</div>
+          <h1>Quarterly performance overview</h1>
+          <p>
+            The first quarter of 2024 saw filebrowser pretty deployments
+            grow 38% quarter-over-quarter, driven primarily by homelab
+            adoption among the self-hosting community. New feature uptake
+            tracked above projections: the Stage 8 inline workflows
+            replaced 73% of legacy modal interactions within four weeks
+            of release, exceeding the 50% adoption threshold set in our
+            quarterly OKRs.
+          </p>
+
+          <h2>Highlights</h2>
+          <p>
+            Dark-mode adoption exceeded expectations at 64% of active
+            users opting in within the first sprint of availability.
+            The keyboard-shortcut overlay introduced in Stage 11g saw
+            12% weekly-active engagement, suggesting strong demand for
+            power-user affordances.
+          </p>
+
+          <h2>Risks &amp; mitigations</h2>
+          <p>
+            Zip-extraction (Stage 12) ships behind a default-on flag
+            with operator-level disable via CLI. We're tracking the
+            zip-bomb defense thresholds across the first cohort to
+            calibrate the 1% compression-ratio floor for real-world
+            archives. Initial telemetry suggests the threshold is well
+            tuned — zero false positives across 8,400 legitimate
+            extractions sampled.
+          </p>
+        </article>
+
+        <button class="stage-nav absolute left-4 top-1/2 -translate-y-1/2" title="Previous page (←)">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </button>
+        <button class="stage-nav absolute right-4 top-1/2 -translate-y-1/2" title="Next page (→)">
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Bottom: outline / TOC chip (PDF-specific) — folded by default -->
+      <div class="px-6 py-3 border-t border-line bg-canvas shrink-0 flex items-center gap-2">
+        <button class="rounded-md hover:bg-elevated px-2.5 py-1.5 flex items-center gap-2 transition text-ink-2 hover:text-ink-1">
+          <i data-lucide="list-tree" class="w-3.5 h-3.5"></i>
+          <span class="text-[12px] font-medium">Outline</span>
+          <i data-lucide="chevron-up" class="w-3 h-3 text-ink-3"></i>
+        </button>
+        <div class="flex-1"></div>
+        <span class="text-[11px] tabular text-ink-3">Page 3 of 18 · 100%</span>
+      </div>
+    </section>
+
+    <!-- ─── INFO RAIL ─────────────────────────────────────────────── -->
+    <aside class="w-[320px] border-l border-line bg-canvas flex flex-col shrink-0 max-md:hidden overflow-y-auto">
+      <div class="p-4 border-b border-line">
+        <div class="flex items-start gap-3 mb-3">
+          <div class="file-icon-pdf w-10 h-10 rounded-md flex items-center justify-center shrink-0">
+            <i data-lucide="file-text" class="w-5 h-5" style="stroke-width:1.8"></i>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="text-[10px] font-semibold text-ink-3 uppercase tracking-wider mb-0.5">
+              Document · PDF
+            </div>
+            <div class="text-[14px] font-semibold text-ink-1 leading-tight break-all">
+              quarterly-report-Q1-2024.pdf
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-4 gap-1.5 mb-1.5">
+          <button class="rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 hover:text-ink-1 text-[11px] font-medium py-2 flex flex-col items-center gap-1 transition">
+            <i data-lucide="share" class="w-3.5 h-3.5"></i>Share
+          </button>
+          <button class="rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 hover:text-ink-1 text-[11px] font-medium py-2 flex flex-col items-center gap-1 transition">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>Download
+          </button>
+          <button class="rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 hover:text-ink-1 text-[11px] font-medium py-2 flex flex-col items-center gap-1 transition">
+            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>Rename
+          </button>
+          <button class="rounded-md border border-line bg-surface hover:bg-rose-50 text-ink-2 hover:text-rose-700 text-[11px] font-medium py-2 flex flex-col items-center gap-1 transition">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Delete
+          </button>
+        </div>
+        <div class="grid grid-cols-3 gap-1.5">
+          <button class="rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 hover:text-ink-1 text-[11px] font-medium py-2 flex flex-col items-center gap-1 transition">
+            <i data-lucide="forward" class="w-3.5 h-3.5"></i>Move
+          </button>
+          <button class="rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 hover:text-ink-1 text-[11px] font-medium py-2 flex flex-col items-center gap-1 transition">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>Copy
+          </button>
+          <button class="rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 hover:text-ink-1 text-[11px] font-medium py-2 flex flex-col items-center gap-1 transition">
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>Open
+          </button>
+        </div>
+      </div>
+
+      <div class="p-4 border-b border-line">
+        <div class="text-[10px] font-semibold text-ink-3 uppercase tracking-wider mb-2.5">Properties</div>
+        <dl class="text-[12px] space-y-1.5">
+          <div class="flex justify-between gap-3"><dt class="text-ink-3">Size</dt><dd class="text-ink-1 tabular">1.2 MB</dd></div>
+          <div class="flex justify-between gap-3"><dt class="text-ink-3">Pages</dt><dd class="text-ink-1 tabular">18</dd></div>
+          <div class="flex justify-between gap-3"><dt class="text-ink-3">Modified</dt><dd class="text-ink-1 tabular">Apr 14, 09:22</dd></div>
+          <div class="flex justify-between gap-3"><dt class="text-ink-3">Extension</dt><dd class="text-ink-1 mono text-[11px]">.pdf</dd></div>
+        </dl>
+      </div>
+
+      <!-- PDF-specific: doc metadata (Author, Title, Created via PDF, etc.) -->
+      <div class="p-4 border-b border-line">
+        <div class="text-[10px] font-semibold text-ink-3 uppercase tracking-wider mb-2.5">Document</div>
+        <dl class="text-[12px] space-y-1.5">
+          <div class="flex justify-between gap-3"><dt class="text-ink-3">Title</dt><dd class="text-ink-1 text-right">Quarterly performance overview</dd></div>
+          <div class="flex justify-between gap-3"><dt class="text-ink-3">Author</dt><dd class="text-ink-1 text-right">Operations Team</dd></div>
+          <div class="flex justify-between gap-3"><dt class="text-ink-3">Created</dt><dd class="text-ink-1 tabular">Apr 14, 09:18</dd></div>
+          <div class="flex justify-between gap-3"><dt class="text-ink-3">Producer</dt><dd class="text-ink-1 text-right">Pages 13.2</dd></div>
+        </dl>
+      </div>
+
+      <div class="p-4 border-b border-line">
+        <div class="text-[10px] font-semibold text-ink-3 uppercase tracking-wider mb-1.5">Location</div>
+        <div class="mono text-[11px] text-ink-2 break-all bg-elevated rounded-md px-2 py-1.5 border border-line">
+          /Documents/Reports/2024/quarterly-report-Q1-2024.pdf
+        </div>
+      </div>
+
+      <div class="flex-1"></div>
+
+      <div class="px-4 py-3 border-t border-line text-[11px] text-ink-3 flex items-center justify-between shrink-0">
+        <span class="flex items-center gap-1.5">
+          <kbd class="mono text-[10px] px-1 py-px rounded border border-line bg-elevated">←</kbd>
+          <kbd class="mono text-[10px] px-1 py-px rounded border border-line bg-elevated">→</kbd>
+          <span>page nav</span>
+        </span>
+        <span class="flex items-center gap-1.5">
+          <kbd class="mono text-[10px] px-1 py-px rounded border border-line bg-elevated">⌘F</kbd>
+          <span>find</span>
+        </span>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+/* Markdown preview pane shown in the Editor when toggled with the eye
+   button. The HTML inside comes from `marked` + optional KaTeX, so the
+   chrome here only sets the container + base typography; element-level
+   styling (h1/h2/code/etc.) is handled by the browser/user-agent. */
+.md_preview {
+  padding: 20px 24px;
+  border: 1px solid var(--color-line, #ececec);
+  border-radius: 8px;
+  background: var(--color-surface, #fff);
+  color: var(--color-ink-1, #18181b);
+  font-family: var(--font-sans, system-ui);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.md_preview code,
+.md_preview pre {
+  font-family: var(--font-mono, monospace);
+  font-size: 12.5px;
+  background: var(--color-canvas, #fafaf9);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.md_preview pre {
+  padding: 12px 14px;
+  overflow-x: auto;
+  border: 1px solid var(--color-line, #ececec);
+}
+
+.md_preview pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.md_preview a {
+  color: var(--color-accent, #5e6ad2);
+  text-decoration: none;
+}
+
+.md_preview a:hover {
+  text-decoration: underline;
+}
+
+.md_preview blockquote {
+  border-left: 3px solid var(--color-line-strong, #d4d4d8);
+  padding: 4px 14px;
+  margin: 12px 0;
+  color: var(--color-ink-2, #52525b);
+}
+
+.md_preview h1,
+.md_preview h2,
+.md_preview h3,
+.md_preview h4 {
+  letter-spacing: -0.01em;
+  margin-top: 1.4em;
+}
+
+#preview-container {
+  overflow: auto;
+  flex: 1;
+  padding: 16px;
+  background: var(--color-canvas, #fafaf9);
+}

@@ -1,0 +1,942 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Stage 3 — Listing redesign
+ *
+ * Three view modes share one DOM (set in ListingItem.vue):
+ *   .item__select  .item__icon  .item__name  .item__modified  .item__size  .item__actions
+ *
+ * CSS branches by parent class on #listing: .list, .mosaic, .mosaic.gallery
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+#listing {
+  padding: 0 1rem 1rem;
+}
+
+/* Section title (folders / files) */
+#listing > h2 {
+  margin: 1.25em 0 0.5em 0.5em;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-ink-3, var(--textPrimary));
+}
+
+/* Empty / informational message */
+.message {
+  text-align: center;
+  font-size: 1.25em;
+  margin: 4em auto;
+  display: block !important;
+  width: 95%;
+  color: var(--textPrimary);
+  font-weight: 500;
+}
+
+.message svg,
+.message i {
+  width: 2em !important;
+  height: 2em !important;
+  margin: 0 auto 0.4em;
+  display: block;
+  color: var(--color-ink-4, var(--iconTertiary));
+}
+
+/* * * * * * * * * * * * * *
+ *      ITEM (shared)      *
+ * * * * * * * * * * * * * */
+
+#listing .item {
+  position: relative;
+  display: grid;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  color: var(--color-ink-1, var(--textSecondary));
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.15s ease;
+}
+
+/* Name cell — icon squircle inline with the name text */
+#listing .item__name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+#listing .item .item__name-text,
+#listing .item .name {
+  display: block;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  font-size: 13px;
+  line-height: 1.2;
+  color: var(--color-ink-1, var(--textSecondary));
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  min-width: 0;
+  flex: 1;
+}
+
+/* Stack wrapper around the name text + compact meta. Transparent by default;
+   the compact meta line is hidden in normal layouts and only revealed when
+   the list view collapses to 3 columns at very narrow widths. */
+#listing .item__name-stack {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Inline rename input — sits in place of `.item__name-text` (Stage 8). */
+#listing .item__rename-input {
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--color-ink-1, var(--textSecondary));
+  /* Subtle visual hint that the field is editable without adding chrome */
+  box-shadow: inset 0 -1px 0 var(--color-accent, #5e6ad2);
+  border-radius: 0;
+}
+
+#listing .item__name-compact-meta {
+  display: none;
+  font-size: 11px;
+  color: var(--color-ink-3, var(--textPrimary));
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#listing .item .size,
+#listing .item .modified {
+  font-size: 12px;
+  color: var(--color-ink-2, var(--textPrimary));
+  font-variant-numeric: tabular-nums;
+}
+
+/* Modified + Size cells: display: block so the grid track keeps its declared width,
+   line-height handles vertical centering, ellipsis clips overflow */
+#listing.list .item__modified,
+#listing.list .item__size {
+  display: block;
+  line-height: 40px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Inner <time> just flows inline; cell handles overflow/ellipsis */
+#listing.list .item__modified > time {
+  display: inline;
+}
+
+/* Select + Actions cells use flex for icon centering */
+#listing.list .item__select,
+#listing.list .item__actions {
+  display: flex;
+  align-items: center;
+}
+
+#listing.list .item__select {
+  justify-content: center;
+}
+
+#listing.list .item__actions {
+  justify-content: flex-end;
+}
+
+/* Selection checkbox (empty + checked states) */
+.item__select {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.item__checkbox {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1px solid var(--color-line-strong, var(--borderSecondary));
+  background: var(--color-surface, var(--surfacePrimary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+
+#listing .item:hover .item__checkbox:not(.item__checkbox--checked) {
+  border-color: var(--color-ink-3, var(--iconTertiary));
+}
+
+.item__checkbox--checked {
+  background: var(--color-accent, var(--accent));
+  border-color: var(--color-accent, var(--accent));
+  color: white;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+
+.item__checkbox--indeterminate {
+  background: var(--color-accent, var(--accent));
+  border-color: var(--color-accent, var(--accent));
+  position: relative;
+}
+
+.item__checkbox--indeterminate::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 1.5px;
+  background: white;
+  border-radius: 1px;
+}
+
+/* Header select-all checkbox is interactive */
+#listing.list .item.header .item__checkbox {
+  cursor: pointer;
+}
+
+#listing.list .item.header .item__checkbox:hover {
+  border-color: var(--color-ink-3, var(--iconTertiary));
+}
+
+/* Icon squircle */
+.item__icon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md, 8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* Spring-load progress ring (F6) — overlays the folder icon during a
+   drag-hover, fills clockwise over 3s. The icon container clips at
+   border-radius 8px but the inscribed circle (d=28) fits inside cleanly. */
+.item__spring-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+.item__spring-ring-track {
+  stroke: var(--color-line, rgba(24, 24, 27, 0.12));
+  opacity: 0.6;
+}
+.item__spring-ring-fill {
+  stroke: var(--color-accent, #5e6ad2);
+  transition: stroke-dashoffset 60ms linear;
+}
+/* Subtle ring around the row itself so users see *which* row is loading. */
+.item.item--spring-loaded {
+  background: var(--color-accent-soft, rgba(94, 106, 210, 0.08));
+}
+
+/* Default: inner wrapper is layout-transparent (list & grid use icon directly).
+   Gallery overrides this to make it a visible squircle for non-image files. */
+.item__icon-inner {
+  display: contents;
+}
+
+.item__thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Folder icon (filled instead of outline for visual weight) */
+#listing .item[data-dir="true"] .item__icon svg {
+  fill: currentColor;
+  stroke-width: 1.4;
+}
+
+/* Actions menu */
+.item__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.item__actions-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm, 6px);
+  border: 0;
+  background: transparent;
+  color: var(--color-ink-3, var(--iconTertiary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease, background-color 0.12s ease, color 0.12s ease;
+}
+
+#listing.list .item:hover .item__actions-btn,
+#listing.mosaic .item:hover .item__actions-btn {
+  opacity: 1;
+}
+
+.item__actions-btn:hover {
+  background: var(--color-elevated, var(--surfaceSecondary));
+  color: var(--color-ink-1, var(--textSecondary));
+}
+
+/* Touch-target sweep (Stage 11f): bump the row action button to 32px
+   on mobile so it's comfortably tappable. */
+@media (max-width: 640px) {
+  .item__actions-btn,
+  #listing.mosaic .item__actions-btn {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* On touch devices :hover doesn't fire on the first tap, so keep the
+   row action affordance visible without requiring a hover state. */
+@media (hover: none) {
+  #listing.list .item .item__actions-btn,
+  #listing.mosaic .item .item__actions-btn {
+    opacity: 1;
+  }
+}
+
+/* * * * * * * * * * * * * *
+ *           LIST          *
+ * * * * * * * * * * * * * */
+
+#listing.list {
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding-top: 0;
+}
+
+#listing.list > div {
+  display: block;
+  width: 100%;
+}
+
+/* 5-column grid: select | name(+icon inline) | modified | size | actions
+   Fixed widths chosen to fit typical content (so columns stay consistent across rows). */
+#listing.list .item {
+  grid-template-columns: 28px minmax(0, 1fr) 120px 80px 32px;
+  gap: 12px;
+  height: 40px;
+  padding: 0 6px;
+  margin: 2px 0;
+  border-radius: var(--radius-md, 8px);
+  align-items: center;
+}
+
+/* Meta wrapper unwraps in list mode — its children become direct grid items */
+#listing.list .item__meta {
+  display: contents;
+}
+
+#listing.list .item:hover {
+  background: var(--color-hover, var(--hover));
+}
+
+/* Column header — same 5-col grid as rows */
+#listing.list .item.header {
+  display: grid !important;
+  grid-template-columns: 28px minmax(0, 1fr) 120px 80px 32px;
+  gap: 12px;
+  background: var(--color-canvas, var(--background));
+  height: 32px;
+  padding: 0 6px;
+  margin: 0 0 2px;
+  border-radius: 0;
+  border-top: 1px solid var(--color-line, var(--borderPrimary));
+  border-bottom: 1px solid var(--color-line, var(--borderPrimary));
+  cursor: default;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  align-items: center;
+}
+
+#listing.list .item.header p {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-ink-3, var(--textPrimary));
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+}
+
+#listing.list .item.header p.modified,
+#listing.list .item.header p.size {
+  justify-content: center;
+}
+
+#listing.list .item.header p:hover {
+  color: var(--color-ink-1, var(--textSecondary));
+}
+
+#listing.list .item.header svg {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  width: 12px;
+  height: 12px;
+}
+
+#listing.list .item.header p:hover svg,
+#listing.list .item.header p.active svg {
+  opacity: 1;
+}
+
+/* Thin divider between folders and files in list mode */
+.folder-file-divider {
+  height: 1px;
+  background: var(--color-line, var(--borderPrimary));
+  margin: 8px 6px;
+}
+
+/* Legacy h2 labels are no longer rendered in list mode, but hide just in case */
+#listing.list > h2 {
+  display: none;
+}
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ *  MOSAIC / GRID  —  Stage 5 — matches mockup-grid.html
+ *
+ *  Section A: grid container  (the wrapper around all tiles)
+ *  Section B: tile             (one per file/folder, block layout)
+ *  Section C: icon squircle    (40×40 inside the tile)
+ *  Section D: filename         (block, fills tile content width)
+ *  Section E: meta line        (flex row, fills tile content width)
+ *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+#listing.mosaic {
+  padding: 0 16px 16px;
+}
+
+/* ── A. Grid container ───────────────────────────────────── */
+#listing.mosaic > div {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+/* ── B. Tile ─────────────────────────────────────────────── */
+#listing.mosaic .item {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  position: relative;
+  padding: 12px;
+  background: var(--color-surface, var(--surfacePrimary));
+  border: 1px solid var(--color-line, var(--borderPrimary));
+  border-radius: var(--radius-md, 8px);
+  cursor: pointer;
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.15s ease,
+    background-color 0.12s ease;
+}
+
+#listing.mosaic .item:hover {
+  border-color: var(--color-line-strong, var(--borderSecondary));
+  box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.06));
+}
+
+#listing.mosaic .item.header {
+  display: none !important;
+}
+
+/* ── B.1 Absolute corner controls ────────────────────────── */
+#listing.mosaic .item__select,
+#listing.mosaic .item__actions {
+  position: absolute;
+  top: 8px;
+  opacity: 0;
+  z-index: 2;
+  transition: opacity 0.12s ease;
+}
+
+#listing.mosaic .item__select  { left: 8px; }
+#listing.mosaic .item__actions { right: 8px; }
+
+#listing.mosaic .item:hover .item__select,
+#listing.mosaic .item:hover .item__actions,
+#listing.mosaic .item[aria-selected="true"] .item__select {
+  opacity: 1;
+}
+
+#listing.mosaic .item__actions-btn {
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.8);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--color-line, var(--borderPrimary));
+  border-radius: var(--radius-sm, 6px);
+  color: var(--color-ink-3, var(--textPrimary));
+  opacity: 1;
+}
+
+#listing.mosaic .item__actions-btn:hover {
+  background: var(--color-elevated, var(--surfaceSecondary));
+  color: var(--color-ink-1, var(--textSecondary));
+}
+
+/* ── Name wrapper (holds C + D) ──────────────────────────── */
+#listing.mosaic .item__name {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+}
+
+/* ── C. Icon squircle (40×40, SVG centered inside) ───────── */
+#listing.mosaic .item__icon {
+  display: block;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 8px;
+  border-radius: var(--radius-sm, 6px);
+  overflow: hidden;
+  text-align: center;
+  line-height: 40px; /* vertical-center inline-block SVG */
+}
+
+#listing.mosaic .item__icon svg {
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+#listing.mosaic .item__icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── D. Filename (fills tile content width, truncates) ───── */
+#listing.mosaic .item__name-text {
+  display: block;
+  width: 100%;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--color-ink-1, var(--textSecondary));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── E. Meta line: "size · modified" ─────────────────────── */
+#listing.mosaic .item__meta {
+  display: flex;
+  align-items: baseline;
+  width: 100%;
+  margin-top: 2px; /* matches mockup's mt-0.5 */
+  font-size: 11px;
+  color: var(--color-ink-3, var(--textPrimary));
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+#listing.mosaic .item__meta .item__size     { order: 1; }
+#listing.mosaic .item__meta .item__modified { order: 2; }
+
+#listing.mosaic .item__meta .item__modified::before {
+  content: "·";
+  margin: 0 4px;
+}
+
+/* Folders have no size → hide it and the separator */
+#listing.mosaic .item[data-dir="true"] .item__meta .item__size {
+  display: none;
+}
+
+#listing.mosaic .item[data-dir="true"] .item__meta .item__modified::before {
+  content: "";
+  margin: 0;
+}
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ *  GALLERY  —  Stage 6 — matches mockup-gallery.html
+ *
+ *  Section A: grid container  (wider tracks: minmax(220px, 1fr))
+ *  Section B: tile             (4:3 aspect, no padding, overflow hidden)
+ *  Section C: icon/thumbnail   (fills tile; thumbnail covers, icon centered)
+ *  Section D: title overlay    (absolute bottom, gradient + white text)
+ *  Section E: corner controls  (dark/translucent on image bg)
+ *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+/* ── A. Grid container: wider tracks than grid view ──────── */
+#listing.mosaic.gallery > div {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+/* ── B. Tile: 4:3 aspect, overflow hidden, no padding ────── */
+#listing.mosaic.gallery .item {
+  padding: 0;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+}
+
+/* ── Name wrapper holds the icon/thumbnail at full size ──── */
+#listing.mosaic.gallery .item__name {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+/* ── C. Icon / thumbnail fills the entire tile ───────────── */
+#listing.mosaic.gallery .item__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border-radius: 0;
+  line-height: normal;
+  /* iconColorClass provides the tinted bg for non-image files & folders */
+}
+
+/* Default icon size in gallery: 40×40
+   (used for raw icons — folders override below, non-image files put a 32×32 inside the inner squircle) */
+#listing.mosaic.gallery .item__icon svg {
+  width: 40px;
+  height: 40px;
+  /* Color inherits from text-{hue}-{xxx} of iconColorClass */
+}
+
+/* Folders get a large 64×64 folder icon centered on the tinted bg, no inner squircle */
+#listing.mosaic.gallery .item[data-dir="true"] .item__icon svg {
+  width: 64px;
+  height: 64px;
+}
+
+/* Non-image, non-video, non-folder files in gallery:
+   render the icon inside a 64×64 inner squircle (white card on tinted bg with shadow) */
+#listing.mosaic.gallery
+  .item:not([data-dir="true"]):not([data-type="image"]):not([data-type="video"])
+  .item__icon-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  background: var(--color-surface, #fff);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 2px 6px -2px rgba(0, 0, 0, 0.06);
+}
+
+#listing.mosaic.gallery
+  .item:not([data-dir="true"]):not([data-type="image"]):not([data-type="video"])
+  .item__icon-inner svg {
+  width: 32px;
+  height: 32px;
+}
+
+#listing.mosaic.gallery .item__icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── D. Title + meta as a gradient overlay at the bottom ─── */
+#listing.mosaic.gallery .item__name-text {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 28px 12px 20px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.3) 50%, transparent 100%);
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 2;
+  pointer-events: none;
+}
+
+#listing.mosaic.gallery .item__meta {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 6px;
+  margin: 0;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 3;
+  pointer-events: none;
+}
+
+#listing.mosaic.gallery .item__meta .item__size     { order: 1; display: inline; }
+#listing.mosaic.gallery .item__meta .item__modified { order: 2; display: inline; }
+
+/* Tight separator — single spaces around · (matches mockup natural-text spacing) */
+#listing.mosaic.gallery .item__meta .item__modified::before {
+  content: " · ";
+  white-space: pre;
+}
+
+/* Folders in gallery: hide the entire meta line (no item count available from backend) */
+#listing.mosaic.gallery .item[data-dir="true"] .item__meta {
+  display: none;
+}
+
+/* ── F. Per-type overlay styling ─────────────────────────────
+ * Images, videos, folders: dark gradient + white text (default rules above)
+ * Non-image files (PDFs, docs, etc): light gradient + dark text
+ *   — readable against the colored squircle background  */
+#listing.mosaic.gallery
+  .item:not([data-dir="true"]):not([data-type="image"]):not([data-type="video"])
+  .item__name-text {
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.35) 0%,
+    rgba(0, 0, 0, 0.1) 50%,
+    transparent 100%
+  );
+  color: var(--color-ink-1, var(--textSecondary));
+}
+
+#listing.mosaic.gallery
+  .item:not([data-dir="true"]):not([data-type="image"]):not([data-type="video"])
+  .item__meta {
+  color: var(--color-ink-3, var(--textPrimary));
+}
+
+/* ── E. Corner controls: dark/translucent on tinted bg ───── */
+#listing.mosaic.gallery .item__actions-btn {
+  background: rgba(0, 0, 0, 0.4);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  border: 0;
+  color: white;
+}
+
+#listing.mosaic.gallery .item__actions-btn:hover {
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+}
+
+#listing.mosaic.gallery .item__select .item__checkbox {
+  background: rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.7);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+#listing.mosaic.gallery .item__select .item__checkbox--checked {
+  background: var(--color-accent, var(--accent));
+  border-color: var(--color-accent, var(--accent));
+}
+
+/* Selected tile: 2px accent border + 2px outer ring (matches mockup `border-2 ring-2`) */
+#listing.mosaic.gallery .item[aria-selected="true"] {
+  border-width: 2px !important;
+  border-color: var(--color-accent, var(--accent)) !important;
+  box-shadow: 0 0 0 2px var(--color-accent-ring, var(--accent-ring)) !important;
+}
+
+/* * * * * * * * * * * * * *
+ *      SELECTED STATE     *
+ * * * * * * * * * * * * * */
+
+#listing .item[aria-selected="true"] {
+  background: var(--color-selected) !important;
+}
+
+/* Full accent ring around selected row, follows the row's rounded corners */
+#listing.list .item[aria-selected="true"] {
+  box-shadow: inset 0 0 0 1px var(--color-accent-ring, var(--accent-ring));
+}
+
+#listing.mosaic .item[aria-selected="true"] {
+  border-color: var(--color-accent, var(--accent)) !important;
+  box-shadow: 0 0 0 2px var(--color-accent-ring, var(--accent-ring));
+}
+
+/* * * * * * * * * * * * * *
+ *   MULTI-SELECT TOOLBAR  *
+ * * * * * * * * * * * * * */
+
+/* * * * * * * * * * * * * *
+ *   BULK-ACTION PILL      *
+ * Floating toolbar when 2+ items selected (single selection → InfoPane)
+ * * * * * * * * * * * * * */
+
+#listing #multiple-selection {
+  position: fixed;
+  bottom: -5em;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  width: auto;
+  max-width: calc(100% - 2em);
+  /* Use the inverse-surface token so the pill stays dark in BOTH themes
+     (var(--color-ink-1) flips to white in dark mode, which was the bug). */
+  background-color: var(--color-inverse-surface, #18181b);
+  padding: 6px 6px 6px 16px;
+  border-radius: var(--radius-full, 9999px);
+  box-shadow:
+    var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.15)),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+  transition: bottom 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  color: white;
+}
+
+#listing #multiple-selection.active {
+  bottom: 1em;
+}
+
+#listing #multiple-selection .multiple-selection__count {
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  padding-right: 4px;
+}
+
+#listing #multiple-selection .multiple-selection__divider {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.18);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+#listing #multiple-selection button {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: var(--radius-full, 9999px);
+  background: transparent;
+  border: 0;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
+}
+
+#listing #multiple-selection button:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+#listing #multiple-selection button.multiple-selection__danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: rgb(252, 165, 165);
+}
+
+#listing #multiple-selection .multiple-selection__close {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  justify-content: center;
+}
+
+/* Responsive: at narrow widths, drop Size column from list mode (then Modified too) */
+@media (max-width: 700px) {
+  #listing.list .item,
+  #listing.list .item.header {
+    grid-template-columns: 28px minmax(0, 1fr) 110px 32px;
+  }
+  #listing.list .item .item__size,
+  #listing.list .item.header p.size {
+    display: none;
+  }
+}
+
+@media (max-width: 540px) {
+  #listing.list .item,
+  #listing.list .item.header {
+    grid-template-columns: 28px minmax(0, 1fr) 32px;
+    gap: 8px;
+  }
+  #listing.list .item .item__modified,
+  #listing.list .item.header p.modified {
+    display: none;
+  }
+  /* Reveal the compact meta line under the filename so the user still sees
+     modified date + size, even though the columns are gone. */
+  #listing.list .item .item__name-compact-meta {
+    display: block;
+  }
+  /* Give the row enough vertical room for two stacked lines (name + meta). */
+  #listing.list .item {
+    height: auto;
+    min-height: 48px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+}
+
+/* Responsive: at narrow widths, collapse pill action buttons to icon-only */
+@media (max-width: 768px) {
+  #listing #multiple-selection {
+    padding: 6px 6px 6px 12px;
+  }
+  #listing #multiple-selection button:not(.multiple-selection__close) {
+    width: 30px;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+  }
+  #listing #multiple-selection button:not(.multiple-selection__close) span {
+    display: none;
+  }
+  #listing #multiple-selection .multiple-selection__count {
+    font-size: 12px;
+    padding-right: 2px;
+  }
+}

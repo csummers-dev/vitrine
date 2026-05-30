@@ -1,0 +1,121 @@
+package settings
+
+import (
+	"crypto/rand"
+	"io/fs"
+	"log"
+	"strings"
+	"time"
+
+	"github.com/filebrowser/filebrowser/v2/rules"
+)
+
+const DefaultUsersHomeBasePath = "/users"
+const DefaultLogoutPage = "/login"
+const DefaultMinimumPasswordLength = 12
+const DefaultFileMode = 0640
+const DefaultDirMode = 0750
+
+// Zip-extraction safety limits (PR #5746, fork variant).
+// Surfaces in the admin Server settings; operators may override via
+// `--unzipEnabled=false` / config to disable the feature entirely.
+//   - MaxZipFileSize: pre-open cap on the archive itself (5 GB).
+//   - MaxZipFileEntries: refuses archives declaring >100k entries.
+//   - MaxTotalUncompressedSize: cumulative cap across all entries (20 GB).
+//   - MaxUncompressedSizeRate: zip-bomb defense — rejects entries whose
+//     compression ratio (compressed/uncompressed) is below this floor.
+//     0.01 means "compressed must be at least 1% of declared uncompressed".
+//   - MaxUncompressedFileSize: per-entry decompressed cap (5 GB).
+const DefaultMaxZipFileSize = 5 * 1024 * 1024 * 1024            // 5GB
+const DefaultMaxZipFileEntries = 100000                         // 100k files
+const DefaultMaxTotalUncompressedSize = 20 * 1024 * 1024 * 1024 // 20GB
+const DefaultMaxUncompressedSizeRate = 0.01                     // 1%
+const DefaultMaxUncompressedFileSize = 5 * 1024 * 1024 * 1024   // 5GB
+
+// AuthMethod describes an authentication method.
+type AuthMethod string
+
+// Settings contain the main settings of the application.
+type Settings struct {
+	Key                   []byte              `json:"key"`
+	Signup                bool                `json:"signup"`
+	HideLoginButton       bool                `json:"hideLoginButton"`
+	CreateUserDir         bool                `json:"createUserDir"`
+	// When true, the frontend remembers the last /files path a user had open
+	// and redirects there on next successful login. When false (default),
+	// login always lands on /files/.
+	RememberLastPage      bool                `json:"rememberLastPage"`
+	UserHomeBasePath      string              `json:"userHomeBasePath"`
+	Defaults              UserDefaults        `json:"defaults"`
+	AuthMethod            AuthMethod          `json:"authMethod"`
+	LogoutPage            string              `json:"logoutPage"`
+	Branding              Branding            `json:"branding"`
+	Tus                   Tus                 `json:"tus"`
+	Commands              map[string][]string `json:"commands"`
+	Shell                 []string            `json:"shell"`
+	Rules                 []rules.Rule        `json:"rules"`
+	MinimumPasswordLength uint                `json:"minimumPasswordLength"`
+	FileMode              fs.FileMode         `json:"fileMode"`
+	DirMode               fs.FileMode         `json:"dirMode"`
+	HideDotfiles          bool                `json:"hideDotfiles"`
+}
+
+// GetRules implements rules.Provider.
+func (s *Settings) GetRules() []rules.Rule {
+	return s.Rules
+}
+
+// Server specific settings.
+type Server struct {
+	Root                     string  `json:"root"`
+	BaseURL                  string  `json:"baseURL"`
+	Socket                   string  `json:"socket"`
+	TLSKey                   string  `json:"tlsKey"`
+	TLSCert                  string  `json:"tlsCert"`
+	Port                     string  `json:"port"`
+	Address                  string  `json:"address"`
+	Log                      string  `json:"log"`
+	EnableThumbnails         bool    `json:"enableThumbnails"`
+	ResizePreview            bool    `json:"resizePreview"`
+	EnableExec               bool    `json:"enableExec"`
+	TypeDetectionByHeader    bool    `json:"typeDetectionByHeader"`
+	ImageResolutionCal       bool    `json:"imageResolutionCalculation"`
+	AuthHook                 string  `json:"authHook"`
+	TokenExpirationTime      string  `json:"tokenExpirationTime"`
+	UnzipEnabled             bool    `json:"unzipEnabled"`
+	MaxZipFileSize           int64   `json:"maxZipFileSize"`
+	MaxZipFileEntries        int     `json:"maxZipFileEntries"`
+	MaxTotalUncompressedSize uint64  `json:"maxTotalUncompressedSize"`
+	MaxUncompressedSizeRate  float64 `json:"maxUncompressedSizeRate"`
+	MaxUncompressedFileSize  uint64  `json:"maxUncompressedFileSize"`
+}
+
+// Clean cleans any variables that might need cleaning.
+func (s *Server) Clean() {
+	s.BaseURL = strings.TrimSuffix(s.BaseURL, "/")
+}
+
+func (s *Server) GetTokenExpirationTime(fallback time.Duration) time.Duration {
+	if s.TokenExpirationTime == "" {
+		return fallback
+	}
+
+	duration, err := time.ParseDuration(s.TokenExpirationTime)
+	if err != nil {
+		log.Printf("[WARN] Failed to parse tokenExpirationTime: %v", err)
+		return fallback
+	}
+	return duration
+}
+
+// GenerateKey generates a key of 512 bits.
+func GenerateKey() ([]byte, error) {
+	b := make([]byte, 64)
+	_, err := rand.Read(b)
+	// Note that err == nil only if we read len(b) bytes.
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}

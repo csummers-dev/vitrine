@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>filebrowser · design north star</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style type="text/tailwindcss">
+    @theme {
+      --color-canvas: #fafaf9;
+      --color-surface: #ffffff;
+      --color-elevated: #f4f4f5;
+      --color-ink-1: #18181b;
+      --color-ink-2: #52525b;
+      --color-ink-3: #a1a1aa;
+      --color-ink-4: #d4d4d8;
+      --color-line: #ececec;
+      --color-line-strong: #d4d4d8;
+      --color-accent: #5e6ad2;
+      --color-accent-strong: #4f5ac4;
+      --color-accent-soft: rgba(94, 106, 210, 0.10);
+      --color-accent-ring: rgba(94, 106, 210, 0.30);
+      --color-hover: rgba(24, 24, 27, 0.045);
+      --color-selected: rgba(94, 106, 210, 0.08);
+
+      --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+  </style>
+
+  <style>
+    html, body {
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    body {
+      letter-spacing: -0.006em;
+      font-feature-settings: "cv11", "ss01", "ss03";
+    }
+    .tabular { font-variant-numeric: tabular-nums; }
+    .mono { font-family: var(--font-mono); }
+    .grid-row { display: grid; grid-template-columns: 28px 1fr 160px 110px 32px; gap: 12px; align-items: center; }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(24,24,27,0.14);
+      border-radius: 999px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(24,24,27,0.26);
+      background-clip: padding-box;
+    }
+    /* gradient mesh accent for empty preview */
+    .preview-mesh {
+      background:
+        radial-gradient(at 20% 20%, rgba(244,114,182,0.18) 0%, transparent 50%),
+        radial-gradient(at 80% 30%, rgba(251,191,36,0.15) 0%, transparent 50%),
+        radial-gradient(at 60% 80%, rgba(94,106,210,0.18) 0%, transparent 50%),
+        #fff;
+    }
+  </style>
+</head>
+<body class="bg-canvas text-ink-1 h-screen overflow-hidden antialiased">
+
+<div class="flex h-full">
+
+  <!-- ============================================================
+       SIDEBAR
+       ============================================================ -->
+  <aside class="w-[256px] shrink-0 border-r border-line bg-canvas flex flex-col">
+
+    <!-- Workspace header -->
+    <div class="h-12 px-3 flex items-center gap-2.5 shrink-0">
+      <div class="w-7 h-7 rounded-md bg-gradient-to-br from-[#5e6ad2] to-[#4f5ac4] flex items-center justify-center shadow-sm">
+        <i data-lucide="folder" class="w-3.5 h-3.5 text-white" style="fill:rgba(255,255,255,0.4); stroke-width:1.8"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="text-[13px] font-semibold leading-tight truncate text-ink-1">summers-homelab</div>
+        <div class="text-[11px] text-ink-3 leading-tight mono">v3.0.0</div>
+      </div>
+      <button class="w-6 h-6 rounded hover:bg-hover flex items-center justify-center text-ink-3" title="Collapse sidebar">
+        <i data-lucide="panel-left-close" class="w-3.5 h-3.5"></i>
+      </button>
+    </div>
+
+    <!-- New / Upload -->
+    <div class="px-3 pb-2 flex gap-1.5">
+      <button class="flex-1 h-8 rounded-md bg-ink-1 text-white text-[12.5px] font-medium flex items-center justify-center gap-1.5 hover:bg-[#3f3f46] transition shadow-sm">
+        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+        <span>New</span>
+      </button>
+      <button class="w-8 h-8 rounded-md border border-line bg-surface hover:bg-elevated flex items-center justify-center text-ink-2" title="Upload">
+        <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+      </button>
+    </div>
+
+    <!-- Quick links -->
+    <nav class="px-2 pt-2 space-y-0.5 text-[13px]">
+      <a class="flex items-center gap-2 px-2 py-1.5 rounded-md bg-selected text-accent font-medium cursor-pointer">
+        <i data-lucide="folder" class="w-4 h-4" style="stroke-width:1.8"></i>
+        <span class="flex-1">My files</span>
+        <span class="text-[11px] text-ink-3 tabular">214</span>
+      </a>
+      <a class="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-hover text-ink-2 cursor-pointer">
+        <i data-lucide="clock-3" class="w-4 h-4" style="stroke-width:1.8"></i>
+        <span class="flex-1">Recents</span>
+      </a>
+      <a class="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-hover text-ink-2 cursor-pointer">
+        <i data-lucide="star" class="w-4 h-4" style="stroke-width:1.8"></i>
+        <span class="flex-1">Starred</span>
+        <span class="text-[11px] text-ink-3 tabular">12</span>
+      </a>
+      <a class="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-hover text-ink-2 cursor-pointer">
+        <i data-lucide="users" class="w-4 h-4" style="stroke-width:1.8"></i>
+        <span class="flex-1">Shared</span>
+        <span class="text-[11px] text-ink-3 tabular">3</span>
+      </a>
+      <a class="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-hover text-ink-2 cursor-pointer">
+        <i data-lucide="trash-2" class="w-4 h-4" style="stroke-width:1.8"></i>
+        <span class="flex-1">Trash</span>
+      </a>
+    </nav>
+
+    <!-- Pinned section -->
+    <div class="px-2 pt-5">
+      <div class="px-2 mb-1 flex items-center justify-between group">
+        <span class="text-[10.5px] font-semibold text-ink-3 uppercase tracking-[0.06em]">Pinned</span>
+        <button class="text-ink-3 hover:text-ink-2 opacity-0 group-hover:opacity-100 transition">
+          <i data-lucide="plus" class="w-3 h-3"></i>
+        </button>
+      </div>
+      <a class="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-hover text-ink-2 text-[13px] cursor-pointer">
+        <span class="w-4 h-4 flex items-center justify-center"><span class="block w-2 h-2 rounded-sm bg-amber-400"></span></span>
+        <span class="truncate flex-1">Documents</span>
+      </a>
+      <a class="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-hover text-ink-2 text-[13px] cursor-pointer">
+        <span class="w-4 h-4 flex items-center justify-center"><span class="block w-2 h-2 rounded-sm bg-violet-400"></span></span>
+        <span class="truncate flex-1">Media</span>
+      </a>
+      <a class="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-hover text-ink-2 text-[13px] cursor-pointer">
+        <span class="w-4 h-4 flex items-center justify-center"><span class="block w-2 h-2 rounded-sm bg-emerald-400"></span></span>
+        <span class="truncate flex-1">Backups</span>
+      </a>
+      <a class="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-hover text-ink-2 text-[13px] cursor-pointer">
+        <span class="w-4 h-4 flex items-center justify-center"><span class="block w-2 h-2 rounded-sm bg-sky-400"></span></span>
+        <span class="truncate flex-1">Photos 2026</span>
+      </a>
+    </div>
+
+    <div class="flex-1"></div>
+
+    <!-- Storage card -->
+    <div class="px-3 pb-3">
+      <div class="p-3 rounded-lg border border-line bg-surface">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-ink-2" style="stroke-width:1.8"></i>
+            <span class="text-[11.5px] font-semibold text-ink-1">Storage</span>
+          </div>
+          <span class="text-[11px] text-ink-3 tabular">62%</span>
+        </div>
+        <div class="h-1.5 rounded-full bg-elevated overflow-hidden">
+          <div class="h-full rounded-full bg-gradient-to-r from-accent to-[#7c87e5]" style="width:62%"></div>
+        </div>
+        <div class="mt-2 text-[11px] text-ink-3 tabular flex justify-between">
+          <span>1.24 TB used</span>
+          <span>2 TB total</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- User row -->
+    <div class="px-3 pb-3 border-t border-line pt-3">
+      <button class="w-full flex items-center gap-2 px-1.5 py-1.5 rounded-md hover:bg-hover transition">
+        <div class="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-[10.5px] font-semibold shadow-sm">CS</div>
+        <div class="flex-1 min-w-0 text-left">
+          <div class="text-[12.5px] font-medium leading-tight truncate text-ink-1">Cory Summers</div>
+          <div class="text-[11px] text-ink-3 leading-tight truncate">admin · all permissions</div>
+        </div>
+        <i data-lucide="chevrons-up-down" class="w-3.5 h-3.5 text-ink-3"></i>
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- ============================================================
+       MAIN
+       ============================================================ -->
+  <main class="flex-1 flex flex-col min-w-0">
+
+    <!-- TOP BAR -->
+    <header class="h-12 border-b border-line bg-canvas/85 backdrop-blur-md flex items-center px-3 gap-2 shrink-0 sticky top-0 z-10">
+
+      <!-- breadcrumbs -->
+      <nav class="flex items-center gap-0.5 text-[13px] min-w-0">
+        <button class="px-1.5 py-1 rounded hover:bg-hover text-ink-2 flex items-center" title="Home">
+          <i data-lucide="house" class="w-3.5 h-3.5"></i>
+        </button>
+        <span class="text-ink-3 px-0.5"><i data-lucide="chevron-right" class="w-3 h-3"></i></span>
+        <button class="px-1.5 py-1 rounded hover:bg-hover text-ink-2">Documents</button>
+        <span class="text-ink-3 px-0.5"><i data-lucide="chevron-right" class="w-3 h-3"></i></span>
+        <button class="px-1.5 py-1 rounded hover:bg-hover text-ink-1 font-semibold">Projects</button>
+      </nav>
+
+      <div class="flex-1"></div>
+
+      <!-- search command -->
+      <div class="w-[380px]">
+        <button class="w-full h-8 px-2.5 rounded-md border border-line bg-surface hover:bg-elevated hover:border-line-strong flex items-center gap-2 text-[12.5px] text-ink-3 transition">
+          <i data-lucide="search" class="w-3.5 h-3.5"></i>
+          <span class="flex-1 text-left">Search files, folders, or actions…</span>
+          <kbd class="mono text-[10.5px] px-1.5 py-0.5 rounded border border-line bg-elevated text-ink-2">⌘K</kbd>
+        </button>
+      </div>
+
+      <div class="w-px h-5 bg-line mx-1"></div>
+
+      <!-- view toggle -->
+      <div class="h-7 p-0.5 rounded-md border border-line bg-surface flex items-center" role="tablist">
+        <button class="h-6 w-7 rounded-[5px] flex items-center justify-center bg-elevated text-ink-1 shadow-[0_1px_2px_rgba(0,0,0,0.04)]" title="List">
+          <i data-lucide="list" class="w-3.5 h-3.5"></i>
+        </button>
+        <button class="h-6 w-7 rounded-[5px] flex items-center justify-center text-ink-3 hover:text-ink-1" title="Grid">
+          <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+        </button>
+        <button class="h-6 w-7 rounded-[5px] flex items-center justify-center text-ink-3 hover:text-ink-1" title="Gallery">
+          <i data-lucide="image" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+
+      <!-- sort -->
+      <button class="h-7 px-2 rounded-md border border-line bg-surface hover:bg-elevated flex items-center gap-1.5 text-[12.5px] text-ink-2">
+        <i data-lucide="arrow-down-narrow-wide" class="w-3.5 h-3.5"></i>
+        <span>Name</span>
+        <i data-lucide="chevron-down" class="w-3 h-3 text-ink-3"></i>
+      </button>
+
+      <!-- upload -->
+      <button class="h-7 px-2.5 rounded-md bg-accent text-white text-[12.5px] font-medium flex items-center gap-1.5 hover:bg-accent-strong shadow-sm transition">
+        <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+        <span>Upload</span>
+      </button>
+
+      <button class="w-7 h-7 rounded-md hover:bg-hover flex items-center justify-center text-ink-2" title="Notifications">
+        <i data-lucide="bell" class="w-3.5 h-3.5"></i>
+      </button>
+
+    </header>
+
+    <!-- BODY: listing + info pane -->
+    <div class="flex-1 flex min-h-0">
+
+      <!-- LISTING -->
+      <section class="flex-1 overflow-y-auto min-w-0">
+
+        <!-- Section title row -->
+        <div class="px-5 pt-6 pb-3 flex items-end justify-between">
+          <div>
+            <div class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] mb-1">Folder</div>
+            <h1 class="text-[22px] font-semibold text-ink-1 leading-tight">Projects</h1>
+            <div class="mt-1 text-[12.5px] text-ink-3 tabular">12 items · 1.5 GB · last updated 2 hours ago</div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button class="h-7 px-2 rounded-md border border-line bg-surface hover:bg-elevated text-[12.5px] text-ink-2 flex items-center gap-1.5">
+              <i data-lucide="share-2" class="w-3.5 h-3.5"></i>Share
+            </button>
+            <button class="h-7 px-2 rounded-md border border-line bg-surface hover:bg-elevated text-[12.5px] text-ink-2 flex items-center gap-1.5">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>Download
+            </button>
+            <button class="w-7 h-7 rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 flex items-center justify-center">
+              <i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Column headers -->
+        <div class="sticky top-0 z-[1] bg-canvas/85 backdrop-blur-sm border-y border-line px-5 py-2 grid-row text-[10.5px] uppercase tracking-[0.06em] font-semibold text-ink-3">
+          <div class="flex items-center justify-center">
+            <div class="w-3.5 h-3.5 rounded border border-line-strong"></div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span>Name</span>
+            <i data-lucide="arrow-down" class="w-3 h-3"></i>
+          </div>
+          <div>Modified</div>
+          <div class="text-right">Size</div>
+          <div></div>
+        </div>
+
+        <!-- Rows -->
+        <div class="px-3.5 py-2 space-y-0.5">
+
+          <!-- Folder -->
+          <div class="group h-10 grid-row px-1.5 rounded-md hover:bg-hover cursor-pointer">
+            <div class="flex items-center justify-center">
+              <div class="w-3.5 h-3.5 rounded border border-line-strong bg-surface group-hover:border-ink-3 transition"></div>
+            </div>
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-7 h-7 rounded-md bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
+                <i data-lucide="folder" class="w-4 h-4" style="fill:currentColor; stroke-width:1.4"></i>
+              </div>
+              <span class="text-[13px] font-medium text-ink-1 truncate">homelab-config</span>
+              <i data-lucide="star" class="w-3 h-3 text-amber-400 shrink-0" style="fill:currentColor"></i>
+            </div>
+            <div class="text-[12px] text-ink-2 tabular">2 hours ago</div>
+            <div class="text-[12px] text-ink-3 tabular text-right">—</div>
+            <div class="opacity-0 group-hover:opacity-100 transition flex justify-end">
+              <button class="w-6 h-6 rounded hover:bg-elevated flex items-center justify-center text-ink-2"><i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i></button>
+            </div>
+          </div>
+
+          <!-- Folder -->
+          <div class="group h-10 grid-row px-1.5 rounded-md hover:bg-hover cursor-pointer">
+            <div class="flex items-center justify-center">
+              <div class="w-3.5 h-3.5 rounded border border-line-strong bg-surface group-hover:border-ink-3 transition"></div>
+            </div>
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-7 h-7 rounded-md bg-violet-50 flex items-center justify-center text-violet-600 shrink-0">
+                <i data-lucide="folder" class="w-4 h-4" style="fill:currentColor; stroke-width:1.4"></i>
+              </div>
+              <span class="text-[13px] font-medium text-ink-1 truncate">media-archive</span>
+            </div>
+            <div class="text-[12px] text-ink-2 tabular">Yesterday</div>
+            <div class="text-[12px] text-ink-3 tabular text-right">—</div>
+            <div class="opacity-0 group-hover:opacity-100 transition flex justify-end">
+              <button class="w-6 h-6 rounded hover:bg-elevated flex items-center justify-center text-ink-2"><i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i></button>
+            </div>
+          </div>
+
+          <!-- Folder -->
+          <div class="group h-10 grid-row px-1.5 rounded-md hover:bg-hover cursor-pointer">
+            <div class="flex items-center justify-center">
+              <div class="w-3.5 h-3.5 rounded border border-line-strong bg-surface group-hover:border-ink-3 transition"></div>
+            </div>
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-7 h-7 rounded-md bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+                <i data-lucide="folder" class="w-4 h-4" style="fill:currentColor; stroke-width:1.4"></i>
+              </div>
+              <span class="text-[13px] font-medium text-ink-1 truncate">photo-backups</span>
+            </div>
+            <div class="text-[12px] text-ink-2 tabular">3 days ago</div>
+            <div class="text-[12px] text-ink-3 tabular text-right">—</div>
+            <div class="opacity-0 group-hover:opacity-100 transition flex justify-end">
+              <button class="w-6 h-6 rounded hover:bg-elevated flex items-center justify-center text-ink-2"><i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i></button>
+            </div>
+          </div>
+
+          <!-- divider -->
+          <div class="py-2"><div class="border-t border-line"></div></div>
+
+          <!-- SELECTED PDF -->
+          <div class="group h-10 grid-row px-1.5 rounded-md bg-selected ring-1 ring-accent-ring cursor-pointer">
+            <div class="flex items-center justify-center">
+              <div class="w-3.5 h-3.5 rounded bg-accent flex items-center justify-center shadow-sm">
+                <i data-lucide="check" class="w-2.5 h-2.5 text-white" style="stroke-width:3.5"></i>
+              </div>
+            </div>
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-7 h-7 rounded-md bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
+                <i data-lucide="file-text" class="w-4 h-4" style="stroke-width:1.6"></i>
+              </div>
+              <span class="text-[13px] font-medium text-ink-1 truncate">tax_return_2025.pdf</span>
+            </div>
+            <div class="text-[12px] text-ink-2 tabular">May 24, 2026</div>
+            <div class="text-[12px] text-ink-2 tabular text-right">2.4 MB</div>
+            <div class="flex justify-end">
+              <button class="w-6 h-6 rounded hover:bg-surface flex items-center justify-center text-ink-2"><i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i></button>
+            </div>
+          </div>
+
+          <!-- Image -->
+          <div class="group h-10 grid-row px-1.5 rounded-md hover:bg-hover cursor-pointer">
+            <div class="flex items-center justify-center">
+              <div class="w-3.5 h-3.5 rounded border border-line-strong bg-surface group-hover:border-ink-3 transition"></div>
+            </div>
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-7 h-7 rounded-md bg-pink-50 flex items-center justify-center text-pink-600 shrink-0">
+                <i data-lucide="image" class="w-4 h-4" style="stroke-width:1.6"></i>
+              </div>
+              <span class="text-[13px] font-medium text-ink-1 truncate">homelab_diagram.png</span>
+            </div>
+            <div class="text-[12px] text-ink-2 tabular">May 22, 2026</div>
+            <div class="text-[12px] text-ink-2 tabular text-right">1.1 MB</div>
+            <div class="opacity-0 group-hover:opacity-100 transition flex justify-end">
+              <button class="w-6 h-6 rounded hover:bg-elevated flex items-center justify-center text-ink-2"><i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i></button>
+            </div>
+          </div>
+
+          <!-- Video -->
+          <div class="group h-10 grid-row px-1.5 rounded-md hover:bg-hover cursor-pointer">
+            <div class="flex items-center justify-center">
+              <div class="w-3.5 h-3.5 rounded border border-line-strong bg-surface group-hover:border-ink-3 transition"></div>
+            </div>
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-7 h-7 rounded-md bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+                <i data-lucide="video" class="w-4 h-4" style="stroke-width:1.6"></i>
+              </div>
+              <span class="text-[13px] font-medium text-ink-1 truncate">vacation_recap.mp4</span>
+              <span class="text-[10.5px] text-ink-3 mono px-1 py-px rounded bg-elevated">4K</span>
+            </div>
+            <div class="text-[12px] text-ink-2 tabular">May 18, 2026</div>
+            <div class="text-[12px] text-ink-2 tabular text-right">284 MB</div>
+            <div class="opacity-0 group-hover:opacity-100 transition flex justify-end">
+              <button class="w-6 h-6 rounded hover:bg-elevated flex items-center justify-center text-ink-2"><i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i></button>
+            </div>
+          </div>
+
+          <!-- YAML / Code -->
+          <div class="group h-10 grid-row px-1.5 rounded-md hover:bg-hover cursor-pointer">
+            <div class="flex items-center justify-center">
+              <div class="w-3.5 h-3.5 rounded border border-line-strong bg-surface group-hover:border-ink-3 transition"></div>
+            </div>
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-7 h-7 rounded-md bg-teal-50 flex items-center justify-center text-teal-600 shrink-0">
+                <i data-lucide="braces" class="w-4 h-4" style="stroke-width:1.6"></i>
+              </div>
+              <span class="text-[13px] font-medium text-ink-1 truncate mono">compose.yaml</span>
+            </div>
+            <div class="text-[12px] text-ink-2 tabular">May 14, 2026</div>
+            <div class="text-[12px] text-ink-2 tabular text-right">4 KB</div>
+            <div class="opacity-0 group-hover:opacity-100 transition flex justify-end">
+              <button class="w-6 h-6 rounded hover:bg-elevated flex items-center justify-center text-ink-2"><i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i></button>
+            </div>
+          </div>
+
+          <!-- Markdown -->
+          <div class="group h-10 grid-row px-1.5 rounded-md hover:bg-hover cursor-pointer">
+            <div class="flex items-center justify-center">
+              <div class="w-3.5 h-3.5 rounded border border-line-strong bg-surface group-hover:border-ink-3 transition"></div>
+            </div>
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-7 h-7 rounded-md bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
+                <i data-lucide="file-pen-line" class="w-4 h-4" style="stroke-width:1.6"></i>
+              </div>
+              <span class="text-[13px] font-medium text-ink-1 truncate mono">notes.md</span>
+            </div>
+            <div class="text-[12px] text-ink-2 tabular">May 12, 2026</div>
+            <div class="text-[12px] text-ink-2 tabular text-right">12 KB</div>
+            <div class="opacity-0 group-hover:opacity-100 transition flex justify-end">
+              <button class="w-6 h-6 rounded hover:bg-elevated flex items-center justify-center text-ink-2"><i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i></button>
+            </div>
+          </div>
+
+          <!-- Archive -->
+          <div class="group h-10 grid-row px-1.5 rounded-md hover:bg-hover cursor-pointer">
+            <div class="flex items-center justify-center">
+              <div class="w-3.5 h-3.5 rounded border border-line-strong bg-surface group-hover:border-ink-3 transition"></div>
+            </div>
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-7 h-7 rounded-md bg-orange-50 flex items-center justify-center text-orange-600 shrink-0">
+                <i data-lucide="file-archive" class="w-4 h-4" style="stroke-width:1.6"></i>
+              </div>
+              <span class="text-[13px] font-medium text-ink-1 truncate">old_backups.zip</span>
+            </div>
+            <div class="text-[12px] text-ink-2 tabular">Apr 30, 2026</div>
+            <div class="text-[12px] text-ink-2 tabular text-right">1.2 GB</div>
+            <div class="opacity-0 group-hover:opacity-100 transition flex justify-end">
+              <button class="w-6 h-6 rounded hover:bg-elevated flex items-center justify-center text-ink-2"><i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i></button>
+            </div>
+          </div>
+
+          <!-- Spreadsheet -->
+          <div class="group h-10 grid-row px-1.5 rounded-md hover:bg-hover cursor-pointer">
+            <div class="flex items-center justify-center">
+              <div class="w-3.5 h-3.5 rounded border border-line-strong bg-surface group-hover:border-ink-3 transition"></div>
+            </div>
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-7 h-7 rounded-md bg-green-50 flex items-center justify-center text-green-600 shrink-0">
+                <i data-lucide="sheet" class="w-4 h-4" style="stroke-width:1.6"></i>
+              </div>
+              <span class="text-[13px] font-medium text-ink-1 truncate">2026_budget.xlsx</span>
+            </div>
+            <div class="text-[12px] text-ink-2 tabular">Apr 22, 2026</div>
+            <div class="text-[12px] text-ink-2 tabular text-right">28 KB</div>
+            <div class="opacity-0 group-hover:opacity-100 transition flex justify-end">
+              <button class="w-6 h-6 rounded hover:bg-elevated flex items-center justify-center text-ink-2"><i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i></button>
+            </div>
+          </div>
+
+          <!-- Audio -->
+          <div class="group h-10 grid-row px-1.5 rounded-md hover:bg-hover cursor-pointer">
+            <div class="flex items-center justify-center">
+              <div class="w-3.5 h-3.5 rounded border border-line-strong bg-surface group-hover:border-ink-3 transition"></div>
+            </div>
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-7 h-7 rounded-md bg-yellow-50 flex items-center justify-center text-yellow-700 shrink-0">
+                <i data-lucide="music" class="w-4 h-4" style="stroke-width:1.6"></i>
+              </div>
+              <span class="text-[13px] font-medium text-ink-1 truncate">voice_memo.m4a</span>
+            </div>
+            <div class="text-[12px] text-ink-2 tabular">Apr 15, 2026</div>
+            <div class="text-[12px] text-ink-2 tabular text-right">8.2 MB</div>
+            <div class="opacity-0 group-hover:opacity-100 transition flex justify-end">
+              <button class="w-6 h-6 rounded hover:bg-elevated flex items-center justify-center text-ink-2"><i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i></button>
+            </div>
+          </div>
+
+          <!-- TXT/log -->
+          <div class="group h-10 grid-row px-1.5 rounded-md hover:bg-hover cursor-pointer">
+            <div class="flex items-center justify-center">
+              <div class="w-3.5 h-3.5 rounded border border-line-strong bg-surface group-hover:border-ink-3 transition"></div>
+            </div>
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-7 h-7 rounded-md bg-zinc-100 flex items-center justify-center text-zinc-600 shrink-0">
+                <i data-lucide="file-text" class="w-4 h-4" style="stroke-width:1.6"></i>
+              </div>
+              <span class="text-[13px] font-medium text-ink-1 truncate mono">access.log</span>
+            </div>
+            <div class="text-[12px] text-ink-2 tabular">Apr 10, 2026</div>
+            <div class="text-[12px] text-ink-2 tabular text-right">142 KB</div>
+            <div class="opacity-0 group-hover:opacity-100 transition flex justify-end">
+              <button class="w-6 h-6 rounded hover:bg-elevated flex items-center justify-center text-ink-2"><i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i></button>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="h-24"></div>
+
+      </section>
+
+      <!-- ============================================================
+           INFO PANE
+           ============================================================ -->
+      <aside class="w-[320px] shrink-0 border-l border-line bg-canvas flex flex-col overflow-y-auto">
+
+        <!-- pane header -->
+        <div class="h-12 px-4 flex items-center justify-between border-b border-line shrink-0">
+          <div class="text-[12px] font-semibold text-ink-2">Details</div>
+          <div class="flex items-center gap-0.5">
+            <button class="w-6 h-6 rounded hover:bg-hover flex items-center justify-center text-ink-3" title="Pop out">
+              <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+            </button>
+            <button class="w-6 h-6 rounded hover:bg-hover flex items-center justify-center text-ink-3" title="Close">
+              <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Preview -->
+        <div class="p-4 pb-3">
+          <div class="aspect-[4/3] rounded-lg border border-line preview-mesh overflow-hidden relative flex items-center justify-center">
+            <div class="w-14 h-14 rounded-xl bg-white/90 backdrop-blur-sm border border-line flex items-center justify-center text-rose-600 shadow-sm">
+              <i data-lucide="file-text" class="w-7 h-7" style="stroke-width:1.4"></i>
+            </div>
+            <div class="absolute bottom-2 left-2 text-[10px] mono text-ink-3 px-1.5 py-0.5 rounded bg-white/70 backdrop-blur-sm border border-line">8 pages</div>
+          </div>
+        </div>
+
+        <!-- Title -->
+        <div class="px-4 pb-3">
+          <div class="text-[14.5px] font-semibold text-ink-1 break-words">tax_return_2025.pdf</div>
+          <div class="text-[11.5px] text-ink-3 mt-0.5">PDF document · 2.4 MB</div>
+        </div>
+
+        <!-- Action grid -->
+        <div class="px-4 pb-4 grid grid-cols-4 gap-1.5">
+          <button class="flex flex-col items-center gap-1 py-2 rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 transition">
+            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+            <span class="text-[10.5px] font-medium">Preview</span>
+          </button>
+          <button class="flex flex-col items-center gap-1 py-2 rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 transition">
+            <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+            <span class="text-[10.5px] font-medium">Share</span>
+          </button>
+          <button class="flex flex-col items-center gap-1 py-2 rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 transition">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span class="text-[10.5px] font-medium">Download</span>
+          </button>
+          <button class="flex flex-col items-center gap-1 py-2 rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 transition">
+            <i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i>
+            <span class="text-[10.5px] font-medium">More</span>
+          </button>
+        </div>
+
+        <!-- Details -->
+        <div class="px-4 py-3 border-t border-line">
+          <div class="text-[10.5px] font-semibold text-ink-3 uppercase tracking-[0.06em] mb-2">Properties</div>
+          <dl class="text-[12px] space-y-1.5">
+            <div class="flex justify-between gap-3"><dt class="text-ink-3">Type</dt><dd class="text-ink-1">PDF document</dd></div>
+            <div class="flex justify-between gap-3"><dt class="text-ink-3">Size</dt><dd class="text-ink-1 tabular">2,418 KB</dd></div>
+            <div class="flex justify-between gap-3"><dt class="text-ink-3">Modified</dt><dd class="text-ink-1 tabular">May 24, 2026</dd></div>
+            <div class="flex justify-between gap-3"><dt class="text-ink-3">Created</dt><dd class="text-ink-1 tabular">Apr 02, 2026</dd></div>
+            <div class="flex justify-between gap-3"><dt class="text-ink-3">Owner</dt><dd class="text-ink-1">You</dd></div>
+            <div class="flex justify-between gap-3"><dt class="text-ink-3">Checksum</dt><dd class="text-ink-1 mono text-[11px]">3f8a…b21c</dd></div>
+          </dl>
+        </div>
+
+        <!-- Location -->
+        <div class="px-4 py-3 border-t border-line">
+          <div class="text-[10.5px] font-semibold text-ink-3 uppercase tracking-[0.06em] mb-1.5">Location</div>
+          <div class="mono text-[11px] text-ink-2 break-all bg-elevated rounded-md px-2 py-1.5 border border-line">
+            /Documents/Projects/tax_return_2025.pdf
+          </div>
+        </div>
+
+        <!-- Shared -->
+        <div class="px-4 py-3 border-t border-line">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-[10.5px] font-semibold text-ink-3 uppercase tracking-[0.06em]">Shared with</div>
+            <button class="text-[11px] text-accent font-medium hover:underline">Manage</button>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="flex -space-x-1.5">
+              <div class="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 ring-2 ring-canvas flex items-center justify-center text-white text-[9px] font-semibold">CS</div>
+              <div class="w-6 h-6 rounded-full bg-gradient-to-br from-violet-400 to-violet-600 ring-2 ring-canvas flex items-center justify-center text-white text-[9px] font-semibold">JM</div>
+              <div class="w-6 h-6 rounded-full bg-elevated ring-2 ring-canvas flex items-center justify-center text-ink-2 text-[10px] font-medium">+2</div>
+            </div>
+            <div class="text-[11.5px] text-ink-3 ml-1">4 people</div>
+          </div>
+        </div>
+
+        <!-- Tags -->
+        <div class="px-4 py-3 border-t border-line">
+          <div class="text-[10.5px] font-semibold text-ink-3 uppercase tracking-[0.06em] mb-2">Tags</div>
+          <div class="flex flex-wrap gap-1">
+            <span class="text-[11px] text-ink-2 px-1.5 py-0.5 rounded-md border border-line bg-elevated">finance</span>
+            <span class="text-[11px] text-ink-2 px-1.5 py-0.5 rounded-md border border-line bg-elevated">2025</span>
+            <span class="text-[11px] text-ink-2 px-1.5 py-0.5 rounded-md border border-line bg-elevated">important</span>
+            <button class="text-[11px] text-ink-3 px-1.5 py-0.5 rounded-md border border-dashed border-line-strong hover:text-ink-1 hover:border-ink-3 transition flex items-center gap-0.5">
+              <i data-lucide="plus" class="w-3 h-3"></i>
+              <span>Add</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex-1"></div>
+
+        <!-- Keyboard hint footer -->
+        <div class="px-4 py-2.5 border-t border-line text-[11px] text-ink-3 flex items-center justify-between shrink-0">
+          <span class="flex items-center gap-1.5">
+            <kbd class="mono text-[10px] px-1 py-px rounded border border-line bg-elevated">Space</kbd>
+            <span>to preview</span>
+          </span>
+          <kbd class="mono text-[10px] px-1 py-px rounded border border-line bg-elevated">Esc</kbd>
+        </div>
+
+      </aside>
+
+    </div>
+
+  </main>
+
+</div>
+
+<script>
+  // Render Lucide icons
+  if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 1.8 } });
+</script>
+
+</body>
+</html>

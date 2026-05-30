@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>filebrowser · preview redesign · image</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style type="text/tailwindcss">
+    @theme {
+      --color-canvas: #fafaf9;
+      --color-surface: #ffffff;
+      --color-elevated: #f4f4f5;
+      --color-ink-1: #18181b;
+      --color-ink-2: #52525b;
+      --color-ink-3: #a1a1aa;
+      --color-ink-4: #d4d4d8;
+      --color-line: #ececec;
+      --color-line-strong: #d4d4d8;
+      --color-accent: #5e6ad2;
+      --color-accent-strong: #4f5ac4;
+      --color-accent-soft: rgba(94, 106, 210, 0.10);
+      --color-accent-ring: rgba(94, 106, 210, 0.30);
+      --color-hover: rgba(24, 24, 27, 0.045);
+      --color-selected: rgba(94, 106, 210, 0.08);
+      --color-rose-soft: rgba(244, 63, 94, 0.16);
+      --color-pink-soft: rgba(236, 72, 153, 0.16);
+      --color-pink-strong: #be185d;
+
+      --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+  </style>
+
+  <style>
+    html, body {
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    body {
+      letter-spacing: -0.006em;
+      font-feature-settings: "cv11", "ss01", "ss03";
+    }
+    .tabular { font-variant-numeric: tabular-nums; }
+    .mono { font-family: var(--font-mono); }
+
+    /* Subtle dotted backdrop for the stage — gives the image card
+       something to sit on without the cinematic black. Same trick as
+       a designer's pasteboard. */
+    .stage-paper {
+      background-color: var(--color-canvas);
+      background-image:
+        radial-gradient(rgba(24,24,27,0.05) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    /* Center image card — soft shadow + 1px hairline ring matching the
+       file-row treatment. The image sits inside this card; transparent
+       checkerboard shows through behind alpha-channel pixels. */
+    .image-card {
+      background:
+        linear-gradient(45deg, rgba(24,24,27,0.04) 25%, transparent 25%) 0 0 / 16px 16px,
+        linear-gradient(-45deg, rgba(24,24,27,0.04) 25%, transparent 25%) 0 8px / 16px 16px,
+        linear-gradient(45deg, transparent 75%, rgba(24,24,27,0.04) 75%) 8px -8px / 16px 16px,
+        linear-gradient(-45deg, transparent 75%, rgba(24,24,27,0.04) 75%) -8px 0 / 16px 16px,
+        var(--color-surface);
+    }
+
+    /* Pink squircle for image file-type — matches file-icon system */
+    .file-icon-image {
+      background: var(--color-pink-soft);
+      color: var(--color-pink-strong);
+    }
+
+    /* Nav arrows: 40px circles, sit AT the edge of the stage card so
+       they're discoverable without floating over the media. */
+    .stage-nav {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-line);
+      color: var(--color-ink-2);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px -4px rgba(0,0,0,0.12);
+      transition: background-color 120ms ease, color 120ms ease, transform 120ms ease;
+    }
+    .stage-nav:hover {
+      background: var(--color-elevated);
+      color: var(--color-ink-1);
+    }
+    .stage-nav:active {
+      transform: translateY(-50%) scale(0.96);
+    }
+
+    /* Bottom film-strip thumbnails — siblings in the current folder */
+    .strip-thumb {
+      width: 56px;
+      height: 56px;
+      border-radius: 8px;
+      border: 1px solid var(--color-line);
+      overflow: hidden;
+      flex-shrink: 0;
+      background-size: cover;
+      background-position: center;
+      cursor: pointer;
+      transition: border-color 120ms ease, transform 120ms ease;
+    }
+    .strip-thumb:hover {
+      border-color: var(--color-line-strong);
+      transform: translateY(-2px);
+    }
+    .strip-thumb.is-active {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px var(--color-accent-soft);
+    }
+
+    /* Generated thumbnail placeholders for the strip */
+    .thumb-grad-1 { background: linear-gradient(135deg, #fda4af 0%, #be185d 100%); }
+    .thumb-grad-2 { background: linear-gradient(135deg, #fcd34d 0%, #b45309 100%); }
+    .thumb-grad-3 { background: linear-gradient(135deg, #86efac 0%, #166534 100%); }
+    .thumb-grad-4 { background: linear-gradient(135deg, #93c5fd 0%, #1e40af 100%); }
+    .thumb-grad-5 { background: linear-gradient(135deg, #c4b5fd 0%, #5b21b6 100%); }
+    .thumb-grad-6 { background: linear-gradient(135deg, #f9a8d4 0%, #9d174d 100%); }
+    .thumb-grad-7 { background: linear-gradient(135deg, #5eead4 0%, #115e59 100%); }
+    .thumb-grad-8 { background: linear-gradient(135deg, #fcd34d 0%, #d97706 100%); }
+
+    /* Featured image — a generated gradient stand-in */
+    .featured-image {
+      background:
+        radial-gradient(at 30% 30%, rgba(251, 146, 60, 0.55) 0%, transparent 50%),
+        radial-gradient(at 70% 60%, rgba(244, 114, 182, 0.55) 0%, transparent 50%),
+        radial-gradient(at 50% 80%, rgba(94, 106, 210, 0.60) 0%, transparent 55%),
+        linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+    }
+  </style>
+</head>
+<body class="bg-canvas text-ink-1 h-screen overflow-hidden antialiased">
+
+<div class="flex flex-col h-full">
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- TOP TOOLBAR                                                       -->
+  <!--                                                                   -->
+  <!-- Replaces the old floating-over-black header with text-shadow.     -->
+  <!-- Sits ON the canvas, has a real bottom border, and uses the same   -->
+  <!-- chrome as the rest of the app (squircle, ink-1 title, hb buttons).-->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <header class="h-12 border-b border-line bg-canvas flex items-center px-3 gap-2 shrink-0 z-10">
+
+    <!-- LEFT: Back-to-folder + breadcrumb -->
+    <button
+      class="h-8 px-2.5 rounded-md hover:bg-hover flex items-center gap-1.5 text-[13px] text-ink-2 transition"
+      title="Back to folder"
+      aria-label="Back to folder"
+    >
+      <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+      <span class="max-md:hidden">Back</span>
+    </button>
+
+    <div class="w-px h-5 bg-line mx-1"></div>
+
+    <!-- File-type squircle + filename + position counter -->
+    <div class="flex items-center gap-2 min-w-0 flex-1">
+      <div class="file-icon-image w-7 h-7 rounded-md flex items-center justify-center shrink-0">
+        <i data-lucide="image" class="w-3.5 h-3.5" style="stroke-width:1.8"></i>
+      </div>
+      <div class="min-w-0">
+        <div class="text-[13px] font-semibold text-ink-1 leading-tight truncate">
+          mountain-sunrise.jpg
+        </div>
+        <div class="text-[11px] text-ink-3 tabular leading-tight">
+          3 of 24 in Photos / Hiking
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Action cluster — same Stage 11d chrome as the file row -->
+    <div class="flex items-center gap-1.5 shrink-0">
+
+      <!-- Zoom controls (image-specific) -->
+      <div class="h-7 px-1 rounded-md border border-line bg-surface flex items-center gap-0.5">
+        <button
+          class="w-6 h-6 rounded flex items-center justify-center text-ink-2 hover:text-ink-1 hover:bg-hover transition"
+          title="Zoom out"
+          aria-label="Zoom out"
+        >
+          <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i>
+        </button>
+        <span class="text-[11.5px] tabular text-ink-2 px-1.5 min-w-[44px] text-center">100%</span>
+        <button
+          class="w-6 h-6 rounded flex items-center justify-center text-ink-2 hover:text-ink-1 hover:bg-hover transition"
+          title="Zoom in"
+          aria-label="Zoom in"
+        >
+          <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+
+      <!-- Fit-to-screen toggle (image-specific) -->
+      <button
+        class="h-7 w-7 rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 hover:text-ink-1 flex items-center justify-center transition"
+        title="Fit to screen"
+        aria-label="Fit to screen"
+      >
+        <i data-lucide="maximize" class="w-3.5 h-3.5"></i>
+      </button>
+
+      <div class="w-px h-5 bg-line mx-0.5"></div>
+
+      <!-- Universal actions (same set as InfoPane secondary row) -->
+      <button
+        class="h-7 px-2 rounded-md border border-line bg-surface hover:bg-elevated text-[13px] text-ink-2 flex items-center gap-1.5 transition"
+        title="Download"
+      >
+        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+        <span class="max-md:hidden">Download</span>
+      </button>
+      <button
+        class="h-7 px-2 rounded-md border border-line bg-surface hover:bg-elevated text-[13px] text-ink-2 flex items-center gap-1.5 transition"
+        title="Share"
+      >
+        <i data-lucide="share" class="w-3.5 h-3.5"></i>
+        <span class="max-md:hidden">Share</span>
+      </button>
+
+      <!-- More menu (rename, delete, open direct, edit-as-text, etc.) -->
+      <button
+        class="w-7 h-7 rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 flex items-center justify-center transition"
+        title="More"
+        aria-label="More"
+      >
+        <i data-lucide="ellipsis" class="w-3.5 h-3.5"></i>
+      </button>
+
+      <div class="w-px h-5 bg-line mx-0.5"></div>
+
+      <!-- Info pane toggle. Filled state when pane is open. -->
+      <button
+        class="w-7 h-7 rounded-md bg-selected text-accent flex items-center justify-center transition"
+        title="Hide details"
+        aria-label="Hide details"
+      >
+        <i data-lucide="panel-right-close" class="w-3.5 h-3.5"></i>
+      </button>
+
+      <!-- Close -->
+      <button
+        class="w-7 h-7 rounded-md hover:bg-hover text-ink-2 hover:text-ink-1 flex items-center justify-center transition ml-1"
+        title="Close (Esc)"
+        aria-label="Close"
+      >
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- MAIN AREA                                                         -->
+  <!-- Two-column flex: stage on the left (fills), info rail on right.   -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="flex-1 flex min-h-0 overflow-hidden">
+
+    <!-- ─── STAGE (media + side nav arrows) ─────────────────────────── -->
+    <section class="flex-1 flex flex-col min-w-0 min-h-0 stage-paper relative">
+
+      <!-- Stage content fills the area minus the bottom strip -->
+      <div class="flex-1 flex items-center justify-center min-h-0 relative px-12 py-8">
+
+        <!-- Centered image card -->
+        <div class="image-card rounded-lg border border-line shadow-[0_24px_48px_-12px_rgba(0,0,0,0.18)] overflow-hidden max-w-full max-h-full">
+          <!-- The "image" — substituted with a gradient for the mockup -->
+          <div class="featured-image" style="width: 820px; height: 540px; max-width: 100%; max-height: 100%;"></div>
+        </div>
+
+        <!-- Previous arrow — sits AT the inside-left edge of the stage,
+             not floating over the media. -->
+        <button
+          class="stage-nav absolute left-4 top-1/2 -translate-y-1/2"
+          title="Previous (←)"
+          aria-label="Previous"
+        >
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Next arrow -->
+        <button
+          class="stage-nav absolute right-4 top-1/2 -translate-y-1/2"
+          title="Next (→)"
+          aria-label="Next"
+        >
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- ─── Film-strip rail (siblings) ──────────────────────────────
+           Sits at the bottom of the stage. Horizontally scrolls if the
+           folder has more siblings than fit. Click a thumb to jump.
+           Hidden on mobile (just one card visible at a time). -->
+      <div class="border-t border-line bg-canvas px-4 py-3 shrink-0 flex items-center gap-2 overflow-x-auto max-md:hidden">
+        <div class="strip-thumb thumb-grad-1"></div>
+        <div class="strip-thumb thumb-grad-2"></div>
+        <div class="strip-thumb thumb-grad-3 is-active"></div>
+        <div class="strip-thumb thumb-grad-4"></div>
+        <div class="strip-thumb thumb-grad-5"></div>
+        <div class="strip-thumb thumb-grad-6"></div>
+        <div class="strip-thumb thumb-grad-7"></div>
+        <div class="strip-thumb thumb-grad-8"></div>
+        <div class="strip-thumb thumb-grad-1"></div>
+        <div class="strip-thumb thumb-grad-2"></div>
+        <!-- Counter chip pinned to the right -->
+        <div class="ml-auto pl-3 text-[11px] text-ink-3 tabular shrink-0">
+          3 of 24
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── INFO RAIL (320px, collapsible) ──────────────────────────── -->
+    <aside class="w-[320px] border-l border-line bg-canvas flex flex-col shrink-0 max-md:hidden overflow-y-auto">
+
+      <!-- Section: file header (mirrors current InfoPane treatment) -->
+      <div class="p-4 border-b border-line">
+        <div class="flex items-start gap-3 mb-3">
+          <div class="file-icon-image w-10 h-10 rounded-md flex items-center justify-center shrink-0">
+            <i data-lucide="image" class="w-5 h-5" style="stroke-width:1.8"></i>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="text-[10px] font-semibold text-ink-3 uppercase tracking-wider mb-0.5">
+              Image · JPEG
+            </div>
+            <div class="text-[14px] font-semibold text-ink-1 leading-tight break-all">
+              mountain-sunrise.jpg
+            </div>
+          </div>
+        </div>
+
+        <!-- Primary action grid — same chrome as InfoPane (Stage 11d) -->
+        <div class="grid grid-cols-4 gap-1.5 mb-1.5">
+          <button class="rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 hover:text-ink-1 text-[11px] font-medium py-2 flex flex-col items-center gap-1 transition">
+            <i data-lucide="share" class="w-3.5 h-3.5"></i>
+            Share
+          </button>
+          <button class="rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 hover:text-ink-1 text-[11px] font-medium py-2 flex flex-col items-center gap-1 transition">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            Download
+          </button>
+          <button class="rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 hover:text-ink-1 text-[11px] font-medium py-2 flex flex-col items-center gap-1 transition">
+            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+            Rename
+          </button>
+          <button class="rounded-md border border-line bg-surface hover:bg-rose-50 text-ink-2 hover:text-rose-700 text-[11px] font-medium py-2 flex flex-col items-center gap-1 transition">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            Delete
+          </button>
+        </div>
+        <!-- Secondary action row — same as listing: Move / Copy / OpenDirect -->
+        <div class="grid grid-cols-3 gap-1.5">
+          <button class="rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 hover:text-ink-1 text-[11px] font-medium py-2 flex flex-col items-center gap-1 transition">
+            <i data-lucide="forward" class="w-3.5 h-3.5"></i>
+            Move
+          </button>
+          <button class="rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 hover:text-ink-1 text-[11px] font-medium py-2 flex flex-col items-center gap-1 transition">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            Copy
+          </button>
+          <button class="rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 hover:text-ink-1 text-[11px] font-medium py-2 flex flex-col items-center gap-1 transition">
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+            Open
+          </button>
+        </div>
+      </div>
+
+      <!-- Section: Properties — tabular nums for size/resolution/dates -->
+      <div class="p-4 border-b border-line">
+        <div class="text-[10px] font-semibold text-ink-3 uppercase tracking-wider mb-2.5">
+          Properties
+        </div>
+        <dl class="text-[12px] space-y-1.5">
+          <div class="flex justify-between gap-3">
+            <dt class="text-ink-3">Size</dt>
+            <dd class="text-ink-1 tabular">4.2 MB</dd>
+          </div>
+          <div class="flex justify-between gap-3">
+            <dt class="text-ink-3">Resolution</dt>
+            <dd class="text-ink-1 tabular">4032 × 3024</dd>
+          </div>
+          <div class="flex justify-between gap-3">
+            <dt class="text-ink-3">Modified</dt>
+            <dd class="text-ink-1 tabular">May 28, 14:32</dd>
+          </div>
+          <div class="flex justify-between gap-3">
+            <dt class="text-ink-3">Extension</dt>
+            <dd class="text-ink-1 mono text-[11px]">.jpg</dd>
+          </div>
+        </dl>
+      </div>
+
+      <!-- Section: EXIF (image-specific — appears only for image type) -->
+      <div class="p-4 border-b border-line">
+        <div class="text-[10px] font-semibold text-ink-3 uppercase tracking-wider mb-2.5">
+          Camera
+        </div>
+        <dl class="text-[12px] space-y-1.5">
+          <div class="flex justify-between gap-3">
+            <dt class="text-ink-3">Camera</dt>
+            <dd class="text-ink-1 text-right">iPhone 15 Pro</dd>
+          </div>
+          <div class="flex justify-between gap-3">
+            <dt class="text-ink-3">Lens</dt>
+            <dd class="text-ink-1 text-right">Main · 24 mm</dd>
+          </div>
+          <div class="flex justify-between gap-3">
+            <dt class="text-ink-3">Exposure</dt>
+            <dd class="text-ink-1 tabular">1/320s · f/1.78 · ISO 50</dd>
+          </div>
+          <div class="flex justify-between gap-3">
+            <dt class="text-ink-3">Taken</dt>
+            <dd class="text-ink-1 tabular">May 24, 06:14</dd>
+          </div>
+        </dl>
+      </div>
+
+      <!-- Section: Location (file path) -->
+      <div class="p-4 border-b border-line">
+        <div class="text-[10px] font-semibold text-ink-3 uppercase tracking-wider mb-1.5">
+          Location
+        </div>
+        <div class="mono text-[11px] text-ink-2 break-all bg-elevated rounded-md px-2 py-1.5 border border-line">
+          /Photos/Hiking/2024/mountain-sunrise.jpg
+        </div>
+      </div>
+
+      <!-- Section: Sharing status (collapsed by default if no share) -->
+      <div class="p-4 border-b border-line">
+        <div class="text-[10px] font-semibold text-ink-3 uppercase tracking-wider mb-2.5">
+          Sharing
+        </div>
+        <div class="flex items-center gap-2 text-[12px] text-ink-3">
+          <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+          <span>Not shared</span>
+        </div>
+      </div>
+
+      <div class="flex-1"></div>
+
+      <!-- Keyboard hint footer — mirrors the InfoPane chrome -->
+      <div class="px-4 py-3 border-t border-line text-[11px] text-ink-3 flex items-center justify-between shrink-0">
+        <span class="flex items-center gap-1.5">
+          <kbd class="mono text-[10px] px-1 py-px rounded border border-line bg-elevated">←</kbd>
+          <kbd class="mono text-[10px] px-1 py-px rounded border border-line bg-elevated">→</kbd>
+          <span>navigate</span>
+        </span>
+        <span class="flex items-center gap-1.5">
+          <kbd class="mono text-[10px] px-1 py-px rounded border border-line bg-elevated">Esc</kbd>
+          <span>close</span>
+        </span>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+  // Initialize Lucide icons
+  lucide.createIcons();
+</script>
+</body>
+</html>

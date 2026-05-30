@@ -1,0 +1,10 @@
+/*
+ * Stage 1 (Foundations): the per-file-type icon mapping has moved to
+ * src/utils/fileIcon.ts and is rendered by <Icon /> in ListingItem.vue.
+ * This file is intentionally minimal; Stage 3 will rebuild listing visuals.
+ */
+
+.file-icons [aria-label^="."],
+.file-icons [data-ext=".bak"] {
+  opacity: 0.5;
+}
