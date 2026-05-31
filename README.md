@@ -6,7 +6,7 @@
 
 ### A self-hosted file browser.
 
-An upgraded and improved rewrite of [filebrowser/filebrowser](https://github.com/filebrowser/filebrowser). Built on the same trusted Go backend, transformed into a modern user experience with a thoughtful design system, theming, a command palette, drag-and-drop everywhere, rich previews for images, video, audio, PDF, EPUB, code, and more.
+A redesigned and improved refactor of [filebrowser/filebrowser](https://github.com/filebrowser/filebrowser). Built from the project's trusted Go backend, transformed into a modern experience with a beautiful design system, theming, a command palette, drag-and-drop everywhere, rich previews for images, video, audio, PDF, EPUB, code, and more.
 
 [![Version](https://img.shields.io/badge/version-1.2.1-5e6ad2?style=flat-square)](#)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
@@ -25,19 +25,14 @@ An upgraded and improved rewrite of [filebrowser/filebrowser](https://github.com
 
 ## Why this fork
 
-The project `filebrowser/filebrowser` is one of my most-often used applications in my homelab. Take a single Go binary, one config file, point it at a directory, and you get a web file manager that works reliably and consistently. The maintainers have moved it into "no new features" mode, which is a fair place to land for a project that's already done its job.
+The project `filebrowser/filebrowser` is one of my most-often used applications in my homelab. Since the maintainers have moved it into "no new features" mode, which is a fair place to land for a project that's already done its job, I wanted to create a modern redesign and refactor to bring it up to a highest usability and quality standard.
 
-What it doesn't have is the UX polish I've come to expect from the rest of my tools. The UI is basic, the design system is inconsistent, common quality-of-life patterns are missing, and several outstanding bugs have yet to have been resolved upstream.
-
-**filebrowser pretty** starts from the dependable backend of `filebrowser/filebrowser` v2.63.5 and rebuilds the entire application on top of it, with an entire rewrite and redesign of the frontend paired, focusing on modern software usability standards and a non-maintenance mode development approach.
+**filebrowser pretty** starts from the backend of `filebrowser/filebrowser v2.63.5` and redesigns the entire application on top of it.
 
 ---
 
 ## Highlights
 
-> Each item below was a project unto itself. There are ~135 individually-tracked changes behind 1.1.0 alone.
-
-| Feature | What it actually does |
 | --- | --- |
 | **Full design system** | Tailwind v4 tokens, type scaling, accent + surface variables, scoped components. |
 | **First-class dark mode** | Light · Dark · System per-user, persisted in localStorage. Every surface — including EPUB chapter text and PDF.js chrome — repaints live without a refresh. |
@@ -469,15 +464,87 @@ End-of-cycle housekeeping: whole-codebase prettier pass, dead code audit, produc
 
 ## Roadmap
 
-Things on the wishlist:
+The next release is **v1.3.0**, planned as a large feature drop. 
 
-- [ ] **Image film strip** — keyboard-navigable lightbox-style strip below image previews
-- [ ] **ID3 tag editing** — edit title / artist / album / year / track number / artwork in place from the audio preview rail, write back to the file
-- [ ] **Tags / smart folders** — server-side tag store, palette-driven tag filtering
-- [ ] **Pluggable preview types** — register a new format viewer via a config file
-- [ ] **WebDAV polish** — works today, but the UX for mounting it could be friendlier
-- [ ] **Multi-tenant scopes** — multiple roots per user with independent permissions
-- [ ] **Server-side video thumbnails** — frame extraction so the gallery view shows real previews
+- `User.Preferences` JSON field, API round-trip, migration safety
+- `usePreferences` frontend composable with debounced persistence
+- `ContextMenu.vue` primitive — smart viewport positioning, keyboard nav, separators, destructive variant
+- Event bus package with sync dispatch and panic-safe subscribers
+- Audit log backbone — BoltDB bucket, event subscriber, query API (no UI yet)
+- File ops + auth flows wired to publish events
+- `/cache` package — filesystem-backed LRU with background eviction tick
+
+### Tags + smart folders
+
+- Tag schema + CRUD API (`/api/tags`, file ↔ tag association)
+- `<TagChip>` primitive (colored, removable, focusable)
+- Tag display on file rows and in the info pane
+- Tag picker SlideOver with search + on-the-fly create
+- Smart folders — saved tag queries surfaced as virtual entries in the sidebar
+- Palette `tag:foo` syntax in command palette and header search
+- 8-color tag palette tied to design-system accent variables
+
+### Discovery and navigation
+
+- Recently accessed (per-user log, surfaced in sidebar + palette `recents` group)
+- Favorites / pinned folders (sidebar pin list, star toggle on rows)
+- Per-folder view-mode memory (list / grid / gallery remembered per directory)
+- Multi-column sort (primary + secondary criteria, persisted)
+- Sort by extension
+- Better breadcrumbs at depth — middle-ellipsis dropdown when path is long
+- Breadcrumb hover dropdown — shows siblings of any path segment
+- Quick-action row in command palette empty state — top 5 most-used commands
+
+### Interaction model
+
+- Right-click context menu on file rows (built on the Stage 1 primitive)
+- Bulk rename SlideOver — pattern input with `{n}` / `{ext}` / `{####}` placeholders, find/replace, live preview
+- Drag-select lasso in gallery + grid views
+- Custom drag preview ghost showing file icon + count badge
+- `Delete` shortcut prompts confirmation; `Shift+Delete` skips the prompt for power users
+
+### Preview enhancements
+
+- PDF text search (`Cmd+F`) using PDF.js's existing text-content API
+- Markdown rendered preview with GFM extensions (toggle in TextViewer toolbar)
+- Image film strip — thumbnail row of siblings below the image preview
+- Image basic edit — canvas rotate + crop, backend save as a copy
+- EPUB chapter list (TOC) in info-rail
+- EPUB persistent position + bookmarks; CFI carried in the URL hash for deep links
+- Subtitle upload UI in video preview info-rail
+- Picture-in-picture toggle in video preview
+- Hover preview tooltip for image rows (500 ms delay)
+
+### Performance and scale
+
+- Virtual scrolling for huge folders (list / grid / gallery; tested against 10k+ files)
+- Server-side video thumbnails — ffmpeg frame extraction, cached in `/cache`, backgrounded queue
+- Resumable uploads via TUS protocol (`tus-js-client` + `tusd` backend handler)
+- Service worker — shell + last-viewed listing caching only; offline overlay for uncached routes
+- Better error states — "Server unreachable" / "Permission denied" / "Not found" overlays replacing silent fetch failures
+
+### Mobile polish
+
+- Pull-to-refresh
+- Camera roll upload (`accept="image/*,video/*" capture`)
+- Swipe gestures in preview for previous/next file
+
+### Admin and integrations
+
+- Audit log UI — `Settings → Audit` page, filterable by user / action / date
+- Webhooks — event bus subscriber posting to user-configured URLs on file change, with retry/backoff; Settings page to manage endpoints
+- Session management UI — list active JWTs, revoke per-session
+- Theme accent color picker — 6-preset chooser in Profile, tokenized so the cascade just works
+
+### Beyond v1.3.0
+
+- **ID3 tag editing** — edit title / artist / album / year / track number / artwork in place from the audio preview rail, write back to the file
+- **Full-text content search** — index document text (PDFs, code, plaintext, EPUB) so the palette finds matches inside files, not just filenames
+- **Pluggable preview types** — register a new format viewer via a config file
+- **WebDAV polish** — works today, but the UX for mounting it could be friendlier
+- **Multi-tenant scopes** — multiple roots per user with independent permissions
+- **2FA / WebAuthn passkeys** — passwordless login at the front door
+- **Per-folder + per-user storage analytics**
 
 Issues + PRs welcome.
 
@@ -526,27 +593,11 @@ pnpm lint
 pnpm build
 ```
 
-### Conventions
-
-- **SFCs everywhere.** `<script setup lang="ts">` is the default. Avoid Options API in new components.
-- **Composables for shared logic.** Anything reactive that more than one component uses lives in `src/composables/`.
-- **Scoped CSS, never global.** Global tokens live in `src/css/styles.css`; component CSS goes in the component's `<style scoped>` block.
-- **Why-comments, not what-comments.** Code says what; comments say why. Especially around backend quirks, browser bugs, and CSS specificity workarounds.
-
 ---
 
 ## Credits
 
-This project stands on the shoulders of [filebrowser/filebrowser](https://github.com/filebrowser/filebrowser) by [@hacdias](https://github.com/hacdias) and the original maintainers. The single-binary architecture, the auth story, the BoltDB-backed user/share store, the afero filesystem abstraction — that foundation is theirs, and it's the reason this project could happen at all.
-
-What I've built on top of it is more than a coat of paint. **filebrowser pretty** ships:
-
-- **A complete frontend rewrite** — every component, every viewer, every settings page, against a real design system instead of patched legacy CSS.
-- **Bug fixes the upstream hasn't merged** — EPUB dark mode that actually beats book CSS, PDF arrow nav that survives the iframe focus capture, audio uploads that don't starve themselves with concurrent fetches, dropdown rendering on macOS Safari, share view 404 redirects, zip extract permission gates, and a dozen smaller fixes cataloged stage-by-stage in the commit history.
-- **Quality-of-life additions** — spring-loaded folders, breadcrumb drop targets, an in-app command palette, EXIF / ID3 / video-track metadata surfaces, the ZIP extract slide-over with "delete original on success", inline rename for both files and the current folder, dark mode that's actually dark, real keyboard shortcuts.
-- **A maintenance posture** the upstream explicitly stepped away from (the upstream is in "no new features" mode by their own statement). This fork is where the experimentation happens.
-
-The design language draws from a philosophy that believes small interactions can help carry a product to greatness. The engineering posture draws from the upstream's backend competence.
+This project stands on the shoulders of [filebrowser/filebrowser](https://github.com/filebrowser/filebrowser) by [@hacdias](https://github.com/hacdias) and the original maintainers. Their work is the reason this project could happen at all.
 
 ---
 
