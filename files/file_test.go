@@ -83,15 +83,20 @@ func TestReadListingSkipsInaccessibleChildren(t *testing.T) {
 		t.Fatal("expected root listing")
 	}
 
-	if got := len(file.Listing.Items); got != 1 {
+	// `Listing` is embedded (`*Listing` in FileInfo) so `Items` and
+	// `NumDirs` are promoted to the parent — staticcheck QF1008 flags
+	// the explicit `file.Listing.X` selector as redundant. The nil
+	// check above stays explicit because that one IS about the embedded
+	// pointer itself, not a field promoted through it.
+	if got := len(file.Items); got != 1 {
 		t.Fatalf("expected one accessible child, got %d", got)
 	}
 
-	if got := file.Listing.Items[0].Name; got != "media" {
+	if got := file.Items[0].Name; got != "media" {
 		t.Fatalf("expected accessible child to be listed, got %q", got)
 	}
 
-	if got := file.Listing.NumDirs; got != 1 {
+	if got := file.NumDirs; got != 1 {
 		t.Fatalf("expected one listed directory, got %d", got)
 	}
 }
