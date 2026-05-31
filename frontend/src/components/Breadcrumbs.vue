@@ -69,15 +69,16 @@
 
 <script setup lang="ts">
 import Icon from "@/components/Icon.vue";
-import { computed, ref } from "vue";
+import { computed, onBeforeUnmount, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useFileStore } from "@/stores/file";
 import { useDropTarget } from "@/composables/useDropTarget";
 
 const { t } = useI18n();
 
 const route = useRoute();
+const router = useRouter();
 const fileStore = useFileStore();
 const { performDrop } = useDropTarget();
 
@@ -163,6 +164,7 @@ const onDragEnter = (key: string, event: DragEvent) => {
   if (!isDroppable(targetUrl)) return;
   event.preventDefault();
   dragOver.value = key;
+  startSpringLoad(key, targetUrl);
 };
 
 const onDragOver = (event: DragEvent) => {
@@ -178,10 +180,12 @@ const onDragOver = (event: DragEvent) => {
 
 const onDragLeave = (key: string) => {
   if (dragOver.value === key) dragOver.value = null;
+  cancelSpringLoad(key);
 };
 
 const onDrop = (targetUrl: string, key: string, event: DragEvent) => {
   dragOver.value = null;
+  cancelSpringLoad(key);
   if (!isDroppable(targetUrl)) return;
   // Defer to the shared composable for the actual move/copy + conflict
   // handling. Key isn't used here but we keep it in the signature for
@@ -189,6 +193,42 @@ const onDrop = (targetUrl: string, key: string, event: DragEvent) => {
   void key;
   void performDrop(event, targetUrl);
 };
+
+// ── Spring-load on hover (F2) ──────────────────────────────────────
+// Hover any droppable crumb for 2 s with a drag in progress and we
+// navigate to that folder — same behavior as ListingItem's
+// spring-loaded folders, but for the path elements in the header.
+// Lets the user "rewind" up the path tree without dropping at every
+// level, then drop at the destination.
+//
+// Drop still wins over navigate: dropping on a crumb cancels the timer
+// (handled in onDrop above) and triggers the move/copy instead.
+const SPRING_LOAD_MS = 2000;
+const springTimers = new Map<string, number>();
+
+const startSpringLoad = (key: string, targetUrl: string) => {
+  if (springTimers.has(key)) return; // already running
+  const timer = window.setTimeout(() => {
+    springTimers.delete(key);
+    dragOver.value = null;
+    router.push({ path: targetUrl });
+  }, SPRING_LOAD_MS);
+  springTimers.set(key, timer);
+};
+
+const cancelSpringLoad = (key: string) => {
+  const t = springTimers.get(key);
+  if (t !== undefined) {
+    window.clearTimeout(t);
+    springTimers.delete(key);
+  }
+};
+
+// Cleanup any in-flight timers if the user navigates away mid-drag.
+onBeforeUnmount(() => {
+  for (const t of springTimers.values()) window.clearTimeout(t);
+  springTimers.clear();
+});
 </script>
 
 <style scoped>

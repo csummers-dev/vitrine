@@ -180,7 +180,13 @@ const router = createRouter({
   routes,
 });
 
-router.beforeResolve(async (to, from, next) => {
+// Modernized to Vue Router 5's return-value navigation guards (G1):
+//   - return false           → cancel navigation
+//   - return undefined/true  → proceed with the original navigation
+//   - return a route object  → redirect to that route
+// The legacy `next(...)` callback still works but logs a deprecation
+// warning on every navigation, polluting the console.
+router.beforeResolve(async (to, from) => {
   const title = i18n.global.t(titles[to.name as keyof typeof titles]);
   document.title = title + " - " + name;
 
@@ -196,29 +202,25 @@ router.beforeResolve(async (to, from, next) => {
   }
 
   if (to.path.endsWith("/login") && authStore.isLoggedIn) {
-    next({ path: "/files/" });
-    return;
+    return { path: "/files/" };
   }
 
   if (to.matched.some((record) => record.meta.requiresAuth)) {
     if (!authStore.isLoggedIn) {
-      next({
+      return {
         path: "/login",
         query: { redirect: to.fullPath },
-      });
-
-      return;
+      };
     }
 
     if (to.matched.some((record) => record.meta.requiresAdmin)) {
       if (authStore.user === null || !authStore.user.perm.admin) {
-        next({ path: "/403" });
-        return;
+        return { path: "/403" };
       }
     }
   }
 
-  next();
+  // Implicit `return undefined` proceeds with navigation.
 });
 
 // Track the last visited /files path so the login flow can restore it

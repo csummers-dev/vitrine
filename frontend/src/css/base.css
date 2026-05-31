@@ -57,6 +57,12 @@ i.spin,
   width: 100%;
 }
 
+/* ── Top-edge upload progress bar ─────────────────────────────────
+   Thin strip across the very top of the viewport that mirrors the
+   aggregate upload progress shown in the UploadFiles dock. Lives at
+   the highest z-index so it stays visible above slide-overs / modals.
+   Uses the design-system accent token (not the legacy --accent var)
+   and includes a subtle glow at the leading edge for forward motion. */
 .progress {
   position: fixed;
   top: 0;
@@ -64,13 +70,17 @@ i.spin,
   width: 100%;
   height: 3px;
   z-index: 9999999999;
+  background: transparent;
+  pointer-events: none;
 }
 
 .progress div {
   height: 100%;
-  background-color: var(--accent);
+  background-color: var(--color-accent, var(--accent, #5e6ad2));
   width: 0;
-  transition: 0.2s ease width;
+  transition: width 0.2s ease;
+  box-shadow: 0 0 8px var(--color-accent, var(--accent, #5e6ad2));
+  border-radius: 0 999px 999px 0;
 }
 
 .break-word {

@@ -356,8 +356,15 @@ html.dark .preview-info .info-action--danger:hover {
   border-color: rgba(248, 113, 113, 0.4);
 }
 
-/* ── Label + property rows ───────────────────────────────────────────── */
-.preview-info__label {
+/* ── Label + property rows ───────────────────────────────────────────────
+   Each rule is duplicated with `:slotted(...)` so the styles apply to
+   BOTH this component's own template (Properties, Location) AND the
+   format-section slot content (audio Track/Codec, image Camera EXIF,
+   video Tracks). Without `:slotted()`, slot content carries the parent
+   component's scope ID (Preview.vue's), not ours — Vue 3 scoped CSS
+   would skip it and the metadata rendered as unformatted dt/dd pairs. */
+.preview-info__label,
+:slotted(.preview-info__label) {
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
@@ -366,35 +373,46 @@ html.dark .preview-info .info-action--danger:hover {
   margin-bottom: 10px;
 }
 
-.preview-info__dl {
+.preview-info__dl,
+:slotted(.preview-info__dl) {
   font-size: 12px;
   display: flex;
   flex-direction: column;
   gap: 6px;
   margin: 0;
 }
-.preview-info__row {
+.preview-info__row,
+:slotted(.preview-info__row) {
   display: flex;
   justify-content: space-between;
   gap: 12px;
 }
-.preview-info__row dt {
+.preview-info__row dt,
+:slotted(.preview-info__row dt) {
   color: var(--color-ink-3, #a1a1aa);
   flex-shrink: 0;
 }
-.preview-info__row dd {
+.preview-info__row dd,
+:slotted(.preview-info__row dd) {
   color: var(--color-ink-1, #18181b);
   text-align: right;
   margin: 0;
+  /* Allow long values (titles with many words, file paths embedded in
+     metadata) to wrap rather than overflow the rail. */
+  min-width: 0;
+  word-break: break-word;
 }
-.preview-info__ext {
+.preview-info__ext,
+:slotted(.preview-info__ext) {
   font-size: 11px;
 }
 
-.tabular {
+.tabular,
+:slotted(.tabular) {
   font-variant-numeric: tabular-nums;
 }
-.mono {
+.mono,
+:slotted(.mono) {
   font-family: var(--font-mono, monospace);
 }
 

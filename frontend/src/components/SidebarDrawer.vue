@@ -539,7 +539,9 @@ const onItemClick = (_event: MouseEvent) => {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #34d399 0%, #059669 100%);
+  /* Accent gradient — matches the brand mark + the inline-sidebar avatar.
+     Lighter lilac on top-left fading into the accent-strong bottom-right. */
+  background: linear-gradient(135deg, #7c87e5 0%, #4f5ac4 100%);
   color: white;
   display: inline-flex;
   align-items: center;

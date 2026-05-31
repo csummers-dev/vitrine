@@ -17,19 +17,39 @@ import { setTheme, getMediaPreference } from "@/utils/theme";
  */
 export type ThemePreference = "light" | "dark" | "system";
 
+/** The first-init default for every new user / browser. Persisted to
+ *  localStorage on first read so the choice is explicit, visible in
+ *  DevTools, and propagates across reloads — instead of just being a
+ *  silent in-memory fallback. */
+const DEFAULT_PREFERENCE: ThemePreference = "system";
+
 const STORAGE_PREFIX = "fb:theme:";
 const storageKey = (username: string | undefined) =>
   STORAGE_PREFIX + (username ?? "_anon");
 
-/** Reads the stored preference for the current user, or "system" by default. */
+/**
+ * Reads the stored preference for the current user, returning
+ * `DEFAULT_PREFERENCE` ("system") when nothing is stored. If the
+ * fallback fires, we also WRITE the default back so subsequent reads
+ * (or other tabs / windows of the same browser) see a concrete value
+ * rather than discovering an empty slot of their own.
+ */
 const readPreference = (username: string | undefined): ThemePreference => {
   try {
     const raw = localStorage.getItem(storageKey(username));
     if (raw === "light" || raw === "dark" || raw === "system") return raw;
+    // First-init for this user/browser — persist the default so it
+    // becomes explicit. (Wrapped in another try since the read could
+    // succeed but the write could fail in some edge cases, e.g. quota.)
+    try {
+      localStorage.setItem(storageKey(username), DEFAULT_PREFERENCE);
+    } catch {
+      /* swallow */
+    }
   } catch {
     /* localStorage may be disabled (private mode); fall through */
   }
-  return "system";
+  return DEFAULT_PREFERENCE;
 };
 
 /** Resolves a preference to the concrete "light" | "dark" that gets applied. */
@@ -39,8 +59,11 @@ const resolvePreference = (pref: ThemePreference): "light" | "dark" => {
 };
 
 // Singleton state — all callers share the same ref so changes propagate
-// without needing a Pinia store.
-const preference: Ref<ThemePreference> = ref<ThemePreference>("system");
+// without needing a Pinia store. Seeded with DEFAULT_PREFERENCE so the
+// SegmentedControl in Settings highlights "System" on first render,
+// even before init() has had a chance to run.
+const preference: Ref<ThemePreference> =
+  ref<ThemePreference>(DEFAULT_PREFERENCE);
 let inited = false;
 
 export function useThemePreference() {

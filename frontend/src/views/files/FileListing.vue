@@ -127,10 +127,20 @@
           />
         </div>
 
-        <!-- Section title (folder name + counts + folder-level actions) -->
+        <!-- Section title (folder name + counts + folder-level actions).
+             F2: also acts as a drop target + spring-load shortcut to the
+             PARENT folder during a drag. Lit up with an accent ring when
+             a drag is over it; drop = move to parent; hover for 2 s with
+             a drag in progress = navigate up. Hidden when the user is
+             already at the root of their scope. -->
         <div
           v-if="!layoutStore.loading && fileStore.req && fileStore.req.isDir"
-          class="px-5 pt-4 pb-3 flex items-end justify-between gap-3 max-md:px-4 max-md:pt-3 max-md:pb-2"
+          class="section-title px-5 pt-4 pb-3 flex items-end justify-between gap-3 max-md:px-4 max-md:pt-3 max-md:pb-2"
+          :class="{ 'section-title--drop': sectionDropActive }"
+          @dragenter="onSectionDragEnter"
+          @dragover="onSectionDragOver"
+          @dragleave="onSectionDragLeave"
+          @drop="onSectionDrop"
         >
           <div class="min-w-0">
             <div
@@ -138,7 +148,25 @@
             >
               Folder
             </div>
+            <!-- Inline rename for the current folder: when the user picks
+                 "Rename folder" from the ⋯ menu, swap the h1 for an input
+                 that commits on Enter / blur and cancels on Esc. Same UX
+                 as ListingItem's row rename so the affordance feels
+                 consistent across the app. -->
+            <input
+              v-if="isRenamingCurrentFolder"
+              ref="folderRenameInputEl"
+              v-model.trim="folderRenameValue"
+              class="folder-rename-input text-[22px] font-semibold text-ink-1 leading-tight truncate max-md:text-[18px]"
+              type="text"
+              autocomplete="off"
+              spellcheck="false"
+              @keydown.enter.prevent="submitFolderRename"
+              @keydown.esc.prevent="cancelFolderRename"
+              @blur="onFolderRenameBlur"
+            />
             <h1
+              v-else
               class="text-[22px] font-semibold text-ink-1 leading-tight truncate max-md:text-[18px]"
             >
               {{ folderTitle }}
@@ -196,6 +224,14 @@
             icon="file-plus"
             :label="t('sidebar.newFile')"
             show="newFile"
+          />
+          <!-- Rename the CURRENTLY VIEWED folder (not selected items).
+               Hidden at the storage root since you can't rename "/". -->
+          <action
+            v-if="canRenameCurrentFolder"
+            icon="pencil"
+            label="Rename folder"
+            @action="startFolderRename"
           />
           <action icon="rotate-ccw" label="Refresh" @action="refresh" />
           <action icon="info" :label="t('buttons.info')" show="info" />
@@ -580,6 +616,7 @@ import { useToast } from "vue-toastification";
 import { usePendingDelete } from "@/composables/usePendingDelete";
 import ContextMenu from "@/components/ContextMenu.vue";
 import { useShortcuts } from "@/composables/useShortcuts";
+import { useDropTarget } from "@/composables/useDropTarget";
 import {
   computed,
   inject,
@@ -589,7 +626,8 @@ import {
   ref,
   watch,
 } from "vue";
-import { useRoute, onBeforeRouteUpdate } from "vue-router";
+import { useRoute, useRouter, onBeforeRouteUpdate } from "vue-router";
+import url from "@/utils/url";
 import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
 import { removePrefix } from "@/api/utils";
@@ -672,6 +710,17 @@ registerShortcut({
     layoutStore.showHover("extract");
   },
 });
+// G3: `r` to refresh the current folder. Same action that the ⋯ menu's
+// Refresh entry triggers — handy when an external process (rsync, an
+// `arr` app) drops files in but the listing is stale. Dispatcher skips
+// when typing in inputs, so `r` in the rename field is safe.
+registerShortcut({
+  id: "files:refresh",
+  keys: "r",
+  label: "Refresh folder",
+  group: "files",
+  handler: () => refresh(),
+});
 
 const route = useRoute();
 onBeforeRouteUpdate(() => {
@@ -702,6 +751,161 @@ const folderTitle = computed(() => {
   if (!fileStore.req) return "";
   return fileStore.req.name || t("sidebar.myFiles");
 });
+
+// ── Section title as parent-folder drop + spring-load target (F2) ──
+// During a drag, the section-title area (the row that shows the
+// current folder name + meta) acts as a shortcut to the PARENT folder:
+//   • Drop on it           → move/copy the selection up one level
+//   • Hover 2 s during drag → navigate up one level (no drop required)
+// Both are gated by the existence of a parent — at the storage root
+// we suppress the drop target entirely (no parent to navigate to).
+const PARENT_SPRING_MS = 2000;
+const sectionDropActive = ref<boolean>(false);
+let sectionSpringTimer: number | null = null;
+let sectionDragDepth = 0;
+
+const { performDrop: performParentDrop } = useDropTarget();
+
+/** Parent folder URL relative to the current route, or null at root. */
+const parentFolderUrl = computed<string | null>(() => {
+  if (!fileStore.req?.isDir) return null;
+  const here = fileStore.req.url; // ends with "/"
+  // Strip trailing slash, then drop the last segment.
+  const trimmed = here.endsWith("/") ? here.slice(0, -1) : here;
+  const parent = url.removeLastDir(trimmed) + "/";
+  // If removing the last segment lands us back at the same place, we
+  // were already at the root — nothing to navigate to.
+  if (parent === here) return null;
+  return parent;
+});
+
+const cancelSectionSpring = () => {
+  if (sectionSpringTimer !== null) {
+    window.clearTimeout(sectionSpringTimer);
+    sectionSpringTimer = null;
+  }
+};
+
+const onSectionDragEnter = (event: DragEvent) => {
+  if (fileStore.selectedCount === 0) return;
+  if (!parentFolderUrl.value) return;
+  event.preventDefault();
+  sectionDragDepth++;
+  if (sectionDragDepth === 1) {
+    sectionDropActive.value = true;
+    // Spring-load: hover for PARENT_SPRING_MS → navigate up.
+    sectionSpringTimer = window.setTimeout(() => {
+      sectionSpringTimer = null;
+      sectionDropActive.value = false;
+      sectionDragDepth = 0;
+      if (parentFolderUrl.value) router.push({ path: parentFolderUrl.value });
+    }, PARENT_SPRING_MS);
+  }
+};
+
+const onSectionDragOver = (event: DragEvent) => {
+  if (fileStore.selectedCount === 0) return;
+  if (!parentFolderUrl.value) return;
+  event.preventDefault();
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect =
+      event.ctrlKey || event.metaKey ? "copy" : "move";
+  }
+};
+
+const onSectionDragLeave = () => {
+  if (!parentFolderUrl.value) return;
+  sectionDragDepth = Math.max(0, sectionDragDepth - 1);
+  if (sectionDragDepth === 0) {
+    sectionDropActive.value = false;
+    cancelSectionSpring();
+  }
+};
+
+const onSectionDrop = (event: DragEvent) => {
+  // Drop wins over spring-load: kill the timer before any conflict
+  // prompts so we don't navigate mid-resolve.
+  cancelSectionSpring();
+  sectionDragDepth = 0;
+  sectionDropActive.value = false;
+  if (!parentFolderUrl.value) return;
+  void performParentDrop(event, parentFolderUrl.value);
+};
+
+// ── Rename the currently-viewed folder ─────────────────────────────────
+// Surfaced as a "Rename folder" action in the ⋯ menu (header section title
+// More dropdown). UX matches the inline row rename in ListingItem: swap
+// the h1 for an input, Enter commits, Esc/blur cancels. We can't rename
+// at the storage root (no parent to move into), so the action hides via
+// `canRenameCurrentFolder` when the folder has no usable parent.
+const router = useRouter();
+const isRenamingCurrentFolder = ref<boolean>(false);
+const folderRenameValue = ref<string>("");
+const folderRenameInputEl = ref<HTMLInputElement | null>(null);
+let folderRenameSubmitting = false;
+
+const canRenameCurrentFolder = computed<boolean>(() => {
+  if (!authStore.user?.perm.rename) return false;
+  const req = fileStore.req;
+  if (!req || !req.isDir) return false;
+  // Don't expose at the storage root — there's no parent to move into.
+  // Root URL looks like "/files/" with no folder name.
+  if (!req.name) return false;
+  return true;
+});
+
+const startFolderRename = async () => {
+  if (!canRenameCurrentFolder.value || !fileStore.req) return;
+  folderRenameValue.value = fileStore.req.name;
+  folderRenameSubmitting = false;
+  isRenamingCurrentFolder.value = true;
+  await nextTick();
+  const el = folderRenameInputEl.value;
+  if (!el) return;
+  el.focus();
+  el.select();
+};
+
+const cancelFolderRename = () => {
+  if (folderRenameSubmitting) return;
+  isRenamingCurrentFolder.value = false;
+};
+
+const onFolderRenameBlur = () => {
+  if (folderRenameSubmitting) return;
+  // Small delay so an Enter keydown can commit before the blur cancel
+  // fires (input loses focus when the keydown fires too).
+  setTimeout(() => {
+    if (!folderRenameSubmitting && isRenamingCurrentFolder.value) {
+      cancelFolderRename();
+    }
+  }, 120);
+};
+
+const submitFolderRename = async () => {
+  if (folderRenameSubmitting || !fileStore.req) return;
+  const next = folderRenameValue.value.trim();
+  if (next === "" || next === fileStore.req.name) {
+    cancelFolderRename();
+    return;
+  }
+  folderRenameSubmitting = true;
+  const oldUrl = fileStore.req.url;
+  // Strip trailing slash before computing the parent (removeLastDir
+  // would otherwise drop the folder name itself, not its parent).
+  const trimmed = oldUrl.endsWith("/") ? oldUrl.slice(0, -1) : oldUrl;
+  const newUrl = url.removeLastDir(trimmed) + "/" + encodeURIComponent(next);
+  try {
+    await api.move([{ from: oldUrl, to: newUrl }]);
+    // The route URL still points at the old name — navigate to the new
+    // path so the listing reloads against the renamed folder.
+    router.push({ path: newUrl });
+    isRenamingCurrentFolder.value = false;
+  } catch (e) {
+    if (e instanceof Error) $showError(e);
+    folderRenameSubmitting = false;
+  }
+};
 
 const folderMeta = computed(() => {
   const req = fileStore.req;
@@ -887,6 +1091,18 @@ const keyEvent = (event: KeyboardEvent) => {
 
   // Ctrl is pressed
   if (!event.ctrlKey && !event.metaKey) {
+    return;
+  }
+
+  // G2 + general hygiene: don't hijack modifier shortcuts when the user
+  // is typing in an input / textarea / contenteditable. Cmd+A, Cmd+C,
+  // Cmd+X, Cmd+V all have native meanings inside text fields that we
+  // shouldn't clobber. The shortcut dispatcher in `useShortcuts` skips
+  // typing targets for non-modifier keys; this is the equivalent for
+  // the modifier shortcuts handled directly here.
+  const target = event.target as HTMLElement | null;
+  const tag = target?.tagName?.toLowerCase();
+  if (tag === "input" || tag === "textarea" || target?.isContentEditable) {
     return;
   }
 
@@ -1672,8 +1888,105 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
   min-height: calc(100vh - 8rem);
 }
 
+/* ── Mobile selection toolbar (#file-selection) ───────────────────────
+   Renders only at `isMobile` widths (the InfoPane sidebar collapses to
+   a full-width sheet at < 540 px, so multi-select actions need their
+   own surface up top instead of relying on the desktop pill at the
+   bottom of the screen). Previously this row had NO CSS at all — the
+   "N files selected" text + Share/Rename/Copy/Move/Delete buttons
+   inherited browser-default chrome and a stale legacy `.action` class
+   that points at undefined tokens, so it rendered as plain text and
+   unspaced icon-buttons. Now it's a proper toolbar matching the rest
+   of the chrome. */
+#file-selection {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: var(--color-surface, #fff);
+  border-bottom: 1px solid var(--color-line, #ececec);
+  min-height: 44px;
+}
+
+#file-selection > span {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-ink-2, #52525b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* Override the legacy `.action` chrome inside this toolbar so the
+   buttons read as tappable icon-buttons rather than the deprecated
+   round-emerald inline-block style. */
+#file-selection :deep(.action) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-ink-2, #52525b);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+#file-selection :deep(.action:hover),
+#file-selection :deep(.action:focus-visible) {
+  background: var(--color-elevated, #f4f4f5);
+  color: var(--color-ink-1, #18181b);
+  outline: none;
+}
+#file-selection :deep(.action:focus-visible) {
+  box-shadow: 0 0 0 2px var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+}
+/* The Action component renders a `<span>{{ label }}</span>` inside;
+   in this mobile context we want icon-only tap targets, so hide the
+   label. Tooltips + aria-label still describe the button. */
+#file-selection :deep(.action span) {
+  display: none;
+}
+/* Delete button — visually distinct hover so destructive actions feel
+   different from neutral ones. */
+#file-selection :deep(.action[title="Delete"]:hover),
+#file-selection :deep(.action[title="Delete"]:focus-visible) {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+html.dark #file-selection :deep(.action[title="Delete"]:hover),
+html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
+  background: rgba(127, 29, 29, 0.25);
+  color: #fca5a5;
+}
+
 .file-selection-margin-bottom {
   margin-bottom: 3.5rem;
+}
+
+/* ── Section title as parent-folder drop target (F2) ────────────────
+   While a drag is hovering and a parent folder exists, the entire
+   section-title row lights up with a subtle accent halo + ring so the
+   user sees that releasing here will move to the parent (and hovering
+   2 s will navigate up without dropping). Visual treatment mirrors
+   the breadcrumb drop-target state for consistency. */
+.section-title {
+  transition:
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+  border-radius: 8px;
+  margin: 0 4px;
+}
+.section-title--drop {
+  background: var(--color-accent-soft, rgba(94, 106, 210, 0.08));
+  box-shadow: inset 0 0 0 2px var(--color-accent, #5e6ad2);
 }
 
 /* Primary CTA shown inside the empty-folder state. Same chrome as the
@@ -1740,5 +2053,28 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
 /* Smooth shuffling when sort order or contents reorder. */
 .list-move {
   transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Folder rename input (D6) ────────────────────────────────────────
+   Replaces the section-title h1 while renaming the current folder. We
+   mimic the h1's typography exactly so the swap doesn't shift layout —
+   only the border + focus ring change, signaling "this is editable". */
+.folder-rename-input {
+  background: transparent;
+  border: 1px solid var(--color-line, #ececec);
+  border-radius: 6px;
+  padding: 2px 8px;
+  margin: -3px -9px;
+  width: calc(100% + 18px);
+  outline: none;
+  font-family: inherit;
+  color: var(--color-ink-1, #18181b);
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+.folder-rename-input:focus {
+  border-color: var(--color-accent, #5e6ad2);
+  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(94, 106, 210, 0.3));
 }
 </style>

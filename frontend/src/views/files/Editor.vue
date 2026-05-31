@@ -217,23 +217,31 @@ onBeforeUnmount(() => {
   editor.value?.destroy();
 });
 
-onBeforeRouteUpdate((to, from, next) => {
+// Vue Router 5 return-value navigation guard (G1):
+//   return undefined / true → proceed
+//   return false            → cancel
+//   return a route object   → redirect
+// Async guards return a Promise. The discard-changes prompt is async,
+// so we wrap it in a Promise that resolves once the user picks Discard
+// or Save — preserving the legacy next()-callback behavior of the
+// prompt hanging the navigation until a decision is made.
+onBeforeRouteUpdate(async () => {
   if (editor.value?.session.getUndoManager().isClean()) {
-    next();
-
-    return;
+    return; // proceed
   }
 
-  layoutStore.showHover({
-    prompt: "discardEditorChanges",
-    confirm: (event: Event) => {
-      event.preventDefault();
-      next();
-    },
-    saveAction: async () => {
-      await save();
-      next();
-    },
+  return new Promise<boolean | undefined>((resolve) => {
+    layoutStore.showHover({
+      prompt: "discardEditorChanges",
+      confirm: (event: Event) => {
+        event.preventDefault();
+        resolve(undefined); // proceed (discard)
+      },
+      saveAction: async () => {
+        await save();
+        resolve(undefined); // proceed (save)
+      },
+    });
   });
 });
 
