@@ -156,22 +156,22 @@ Or skip Docker entirely and run the binary directly: `./filebrowser` — opens o
 
 ### Tech stack
 
-| Layer | Choice | Why |
-| --- | --- | --- |
-| Backend | **Go 1.25** | Single binary, fast, mature ecosystem |
-| DB | **Storm/BoltDB** | Embedded — no separate database to operate |
-| Frontend | **Vue 3 + TypeScript** | Reactive + typed; SFCs keep component CSS scoped |
-| State | **Pinia** | Tiny, typed, composable |
-| Styling | **Tailwind v4** | Token-driven, no global cascade fights |
-| Build | **Vite + Rolldown** | Fast HMR, fast prod builds |
-| Routing | **vue-router 5** | Standard |
-| i18n | **vue-i18n** | 31 languages inherited from upstream |
-| PDF | **pdfjs-dist 6** | Mozilla's reference renderer |
-| Video | **video.js 8** | Themed skin, subtitle support |
-| Audio | **music-metadata 11** | ID3v2 APIC artwork extraction (Range-fetched) |
-| EPUB | **vue-reader + epub.js** | Iframe-based reader with our theme injection |
-| Code | **Ace 1.44** | Same editor users already know |
-| EXIF | **exifr 7** | Range requests so we don't download the full image |
+| Layer | Choice |
+| --- | --- |
+| Backend | **Go 1.25** |
+| DB | **Storm/BoltDB** |
+| Frontend | **Vue 3 + TypeScript** |
+| State | **Pinia** |
+| Styling | **Tailwind v4** |
+| Build | **Vite + Rolldown** |
+| Routing | **vue-router 5** |
+| i18n | **vue-i18n** |
+| PDF | **pdfjs-dist 6** |
+| Video | **video.js 8** |
+| Audio | **music-metadata 11** |
+| EPUB | **vue-reader + epub.js** |
+| Code | **Ace 1.44** |
+| EXIF | **exifr 7** |
 
 ---
 
