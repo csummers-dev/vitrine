@@ -16,31 +16,38 @@
 
 <p align="center">
   <img src="docs/screenshots/listing-list.png" width="80%" alt="List view with file-icon system and inline meta" />
+  <br/><em>List view with file-icon system and inline meta</em>
 </p>
 
 <p align="center">
   <img src="docs/screenshots/listing-grid.png" width="49%" alt="Grid view" />
   <img src="docs/screenshots/listing-gallery.png" width="49%" alt="Gallery view with image thumbnails" />
+  <br/><em>Grid and gallery views with file-icon system and inline meta</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/preview-image.png" width="80%" alt="Image preview with EXIF info rail" />
+  <img src="docs/screenshots/preview-image.png" width="80%" alt="Image preview with EXIF info" />
+  <br/><em>Image preview with EXIF info</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/preview-video.png" width="80%" alt="Video preview with track info" />
+  <img src="docs/screenshots/preview-video.png" width="80%" alt="Video preview and playback with media info" />
+  <br/><em>Video preview and playback with media info</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/preview-audio.png" width="80%" alt="Audio preview with album art and custom transport" />
+  <img src="docs/screenshots/preview-audio.png" width="80%" alt="Audio preview and playback with album art and custom transport" />
+  <br/><em>Audio preview and playback with album art and custom transport</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/preview-pdf.png" width="80%" alt="PDF preview with thumbnail rail" />
+  <img src="docs/screenshots/preview-pdf.png" width="80%" alt="PDF preview with thumbnail" />
+  <br/><em>PDF preview with thumbnail</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/preview-epub.png" width="80%" alt="EPUB preview with dark mode applied to chapter text" />
+  <img src="docs/screenshots/preview-epub.png" width="80%" alt="EPUB preview" />
+  <br/><em>EPUB preview</em>
 </p>
 
 <table>
@@ -59,17 +66,20 @@
 </table>
 
 <p align="center">
-  <img src="docs/screenshots/command-palette.png" width="70%" alt="⌘K command palette with backend file search" />
+  <img src="docs/screenshots/command-palette.png" width="70%" alt="⌘K command palette with file search" />
+  <br/><em>⌘K command palette with file search</em>
 </p>
 
 <p align="center">
   <img src="docs/screenshots/mobile-drawer.png" width="32%" alt="Mobile sidebar drawer" />
   <img src="docs/screenshots/mobile-listing.png" width="32%" alt="Mobile file listing" />
   <img src="docs/screenshots/mobile-preview.png" width="32%" alt="Mobile preview" />
+  <br/><em>Mobile-friendly design principles</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/settings-profile.png" width="80%" alt="Profile settings with theme switcher and auto-save indicator" />
+  <img src="docs/screenshots/settings-profile.png" width="80%" alt="Global and per-user pofile settings" />
+  <br/><em>Global and per-user pofile settings</em>
 </p>
 
 ---
@@ -144,7 +154,7 @@ Or skip Docker entirely and run the binary directly: `./filebrowser` — opens o
 │                            │ HTTP / WebSocket                │
 │                            ▼                                 │
 │  ┌────────────────────────────────────────────────────────┐  │
-│  │  Go backend (unchanged from upstream)                  │  │
+│  │  Go backend                                            │  │
 │  │  • Gorilla mux router                                  │  │
 │  │  • Storm/BoltDB for users + shares + settings          │  │
 │  │  • afero filesystem abstraction                        │  │
@@ -325,6 +335,6 @@ Apache License 2.0. See [LICENSE](LICENSE).
 
 <div align="center">
 
-**Built with love.**
+**Built with love by csummers-dev.**
 
 </div>
