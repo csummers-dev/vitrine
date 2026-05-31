@@ -6,8 +6,6 @@
 
 ### A self-hosted file browser.
 
-A redesigned and improved refactor of [filebrowser/filebrowser](https://github.com/filebrowser/filebrowser). Built from the project's trusted Go backend, transformed into a modern experience with a beautiful design system, theming, a command palette, drag-and-drop everywhere, rich previews for images, video, audio, PDF, EPUB, code, and (much) more.
-
 [![Version](https://img.shields.io/badge/version-1.2.1-5e6ad2?style=flat-square)](#)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
 [![Vue](https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js&logoColor=white)](#)
@@ -20,14 +18,6 @@ A redesigned and improved refactor of [filebrowser/filebrowser](https://github.c
 [Roadmap](#roadmap)
 
 </div>
-
----
-
-## Why this fork
-
-The project `filebrowser/filebrowser` is one of my most-often used applications in my homelab. Since the maintainers have moved it into "maintenance-only" mode I wanted to create a redesigned and updated version to bring it up to higher usability and quality standards.
-
-**filebrowser pretty** is a full redesign starting from the `filebrowser/filebrowser v2.63.5` version.
 
 ---
 
