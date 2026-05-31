@@ -74,32 +74,9 @@
 
 ---
 
-## Quick start
-
 The published image lives at **`ghcr.io/csummers-dev/filebrowser-pretty:latest`** and works on any Linux x86_64 host (NAS, mini-PC, VPS, homelab).
 
-### Run it with `docker run`
-
-```bash
-# Named volumes — Docker handles ownership, no host-side chown dance
-docker run -d \
-  --name filebrowser \
-  --restart unless-stopped \
-  -p 8080:80 \
-  -v fb-data:/srv \
-  -v fb-db:/database \
-  -v fb-config:/config \
-  ghcr.io/csummers-dev/filebrowser-pretty:latest
-
-docker logs filebrowser | grep "password for"
-# Copy the randomly-generated admin password — you'll need it for first login.
-```
-
-Open <http://localhost:8080>, log in as `admin` with the password from the logs, and change it immediately in **Settings → Profile**.
-
-### Run it with Docker Compose
-
-The recommended layout — mounts under `/srv/` so the filebrowser scope (default `/srv`) just works:
+### Docker Compose
 
 ```yaml
 services:
@@ -149,57 +126,7 @@ docker compose up -d filebrowser
 docker compose logs filebrowser | grep "password for"
 ```
 
-### From source
-
-You need **Go ≥ 1.25**, **Node ≥ 24**, and **pnpm ≥ 10**, plus Docker if you want to package the result.
-
-```bash
-git clone https://github.com/csummers-dev/filebrowser-pretty.git
-cd filebrowser-pretty
-
-# 1) Build the frontend (bundled into the Go binary)
-cd frontend
-pnpm install --frozen-lockfile
-pnpm build                                 # produces frontend/dist/
-cd ..
-
-# 2) Cross-compile the Go binary for the platform you'll deploy on.
-#    GOARCH=amd64 for Intel/AMD servers (most NASes, mini-PCs);
-#    GOARCH=arm64 for Raspberry Pi 4/5 + Apple silicon native Docker.
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
-  go build \
-  -ldflags "-X github.com/filebrowser/filebrowser/v2/version.Version=1.2.1" \
-  -o filebrowser .
-
-# 3) Sanity check (catches the #1 deployment trap)
-file filebrowser
-# Want: "ELF 64-bit LSB executable, x86-64, ... statically linked"
-
-# 4) Build the Docker image — explicit --platform avoids Apple-silicon
-#    surprises where docker silently picks the host arch.
-docker build --platform linux/amd64 \
-  -t ghcr.io/<your-namespace>/filebrowser-pretty:latest \
-  .
-
-# 5) (Optional) Verify the binary inside the image is the right arch
-docker run --rm --entrypoint sh \
-  ghcr.io/<your-namespace>/filebrowser-pretty:latest \
-  -c "file /bin/filebrowser"
-
-# 6) Push to your registry
-docker push ghcr.io/<your-namespace>/filebrowser-pretty:latest
-```
-
 Or skip Docker entirely and run the binary directly: `./filebrowser` — opens on <http://localhost:8080>.
-
-### Upgrading
-
-```bash
-docker compose pull filebrowser
-docker compose up -d filebrowser
-# Your /srv data + /database state persist across upgrades — users, shares,
-# settings all survive.
-```
 
 ## Architecture
 
@@ -245,36 +172,6 @@ docker compose up -d filebrowser
 | EPUB | **vue-reader + epub.js** | Iframe-based reader with our theme injection |
 | Code | **Ace 1.44** | Same editor users already know |
 | EXIF | **exifr 7** | Range requests so we don't download the full image |
-
----
-
-## Project layout
-
-```
-.
-├── auth/             # JWT, proxy, noauth, hooks
-├── cmd/              # CLI entry points (root, users, version, etc.)
-├── docker/           # Docker build helpers
-├── files/            # File ops (move/copy/listing/search/share)
-├── fileutils/        # Path + symlink helpers
-├── frontend/         # Vue 3 app (built and embedded into the binary)
-│   ├── public/       # Static assets shipped at /
-│   └── src/
-│       ├── components/    # SFCs, organized by feature area
-│       ├── composables/   # Reusable reactive logic (shortcuts, drag, theme)
-│       ├── stores/        # Pinia stores
-│       ├── views/         # Route-level pages
-│       ├── utils/         # Pure helpers (file icons, constants, upload)
-│       └── css/           # Token + listing + dashboard CSS
-├── http/             # HTTP handlers + routing
-├── img/              # Server-side image processing (thumbnails)
-├── rules/            # Per-user access rule engine
-├── search/           # File search backend
-├── settings/         # Site-wide settings store
-├── share/            # Public share machinery
-├── users/            # User model + permission gates
-└── version/          # Version constant (overridable via ldflags)
-```
 
 ---
 
@@ -465,7 +362,7 @@ pnpm build
 
 ## Credits
 
-This project stands on the shoulders of [filebrowser/filebrowser](https://github.com/filebrowser/filebrowser) by [@hacdias](https://github.com/hacdias) and the original maintainers. Their work is the reason this project could happen at all.
+This project began as a fork of [filebrowser/filebrowser](https://github.com/filebrowser/filebrowser) by [@hacdias](https://github.com/hacdias) and the original maintainers.
 
 ---
 
