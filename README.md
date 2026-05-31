@@ -40,49 +40,30 @@ The project `filebrowser/filebrowser` is one of my most-often used applications 
   <img src="docs/screenshots/listing-gallery.png" width="49%" alt="Gallery view with image thumbnails" />
 </p>
 
-Swap views with `1` / `2` / `3` or the segmented control in the header.
-
-### The preview shell
-
 <p align="center">
   <img src="docs/screenshots/preview-image.png" width="80%" alt="Image preview with EXIF info rail" />
 </p>
 
-A persistent right-rail with file properties, a format-specific metadata section (EXIF here), and primary actions.
-
-<details>
-<summary><b>More preview formats</b> — click to expand</summary>
-
-<br/>
-
 <p align="center">
   <img src="docs/screenshots/preview-video.png" width="80%" alt="Video preview with track info" />
-  <br/><em>Video — video.js with a themed skin and a Tracks section in the info rail</em>
 </p>
 
 <p align="center">
   <img src="docs/screenshots/preview-audio.png" width="80%" alt="Audio preview with album art and custom transport" />
-  <br/><em>Audio — ID3 album art, custom scrubber, ID3 tags</em>
 </p>
 
 <p align="center">
   <img src="docs/screenshots/preview-pdf.png" width="80%" alt="PDF preview with thumbnail rail" />
-  <br/><em>PDF — PDF.js-rendered pages with a thumbnail rail</em>
 </p>
 
 <p align="center">
   <img src="docs/screenshots/preview-epub.png" width="80%" alt="EPUB preview with dark mode applied to chapter text" />
-  <br/><em>EPUB — vue-reader with our dark theme injected into the iframe via <code>themes.override</code></em>
 </p>
-
-</details>
-
-### Light and Dark themes
 
 <table>
   <tr>
-    <th align="center" width="50%">Light</th>
-    <th align="center" width="50%">Dark</th>
+    <th align="center" width="50%">Light theme</th>
+    <th align="center" width="50%">Dark theme</th>
   </tr>
   <tr>
     <td><img src="docs/screenshots/light-listing.png" alt="Light mode listing" /></td>
@@ -94,15 +75,9 @@ A persistent right-rail with file properties, a format-specific metadata section
   </tr>
 </table>
 
-### Command palette
-
 <p align="center">
   <img src="docs/screenshots/command-palette.png" width="70%" alt="⌘K command palette with backend file search" />
 </p>
-
-`⌘K` (or `/`) opens the palette.
-
-### Mobile
 
 <p align="center">
   <img src="docs/screenshots/mobile-drawer.png" width="32%" alt="Mobile sidebar drawer" />
@@ -110,13 +85,9 @@ A persistent right-rail with file properties, a format-specific metadata section
   <img src="docs/screenshots/mobile-preview.png" width="32%" alt="Mobile preview" />
 </p>
 
-### Settings
-
 <p align="center">
   <img src="docs/screenshots/settings-profile.png" width="80%" alt="Profile settings with theme switcher and auto-save indicator" />
 </p>
-
-Settings rebuilt around a left-rail sub-nav with shared `SettingsSection` / `SettingsRow` / `Toggle` primitives. 
 
 ---
 
