@@ -311,8 +311,6 @@ The next release is **v1.3.0**, planned as a large feature drop.
 - **2FA / WebAuthn passkeys** — passwordless login at the front door
 - **Per-folder + per-user storage analytics**
 
-Issues + PRs welcome.
-
 ---
 
 ## Keyboard shortcuts
@@ -368,7 +366,7 @@ This project began as a fork of [filebrowser/filebrowser](https://github.com/fil
 
 ## License
 
-Apache License 2.0, same as upstream. See [LICENSE](LICENSE).
+Apache License 2.0. See [LICENSE](LICENSE).
 
 ---
 
