@@ -6,7 +6,7 @@
 
 ### A self-hosted file browser.
 
-A redesigned and improved refactor of [filebrowser/filebrowser](https://github.com/filebrowser/filebrowser). Built from the project's trusted Go backend, transformed into a modern experience with a beautiful design system, theming, a command palette, drag-and-drop everywhere, rich previews for images, video, audio, PDF, EPUB, code, and more.
+A redesigned and improved refactor of [filebrowser/filebrowser](https://github.com/filebrowser/filebrowser). Built from the project's trusted Go backend, transformed into a modern experience with a beautiful design system, theming, a command palette, drag-and-drop everywhere, rich previews for images, video, audio, PDF, EPUB, code, and (much) more.
 
 [![Version](https://img.shields.io/badge/version-1.2.1-5e6ad2?style=flat-square)](#)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
@@ -25,9 +25,9 @@ A redesigned and improved refactor of [filebrowser/filebrowser](https://github.c
 
 ## Why this fork
 
-The project `filebrowser/filebrowser` is one of my most-often used applications in my homelab. Since the maintainers have moved it into "no new features" mode, which is a fair place to land for a project that's already done its job, I wanted to create a modern redesign and refactor to bring it up to a highest usability and quality standard.
+The project `filebrowser/filebrowser` is one of my most-often used applications in my homelab. Since the maintainers have moved it into "maintenance-only" mode I wanted to create a redesigned and updated version to bring it up to higher usability and quality standards.
 
-**filebrowser pretty** starts from the backend of `filebrowser/filebrowser v2.63.5` and redesigns the entire application on top of it.
+**filebrowser pretty** is a full redesign starting from the `filebrowser/filebrowser v2.63.5` version.
 
 ---
 
