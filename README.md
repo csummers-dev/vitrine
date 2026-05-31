@@ -175,7 +175,7 @@ Or skip Docker entirely and run the binary directly: `./filebrowser` — opens o
 
 ---
 
-### v1.2.1 — Keyboard, drag, paper cuts
+### v1.2.1 — Keyboard + search + preview
 
 - **Keyboard shortcuts I expected to already exist** — `Cmd+A` / `Ctrl+A` select all in the listing (with a proper input-focus guard so it doesn't hijack the search bar's native select-all), `r` to refresh the current folder, `j` / `k` for previous / next track inside the audio preview, `PageUp` / `PageDown` / `Home` / `End` for page navigation inside the PDF preview
 - **Copy path action** — small button next to the Location label in the details sidebar. Copies the relative path to the clipboard, flashes "Copied" inline, and surfaces a toast. Falls back to `execCommand("copy")` on HTTP-only homelab deployments where the modern clipboard API isn't available
@@ -188,13 +188,13 @@ Or skip Docker entirely and run the binary directly: `./filebrowser` — opens o
 - **Text-preview Edit button styling** — `.preview-toolbar-format__btn` was referenced in markup but never defined in CSS, so the button rendered with browser defaults next to the styled soft-wrap toggle. Defined the class to match its sibling chrome
 - **Vue Router deprecation cleanup** — converted both navigation guards from the legacy `next(value)` callback to the return-value pattern. Removes a stream of deprecation warnings from every navigation
 
-### v1.2.0 — Audio polish + lazy-loaded viewers
+### v1.2.0 — Audio + lazy-loaded viewers
 
 - **Album artwork on the audio info-rail** — embedded APIC artwork (extracted client-side via music-metadata) now renders as a square tile at the top of the Track section, matching the chrome of the AudioViewer card itself
 - **Audio preview reliability fix** — temporal-dead-zone bug in `AudioViewer.vue` where an `immediate: true` watch fired before its helper functions were initialized; surfaced as paired "watcher callback" + "setup function" errors and broke audio previews entirely. Resolved by reordering the declarations
-- **Lazy-loaded format viewers** — `PdfViewer` / `VideoViewer` / `AudioViewer` / `EpubViewer` / `TextViewer` / `CsvViewer` now load on demand via `defineAsyncComponent` instead of bundling into the main chunk. Pulled ~1.7 MB of viewer code (pdfjs-dist, video.js, ace-builds, epub.js, music-metadata) out of first-load. Image previews stay statically loaded — they're the most common path and the cheapest viewer
+- **Lazy-loaded format viewers** — `PdfViewer` / `VideoViewer` / `AudioViewer` / `EpubViewer` / `TextViewer` / `CsvViewer` now load on demand via `defineAsyncComponent` instead of bundling into the main chunk. Pulled ~1.7 MB of viewer code (pdfjs-dist, video.js, ace-builds, epub.js, music-metadata) out of first-load. Image previews stay statically loaded.
 - **CI workflow hardening** — branch name fixed (`master` → `main`), upstream-only release + docs deploy jobs trimmed, `lint-pr.yaml` removed
-- **Docs polish** — Docker section in the README replaced with the real cross-compile + buildx + GHCR flow I hammered out in actual deployment, including a gotchas table for the traps I hit (wrong-arch binaries, manifest mismatches, 403 on upload, etc.)
+- **Docs polish** — Docker section in the README replaced with the real cross-compile + buildx + GHCR flow
 
 ### v1.1.1 — Surface polish
 
@@ -202,7 +202,7 @@ Or skip Docker entirely and run the binary directly: `./filebrowser` — opens o
 - **Inline rename for the current folder** — new "Rename folder" action in the section-title ⋯ menu; swaps the h1 for an input with the same Enter/Esc/blur UX as inline row rename
 - **Avatar tinted accent** — the user-row gradient now matches the brand mark (lilac) instead of the legacy emerald
 - **Removed dead UI** — stripped the no-op More (⋯) button from the preview header
-- **Tightened deploy docs** — Docker section in the README now matches the actual cross-compile + buildx flow with the gotchas I hit during real deployment
+- **Tightened deploy docs** — Docker section in the README now matches the actual cross-compile + buildx flow
 
 ### v1.1.0 — Drag, preview, polish
 
@@ -227,9 +227,7 @@ Or skip Docker entirely and run the binary directly: `./filebrowser` — opens o
 
 ---
 
-## Roadmap
-
-The next release is **v1.3.0**, planned as a large feature drop. 
+The next release is **v1.3.0**. 
 
 - `User.Preferences` JSON field, API round-trip, migration safety
 - `usePreferences` frontend composable with debounced persistence
