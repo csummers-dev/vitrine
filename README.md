@@ -31,39 +31,16 @@ The project `filebrowser/filebrowser` is one of my most-often used applications 
 
 ---
 
-## Highlights
-
-| --- | --- |
-| **Full design system** | Tailwind v4 tokens, type scaling, accent + surface variables, scoped components. |
-| **First-class dark mode** | Light · Dark · System per-user, persisted in localStorage. Every surface — including EPUB chapter text and PDF.js chrome — repaints live without a refresh. |
-| **⌘K command palette** | Linear-style fuzzy command runner. Backend search is wired into the same palette so files and commands surface together. |
-| **Three view modes** | List · Grid · Gallery, all with the same selection model and keyboard shortcuts. Press `1` / `2` / `3` to swap. |
-| **Drag everywhere** | Move/copy by dragging onto folders, breadcrumb segments, or the section title (= parent folder). Spring-loading: hover any drop target for 2 s during a drag and it opens, so you can chain drops through nested directories without ever releasing. Hold ⌘ to copy instead of move. |
-| **Rich previews** | Image (EXIF panel) · Video (video.js with track info) · Audio (custom transport + ID3 APIC album art) · PDF (PDF.js with thumbnail rail + page nav) · EPUB (vue-reader with proper dark theme) · CSV (parsed table) · Text/code (Ace editor). |
-| **Keyboard-friendly** | Press `?` for the shortcut cheat sheet. `g f` → files, `g s` → settings, arrows nav between files in preview, `Esc` closes everything. |
-| **Mobile drawer + touch targets** | Purpose-built `SidebarDrawer` for narrow viewports, 44 px tap targets across every interactive surface, swipe-friendly preview. |
-| **Inline file ops** | Create / rename / delete inline in the row with no modal interrupts. Delete uses optimistic UI with an Undo toast. |
-| **Zip extract** | Server-side ZIP extraction with a slide-over panel, an "open the destination after extract" toggle, and an optional "delete the original on success" toggle. |
-| **Shares with depth** | Manage shares from a dedicated settings page; per-share password + expiry; public share view repainted to match the app's surface. |
-| **Live file metadata** | EXIF for photos (camera / lens / focal length / exposure / ISO / date taken), ID3 for audio (title / artist / album / year / artwork), track info for video. All extracted client-side, gracefully degrading. |
-| **Per-user everything** | View mode, theme, locale, Ace editor theme, dotfile visibility, date format, single-click — all per-user, persisted via the existing user store. |
-
----
-
-### The file listing
-
 <p align="center">
   <img src="docs/screenshots/listing-list.png" width="80%" alt="List view with file-icon system and inline meta" />
 </p>
-
-Single-line rows with a clean icon system, hover affordances for the actions menu, a multi-select pill that turns into bulk action buttons, and a sort-by header that locks in width so the layout doesn't jitter.
 
 <p align="center">
   <img src="docs/screenshots/listing-grid.png" width="49%" alt="Grid view" />
   <img src="docs/screenshots/listing-gallery.png" width="49%" alt="Gallery view with image thumbnails" />
 </p>
 
-Swap views with `1` / `2` / `3` or the segmented control in the header. Gallery view uses lazy-loaded thumbnails so a directory of thousands of photos still scrolls smoothly.
+Swap views with `1` / `2` / `3` or the segmented control in the header.
 
 ### The preview shell
 
@@ -71,7 +48,7 @@ Swap views with `1` / `2` / `3` or the segmented control in the header. Gallery 
   <img src="docs/screenshots/preview-image.png" width="80%" alt="Image preview with EXIF info rail" />
 </p>
 
-A persistent right-rail with file properties, a format-specific metadata section (EXIF here), and primary actions (Share · Download · Rename · Delete). Move · Copy · Extract · Open sit in the secondary row.
+A persistent right-rail with file properties, a format-specific metadata section (EXIF here), and primary actions.
 
 <details>
 <summary><b>More preview formats</b> — click to expand</summary>
@@ -85,24 +62,22 @@ A persistent right-rail with file properties, a format-specific metadata section
 
 <p align="center">
   <img src="docs/screenshots/preview-audio.png" width="80%" alt="Audio preview with album art and custom transport" />
-  <br/><em>Audio — ID3 album art, custom scrubber, ID3 tags surfaced</em>
+  <br/><em>Audio — ID3 album art, custom scrubber, ID3 tags</em>
 </p>
 
 <p align="center">
   <img src="docs/screenshots/preview-pdf.png" width="80%" alt="PDF preview with thumbnail rail" />
-  <br/><em>PDF — PDF.js-rendered pages with a thumbnail rail; toolbar drives zoom and page-jumps</em>
+  <br/><em>PDF — PDF.js-rendered pages with a thumbnail rail</em>
 </p>
 
 <p align="center">
   <img src="docs/screenshots/preview-epub.png" width="80%" alt="EPUB preview with dark mode applied to chapter text" />
-  <br/><em>EPUB — vue-reader with our dark theme injected into the iframe via <code>themes.override</code> (the only API that reliably beats the book's own CSS)</em>
+  <br/><em>EPUB — vue-reader with our dark theme injected into the iframe via <code>themes.override</code></em>
 </p>
 
 </details>
 
 ### Light and Dark themes
-
-The light and dark themes are a true ground-up rebuild, not a `filter: invert`. Every component re-themed against the same token palette, with surface-by-surface fixes so contrast never falls below WCAG AA. The user picks Light / Dark / System in Settings → Profile, and the choice is persisted in localStorage (per-user, per-browser). Defaults to System.
 
 <table>
   <tr>
@@ -119,15 +94,13 @@ The light and dark themes are a true ground-up rebuild, not a `filter: invert`. 
   </tr>
 </table>
 
-The theme switch is live — flipping it doesn't refresh the page and doesn't lose state.
-
 ### Command palette
 
 <p align="center">
   <img src="docs/screenshots/command-palette.png" width="70%" alt="⌘K command palette with backend file search" />
 </p>
 
-`⌘K` (or `/`) opens the palette. Backend file search is the same palette as the command list — debounced live results, keyboard-first, no separate "search modal".
+`⌘K` (or `/`) opens the palette.
 
 ### Mobile
 
@@ -137,21 +110,19 @@ The theme switch is live — flipping it doesn't refresh the page and doesn't lo
   <img src="docs/screenshots/mobile-preview.png" width="32%" alt="Mobile preview" />
 </p>
 
-A dedicated `SidebarDrawer` for narrow viewports. 44 px tap targets across every control.
-
 ### Settings
 
 <p align="center">
   <img src="docs/screenshots/settings-profile.png" width="80%" alt="Profile settings with theme switcher and auto-save indicator" />
 </p>
 
-Settings rebuilt around a left-rail sub-nav with shared `SettingsSection` / `SettingsRow` / `Toggle` primitives. Auto-saves with a bottom-right status pill (Saving → Saved → fade out). Password and other sensitive fields stay explicit-save.
+Settings rebuilt around a left-rail sub-nav with shared `SettingsSection` / `SettingsRow` / `Toggle` primitives. 
 
 ---
 
 ## Quick start
 
-The published image lives at **`ghcr.io/csummers-dev/filebrowser-pretty:latest`** and works on any Linux x86_64 host (NAS, mini-PC, VPS, your homelab).
+The published image lives at **`ghcr.io/csummers-dev/filebrowser-pretty:latest`** and works on any Linux x86_64 host (NAS, mini-PC, VPS, homelab).
 
 ### Run it with `docker run`
 
@@ -276,18 +247,6 @@ docker compose up -d filebrowser
 # settings all survive.
 ```
 
-### Common deployment gotchas
-
-| Symptom | Cause | Fix |
-| --- | --- | --- |
-| `exec format error` / garbled bytes in logs | Binary built for wrong arch (host instead of target) | Rebuild with explicit `GOOS=linux GOARCH=amd64` |
-| `no matching manifest for linux/amd64` | Docker image built for the wrong platform | Add `--platform linux/amd64` to `docker build` |
-| 403 on every upload | Host volume owned by root; container can't write | Mount user-owned **subdirectories**, not whole NAS volume roots; or set `user:` in compose to match owner |
-| Reverse proxy serves 404 | Traefik can't find the router | Network label has to match the actual Docker network name — check `docker inspect <container> --format '{{.HostConfig.NetworkMode}}'` |
-| First-login password scrolled off | Detached `docker run` ate the logs | `docker exec <container> filebrowser users update admin --password "newpass" --config /config/settings.json` |
-
----
-
 ## Architecture
 
 ```
@@ -365,10 +324,6 @@ docker compose up -d filebrowser
 
 ---
 
-## What I've done
-
-This README marks **v1.2.1** — a keyboard + paper-cuts round on top of the v1.2.0 audio polish + bundle-split work.
-
 ### v1.2.1 — Keyboard, drag, paper cuts
 
 - **Keyboard shortcuts I expected to already exist** — `Cmd+A` / `Ctrl+A` select all in the listing (with a proper input-focus guard so it doesn't hijack the search bar's native select-all), `r` to refresh the current folder, `j` / `k` for previous / next track inside the audio preview, `PageUp` / `PageDown` / `Home` / `End` for page navigation inside the PDF preview
@@ -408,57 +363,16 @@ This README marks **v1.2.1** — a keyboard + paper-cuts round on top of the v1.
 - **Zip extract with delete-original** — server-side extraction, with an optional "remove the archive after success" toggle
 - **Shared drag composable** (`useDropTarget`) — single source of truth for move-vs-copy, conflict resolution, and error toasts
 
-### v1.0 — Full UI rewrite
+### v1.0
 
-Stage-by-stage, in order:
-
-<details>
-<summary><b>Stage 5–6:</b> Grid + Gallery views, multi-select pill, responsive sweep</summary>
-
-Rebuilt against the static mockups in `mockup-*.html`. Three view modes share one selection model. The header gracefully degrades at every breakpoint.
-</details>
-
-<details>
-<summary><b>Stage 7:</b> Command palette + search</summary>
-
-Linear-style ⌘K with a registry-driven command list. Backend search lives in the same palette — debounced live results.
-</details>
-
-<details>
-<summary><b>Stage 8:</b> Inline file operations</summary>
-
-New folder, new file, rename, and delete all happen inline in the row. Delete is optimistic with an Undo toast so it never feels destructive.
-</details>
-
-<details>
-<summary><b>Stage 9:</b> Slide-overs, settings rebuild, user admin</summary>
-
-`SlideOver.vue` primitive replaces the old prompt soup. FolderPicker / MoveCopy / Share / Extract all share the chrome. Settings shell rebuilt with a left-rail sub-nav.
-</details>
-
-<details>
-<summary><b>Stage 10:</b> Login + share-view rewrites</summary>
-
-The public surfaces (login + share view) got the same design language as the authed app.
-</details>
-
-<details>
-<summary><b>Stage 11:</b> A11y, dark mode, mobile, keyboard, polish</summary>
-
-Eleven sub-stages: ARIA sweep, dark mode tokens + per-user persistence, mobile drawer + 44 px tap targets, global shortcut dispatcher, focus management. 
-</details>
-
-<details>
-<summary><b>Stage 12 (Preview rebuild):</b> All seven format viewers</summary>
-
-Each format has its own viewer component (Image · Video · Audio · PDF · EPUB · CSV · Text) with a shared `PreviewShell` + `PreviewInfoRail` chrome. Format-specific metadata surfaces in a `format-section` slot.
-</details>
-
-<details>
-<summary><b>Stage 13:</b> Build pipeline, prettier sweep, dead code, Docker</summary>
-
-End-of-cycle housekeeping: whole-codebase prettier pass, dead code audit, production build smoke test, Docker image build verified.
-</details>
+- Grid + Gallery views, multi-select pill, responsive sweep
+- Command palette + search
+- Inline file operations
+- Slide-overs, settings rebuild, user admin
+- Login + share-view rewrites
+- A11y, dark mode, mobile, keyboard, polish
+- Preview rebuild: All seven format viewers
+- Build pipeline, prettier sweep, dead code, Docker
 
 ---
 
