@@ -12,11 +12,6 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square)](LICENSE)
 
-[Highlights](#highlights) ·
-[Quick start](#quick-start) ·
-[Architecture](#architecture) ·
-[Roadmap](#roadmap)
-
 </div>
 
 ---
