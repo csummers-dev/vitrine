@@ -6,7 +6,7 @@
 
 ### A self-hosted file browser.
 
-A complete front-end rewrite of [filebrowser/filebrowser](https://github.com/filebrowser/filebrowser). Built on the same trusted Go backend, transformed into a modern UX experience with a modern design system, dark mode, a command palette, drag-and-drop everywhere, rich previews for images, video, audio, PDF, EPUB, code, and more.
+An upgraded and improved rewrite of [filebrowser/filebrowser](https://github.com/filebrowser/filebrowser). Built on the same trusted Go backend, transformed into a modern user experience with a thoughtful design system, theming, a command palette, drag-and-drop everywhere, rich previews for images, video, audio, PDF, EPUB, code, and more.
 
 [![Version](https://img.shields.io/badge/version-1.2.1-5e6ad2?style=flat-square)](#)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
@@ -25,11 +25,11 @@ A complete front-end rewrite of [filebrowser/filebrowser](https://github.com/fil
 
 ## Why this fork
 
-The upstream `filebrowser/filebrowser` is good software. Take a single Go binary, one config file, point it at a directory, and you get a web file manager that's been working reliably for years. The maintainers have moved it into "no new features" mode, which is a fair place to land for a project that's already done its job.
+The project `filebrowser/filebrowser` is one of my most-often used applications in my homelab. Take a single Go binary, one config file, point it at a directory, and you get a web file manager that works reliably and consistently. The maintainers have moved it into "no new features" mode, which is a fair place to land for a project that's already done its job.
 
-What it doesn't have is the polish I've come to expect from the rest of my daily tools. The UI was showing its age, the design system was inconsistent, common quality-of-life patterns were missing, and the file-preview experience hadn't kept pace.
+What it doesn't have is the UX polish I've come to expect from the rest of my tools. The UI is basic, the design system is inconsistent, common quality-of-life patterns are missing, and several outstanding bugs have yet to have been resolved upstream.
 
-**filebrowser pretty** keeps the dependable backend and rebuilds the entire frontend on top of it, paired with a running list of features I wanted, paper cuts I kept hitting, and bug fixes the upstream hasn't merged.
+**filebrowser pretty** starts from the dependable backend of `filebrowser/filebrowser` v2.63.5 and rebuilds the entire application on top of it, with an entire rewrite and redesign of the frontend paired, focusing on modern software usability standards and a non-maintenance mode development approach.
 
 ---
 
