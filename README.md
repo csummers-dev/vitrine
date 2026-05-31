@@ -311,51 +311,6 @@ The next release is **v1.3.0**.
 
 ---
 
-## Keyboard shortcuts
-
-| Key | What it does |
-| --- | --- |
-| `?` | Show shortcuts overlay |
-| `⌘K` / `/` | Open command palette |
-| `g f` | Go to files |
-| `g s` | Go to settings |
-| `1` / `2` / `3` | Switch to List / Grid / Gallery view |
-| `n` | New folder (inline) |
-| `u` | Upload |
-| `r` | Refresh current folder |
-| `e` | Extract zip (when a `.zip` is selected) |
-| `⌘A` / `Ctrl+A` | Select all (in listing, skipped while typing) |
-| `←` / `→` | Previous / next file in preview |
-| `Esc` | Close preview / dismiss prompts |
-| `Space` | Play / pause (audio preview) |
-| `j` / `k` | Previous / next track (audio preview) |
-| `PageUp` / `PageDown` | Previous / next page (PDF preview) |
-| `Home` / `End` | First / last page (PDF preview) |
-| `f` | Toggle full-size image in preview |
-
-The full list is always one `?` away.
-
----
-
-## Development
-
-```bash
-# Frontend dev server with HMR
-cd frontend
-pnpm dev          # → http://localhost:5173 (proxied to backend)
-
-# Backend with embedded frontend
-go run .
-
-# Typecheck + lint + production build (the full check)
-cd frontend
-pnpm typecheck
-pnpm lint
-pnpm build
-```
-
----
-
 ## Credits
 
 This project began as a fork of [filebrowser/filebrowser](https://github.com/filebrowser/filebrowser) by [@hacdias](https://github.com/hacdias) and the original maintainers.
