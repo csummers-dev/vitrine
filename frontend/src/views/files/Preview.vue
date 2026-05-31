@@ -397,6 +397,25 @@
           <!-- Audio Track + Codec (E2) -->
           <template v-if="audioMeta">
             <div class="preview-info__label">Track</div>
+            <!-- Album artwork — extracted from the file's ID3 APIC frame
+                 (or equivalent for non-MP3 formats) by music-metadata
+                 inside AudioViewer. The blob URL is piped up via the
+                 metadata event so we can render it here in the rail
+                 alongside the textual tags. Hidden when the file has
+                 no embedded artwork — the audio player itself renders
+                 a fallback gradient in that case. -->
+            <div v-if="audioMeta.artworkUrl" class="preview-info__artwork">
+              <img
+                :src="audioMeta.artworkUrl"
+                :alt="
+                  audioMeta.album
+                    ? `Album artwork for ${audioMeta.album}`
+                    : 'Album artwork'
+                "
+                loading="lazy"
+                draggable="false"
+              />
+            </div>
             <dl class="preview-info__dl">
               <div v-if="audioMeta.title" class="preview-info__row">
                 <dt>Title</dt>
@@ -500,18 +519,58 @@ import dayjs from "dayjs";
 import exifr from "exifr";
 import PreviewShell from "@/components/files/PreviewShell.vue";
 import PreviewInfoRail from "@/components/files/PreviewInfoRail.vue";
+// ImageViewer stays statically imported. It's the lightest viewer (no
+// heavyweight deps) and serves the most common file type — images.
+// Lazy-loading it would add a chunk-fetch hitch to the most-traveled
+// preview path for ~zero bundle-size savings.
 import ImageViewer from "@/components/files/ImageViewer.vue";
-import VideoViewer, {
-  type VideoMeta,
-} from "@/components/files/VideoViewer.vue";
-import AudioViewer, {
-  type AudioMeta,
-} from "@/components/files/AudioViewer.vue";
-import PdfViewer from "@/components/files/PdfViewer.vue";
-import EpubViewer from "@/components/files/EpubViewer.vue";
-import TextViewer from "@/components/files/TextViewer.vue";
-import CsvViewer from "@/components/files/CsvViewer.vue";
-import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from "vue";
+// Type-only imports for metadata interfaces stay synchronous —
+// TypeScript erases them at compile time, so they don't pull the
+// component into the main bundle.
+import type { VideoMeta } from "@/components/files/VideoViewer.vue";
+import type { AudioMeta } from "@/components/files/AudioViewer.vue";
+import {
+  computed,
+  defineAsyncComponent,
+  inject,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
+
+/**
+ * Lazy-loaded format viewers. Each viewer pulls in a heavyweight
+ * dependency (pdfjs-dist, video.js, vue-reader + epub.js, ace-builds,
+ * music-metadata, etc.) that's only useful when the user is actively
+ * previewing that file type. By splitting them via defineAsyncComponent,
+ * Vite emits each viewer + its deps as its own chunk that's only fetched
+ * on demand. Main bundle drops ~1 MB+; first preview of each format
+ * pays a one-time chunk-fetch cost (cached thereafter).
+ *
+ * We don't pass an `errorComponent` here — if a chunk fails to load
+ * the user sees the PreviewShell empty area, which is acceptable for
+ * a homelab tool (most likely cause is offline / cache miss; reload
+ * fixes it). Adding error UI is a future polish if needed.
+ */
+const VideoViewer = defineAsyncComponent(
+  () => import("@/components/files/VideoViewer.vue")
+);
+const AudioViewer = defineAsyncComponent(
+  () => import("@/components/files/AudioViewer.vue")
+);
+const PdfViewer = defineAsyncComponent(
+  () => import("@/components/files/PdfViewer.vue")
+);
+const EpubViewer = defineAsyncComponent(
+  () => import("@/components/files/EpubViewer.vue")
+);
+const TextViewer = defineAsyncComponent(
+  () => import("@/components/files/TextViewer.vue")
+);
+const CsvViewer = defineAsyncComponent(
+  () => import("@/components/files/CsvViewer.vue")
+);
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 
@@ -1317,7 +1376,81 @@ html.dark .preview-blob__icon--zip {
   border-color: transparent;
 }
 
+/* ── Toolbar format button with text label ─────────────────────────────
+   The "Edit" button in the text-preview toolbar uses this. Sibling to
+   `.preview-fit__btn` (the icon-only square) but accommodates an
+   icon + text-label pair. Same height + border + colors so the two
+   buttons sit side-by-side without visual mismatch. Below the md
+   breakpoint the label is hidden via `max-md:hidden` in the template,
+   so the button collapses to the same 28px square as preview-fit__btn. */
+.preview-toolbar-format__btn {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface, #fff);
+  color: var(--color-ink-2, #52525b);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease;
+}
+.preview-toolbar-format__btn:hover {
+  background: var(--color-elevated, #f4f4f5);
+  color: var(--color-ink-1, #18181b);
+}
+.preview-toolbar-format__btn:focus-visible {
+  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline-offset: 1px;
+}
+/* When the label is hidden at narrow widths, shrink to icon-only square
+   so the button matches its sibling `.preview-fit__btn` exactly. */
+@media (max-width: 768px) {
+  .preview-toolbar-format__btn {
+    width: 28px;
+    padding: 0;
+  }
+}
+
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/* ── Album artwork in the audio info-rail (D9) ────────────────────────
+   Rendered when the file has an embedded APIC (or equivalent) frame
+   the parser could extract. Square 1:1, rounded, light shadow so it
+   has presence without competing with the player card to its left.
+   Margin-bottom matches the gap between the .preview-info__label and
+   the dl that follows so the layout reads as one cohesive section. */
+.preview-info__artwork {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  background: var(--color-elevated, #f4f4f5);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 8px 24px -12px rgba(0, 0, 0, 0.18);
+}
+.preview-info__artwork img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+html.dark .preview-info__artwork {
+  background: var(--color-canvas-2, #232327);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    0 8px 24px -12px rgba(0, 0, 0, 0.5);
 }
 </style>

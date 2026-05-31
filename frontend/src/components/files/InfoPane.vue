@@ -170,10 +170,28 @@
 
     <!-- Location -->
     <div class="px-4 py-3 border-t border-line">
-      <div
-        class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] mb-1.5"
-      >
-        Location
+      <div class="mb-1.5 flex items-center justify-between gap-2">
+        <div
+          class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em]"
+        >
+          Location
+        </div>
+        <!-- G6: Copy path action. Lives next to the Location label so
+             the affordance is right where the user is looking when they
+             want it. Uses the navigator.clipboard API (modern, no fallback
+             needed for our target browsers). Toast confirms because the
+             OS clipboard is invisible — the user needs feedback to know
+             something happened. -->
+        <button
+          type="button"
+          class="info-pane__copy-path"
+          :title="copiedPath ? 'Copied!' : 'Copy path'"
+          :aria-label="copiedPath ? 'Path copied' : 'Copy path'"
+          @click="copyPath"
+        >
+          <Icon :name="copiedPath ? 'check' : 'copy'" :size="12" />
+          <span>{{ copiedPath ? "Copied" : "Copy" }}</span>
+        </button>
       </div>
       <div
         class="font-mono text-[11px] text-ink-2 break-all bg-elevated rounded-md px-2 py-1.5 border border-line"
@@ -209,11 +227,60 @@ import { filesize } from "@/utils";
 import { enableThumbs, unzipEnabled } from "@/utils/constants";
 import { files as api } from "@/api";
 import dayjs from "dayjs";
-import { computed, onMounted, onUnmounted } from "vue";
+import { computed, inject, onMounted, onUnmounted, ref } from "vue";
 
 const fileStore = useFileStore();
 const authStore = useAuthStore();
 const layoutStore = useLayoutStore();
+const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
+
+// G6: Copy-path local state. We flash the button label to "Copied" for
+// ~1.5 s after a successful copy as immediate inline feedback, and ALSO
+// show a toast. Double-feedback is intentional: the inline change is
+// instant and right where the user clicked, the toast is durable so it
+// survives them looking away.
+const copiedPath = ref<boolean>(false);
+let copiedResetTimer: number | null = null;
+
+const copyPath = async () => {
+  const path = item.value?.path || item.value?.url;
+  if (!path) return;
+  try {
+    await navigator.clipboard.writeText(path);
+    copiedPath.value = true;
+    if (copiedResetTimer !== null) window.clearTimeout(copiedResetTimer);
+    copiedResetTimer = window.setTimeout(() => {
+      copiedPath.value = false;
+      copiedResetTimer = null;
+    }, 1500);
+    $showSuccess(`Path copied: ${path}`);
+  } catch {
+    // navigator.clipboard fails in insecure contexts (http://) or when
+    // the user denied permission. Fall back to a manual selection prompt
+    // via a one-off textarea + execCommand("copy") so the action still
+    // succeeds on LAN-only HTTP setups (homelab without TLS).
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = path;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      copiedPath.value = true;
+      if (copiedResetTimer !== null) window.clearTimeout(copiedResetTimer);
+      copiedResetTimer = window.setTimeout(() => {
+        copiedPath.value = false;
+        copiedResetTimer = null;
+      }, 1500);
+      $showSuccess(`Path copied: ${path}`);
+    } catch {
+      /* both methods failed — silently no-op */
+    }
+  }
+};
 
 const item = computed<ResourceItem | null>(() => {
   if (!fileStore.req || fileStore.selectedCount !== 1) return null;
@@ -397,5 +464,46 @@ html.dark .preview-mesh {
   color: #dc2626;
   border-color: #fecaca;
   background: #fef2f2;
+}
+
+/* ── Copy-path button (G6) ────────────────────────────────────────
+   Small ghost button sitting next to the "Location" label. Goes
+   accent-tinted in the "Copied" state to reinforce the success. */
+.info-pane__copy-path {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-ink-3, #a1a1aa);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease;
+}
+.info-pane__copy-path:hover {
+  background: var(--color-elevated, #f4f4f5);
+  color: var(--color-ink-1, #18181b);
+  border-color: var(--color-line, #ececec);
+}
+.info-pane__copy-path:focus-visible {
+  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline-offset: 1px;
+}
+/* Activate when the path is freshly in the clipboard. Subtle accent
+   wash + matching ink so the flash reads as "yes, it happened". */
+.info-pane__copy-path:has(svg[data-name="check"]),
+.info-pane__copy-path:hover:has(svg[data-name="check"]) {
+  background: var(--color-accent-soft, rgba(94, 106, 210, 0.12));
+  color: var(--color-accent, #5e6ad2);
+  border-color: transparent;
 }
 </style>

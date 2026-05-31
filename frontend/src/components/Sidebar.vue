@@ -160,7 +160,7 @@
         :title="user.username"
       >
         <div
-          class="w-7 h-7 max-md:w-9 max-md:h-9 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-[11px] font-semibold shadow-sm shrink-0"
+          class="w-7 h-7 max-md:w-9 max-md:h-9 rounded-full bg-gradient-to-br from-[#7c87e5] to-[#4f5ac4] flex items-center justify-center text-white text-[11px] font-semibold shadow-sm shrink-0"
         >
           {{ userInitials }}
         </div>

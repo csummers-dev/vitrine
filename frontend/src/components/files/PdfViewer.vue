@@ -93,7 +93,7 @@ import type {
   PDFDocumentProxy,
   PDFPageProxy,
 } from "pdfjs-dist/types/src/display/api";
-import { onBeforeUnmount, ref, watch } from "vue";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import Icon from "@/components/Icon.vue";
 
 // Wire up the worker once at module scope. pdfjsLib.GlobalWorkerOptions
@@ -316,7 +316,52 @@ watch(
   { immediate: true }
 );
 
+// ── Keyboard navigation (G5) ───────────────────────────────────────
+// Installed for the lifetime of PdfViewer; matches macOS Preview app
+// conventions for multi-page docs:
+//   • PageDown / Space      → next page (we skip Space — too aggressive,
+//                              would conflict with native scroll)
+//   • PageUp                → previous page
+//   • Home                  → first page
+//   • End                   → last page
+// All guarded against typing targets so PageUp / PageDown in the page
+// number input still natively jumps the caret.
+const onPdfKeydown = (event: KeyboardEvent) => {
+  const target = event.target as HTMLElement | null;
+  if (target instanceof HTMLInputElement) return;
+  if (target instanceof HTMLTextAreaElement) return;
+  if (target?.isContentEditable) return;
+  if (totalPages.value === 0) return;
+
+  switch (event.key) {
+    case "PageDown":
+      event.preventDefault();
+      goToPage(Math.min(totalPages.value, currentPage.value + 1));
+      break;
+    case "PageUp":
+      event.preventDefault();
+      goToPage(Math.max(1, currentPage.value - 1));
+      break;
+    case "Home":
+      // Don't hijack Cmd+Home / Ctrl+Home — those have native meanings
+      // (jump to top of scrollable region, scroll to top of page) that
+      // overlap usefully with "first page" but are reachable via Home
+      // alone too. Keep it simple: bare Home only.
+      if (event.ctrlKey || event.metaKey) return;
+      event.preventDefault();
+      goToPage(1);
+      break;
+    case "End":
+      if (event.ctrlKey || event.metaKey) return;
+      event.preventDefault();
+      goToPage(totalPages.value);
+      break;
+  }
+};
+
+onMounted(() => window.addEventListener("keydown", onPdfKeydown));
 onBeforeUnmount(() => {
+  window.removeEventListener("keydown", onPdfKeydown);
   void reset();
 });
 </script>

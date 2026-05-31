@@ -33,7 +33,27 @@
 
           <!-- Results -->
           <div ref="resultsEl" class="cmd-palette__results">
-            <div v-if="flatResults.length === 0" class="cmd-palette__empty">
+            <!-- G7: while a backend search is in flight, render an
+                 inline loading row at the top so the palette doesn't
+                 look empty during slow searches. Sits ABOVE static
+                 results so the user sees "Searching…" alongside any
+                 commands that already match the query — they can still
+                 pick a command without waiting for file results. -->
+            <div
+              v-if="isSearching && flatResults.length === 0"
+              class="cmd-palette__searching"
+            >
+              <Icon
+                name="loader-circle"
+                :size="14"
+                class="cmd-palette__searching-spinner"
+              />
+              <span>Searching files…</span>
+            </div>
+            <div
+              v-else-if="flatResults.length === 0"
+              class="cmd-palette__empty"
+            >
               <Icon name="search-x" :size="18" :stroke-width="1.4" />
               <span>No results for &ldquo;{{ query }}&rdquo;</span>
             </div>
@@ -93,6 +113,7 @@ import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 import { search } from "@/api";
+import url from "@/utils/url";
 import { fileIcon } from "@/utils/fileIcon";
 import {
   buildStaticCommands,
@@ -124,6 +145,11 @@ const layoutStore = useLayoutStore();
 
 // File search state (live results streamed in from the backend).
 const fileResults = ref<Command[]>([]);
+// G7: in-flight indicator so the palette doesn't look empty during the
+// debounce + fetch window. Goes true the moment the user types (with
+// enough characters) and only flips false once the fetch resolves
+// (success, abort, or error).
+const isSearching = ref<boolean>(false);
 let searchAbortController: AbortController | null = null;
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -145,7 +171,13 @@ const cancelSearch = () => {
 const runSearch = async (q: string) => {
   cancelSearch();
   fileResults.value = [];
-  if (q.length < SEARCH_MIN_CHARS) return;
+  if (q.length < SEARCH_MIN_CHARS) {
+    isSearching.value = false;
+    return;
+  }
+  // Flip the indicator on immediately — the user already committed to
+  // searching by typing enough characters. Don't wait for the debounce.
+  isSearching.value = true;
 
   searchDebounceTimer = setTimeout(async () => {
     searchAbortController = new AbortController();
@@ -154,7 +186,16 @@ const runSearch = async (q: string) => {
     // search API internally calls `removePrefix()` which strips the first
     // two path segments — pre-stripping here causes it to strip one too
     // many and search the wrong folder.
-    const base = route.path;
+    //
+    // BUT: if the user opened the palette while previewing a single file
+    // (route is e.g. "/files/Documents/report.pdf"), that path isn't a
+    // directory and the search endpoint 404s. Strip the last segment in
+    // that case so we search the parent folder instead. Mirrors the
+    // same logic in Search.vue (the header search bar).
+    let base = route.path;
+    if (!fileStore.isListing) {
+      base = url.removeLastDir(base) + "/";
+    }
     try {
       await search(base, q, ctrl.signal, (item) => {
         if (ctrl.signal.aborted) return;
@@ -178,6 +219,14 @@ const runSearch = async (q: string) => {
       // but shouldn't bubble (the static commands stay usable).
       if (err instanceof Error && err.name !== "AbortError") {
         console.warn("Command palette search failed:", err);
+      }
+    } finally {
+      // Only clear the indicator if THIS request is still the active
+      // one. If the user typed more during the fetch, runSearch was
+      // re-entered, the abort fired, and a fresh isSearching=true was
+      // set — don't clobber it with a stale finally.
+      if (searchAbortController === ctrl) {
+        isSearching.value = false;
       }
     }
   }, SEARCH_DEBOUNCE_MS);
@@ -224,7 +273,29 @@ const groupedResults = computed<ResultGroup[]>(() => {
   const scored: ScoredCommand[] = [];
 
   for (const cmd of commands.value) {
-    // Score against label + keywords; take the best.
+    // File results come straight from the backend search API, which has
+    // already matched against filename + path + (depending on config)
+    // content. Re-running fuzzyScore against just the basename throws
+    // away legitimate matches — e.g. a backend hit on a parent folder
+    // name, or a content match, would have a basename the fuzzy scorer
+    // can't satisfy. Trust the backend's filtering; preserve arrival
+    // order with a stable positive score so file results stay at the top.
+    if (cmd.group === "files") {
+      scored.push({
+        ...cmd,
+        // Descending score by index so backend order is preserved when
+        // we sort by score below. A small magnitude ensures static
+        // commands with matching keywords can still rank above them
+        // when the user types a command-y query.
+        _score: 1_000_000 - scored.length,
+        _flatIndex: 0,
+      });
+      continue;
+    }
+
+    // Static commands still go through fuzzy scoring against label +
+    // keywords — they need it because the same registry contains
+    // dozens of commands and the user types just a fragment.
     let best: number | null = fuzzyScore(q, cmd.label);
     if (cmd.keywords) {
       for (const kw of cmd.keywords) {
@@ -524,6 +595,33 @@ const run = async (cmd: Command) => {
   padding: 40px 16px;
   color: var(--color-ink-3, #a1a1aa);
   font-size: 13px;
+}
+
+/* ── Searching state (G7) ────────────────────────────────────────────
+   Compact horizontal row at the top of the results list while a
+   backend search is in-flight. Sized to match a regular result row so
+   the layout doesn't jump when results arrive and replace it. */
+.cmd-palette__searching {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  color: var(--color-ink-3, #a1a1aa);
+  font-size: 12.5px;
+}
+.cmd-palette__searching-spinner {
+  animation: cmd-palette-spin 0.9s linear infinite;
+  color: var(--color-accent, #5e6ad2);
+}
+@keyframes cmd-palette-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cmd-palette__searching-spinner {
+    animation: none;
+  }
 }
 
 /* ── Footer ─────────────────────────────────────────────────────────── */

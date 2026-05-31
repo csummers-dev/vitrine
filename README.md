@@ -4,61 +4,56 @@
 
 # filebrowser pretty
 
-### A self-hosted file browser that actually feels like 2026.
+### A self-hosted file browser.
 
-A complete front-end rewrite of [filebrowser/filebrowser](https://github.com/filebrowser/filebrowser) — same trusted Go backend, dragged into a modern UI with a real design system, dark mode, a command palette, drag-and-drop everywhere, and rich previews for images, video, audio, PDF, EPUB, code, and more.
+A complete front-end rewrite of [filebrowser/filebrowser](https://github.com/filebrowser/filebrowser). Built on the same trusted Go backend, transformed into a modern UX experience with a modern design system, dark mode, a command palette, drag-and-drop everywhere, rich previews for images, video, audio, PDF, EPUB, code, and more.
 
-[![Version](https://img.shields.io/badge/version-1.1.0-5e6ad2?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-1.2.1-5e6ad2?style=flat-square)](#)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
 [![Vue](https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js&logoColor=white)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square)](LICENSE)
 
-[Highlights](#-highlights) ·
-[Screenshots](#-a-tour) ·
-[Quick start](#-quick-start) ·
-[Architecture](#-architecture) ·
-[Roadmap](#-roadmap)
+[Highlights](#highlights) ·
+[Quick start](#quick-start) ·
+[Architecture](#architecture) ·
+[Roadmap](#roadmap)
 
 </div>
 
 ---
 
-## ✨ Why this fork
+## Why this fork
 
-The upstream `filebrowser/filebrowser` is rock-solid software — a single Go binary that drops onto any homelab and serves files over a web UI. It works, and it has worked for years. But the UI was showing its age, the design system was patchy, the dark mode was an afterthought, and the file-preview experience hadn't kept up with what we expect from a modern app.
+The upstream `filebrowser/filebrowser` is good software. Take a single Go binary, one config file, point it at a directory, and you get a web file manager that's been working reliably for years. The maintainers have moved it into "no new features" mode, which is a fair place to land for a project that's already done its job.
 
-**filebrowser pretty** keeps the dependable backend and rebuilds the entire frontend on top of it. Same data, same APIs, same operational story. Brand-new everything-you-see-and-touch.
+What it doesn't have is the polish I've come to expect from the rest of my daily tools. The UI was showing its age, the design system was inconsistent, common quality-of-life patterns were missing, and the file-preview experience hadn't kept pace.
 
-This is a personal homelab tool first; the goal isn't to replace the upstream — it's to scratch a very specific itch: **what would filebrowser look like if it were designed today, for a single user who cares about typography, motion, and consistency?**
-
----
-
-## 🌟 Highlights
-
-> Each item below was a project unto itself. There are ~135 individually-tracked changes behind 1.1.0.
-
-|  | Feature | What it actually does |
-| --- | --- | --- |
-| 🎨 | **Full design system** | Tailwind v4 tokens, a real type scale, accent + surface variables, scoped components — no more cascading-LESS spaghetti. |
-| 🌗 | **First-class dark mode** | Light · Dark · System per-user, persisted via the backend. Every surface — including EPUB chapter text and PDF.js chrome — repaints live without a refresh. |
-| 🔍 | **⌘K command palette** | Linear-style fuzzy command runner. Backend search is wired into the same palette so files and commands surface together. |
-| 📂 | **Three view modes** | List · Grid · Gallery, all with the same selection model and keyboard shortcuts. Press `1` / `2` / `3` to swap. |
-| 🖱️ | **Drag everywhere** | Move/copy by dragging onto folders, **breadcrumb segments** (jump to any ancestor without leaving the page), or **spring-loaded folders** (hover 2 s with a progress ring → folder opens so you can chain drops). Hold ⌘ to copy instead of move. |
-| 🖼️ | **Rich previews** | Image (EXIF panel) · Video (video.js with track info) · Audio (custom transport + ID3 APIC album art) · PDF (PDF.js with thumbnail rail + page nav) · EPUB (vue-reader with proper dark theme) · CSV (parsed table) · Text/code (Ace editor). |
-| ⌨️ | **Keyboard-first** | Press `?` for the shortcut cheat sheet. `g f` → files, `g s` → settings, arrows nav between files in preview, `Esc` closes everything. |
-| 📱 | **Mobile drawer + touch targets** | Purpose-built `SidebarDrawer` for narrow viewports, 44 px tap targets across every interactive surface, swipe-friendly preview. |
-| 🗂️ | **Inline file ops** | Create / rename / delete inline in the row — no modal interrupts. Delete uses optimistic UI with an Undo toast. |
-| 🗜️ | **Zip extract** | Server-side ZIP extraction with a slide-over panel, an "open the destination after extract" toggle, and an optional "delete the original on success" toggle. |
-| 🔗 | **Shares with depth** | Manage shares from a dedicated settings page; per-share password + expiry; public share view repainted to match the app's surface. |
-| 🧭 | **Live file metadata** | EXIF for photos (camera / lens / focal length / exposure / ISO / date taken), ID3 for audio (title / artist / album / year / artwork), track info for video. All extracted client-side, gracefully degrading. |
-| 🔐 | **Per-user everything** | View mode, theme, locale, Ace editor theme, dotfile visibility, date format, single-click — all per-user, persisted via the existing user store. |
+**filebrowser pretty** keeps the dependable backend and rebuilds the entire frontend on top of it, paired with a running list of features I wanted, paper cuts I kept hitting, and bug fixes the upstream hasn't merged.
 
 ---
 
-## 📸 A tour
+## Highlights
 
-> _Screenshots live in `docs/screenshots/`. Drop your captures there with these filenames and they'll render here automatically._
+> Each item below was a project unto itself. There are ~135 individually-tracked changes behind 1.1.0 alone.
+
+| Feature | What it actually does |
+| --- | --- |
+| **Full design system** | Tailwind v4 tokens, type scaling, accent + surface variables, scoped components. |
+| **First-class dark mode** | Light · Dark · System per-user, persisted in localStorage. Every surface — including EPUB chapter text and PDF.js chrome — repaints live without a refresh. |
+| **⌘K command palette** | Linear-style fuzzy command runner. Backend search is wired into the same palette so files and commands surface together. |
+| **Three view modes** | List · Grid · Gallery, all with the same selection model and keyboard shortcuts. Press `1` / `2` / `3` to swap. |
+| **Drag everywhere** | Move/copy by dragging onto folders, breadcrumb segments, or the section title (= parent folder). Spring-loading: hover any drop target for 2 s during a drag and it opens, so you can chain drops through nested directories without ever releasing. Hold ⌘ to copy instead of move. |
+| **Rich previews** | Image (EXIF panel) · Video (video.js with track info) · Audio (custom transport + ID3 APIC album art) · PDF (PDF.js with thumbnail rail + page nav) · EPUB (vue-reader with proper dark theme) · CSV (parsed table) · Text/code (Ace editor). |
+| **Keyboard-friendly** | Press `?` for the shortcut cheat sheet. `g f` → files, `g s` → settings, arrows nav between files in preview, `Esc` closes everything. |
+| **Mobile drawer + touch targets** | Purpose-built `SidebarDrawer` for narrow viewports, 44 px tap targets across every interactive surface, swipe-friendly preview. |
+| **Inline file ops** | Create / rename / delete inline in the row with no modal interrupts. Delete uses optimistic UI with an Undo toast. |
+| **Zip extract** | Server-side ZIP extraction with a slide-over panel, an "open the destination after extract" toggle, and an optional "delete the original on success" toggle. |
+| **Shares with depth** | Manage shares from a dedicated settings page; per-share password + expiry; public share view repainted to match the app's surface. |
+| **Live file metadata** | EXIF for photos (camera / lens / focal length / exposure / ISO / date taken), ID3 for audio (title / artist / album / year / artwork), track info for video. All extracted client-side, gracefully degrading. |
+| **Per-user everything** | View mode, theme, locale, Ace editor theme, dotfile visibility, date format, single-click — all per-user, persisted via the existing user store. |
+
+---
 
 ### The file listing
 
@@ -73,7 +68,7 @@ Single-line rows with a clean icon system, hover affordances for the actions men
   <img src="docs/screenshots/listing-gallery.png" width="49%" alt="Gallery view with image thumbnails" />
 </p>
 
-Swap views with `1` / `2` / `3` or the segmented control in the header. Gallery view uses lazy-loaded thumbnails so a directory of 2000 photos still scrolls smoothly.
+Swap views with `1` / `2` / `3` or the segmented control in the header. Gallery view uses lazy-loaded thumbnails so a directory of thousands of photos still scrolls smoothly.
 
 ### The preview shell
 
@@ -95,12 +90,12 @@ A persistent right-rail with file properties, a format-specific metadata section
 
 <p align="center">
   <img src="docs/screenshots/preview-audio.png" width="80%" alt="Audio preview with album art and custom transport" />
-  <br/><em>Audio — ID3 album art (Range-fetched so it doesn't starve playback), custom scrubber, ID3 tags surface in the rail</em>
+  <br/><em>Audio — ID3 album art, custom scrubber, ID3 tags surfaced</em>
 </p>
 
 <p align="center">
   <img src="docs/screenshots/preview-pdf.png" width="80%" alt="PDF preview with thumbnail rail" />
-  <br/><em>PDF — PDF.js-rendered pages with a thumbnail rail; toolbar drives zoom and page-jump</em>
+  <br/><em>PDF — PDF.js-rendered pages with a thumbnail rail; toolbar drives zoom and page-jumps</em>
 </p>
 
 <p align="center">
@@ -110,14 +105,26 @@ A persistent right-rail with file properties, a format-specific metadata section
 
 </details>
 
-### Dark mode
+### Light and Dark themes
 
-<p align="center">
-  <img src="docs/screenshots/dark-listing.png" width="49%" alt="Dark mode listing" />
-  <img src="docs/screenshots/dark-preview.png" width="49%" alt="Dark mode preview" />
-</p>
+The light and dark themes are a true ground-up rebuild, not a `filter: invert`. Every component re-themed against the same token palette, with surface-by-surface fixes so contrast never falls below WCAG AA. The user picks Light / Dark / System in Settings → Profile, and the choice is persisted in localStorage (per-user, per-browser). Defaults to System.
 
-Not a CSS filter. Every component re-themed against the same token palette, with surface-by-surface fixes so contrast never falls below WCAG AA.
+<table>
+  <tr>
+    <th align="center" width="50%">Light</th>
+    <th align="center" width="50%">Dark</th>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/light-listing.png" alt="Light mode listing" /></td>
+    <td><img src="docs/screenshots/dark-listing.png" alt="Dark mode listing" /></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/light-preview.png" alt="Light mode preview" /></td>
+    <td><img src="docs/screenshots/dark-preview.png" alt="Dark mode preview" /></td>
+  </tr>
+</table>
+
+The theme switch is live — flipping it doesn't refresh the page and doesn't lose state.
 
 ### Command palette
 
@@ -135,7 +142,7 @@ Not a CSS filter. Every component re-themed against the same token palette, with
   <img src="docs/screenshots/mobile-preview.png" width="32%" alt="Mobile preview" />
 </p>
 
-A dedicated `SidebarDrawer` for narrow viewports (not just a force-expanded desktop sidebar). 44 px tap targets across every control.
+A dedicated `SidebarDrawer` for narrow viewports. 44 px tap targets across every control.
 
 ### Settings
 
@@ -147,62 +154,146 @@ Settings rebuilt around a left-rail sub-nav with shared `SettingsSection` / `Set
 
 ---
 
-## 🚀 Quick start
+## Quick start
 
-### Docker
+The published image lives at **`ghcr.io/csummers-dev/filebrowser-pretty:latest`** and works on any Linux x86_64 host (NAS, mini-PC, VPS, your homelab).
+
+### Run it with `docker run`
 
 ```bash
-docker run \
-  -v /your/data:/srv \
-  -v /your/config:/database \
+# Named volumes — Docker handles ownership, no host-side chown dance
+docker run -d \
+  --name filebrowser \
+  --restart unless-stopped \
   -p 8080:80 \
-  ghcr.io/your-namespace/filebrowser-pretty:1.1.0
+  -v fb-data:/srv \
+  -v fb-db:/database \
+  -v fb-config:/config \
+  ghcr.io/csummers-dev/filebrowser-pretty:latest
+
+docker logs filebrowser | grep "password for"
+# Copy the randomly-generated admin password — you'll need it for first login.
 ```
 
-Then open <http://localhost:8080>. Default credentials are `admin` / `admin` — change them immediately in Settings → Users.
+Open <http://localhost:8080>, log in as `admin` with the password from the logs, and change it immediately in **Settings → Profile**.
 
-### Docker Compose
+### Run it with Docker Compose
+
+The recommended layout — mounts under `/srv/` so the filebrowser scope (default `/srv`) just works:
 
 ```yaml
 services:
   filebrowser:
-    image: ghcr.io/your-namespace/filebrowser-pretty:1.1.0
-    container_name: filebrowser
+    image: ghcr.io/csummers-dev/filebrowser-pretty:latest
+    container_name: filebrowser-pretty
     restart: unless-stopped
+    user: "1000:1000"        # match the UID/GID that owns your storage dirs
     ports:
       - "8080:80"
     volumes:
-      - ./data:/srv
-      - ./config:/database
+      # Your real data — mount user-owned SUBDIRECTORIES,
+      # not whole NAS volume roots (those are owned by root and you'll hit
+      # 403s on uploads).
+      - /path/to/your/movies:/srv/Movies
+      - /path/to/your/music:/srv/Music
+      - /path/to/your/downloads:/srv/Downloads
+      # Filebrowser's own state — keep on a fast disk if you have one
+      - ./filebrowser/database:/database
+      - ./filebrowser/config:/config
     environment:
       TZ: America/Los_Angeles
+    healthcheck:
+      test: ["CMD", "/healthcheck.sh"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+```
+
+Behind a reverse proxy (Traefik shown here — adapt for Caddy / nginx / your stack):
+
+```yaml
+    networks: [web]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=web
+      - traefik.http.routers.filebrowser-pretty.rule=Host(`files.yourdomain.com`)
+      - traefik.http.routers.filebrowser-pretty.entrypoints=websecure
+      - traefik.http.routers.filebrowser-pretty.tls.certresolver=letsencrypt
+      - traefik.http.services.filebrowser-pretty.loadbalancer.server.port=80
+```
+
+Then:
+
+```bash
+docker compose up -d filebrowser
+docker compose logs filebrowser | grep "password for"
 ```
 
 ### From source
 
-You need **Go ≥ 1.25**, **Node ≥ 24**, and **pnpm ≥ 10**.
+You need **Go ≥ 1.25**, **Node ≥ 24**, and **pnpm ≥ 10**, plus Docker if you want to package the result.
 
 ```bash
-git clone https://github.com/<you>/filebrowser-pretty.git
+git clone https://github.com/csummers-dev/filebrowser-pretty.git
 cd filebrowser-pretty
 
-# Frontend
+# 1) Build the frontend (bundled into the Go binary)
 cd frontend
-pnpm install
-pnpm build      # production bundle → frontend/dist
+pnpm install --frozen-lockfile
+pnpm build                                 # produces frontend/dist/
 cd ..
 
-# Backend (embeds the built frontend)
-go build -ldflags "-X github.com/filebrowser/filebrowser/v2/version.Version=1.1.0" -o filebrowser .
+# 2) Cross-compile the Go binary for the platform you'll deploy on.
+#    GOARCH=amd64 for Intel/AMD servers (most NASes, mini-PCs);
+#    GOARCH=arm64 for Raspberry Pi 4/5 + Apple silicon native Docker.
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
+  go build \
+  -ldflags "-X github.com/filebrowser/filebrowser/v2/version.Version=1.2.1" \
+  -o filebrowser .
 
-./filebrowser
+# 3) Sanity check (catches the #1 deployment trap)
+file filebrowser
+# Want: "ELF 64-bit LSB executable, x86-64, ... statically linked"
+
+# 4) Build the Docker image — explicit --platform avoids Apple-silicon
+#    surprises where docker silently picks the host arch.
+docker build --platform linux/amd64 \
+  -t ghcr.io/<your-namespace>/filebrowser-pretty:latest \
+  .
+
+# 5) (Optional) Verify the binary inside the image is the right arch
+docker run --rm --entrypoint sh \
+  ghcr.io/<your-namespace>/filebrowser-pretty:latest \
+  -c "file /bin/filebrowser"
+
+# 6) Push to your registry
+docker push ghcr.io/<your-namespace>/filebrowser-pretty:latest
 ```
 
-Visit <http://localhost:8080>.
+Or skip Docker entirely and run the binary directly: `./filebrowser` — opens on <http://localhost:8080>.
+
+### Upgrading
+
+```bash
+docker compose pull filebrowser
+docker compose up -d filebrowser
+# Your /srv data + /database state persist across upgrades — users, shares,
+# settings all survive.
+```
+
+### Common deployment gotchas
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `exec format error` / garbled bytes in logs | Binary built for wrong arch (host instead of target) | Rebuild with explicit `GOOS=linux GOARCH=amd64` |
+| `no matching manifest for linux/amd64` | Docker image built for the wrong platform | Add `--platform linux/amd64` to `docker build` |
+| 403 on every upload | Host volume owned by root; container can't write | Mount user-owned **subdirectories**, not whole NAS volume roots; or set `user:` in compose to match owner |
+| Reverse proxy serves 404 | Traefik can't find the router | Network label has to match the actual Docker network name — check `docker inspect <container> --format '{{.HostConfig.NetworkMode}}'` |
+| First-login password scrolled off | Detached `docker run` ate the logs | `docker exec <container> filebrowser users update admin --password "newpass" --config /config/settings.json` |
 
 ---
 
-## 🛠️ Architecture
+## Architecture
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -249,7 +340,7 @@ Visit <http://localhost:8080>.
 
 ---
 
-## 📂 Project layout
+## Project layout
 
 ```
 .
@@ -274,15 +365,43 @@ Visit <http://localhost:8080>.
 ├── settings/         # Site-wide settings store
 ├── share/            # Public share machinery
 ├── users/            # User model + permission gates
-├── version/          # Version constant (overridable via ldflags)
-└── mockup-*.html     # The static design mockups that anchored the rewrite
+└── version/          # Version constant (overridable via ldflags)
 ```
 
 ---
 
-## 🎯 What we've done
+## What I've done
 
-This README marks **v1.1.0**, which closes out the design rewrite started in v1.0 and adds the drag/preview/extract polish pass.
+This README marks **v1.2.1** — a keyboard + paper-cuts round on top of the v1.2.0 audio polish + bundle-split work.
+
+### v1.2.1 — Keyboard, drag, paper cuts
+
+- **Keyboard shortcuts I expected to already exist** — `Cmd+A` / `Ctrl+A` select all in the listing (with a proper input-focus guard so it doesn't hijack the search bar's native select-all), `r` to refresh the current folder, `j` / `k` for previous / next track inside the audio preview, `PageUp` / `PageDown` / `Home` / `End` for page navigation inside the PDF preview
+- **Copy path action** — small button next to the Location label in the details sidebar. Copies the relative path to the clipboard, flashes "Copied" inline, and surfaces a toast. Falls back to `execCommand("copy")` on HTTP-only homelab deployments where the modern clipboard API isn't available
+- **Searching… indicator in the command palette** — the palette no longer looks empty during the debounce + fetch window. A small accent-tinted spinner row appears as soon as the user types ≥ 2 characters and clears when the search resolves
+- **Spring-load on breadcrumbs and section title** — extending the spring-loaded folders pattern from row drops to header navigation: hovering a breadcrumb segment during a drag for 2 s navigates to that folder; hovering the section title navigates to the parent folder. Drop still wins over the timer
+- **Command palette no-results bug** — backend search results were being silently filtered out by a client-side fuzzy-score pass over the basename. Now the file group bypasses the fuzzy filter and trusts what the backend returned; static commands still go through scoring as before
+- **Mobile multi-select pill styling** — the `#file-selection` row that shows up on narrow viewports had no CSS at all (legacy `.action` class with dead tokens). Now a proper toolbar — surface background, border-bottom, 36 px rounded tap targets, destructive-tinted Delete hover
+- **Audio preview reliability** — fixed a temporal-dead-zone bug where `AudioViewer`'s `immediate: true` watch fired before its helper functions were initialized. Audio previews work again
+- **Theme default is explicit System** — first-init writes `"system"` to localStorage immediately, instead of just falling back to it in memory. Visible in DevTools and consistent across tabs from the moment the user loads the app
+- **Text-preview Edit button styling** — `.preview-toolbar-format__btn` was referenced in markup but never defined in CSS, so the button rendered with browser defaults next to the styled soft-wrap toggle. Defined the class to match its sibling chrome
+- **Vue Router deprecation cleanup** — converted both navigation guards from the legacy `next(value)` callback to the return-value pattern. Removes a stream of deprecation warnings from every navigation
+
+### v1.2.0 — Audio polish + lazy-loaded viewers
+
+- **Album artwork on the audio info-rail** — embedded APIC artwork (extracted client-side via music-metadata) now renders as a square tile at the top of the Track section, matching the chrome of the AudioViewer card itself
+- **Audio preview reliability fix** — temporal-dead-zone bug in `AudioViewer.vue` where an `immediate: true` watch fired before its helper functions were initialized; surfaced as paired "watcher callback" + "setup function" errors and broke audio previews entirely. Resolved by reordering the declarations
+- **Lazy-loaded format viewers** — `PdfViewer` / `VideoViewer` / `AudioViewer` / `EpubViewer` / `TextViewer` / `CsvViewer` now load on demand via `defineAsyncComponent` instead of bundling into the main chunk. Pulled ~1.7 MB of viewer code (pdfjs-dist, video.js, ace-builds, epub.js, music-metadata) out of first-load. Image previews stay statically loaded — they're the most common path and the cheapest viewer
+- **CI workflow hardening** — branch name fixed (`master` → `main`), upstream-only release + docs deploy jobs trimmed, `lint-pr.yaml` removed
+- **Docs polish** — Docker section in the README replaced with the real cross-compile + buildx + GHCR flow I hammered out in actual deployment, including a gotchas table for the traps I hit (wrong-arch binaries, manifest mismatches, 403 on upload, etc.)
+
+### v1.1.1 — Surface polish
+
+- **Upload dock redesign** — the floating progress card got a ground-up restyle: design-system tokens, live aggregate bar at the bottom edge of the head, per-file rows, dark mode, mobile full-width layout, completion checkmark, reduced-motion respect
+- **Inline rename for the current folder** — new "Rename folder" action in the section-title ⋯ menu; swaps the h1 for an input with the same Enter/Esc/blur UX as inline row rename
+- **Avatar tinted accent** — the user-row gradient now matches the brand mark (lilac) instead of the legacy emerald
+- **Removed dead UI** — stripped the no-op More (⋯) button from the preview header
+- **Tightened deploy docs** — Docker section in the README now matches the actual cross-compile + buildx flow with the gotchas I hit during real deployment
 
 ### v1.1.0 — Drag, preview, polish
 
@@ -331,7 +450,7 @@ The public surfaces (login + share view) got the same design language as the aut
 <details>
 <summary><b>Stage 11:</b> A11y, dark mode, mobile, keyboard, polish</summary>
 
-Eleven sub-stages: ARIA sweep, dark mode tokens + per-user persistence, mobile drawer + 44 px tap targets, global shortcut dispatcher, focus management. The unglamorous work that makes everything else feel right.
+Eleven sub-stages: ARIA sweep, dark mode tokens + per-user persistence, mobile drawer + 44 px tap targets, global shortcut dispatcher, focus management. 
 </details>
 
 <details>
@@ -348,22 +467,23 @@ End-of-cycle housekeeping: whole-codebase prettier pass, dead code audit, produc
 
 ---
 
-## 🗺️ Roadmap
+## Roadmap
 
 Things on the wishlist:
 
 - [ ] **Image film strip** — keyboard-navigable lightbox-style strip below image previews
+- [ ] **ID3 tag editing** — edit title / artist / album / year / track number / artwork in place from the audio preview rail, write back to the file
 - [ ] **Tags / smart folders** — server-side tag store, palette-driven tag filtering
 - [ ] **Pluggable preview types** — register a new format viewer via a config file
 - [ ] **WebDAV polish** — works today, but the UX for mounting it could be friendlier
 - [ ] **Multi-tenant scopes** — multiple roots per user with independent permissions
 - [ ] **Server-side video thumbnails** — frame extraction so the gallery view shows real previews
 
-Most of these are "scratch the itch when it appears" — there's no fixed schedule. Issues + PRs welcome.
+Issues + PRs welcome.
 
 ---
 
-## ⌨️ Keyboard shortcuts
+## Keyboard shortcuts
 
 | Key | What it does |
 | --- | --- |
@@ -374,16 +494,22 @@ Most of these are "scratch the itch when it appears" — there's no fixed schedu
 | `1` / `2` / `3` | Switch to List / Grid / Gallery view |
 | `n` | New folder (inline) |
 | `u` | Upload |
+| `r` | Refresh current folder |
+| `e` | Extract zip (when a `.zip` is selected) |
+| `⌘A` / `Ctrl+A` | Select all (in listing, skipped while typing) |
 | `←` / `→` | Previous / next file in preview |
 | `Esc` | Close preview / dismiss prompts |
-| `Space` | Play/pause (in audio preview) |
+| `Space` | Play / pause (audio preview) |
+| `j` / `k` | Previous / next track (audio preview) |
+| `PageUp` / `PageDown` | Previous / next page (PDF preview) |
+| `Home` / `End` | First / last page (PDF preview) |
 | `f` | Toggle full-size image in preview |
 
 The full list is always one `?` away.
 
 ---
 
-## 🧪 Development
+## Development
 
 ```bash
 # Frontend dev server with HMR
@@ -409,15 +535,22 @@ pnpm build
 
 ---
 
-## 🙏 Credits
+## Credits
 
-This project stands entirely on the shoulders of [filebrowser/filebrowser](https://github.com/filebrowser/filebrowser) by [@hacdias](https://github.com/hacdias) and the original maintainers. The backend, the binary, the auth story, the database — all of it is their work. This fork is just a UI.
+This project stands on the shoulders of [filebrowser/filebrowser](https://github.com/filebrowser/filebrowser) by [@hacdias](https://github.com/hacdias) and the original maintainers. The single-binary architecture, the auth story, the BoltDB-backed user/share store, the afero filesystem abstraction — that foundation is theirs, and it's the reason this project could happen at all.
 
-The design language draws from Linear, Raycast, and Things 3 — three apps that taught us small interactions can carry a whole product.
+What I've built on top of it is more than a coat of paint. **filebrowser pretty** ships:
+
+- **A complete frontend rewrite** — every component, every viewer, every settings page, against a real design system instead of patched legacy CSS.
+- **Bug fixes the upstream hasn't merged** — EPUB dark mode that actually beats book CSS, PDF arrow nav that survives the iframe focus capture, audio uploads that don't starve themselves with concurrent fetches, dropdown rendering on macOS Safari, share view 404 redirects, zip extract permission gates, and a dozen smaller fixes cataloged stage-by-stage in the commit history.
+- **Quality-of-life additions** — spring-loaded folders, breadcrumb drop targets, an in-app command palette, EXIF / ID3 / video-track metadata surfaces, the ZIP extract slide-over with "delete original on success", inline rename for both files and the current folder, dark mode that's actually dark, real keyboard shortcuts.
+- **A maintenance posture** the upstream explicitly stepped away from (the upstream is in "no new features" mode by their own statement). This fork is where the experimentation happens.
+
+The design language draws from a philosophy that believes small interactions can help carry a product to greatness. The engineering posture draws from the upstream's backend competence.
 
 ---
 
-## 📜 License
+## License
 
 Apache License 2.0, same as upstream. See [LICENSE](LICENSE).
 
@@ -425,6 +558,6 @@ Apache License 2.0, same as upstream. See [LICENSE](LICENSE).
 
 <div align="center">
 
-**Built with care for a homelab of one.**
+**Built with love.**
 
 </div>

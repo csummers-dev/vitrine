@@ -370,22 +370,15 @@ const formatTime = (secs: number): string => {
   return `${m}:${s.toString().padStart(2, "0")}`;
 };
 
-// ── Reset on src change so a swap between tracks doesn't show the
-// previous time / playing state for a frame. Also kicks off ID3
-// extraction for the new file.
-watch(
-  () => props.src,
-  (next) => {
-    isPlaying.value = false;
-    currentTime.value = 0;
-    duration.value = 0;
-    parsedMeta.value = null;
-    revokeArtwork();
-    artworkUrl.value = "";
-    if (next) void extractMetadata(next);
-  },
-  { immediate: true }
-);
+// NOTE on declaration order: `revokeArtwork` and `extractMetadata` MUST
+// be declared BEFORE the `watch(..., { immediate: true })` below.
+// Immediate watchers fire their callback synchronously inside the
+// `watch()` call — which happens during component setup — and JS
+// `const` is in the temporal dead zone until its declaration line.
+// Putting the watch first and the consts after threw a ReferenceError
+// on the very first src observation, which Vue surfaced as paired
+// "execution of watcher callback" + "execution of setup function"
+// errors and left AudioViewer in a broken state.
 
 const revokeArtwork = () => {
   if (artworkRevocable) {
@@ -463,16 +456,58 @@ const extractMetadata = async (src: string) => {
   }
 };
 
-// ── Space-to-play global handler — installed while mounted ─────────
+// ── Reset on src change so a swap between tracks doesn't show the
+// previous time / playing state for a frame. Also kicks off ID3
+// extraction for the new file. Declared AFTER the helpers above —
+// `{ immediate: true }` runs the callback during setup, so those
+// functions must already exist in scope by the time it fires.
+watch(
+  () => props.src,
+  (next) => {
+    isPlaying.value = false;
+    currentTime.value = 0;
+    duration.value = 0;
+    parsedMeta.value = null;
+    revokeArtwork();
+    artworkUrl.value = "";
+    if (next) void extractMetadata(next);
+  },
+  { immediate: true }
+);
+
+// ── Keyboard handler — installed while AudioViewer is mounted ─────
+// Three shortcuts:
+//   • Space → toggle play/pause
+//   • j     → previous track  (vi-style, G4)
+//   • k     → next track      (vi-style, G4)
+// All skip when focus is in a text input / textarea / contenteditable
+// so typing "j" or "k" in the search bar or any other field is safe.
+// `j`/`k` are intentionally additive to the existing arrow-key nav in
+// Preview.vue — arrows still work, this just gives an alternative for
+// users who prefer a vi-style left-hand-home-row workflow.
 const onKeydown = (event: KeyboardEvent) => {
-  if (event.key !== " " && event.code !== "Space") return;
-  // Don't hijack space if focus is in a text input or our scrubber.
   const target = event.target as HTMLElement | null;
   if (target instanceof HTMLInputElement) return;
   if (target instanceof HTMLTextAreaElement) return;
   if (target?.isContentEditable) return;
-  event.preventDefault();
-  togglePlay();
+
+  if (event.key === " " || event.code === "Space") {
+    event.preventDefault();
+    togglePlay();
+    return;
+  }
+  if (event.key === "j") {
+    if (!props.hasPrevious) return;
+    event.preventDefault();
+    emit("prev");
+    return;
+  }
+  if (event.key === "k") {
+    if (!props.hasNext) return;
+    event.preventDefault();
+    emit("next");
+    return;
+  }
 };
 
 onMounted(() => window.addEventListener("keydown", onKeydown));
