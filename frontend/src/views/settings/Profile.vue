@@ -113,21 +113,6 @@
       </SettingsRow>
     </SettingsSection>
 
-    <!-- ── Editor theme ─────────────────────────────────────────────── -->
-    <SettingsSection
-      :title="t('settings.aceEditorTheme')"
-      description="Color theme used when editing files inline."
-    >
-      <SettingsRow stacked label="">
-        <AceEditorTheme
-          id="aceTheme"
-          class="settings-select"
-          v-model:aceEditorTheme="aceEditorTheme"
-          @update:aceEditorTheme="autoSave"
-        />
-      </SettingsRow>
-    </SettingsSection>
-
     <!-- ── Password (explicit save) ─────────────────────────────────── -->
     <form
       v-if="!noAuth && !authStore.user?.lockPassword"
@@ -219,7 +204,6 @@ import SettingsSection from "@/components/settings/SettingsSection.vue";
 import SettingsRow from "@/components/settings/SettingsRow.vue";
 import Toggle from "@/components/settings/Toggle.vue";
 import Languages from "@/components/settings/Languages.vue";
-import AceEditorTheme from "@/components/settings/AceEditorTheme.vue";
 import SegmentedControl from "@/components/SegmentedControl.vue";
 import Icon from "@/components/Icon.vue";
 import {
@@ -242,7 +226,6 @@ const singleClick = ref(false);
 const redirectAfterCopyMove = ref(false);
 const dateFormat = ref(false);
 const locale = ref<string>("");
-const aceEditorTheme = ref<string>("");
 
 // v1.3 S2-5: inline tag visibility on file rows. Persists via the
 // usePreferences composable rather than the legacy users.update path
@@ -334,7 +317,6 @@ onMounted(() => {
     singleClick.value = authStore.user.singleClick;
     redirectAfterCopyMove.value = authStore.user.redirectAfterCopyMove;
     dateFormat.value = authStore.user.dateFormat;
-    aceEditorTheme.value = authStore.user.aceEditorTheme;
   }
   isCurrentPasswordRequired.value = authMethod === "json";
   layoutStore.loading = false;
@@ -347,7 +329,6 @@ const PREF_KEYS = [
   "singleClick",
   "redirectAfterCopyMove",
   "dateFormat",
-  "aceEditorTheme",
 ];
 
 const autoSave = () => {
@@ -367,7 +348,6 @@ const autoSave = () => {
         singleClick: singleClick.value,
         redirectAfterCopyMove: redirectAfterCopyMove.value,
         dateFormat: dateFormat.value,
-        aceEditorTheme: aceEditorTheme.value,
       };
       await api.update(data, PREF_KEYS);
       authStore.updateUser(data);
@@ -404,10 +384,10 @@ const updatePassword = async () => {
 </script>
 
 <style scoped>
-/* No-op layout helper for Languages / AceEditorTheme selects. The
-   chrome (height, padding, border, chevron, appearance:none) lives in
-   global `.fb-select` (frontend/src/css/styles.css) which both
-   components already apply via class="fb-select".
+/* No-op layout helper for the Languages select. The chrome (height,
+   padding, border, chevron, appearance:none) lives in global
+   `.fb-select` (frontend/src/css/styles.css) which the select
+   already applies via class="fb-select".
    Previously this rule re-declared a `background: var(...)` shorthand
    that *erased* `.fb-select`'s background-image (the chevron) and
    reduced the right padding, causing the native select to render

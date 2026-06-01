@@ -43,7 +43,6 @@ const baseUser = (): IUser => ({
   redirectAfterCopyMove: false,
   dateFormat: false,
   viewMode: "list",
-  aceEditorTheme: "",
   preferences: {},
 });
 

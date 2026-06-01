@@ -509,7 +509,6 @@ func quickSetup(v *viper.Viper, s *storage.Storage) error {
 			Locale:                "en",
 			SingleClick:           false,
 			RedirectAfterCopyMove: true,
-			AceEditorTheme:        v.GetString("defaults.aceEditorTheme"),
 			Perm: users.Permissions{
 				Admin:    false,
 				Execute:  true,

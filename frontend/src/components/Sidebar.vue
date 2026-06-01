@@ -127,10 +127,17 @@
             draggable="true"
             class="rounded-md transition"
             :class="[
-              favDragOverIndex === index
+              // File dragged FROM the listing onto a favorite = move-into:
+              // keep the solid 'drop here' ring. (draggingFavIndex is null.)
+              favDragOverIndex === index && draggingFavIndex === null
                 ? 'ring-2 ring-accent ring-inset bg-selected'
                 : '',
-              draggingFavIndex === index ? 'opacity-40' : '',
+              // Reordering one favorite among the others = show an insertion
+              // line, NOT the move-into ring (clarity fix).
+              favDragOverIndex === index && draggingFavIndex !== null
+                ? 'fav-reorder-target'
+                : '',
+              draggingFavIndex === index ? 'fav-dragging' : '',
             ]"
             @dragstart="onFavDragStart(index, $event)"
             @dragover="onFavDragOver(index, $event)"
@@ -665,3 +672,35 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+/* ── Favorites drag affordances ──────────────────────────────────────
+   Reordering a favorite must NOT look like moving a file *into* a folder.
+   Move-into keeps the solid accent ring (set via Tailwind in the template);
+   reordering instead shows a thin insertion line where the item will land,
+   plus a "lifted" dashed treatment on the row being dragged. */
+
+/* Insertion line at the top edge of the row the favorite will drop before. */
+.fav-reorder-target {
+  position: relative;
+}
+.fav-reorder-target::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--color-accent, #5e6ad2);
+  box-shadow: 0 0 0 2px var(--color-canvas, #fafaf9);
+}
+
+/* The favorite currently being dragged for reorder: lifted, dashed — clearly
+   "picked up to re-order", distinct from the solid move-into highlight. */
+.fav-dragging {
+  opacity: 0.5;
+  outline: 1px dashed var(--color-accent, #5e6ad2);
+  outline-offset: -1px;
+}
+</style>

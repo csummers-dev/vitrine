@@ -187,6 +187,7 @@ import { useTransferIndicator } from "@/composables/useTransferIndicator";
 
 import { enableThumbs, enableVideoThumbs } from "@/utils/constants";
 import { filesize } from "@/utils";
+import { isSelfOrDescendantTarget } from "@/utils/dragdrop";
 import { fileIcon, fileIconColor } from "@/utils/fileIcon";
 import { setDragGhost } from "@/utils/dragGhost";
 import dayjs from "dayjs";
@@ -291,6 +292,19 @@ const isDraggable = computed(
 
 const canDrop = computed(() => {
   if (!props.isDir || props.readOnly) return false;
+
+  // A folder can't receive a folder that IS it or CONTAINS it — that would
+  // move a folder into its own subtree. Check against the dragstart snapshot
+  // (covers the self row AND, after spring-loading into the dragged folder,
+  // any of its descendant rows). Falls back to `selected` when no drag
+  // snapshot exists yet (the highlight still suppresses for selected rows).
+  const dragged = fileStore.draggedItems;
+  if (dragged.length > 0) {
+    for (const it of dragged) {
+      if (isSelfOrDescendantTarget(it.url, it.isDir, props.url)) return false;
+    }
+    return true;
+  }
 
   for (const i of fileStore.selected) {
     if (fileStore.req?.items[i].url === props.url) {
@@ -722,14 +736,23 @@ const drop = async (event: DragEvent) => {
   // Pull dragged items from the snapshot taken at dragstart, NOT from
   // `selected`. Spring-load navigation may have wiped `selected` between
   // dragstart and now; the snapshot is the source of truth.
-  const dragged = fileStore.draggedItems;
-  if (dragged.length === 0) {
+  const allDragged = fileStore.draggedItems;
+  if (allDragged.length === 0) {
     // Empty snapshot = the drop was already handled (a single native drop
     // bubbles through multiple drop handlers; `dragend` may have cleared
     // the snapshot by the time a later one runs). Not a user-facing error
     // — silently no-op instead of toasting (RC-12).
     return;
   }
+
+  // Reject moving a folder into itself or its own subtree (`canDrop`
+  // already suppresses the cursor/highlight for those, but guard the drop
+  // too in case it slips through). Skip the illegal items; if that empties
+  // the set, there's nothing valid to drop.
+  const dragged = allDragged.filter(
+    (it) => !isSelfOrDescendantTarget(it.url, it.isDir, props.url)
+  );
+  if (dragged.length === 0) return;
 
   let el = event.target as HTMLElement | null;
   for (let i = 0; i < 5; i++) {

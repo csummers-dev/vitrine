@@ -661,7 +661,7 @@ import {
 
 /**
  * Lazy-loaded format viewers. Each viewer pulls in a heavyweight
- * dependency (pdfjs-dist, video.js, vue-reader + epub.js, ace-builds,
+ * dependency (pdfjs-dist, video.js, vue-reader + epub.js,
  * music-metadata, etc.) that's only useful when the user is actively
  * previewing that file type. By splitting them via defineAsyncComponent,
  * Vite emits each viewer + its deps as its own chunk that's only fetched

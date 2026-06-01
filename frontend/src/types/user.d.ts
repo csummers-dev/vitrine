@@ -14,7 +14,6 @@ interface IUser {
   dateFormat: boolean;
   viewMode: ViewModeType;
   sorting?: Sorting;
-  aceEditorTheme: string;
   /**
    * Free-form per-user UI/feature preferences. Backed by a server-side
    * `map[string]json.RawMessage` so every key holds an opaque JSON value

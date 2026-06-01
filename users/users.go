@@ -37,7 +37,6 @@ type User struct {
 	Rules                 []rules.Rule  `json:"rules"`
 	HideDotfiles          bool          `json:"hideDotfiles"`
 	DateFormat            bool          `json:"dateFormat"`
-	AceEditorTheme        string        `json:"aceEditorTheme"`
 	// SessionsRevokedAt is the "sign out everywhere" epoch (Unix seconds,
 	// v1.3 S8-3). Any JWT whose IssuedAt predates it is rejected by the
 	// auth middleware — without any per-session storage. Zero means

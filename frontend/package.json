@@ -25,7 +25,6 @@
     "@tailwindcss/vite": "^4.3.0",
     "@vueuse/core": "^14.3.0",
     "@vueuse/integrations": "^14.3.0",
-    "ace-builds": "^1.44.0",
     "csv-parse": "^6.2.1",
     "dayjs": "^1.11.21",
     "dompurify": "^3.4.7",

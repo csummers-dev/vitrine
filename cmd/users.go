@@ -81,7 +81,6 @@ func addUserFlags(flags *pflag.FlagSet) {
 	flags.Bool("redirectAfterCopyMove", false, "redirect to destination after copy/move")
 	flags.Bool("dateFormat", false, "use date format (true for absolute time, false for relative)")
 	flags.Bool("hideDotfiles", false, "hide dotfiles")
-	flags.String("aceEditorTheme", "", "ace editor's syntax highlighting theme for users")
 }
 
 func getAndParseViewMode(flags *pflag.FlagSet) (users.ViewMode, error) {
@@ -114,8 +113,6 @@ func getUserDefaults(flags *pflag.FlagSet, defaults *settings.UserDefaults, all 
 			defaults.SingleClick, err = flags.GetBool(flag.Name)
 		case "redirectAfterCopyMove":
 			defaults.RedirectAfterCopyMove, err = flags.GetBool(flag.Name)
-		case "aceEditorTheme":
-			defaults.AceEditorTheme, err = flags.GetString(flag.Name)
 		case "perm.admin":
 			defaults.Perm.Admin, err = flags.GetBool(flag.Name)
 		case "perm.execute":

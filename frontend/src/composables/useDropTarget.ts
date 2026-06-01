@@ -1,7 +1,9 @@
+import { useToast } from "vue-toastification";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 import { files as api } from "@/api";
 import * as upload from "@/utils/upload";
+import { isSelfOrDescendantTarget } from "@/utils/dragdrop";
 import { useTransferIndicator } from "@/composables/useTransferIndicator";
 
 /**
@@ -21,6 +23,7 @@ import { useTransferIndicator } from "@/composables/useTransferIndicator";
 export function useDropTarget() {
   const fileStore = useFileStore();
   const layoutStore = useLayoutStore();
+  const toast = useToast();
   const { runTransfer } = useTransferIndicator();
 
   const performDrop = async (event: DragEvent, targetUrl: string) => {
@@ -30,13 +33,25 @@ export function useDropTarget() {
     // navigation between dragstart and drop may have cleared `selected`
     // when the original items left the visible listing — the snapshot
     // survives those navigations.
-    const dragged = fileStore.draggedItems;
-    if (dragged.length === 0) {
+    const snapshot = fileStore.draggedItems;
+    if (snapshot.length === 0) {
       // Empty snapshot at drop time isn't a user-facing error (RC-12): a
       // single native drop bubbles to ancestor drop handlers, and by the
       // time a later one runs `dragend` may already have cleared the
       // snapshot. The real move was performed by the first handler — so
       // surfacing an error toast here was spurious. Silently no-op.
+      return;
+    }
+
+    // Reject moving a folder into itself or its own subtree (illegal — the
+    // backend would error). Unlike the listing rows, this path (favorites /
+    // breadcrumb) has no dragover cursor gate, so warn when the whole drop
+    // is an illegal self-drop.
+    const dragged = snapshot.filter(
+      (it) => !isSelfOrDescendantTarget(it.url, it.isDir, targetUrl)
+    );
+    if (dragged.length === 0) {
+      toast.warning("You can't move a folder into itself.");
       return;
     }
 
