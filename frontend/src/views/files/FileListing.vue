@@ -3570,11 +3570,13 @@ html.dark .current-folder-dropzone {
 }
 
 .current-fav-btn--active {
-  color: var(--tag-color-amber-fg, #b45309);
+  /* Warm favorite gold — matches the sidebar favorite stars (was the amber
+     tag token, a dark brown in light mode). */
+  color: #f59e0b;
 }
 
 .current-fav-btn--active:hover {
-  background: var(--tag-color-amber-bg, rgba(217, 119, 6, 0.12));
+  background: rgba(245, 158, 11, 0.12);
 }
 
 @media (prefers-reduced-motion: reduce) {

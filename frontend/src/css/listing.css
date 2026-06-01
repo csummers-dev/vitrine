@@ -345,12 +345,15 @@
    v1.3 S3-2 — folders only. */
 .item__fav-btn--active {
   opacity: 1 !important;
-  color: var(--tag-color-amber-fg, #b45309);
+  /* Warm favorite gold — matches the sidebar/drawer favorite stars and reads
+     on both themes. (Was the amber tag token, which is a dark brown in light
+     mode.) */
+  color: #f59e0b;
 }
 
 .item__fav-btn--active:hover {
-  color: var(--tag-color-amber-fg, #b45309);
-  background: var(--tag-color-amber-bg, rgba(217, 119, 6, 0.12));
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
 }
 
 /* Touch-target sweep (Stage 11f): bump the row action button to 32px

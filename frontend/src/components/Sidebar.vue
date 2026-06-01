@@ -6,11 +6,11 @@
     <div
       class="h-12 px-3 max-md:px-0 max-md:justify-center flex items-center gap-2.5 shrink-0"
     >
-      <div
-        class="w-7 h-7 max-md:w-9 max-md:h-9 rounded-md bg-gradient-to-br from-accent to-accent-strong flex items-center justify-center shadow-sm shrink-0"
-      >
-        <Icon name="folder" :size="14" :stroke-width="1.8" class="text-white" />
-      </div>
+      <img
+        :src="logoPngURL"
+        alt="logo"
+        class="w-7 h-7 max-md:w-9 max-md:h-9 rounded-md object-contain shrink-0"
+      />
       <div class="flex-1 min-w-0 max-md:hidden">
         <div
           class="text-[13px] font-semibold leading-tight truncate text-ink-1"
@@ -168,7 +168,7 @@
                 :size="12"
                 :stroke-width="0"
                 fill="currentColor"
-                class="text-amber-700 shrink-0"
+                class="text-amber-500 shrink-0"
               />
               <span class="truncate flex-1">{{ favoriteName(path) }}</span>
             </router-link>
@@ -362,6 +362,7 @@ import {
   noAuth,
   logoutPage,
   loginPage,
+  logoPngURL,
 } from "@/utils/constants";
 import { files as api } from "@/api";
 import Icon from "@/components/Icon.vue";
@@ -614,6 +615,7 @@ export default {
     signup: () => signup,
     hideLoginButton: () => hideLoginButton,
     version: () => version,
+    logoPngURL: () => logoPngURL,
     disableExternal: () => disableExternal,
     disableUsedPercentage: () => disableUsedPercentage,
     canLogout: () => !noAuth && (loginPage || logoutPage !== "/login"),

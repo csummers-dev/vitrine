@@ -8,8 +8,8 @@
       <header class="login-card__header">
         <div class="login-card__logo">
           <img
-            v-if="logoURL"
-            :src="logoURL"
+            v-if="logoPngURL"
+            :src="logoPngURL"
             :alt="name || 'filebrowser pretty'"
             class="login-card__logo-img"
           />
@@ -189,7 +189,7 @@ import { useAuthStore } from "@/stores/auth";
 import { lastFilesPathKey } from "@/router";
 import {
   name,
-  logoURL,
+  logoPngURL,
   recaptcha,
   recaptchaKey,
   signup,
@@ -360,62 +360,86 @@ onMounted(async () => {
   color: var(--color-ink-1, #18181b);
 }
 
-/* Decorative mesh background — same family as the InfoPane preview mesh.
+/* Decorative mesh background — one soft radial blob per accent preset, so the
+   page reads as a gradient of all six accent colors (lilac, blue, teal, green,
+   amber, rose) arranged around the card. Hard-coded hues (not the accent CSS
+   var) because login is pre-auth, where the chosen accent isn't applied yet.
    IMPORTANT: no `filter: blur()`. A full-viewport blur filter is very
    expensive to paint on every reflow/repaint (which input events trigger),
-   so we rely on the radial gradients' own soft edges + bumped alpha + a
+   so we rely on the radial gradients' own soft edges + tuned alpha + a
    wider spread to stay ambient without the GPU cost. */
 .login__mesh {
   position: absolute;
   inset: 0;
   background:
     radial-gradient(
-      ellipse 70% 60% at 18% 22%,
-      rgba(94, 106, 210, 0.22) 0%,
-      transparent 65%
+      ellipse 62% 58% at 14% 16%,
+      rgba(94, 106, 210, 0.2) 0%,
+      transparent 62%
     ),
     radial-gradient(
-      ellipse 70% 60% at 82% 28%,
-      rgba(244, 114, 182, 0.16) 0%,
-      transparent 65%
+      ellipse 62% 58% at 86% 14%,
+      rgba(59, 130, 246, 0.18) 0%,
+      transparent 62%
     ),
     radial-gradient(
-      ellipse 70% 60% at 72% 82%,
-      rgba(251, 191, 36, 0.14) 0%,
-      transparent 65%
+      ellipse 62% 58% at 92% 56%,
+      rgba(13, 148, 136, 0.16) 0%,
+      transparent 62%
     ),
     radial-gradient(
-      ellipse 70% 60% at 28% 78%,
-      rgba(94, 106, 210, 0.14) 0%,
-      transparent 65%
+      ellipse 62% 58% at 72% 88%,
+      rgba(22, 163, 74, 0.16) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse 62% 58% at 22% 86%,
+      rgba(217, 119, 6, 0.16) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse 62% 58% at 8% 52%,
+      rgba(225, 29, 72, 0.16) 0%,
+      transparent 62%
     );
   pointer-events: none;
   z-index: 0;
 }
 
-/* Dark mode: bump alpha so the radial blobs stay visible against the
-   darker canvas, and shift the warm/pink tint to feel cooler. */
+/* Dark mode: bump alpha so the blobs stay visible against the darker canvas,
+   and use the lighter "grad" tone of each accent (teal/green/amber/rose) so
+   the hues pop instead of muddying. */
 html.dark .login__mesh {
   background:
     radial-gradient(
-      ellipse 70% 60% at 18% 22%,
-      rgba(94, 106, 210, 0.35) 0%,
-      transparent 65%
+      ellipse 62% 58% at 14% 16%,
+      rgba(124, 135, 229, 0.34) 0%,
+      transparent 64%
     ),
     radial-gradient(
-      ellipse 70% 60% at 82% 28%,
-      rgba(168, 85, 247, 0.22) 0%,
-      transparent 65%
+      ellipse 62% 58% at 86% 14%,
+      rgba(96, 165, 250, 0.28) 0%,
+      transparent 64%
     ),
     radial-gradient(
-      ellipse 70% 60% at 72% 82%,
-      rgba(56, 189, 248, 0.16) 0%,
-      transparent 65%
+      ellipse 62% 58% at 92% 56%,
+      rgba(45, 212, 191, 0.24) 0%,
+      transparent 64%
     ),
     radial-gradient(
-      ellipse 70% 60% at 28% 78%,
-      rgba(94, 106, 210, 0.22) 0%,
-      transparent 65%
+      ellipse 62% 58% at 72% 88%,
+      rgba(74, 222, 128, 0.22) 0%,
+      transparent 64%
+    ),
+    radial-gradient(
+      ellipse 62% 58% at 22% 86%,
+      rgba(251, 191, 36, 0.22) 0%,
+      transparent 64%
+    ),
+    radial-gradient(
+      ellipse 62% 58% at 8% 52%,
+      rgba(251, 113, 133, 0.24) 0%,
+      transparent 64%
     );
 }
 
@@ -448,23 +472,28 @@ html.dark .login__mesh {
   width: 28px;
   height: 28px;
   border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* Fallback folder glyph (no logo) keeps the branded accent tile; the real
+   logo.png renders clean on transparent, matching the sidebar brand mark. */
+.login-card__logo:has(.login-card__logo-fallback) {
   background: linear-gradient(
     135deg,
     var(--color-accent, #5e6ad2) 0%,
     var(--color-accent-strong, #4f5ac4) 100%
   );
-  display: flex;
-  align-items: center;
-  justify-content: center;
   box-shadow: 0 1px 2px rgba(94, 106, 210, 0.4);
-  flex-shrink: 0;
-  overflow: hidden;
 }
 
 .login-card__logo-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .login-card__logo-fallback {

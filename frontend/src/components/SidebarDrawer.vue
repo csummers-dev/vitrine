@@ -2,9 +2,7 @@
   <aside class="sd" @click="onItemClick">
     <!-- ── Workspace header ─────────────────────────────────────────── -->
     <header class="sd__header">
-      <div class="sd__brand-mark">
-        <Icon name="folder" :size="16" :stroke-width="1.8" />
-      </div>
+      <img class="sd__brand-mark" :src="logoPngURL" alt="logo" />
       <div class="sd__brand-text">
         <div class="sd__brand-name">
           <BrandName name="filebrowser pretty" />
@@ -210,6 +208,7 @@ import {
   noAuth,
   logoutPage,
   loginPage,
+  logoPngURL,
 } from "@/utils/constants";
 import { files as api } from "@/api";
 import prettyBytes from "pretty-bytes";
@@ -399,18 +398,8 @@ const onItemClick = (_event: MouseEvent) => {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  /* Track the accent picker (RC-5) — fall back to lilac when unset. */
-  background: linear-gradient(
-    135deg,
-    var(--color-accent, #5e6ad2) 0%,
-    var(--color-accent-strong, #4f5ac4) 100%
-  );
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  object-fit: contain;
   flex-shrink: 0;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .sd__brand-text {
@@ -612,7 +601,9 @@ const onItemClick = (_event: MouseEvent) => {
 }
 
 .sd__fav-star {
-  color: #b45309;
+  /* Warm gold that reads on both the light canvas and the dark sidebar.
+     (Was #b45309 — a dark brown that looked muddy in light mode.) */
+  color: #f59e0b;
   flex-shrink: 0;
 }
 
