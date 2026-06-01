@@ -39,6 +39,7 @@ default.nix
 Dockerfile.dev
 
 docs/*.md
+mockups/
 
 # Local build/push helper
 build-and-push.sh
