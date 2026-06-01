@@ -83,6 +83,19 @@
             </span>
           </span>
         </label>
+
+        <!-- RC-8: Optionally jump into the extracted folder when done.
+             Off by default (stay where you are); the choice is remembered
+             across sessions via user prefs. -->
+        <label class="extract-option">
+          <Toggle v-model="openFolder" :disabled="loading" />
+          <span class="extract-option__text">
+            <span class="extract-option__label">Open extracted folder</span>
+            <span class="extract-option__hint">
+              Navigate into the new folder once extraction finishes.
+            </span>
+          </span>
+        </label>
       </div>
 
       <p class="extract-hint">
@@ -149,6 +162,7 @@
 import { computed, inject, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useFileStore } from "@/stores/file";
+import { usePreferences } from "@/composables/usePreferences";
 import { files as api } from "@/api";
 import { filesize } from "@/utils";
 import { mapUnzipError, deriveSubfolderName } from "@/utils/unzipErrors";
@@ -172,6 +186,7 @@ const $showError = inject<IToastError>("$showError")!;
 const route = useRoute();
 const router = useRouter();
 const fileStore = useFileStore();
+const prefs = usePreferences();
 const toast = useToast();
 
 const pickerRef = ref<InstanceType<typeof FolderPicker> | null>(null);
@@ -182,8 +197,18 @@ const overwrite = ref<boolean>(false);
 // successful extraction. Failed extractions never trigger the delete
 // so the user can retry with the archive still in place.
 const deleteOriginal = ref<boolean>(false);
+// RC-8: Navigate into the extracted folder when done. Off by default and
+// remembered across sessions in the prefs bag (unlike the per-open
+// toggles above) — "keep persistent whenever updated".
+const openFolder = ref<boolean>(false);
 const loading = ref<boolean>(false);
 const errorMessage = ref<string>("");
+
+// Persist the toggle the moment it changes. The redundant write when the
+// open-watch seeds it from prefs is harmless (optimistic + debounced).
+watch(openFolder, (v) => {
+  void prefs.set("extractOpenFolder", v);
+});
 
 /**
  * Snapshot of the source archive — captured on `open` so layout-store
@@ -275,12 +300,17 @@ const onSubmit = async () => {
       }
     }
 
-    // Success — close panel, toast, navigate.
+    // Success — close panel + toast.
     toast.success(`Extracted to ${decodeURIComponent(dest)}`);
     emit("done");
-    // Land the user inside the destination so they see the new contents
-    // animate in via the FileListing TransitionGroup.
-    router.push({ path: dest.replace(/\/?$/, "/") });
+    // RC-8: only land the user inside the destination when they opted in.
+    // Otherwise stay put and just refresh the current listing so a
+    // same-folder extraction's new folder still animates in.
+    if (openFolder.value) {
+      router.push({ path: dest.replace(/\/?$/, "/") });
+    } else {
+      fileStore.reload = true;
+    }
   } catch (err) {
     errorMessage.value = mapUnzipError(err);
     // Also surface as a toast for users who closed the panel before
@@ -307,6 +337,8 @@ watch(
     overwrite.value = false;
     deleteOriginal.value = false;
     newSubfolder.value = true;
+    // RC-8: restore the remembered "open extracted folder" choice.
+    openFolder.value = prefs.get<boolean>("extractOpenFolder", false);
     destPath.value = initialPath.value;
 
     const req = fileStore.req;

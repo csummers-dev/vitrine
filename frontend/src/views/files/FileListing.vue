@@ -638,18 +638,18 @@
               <button
                 v-if="headerButtons.copy"
                 @click="layoutStore.showHover('copy')"
-                :title="t('buttons.copyFile')"
+                :title="t('buttons.copyFiles')"
               >
                 <Icon name="copy" :size="14" />
-                <span>{{ t("buttons.copyFile") }}</span>
+                <span>{{ t("buttons.copyFiles") }}</span>
               </button>
               <button
                 v-if="headerButtons.move"
                 @click="layoutStore.showHover('move')"
-                :title="t('buttons.moveFile')"
+                :title="t('buttons.moveFiles')"
               >
                 <Icon name="forward" :size="14" />
-                <span>{{ t("buttons.moveFile") }}</span>
+                <span>{{ t("buttons.moveFiles") }}</span>
               </button>
               <!-- v1.3 S4-2: Bulk rename pill button. Only renders for
                    multi-select (single-select uses inline rename in
@@ -2060,12 +2060,11 @@ const switchView = async () => {
   if (folderPath) {
     folderViewMode.setModeForPath(folderPath, next);
   }
-  // Mutate the auth-store local copy so the viewMode computed
-  // re-evaluates immediately. Server isn't notified — the per-folder
-  // override is local-only.
-  if (authStore.user) {
-    authStore.user.viewMode = next;
-  }
+  // Update the reactive ref directly so the change shows immediately.
+  // We deliberately do NOT touch authStore.user.viewMode — the per-folder
+  // override is local-only and must not silently change the account
+  // default (that's only set via Profile / the command palette).
+  viewMode.value = next;
 
   setItemWeight();
   fillWindow();
@@ -2082,24 +2081,41 @@ const setView = async (mode: string) => {
   if (folderPath) {
     folderViewMode.setModeForPath(folderPath, mode as ViewModeType);
   }
-  // Local mutation so the computed reflects the change. See
-  // switchView for why we don't go through the user-update API.
-  authStore.user.viewMode = mode as ViewModeType;
+  // Drive the reactive ref directly (RC-2). We don't mutate
+  // authStore.user.viewMode here — the per-folder override is local-only
+  // and shouldn't move the account default.
+  viewMode.value = mode as ViewModeType;
   setItemWeight();
   fillWindow();
 };
 
-/** Effective view mode for the current folder: per-folder override
- *  if set, else the user's account-wide default. Reactive on both
- *  the auth store (default change in Profile) and on folder
- *  navigation (req.url changes). */
-const viewMode = computed<ViewModeType>(() => {
+/** Effective view mode for the current folder: per-folder override if
+ *  set, else the user's account-wide default.
+ *
+ *  Backed by a `ref` rather than a plain computed: the per-folder
+ *  override lives in `localStorage`, which is NOT reactive. A computed
+ *  over `getModeForPath()` only tracks `req.url`, so toggling the view
+ *  in the *same* folder changed localStorage but never re-ran the
+ *  computed — the buttons looked dead until you navigated away or
+ *  refreshed (RC-2). This ref is the source of truth: re-seeded on
+ *  folder navigation and account-default changes, and set synchronously
+ *  by setView/switchView. */
+const resolveViewMode = (): ViewModeType => {
   const folderPath = fileStore.req?.url;
   if (folderPath) {
     return folderViewMode.getModeForPath(folderPath);
   }
   return authStore.user?.viewMode ?? "list";
-});
+};
+
+const viewMode = ref<ViewModeType>(resolveViewMode());
+
+watch(
+  () => [fileStore.req?.url, authStore.user?.viewMode] as const,
+  () => {
+    viewMode.value = resolveViewMode();
+  }
+);
 void switchView;
 
 const totalItems = computed(
@@ -2119,8 +2135,12 @@ const toggleSelectAll = () => {
   }
 };
 
-// Bulk-action pill is shown when 2+ items are selected (single selection uses InfoPane instead)
-const showBulkPill = computed(() => fileStore.selectedCount >= 2);
+// Bulk-action pill is shown when 2+ items are selected (single selection
+// uses InfoPane instead) AND no slide-over panel is open — otherwise the
+// fixed bottom pill overlaps the right-hand panel (RC fix).
+const showBulkPill = computed(
+  () => fileStore.selectedCount >= 2 && !anyPanelOpen.value
+);
 
 // Inline new-item row: when the layout store flags "newDir" or "newFile" as
 // the current prompt, render the inline row instead of the legacy modal.
@@ -2163,10 +2183,37 @@ const performDelete = async (items: { url: string; name: string }[]) => {
   }
 };
 
-const startUndoDelete = (items: { url: string; name: string }[]) => {
-  // Clear the selection so the pill + selection ring disappear with the items
-  fileStore.selected = [];
+// After an optimistic delete, move the selection to the nearest remaining
+// item so a follow-up Shift+Delete (RC-10) has a target instead of
+// no-opping on an empty selection. Mirrors the image-preview delete flow,
+// which already advances to a neighbor. Runs BEFORE the deleted items are
+// hidden by the pending filter, so the pre-delete visual order is intact.
+const selectNeighborAfterDelete = (deletedUrls: Set<string>) => {
+  // dirs-then-files matches the listing's render order.
+  const visible = [...items.value.dirs, ...items.value.files];
+  const firstDeletedPos = visible.findIndex((it) => deletedUrls.has(it.url));
+  const remaining = visible.filter((it) => !deletedUrls.has(it.url));
   fileStore.multiple = false;
+  if (remaining.length === 0) {
+    // Deleted the whole folder's worth of items — nothing left to select.
+    fileStore.selected = [];
+    return;
+  }
+  // The item that slides up into the first deleted slot (or the last
+  // remaining item if the deletion was at the end of the list).
+  const pos = firstDeletedPos === -1 ? 0 : firstDeletedPos;
+  const neighbor = remaining[Math.min(pos, remaining.length - 1)];
+  // Immediate re-selection — `index` is the same key space the rows bind
+  // to, so the selection ring + a follow-up keyboard delete both work now.
+  fileStore.selected = [neighbor.index];
+  // Survive the eventual reload: performDelete sets reload=true, and
+  // Files.vue re-resolves queued preselect paths into the selection.
+  if (neighbor.path) fileStore.setPreselect(neighbor.path);
+};
+
+const startUndoDelete = (items: { url: string; name: string }[]) => {
+  // Advance the selection to a neighbor before the items vanish (RC-10).
+  selectNeighborAfterDelete(new Set(items.map((i) => i.url)));
 
   const message =
     items.length === 1
@@ -2248,6 +2295,41 @@ const closeExtract = () => {
   extractOpen.value = false;
 };
 
+// True when ANY of the slide-over panels is open. Drives the pill-hide
+// (so the bottom pill doesn't overlap a panel) and the one-at-a-time
+// enforcement below.
+const anyPanelOpen = computed(
+  () =>
+    moveCopyOpen.value ||
+    shareOpen.value ||
+    extractOpen.value ||
+    bulkRename.isOpen.value
+);
+
+// Only one slide-over may be open at a time. Each open-path calls this
+// first so opening (say) Rename dismisses an already-open Copy panel
+// instead of stacking them.
+const closeAllPanels = () => {
+  moveCopyOpen.value = false;
+  shareOpen.value = false;
+  extractOpen.value = false;
+  bulkRename.close();
+};
+
+// BulkRename is opened from outside FileListing (pill button, command
+// palette, row context menu) via the composable singleton — so close the
+// sibling panels reactively whenever it opens.
+watch(
+  () => bulkRename.isOpen.value,
+  (open) => {
+    if (open) {
+      moveCopyOpen.value = false;
+      shareOpen.value = false;
+      extractOpen.value = false;
+    }
+  }
+);
+
 watch(
   () => layoutStore.currentPromptName,
   (name) => {
@@ -2255,6 +2337,7 @@ watch(
       if (!fileStore.isListing || fileStore.selectedCount === 0) return;
       moveCopyMode.value = name;
       layoutStore.closeHovers();
+      closeAllPanels();
       moveCopyOpen.value = true;
       return;
     }
@@ -2267,6 +2350,7 @@ watch(
       const fileView = !fileStore.isListing;
       if (!singleListingSelection && !fileView) return;
       layoutStore.closeHovers();
+      closeAllPanels();
       shareOpen.value = true;
       return;
     }
@@ -2280,6 +2364,7 @@ watch(
       const item = fileStore.req?.items[fileStore.selected[0]];
       if (!item || (item.extension ?? "").toLowerCase() !== ".zip") return;
       layoutStore.closeHovers();
+      closeAllPanels();
       extractOpen.value = true;
       return;
     }

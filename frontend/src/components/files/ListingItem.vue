@@ -13,13 +13,8 @@
     @drop="drop"
     @click="itemClick"
     @mousedown="handleMouseDown"
-    @mouseup="handleMouseUp"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
-    @touchstart="handleTouchStart"
-    @touchend="handleTouchEnd"
-    @touchcancel="handleTouchCancel"
-    @touchmove="handleTouchMove"
     :data-dir="isDir"
     :data-type="type"
     :data-index="index"
@@ -202,12 +197,6 @@ import { computed, inject, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
 const touches = ref<number>(0);
-
-const longPressTimer = ref<number | null>(null);
-const longPressTriggered = ref<boolean>(false);
-const longPressDelay = ref<number>(500);
-const startPosition = ref<{ x: number; y: number } | null>(null);
-const moveThreshold = ref<number>(10);
 
 const $showError = inject<IToastError>("$showError")!;
 const router = useRouter();
@@ -733,7 +722,10 @@ const drop = async (event: DragEvent) => {
   // dragstart and now; the snapshot is the source of truth.
   const dragged = fileStore.draggedItems;
   if (dragged.length === 0) {
-    $showError(new Error("Nothing to drop — drag source was cleared"));
+    // Empty snapshot = the drop was already handled (a single native drop
+    // bubbles through multiple drop handlers; `dragend` may have cleared
+    // the snapshot by the time a later one runs). Not a user-facing error
+    // — silently no-op instead of toasting (RC-12).
     return;
   }
 
@@ -812,12 +804,6 @@ const drop = async (event: DragEvent) => {
 };
 
 const itemClick = (event: Event | KeyboardEvent) => {
-  // If long press was triggered, prevent normal click behavior
-  if (longPressTriggered.value) {
-    longPressTriggered.value = false;
-    return;
-  }
-
   if (
     singleClick.value &&
     !(event as KeyboardEvent).ctrlKey &&
@@ -902,65 +888,6 @@ const getExtension = (fileName: string): string => {
   return fileName.substring(lastDotIndex);
 };
 
-// Long-press helper functions
-const startLongPress = (clientX: number, clientY: number) => {
-  startPosition.value = { x: clientX, y: clientY };
-  longPressTimer.value = window.setTimeout(() => {
-    handleLongPress();
-  }, longPressDelay.value);
-};
-
-const cancelLongPress = () => {
-  if (longPressTimer.value !== null) {
-    window.clearTimeout(longPressTimer.value);
-    longPressTimer.value = null;
-  }
-  startPosition.value = null;
-};
-
-const handleLongPress = () => {
-  // v1.3 S4-1: long-press always fires the context menu, regardless of
-  // singleClick mode. Previously this was a singleClick-only "toggle
-  // select" shortcut — that path was rarely used and is now
-  // superseded by the menu (Open / Tag / Move / etc. all reachable
-  // from one long-press). longPressTriggered keeps the synthetic
-  // contextmenu from also triggering the subsequent click handler.
-  longPressTriggered.value = true;
-
-  // Dispatch a synthetic contextmenu DOM event on the row root. The
-  // event bubbles up to #listing's @contextmenu handler which builds
-  // the row menu the same way a desktop right-click would (including
-  // the selection-adoption pass inside ListingItem.contextMenu()).
-  const rowEl = startPosition.value
-    ? (document.elementFromPoint(
-        startPosition.value.x,
-        startPosition.value.y
-      ) as HTMLElement | null)
-    : null;
-  const target = rowEl?.closest(".item") as HTMLElement | null;
-  if (target && startPosition.value) {
-    target.dispatchEvent(
-      new MouseEvent("contextmenu", {
-        bubbles: true,
-        cancelable: true,
-        clientX: startPosition.value.x,
-        clientY: startPosition.value.y,
-      })
-    );
-  }
-
-  cancelLongPress();
-};
-
-const checkMovement = (clientX: number, clientY: number): boolean => {
-  if (!startPosition.value) return false;
-
-  const deltaX = Math.abs(clientX - startPosition.value.x);
-  const deltaY = Math.abs(clientY - startPosition.value.y);
-
-  return deltaX > moveThreshold.value || deltaY > moveThreshold.value;
-};
-
 // ── Image hover preview (v1.3 S5-9) ────────────────────────────────
 // Hovering an image row for 500 ms pops a size-capped preview near the
 // cursor. Gated to image rows (and to thumbnail-enabled, non-readonly
@@ -981,44 +908,12 @@ const handleMouseEnter = (event: MouseEvent) => {
 };
 
 // Event handlers
-const handleMouseDown = (event: MouseEvent) => {
+const handleMouseDown = () => {
   // Any press dismisses the hover preview (the user is interacting now).
   hoverPreview.cancel();
-  if (event.button === 0) {
-    startLongPress(event.clientX, event.clientY);
-  }
-};
-
-const handleMouseUp = () => {
-  cancelLongPress();
 };
 
 const handleMouseLeave = () => {
-  cancelLongPress();
   hoverPreview.cancel();
-};
-
-const handleTouchStart = (event: TouchEvent) => {
-  if (event.touches.length === 1) {
-    const touch = event.touches[0];
-    startLongPress(touch.clientX, touch.clientY);
-  }
-};
-
-const handleTouchEnd = () => {
-  cancelLongPress();
-};
-
-const handleTouchCancel = () => {
-  cancelLongPress();
-};
-
-const handleTouchMove = (event: TouchEvent) => {
-  if (event.touches.length === 1 && startPosition.value) {
-    const touch = event.touches[0];
-    if (checkMovement(touch.clientX, touch.clientY)) {
-      cancelLongPress();
-    }
-  }
 };
 </script>

@@ -577,7 +577,11 @@
 #listing.mosaic .item__actions-btn {
   width: 24px;
   height: 24px;
-  background: rgba(255, 255, 255, 0.8);
+  /* RC-3: theme-aware frosted chip over the thumbnail. The hardcoded
+     white (rgba(255,255,255,0.8)) read as a bright button on dark tiles
+     and didn't match the app's surface styling. color-mix with the
+     surface token frosts white in light mode and near-black in dark. */
+  background: color-mix(in srgb, var(--color-surface, #fff) 82%, transparent);
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   border: 1px solid var(--color-line, var(--borderPrimary));

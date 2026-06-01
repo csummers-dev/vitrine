@@ -15,7 +15,7 @@
       @dragleave="onDragLeave('root')"
       @drop="onDrop(rootUrl, 'root', $event)"
       @mouseenter="onRootHoverEnter($event)"
-      @mouseleave="cancelHoverTimer"
+      @mouseleave="onCrumbHoverLeave"
     >
       <Icon name="house" :size="14" />
     </component>
@@ -83,7 +83,7 @@
         @dragleave="onDragLeave(entry.link.url)"
         @drop="onDrop(entry.link.url, entry.link.url, $event)"
         @mouseenter="onCrumbHoverEnter(entry.link, $event)"
-        @mouseleave="cancelHoverTimer"
+        @mouseleave="onCrumbHoverLeave"
       >
         {{ entry.link.name }}
       </component>
@@ -107,6 +107,8 @@
       :pos="siblingsMenuPos"
       :items="siblingsMenuItems"
       @hide="siblingsMenuShow = false"
+      @mouseenter="cancelCloseTimer"
+      @mouseleave="scheduleClose"
     />
   </nav>
 </template>
@@ -318,6 +320,7 @@ onBeforeUnmount(() => {
   for (const t of springTimers.values()) window.clearTimeout(t);
   springTimers.clear();
   cancelHoverTimer();
+  cancelCloseTimer();
 });
 
 // ── Sibling-folder hover dropdown (v1.3 S3-7) ────────────────────────
@@ -331,7 +334,13 @@ onBeforeUnmount(() => {
 // directory is often re-hovered as the user moves through subtrees
 // (e.g. /A/B/C → /A/B/D shares /A/B/'s sibling list). Module scope
 // means the cache survives crumb re-renders and short navigations.
-const HOVER_DELAY_MS = 400;
+// RC-20: a deliberate dwell, not a quick aim-and-click. At 400 ms the menu
+// popped up right as the user clicked a crumb to navigate, so it felt like
+// clicking opened it; 1000 ms means only an intentional hover does.
+const HOVER_DELAY_MS = 1000;
+// Grace period before closing on mouse-away — long enough to move from the
+// crumb down into the menu without it vanishing.
+const CLOSE_DELAY_MS = 250;
 const SIBLINGS_TTL_MS = 30000;
 const siblingsCache = new Map<
   string,
@@ -339,6 +348,7 @@ const siblingsCache = new Map<
 >();
 
 let hoverTimer: number | null = null;
+let closeTimer: number | null = null;
 const siblingsMenuShow = ref(false);
 const siblingsMenuPos = ref<{ x: number; y: number }>({ x: 0, y: 0 });
 const siblingsMenuItems = ref<MenuItem[]>([]);
@@ -356,6 +366,31 @@ const cancelHoverTimer = () => {
     window.clearTimeout(hoverTimer);
     hoverTimer = null;
   }
+};
+
+const cancelCloseTimer = () => {
+  if (closeTimer !== null) {
+    window.clearTimeout(closeTimer);
+    closeTimer = null;
+  }
+};
+
+// RC-20: close the sibling menu shortly after the cursor leaves both the
+// crumb and the menu. The delay lets the user travel from the crumb into
+// the menu (whose mouseenter cancels this) without it disappearing.
+const scheduleClose = () => {
+  cancelCloseTimer();
+  closeTimer = window.setTimeout(() => {
+    closeTimer = null;
+    siblingsMenuShow.value = false;
+  }, CLOSE_DELAY_MS);
+};
+
+// Leaving a crumb: cancel a not-yet-fired open, and begin closing any
+// menu that's already showing.
+const onCrumbHoverLeave = () => {
+  cancelHoverTimer();
+  scheduleClose();
 };
 
 /** Fetch (with 30 s in-memory cache) the folder children of a path.
@@ -414,6 +449,7 @@ const openSiblingsForParent = async (
 
 const onCrumbHoverEnter = (crumb: BreadCrumb, event: MouseEvent) => {
   cancelHoverTimer();
+  cancelCloseTimer();
   const anchor = event.currentTarget as HTMLElement;
   const parent = parentUrlOf(crumb.url);
   hoverTimer = window.setTimeout(() => {
@@ -424,6 +460,7 @@ const onCrumbHoverEnter = (crumb: BreadCrumb, event: MouseEvent) => {
 
 const onRootHoverEnter = (event: MouseEvent) => {
   cancelHoverTimer();
+  cancelCloseTimer();
   const anchor = event.currentTarget as HTMLElement;
   hoverTimer = window.setTimeout(() => {
     hoverTimer = null;
@@ -441,6 +478,7 @@ watch(
     if (n > 0) {
       siblingsMenuShow.value = false;
       cancelHoverTimer();
+      cancelCloseTimer();
     }
   }
 );

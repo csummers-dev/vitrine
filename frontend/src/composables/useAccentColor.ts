@@ -23,17 +23,21 @@ export interface AccentPreset {
   base: string;
   /** --color-accent-strong (hover/active) */
   strong: string;
+  /** --color-accent-grad — hand-picked gradient end-stop (RC-7). A
+   *  lighter same-hue tone so accent gradients (e.g. the storage bar)
+   *  read well for every preset, not just lilac. */
+  grad: string;
 }
 
 const DEFAULT_KEY = "lilac";
 
 export const ACCENT_PRESETS: AccentPreset[] = [
-  { key: "lilac", label: "Lilac", base: "#5e6ad2", strong: "#4f5ac4" },
-  { key: "blue", label: "Blue", base: "#3b82f6", strong: "#2563eb" },
-  { key: "teal", label: "Teal", base: "#0d9488", strong: "#0f766e" },
-  { key: "green", label: "Green", base: "#16a34a", strong: "#15803d" },
-  { key: "amber", label: "Amber", base: "#d97706", strong: "#b45309" },
-  { key: "rose", label: "Rose", base: "#e11d48", strong: "#be123c" },
+  { key: "lilac", label: "Lilac", base: "#5e6ad2", strong: "#4f5ac4", grad: "#7c87e5" }, // prettier-ignore
+  { key: "blue", label: "Blue", base: "#3b82f6", strong: "#2563eb", grad: "#60a5fa" }, // prettier-ignore
+  { key: "teal", label: "Teal", base: "#0d9488", strong: "#0f766e", grad: "#2dd4bf" }, // prettier-ignore
+  { key: "green", label: "Green", base: "#16a34a", strong: "#15803d", grad: "#4ade80" }, // prettier-ignore
+  { key: "amber", label: "Amber", base: "#d97706", strong: "#b45309", grad: "#fbbf24" }, // prettier-ignore
+  { key: "rose", label: "Rose", base: "#e11d48", strong: "#be123c", grad: "#fb7185" }, // prettier-ignore
 ];
 
 const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
@@ -48,6 +52,7 @@ const ACCENT_VARS = [
   "--color-accent-strong",
   "--color-accent-soft",
   "--color-accent-ring",
+  "--color-accent-grad",
 ] as const;
 
 const applyAccent = (key: string) => {
@@ -63,6 +68,7 @@ const applyAccent = (key: string) => {
 
   root.style.setProperty("--color-accent", preset.base);
   root.style.setProperty("--color-accent-strong", preset.strong);
+  root.style.setProperty("--color-accent-grad", preset.grad);
   const rgb = hexToRgb(preset.base);
   if (rgb) {
     const { r, g, b } = rgb;

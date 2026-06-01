@@ -6,6 +6,7 @@
         class="confirm-dialog__scrim"
         @click.self="onCancel"
         @keydown.esc.stop="onCancel"
+        @keydown.enter.prevent.stop="onConfirm"
       >
         <div
           class="confirm-dialog"

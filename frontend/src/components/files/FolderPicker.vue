@@ -52,7 +52,7 @@
           class="folder-picker__row"
           @click="navigate(folder.url)"
         >
-          <span class="folder-picker__icon">
+          <span class="folder-picker__icon bg-amber-50 text-amber-500">
             <Icon
               name="folder"
               :size="14"
@@ -246,8 +246,10 @@ defineExpose({
   width: 26px;
   height: 26px;
   border-radius: 6px;
-  background: #fef3c7; /* amber-50 */
-  color: #f59e0b; /* amber-500 */
+  /* Color comes from the bg-amber-50 / text-amber-500 utilities on the
+     element (RC-22) so the global dark-icon-colors.css remap applies and
+     this matches the listing's folder icons in both themes — the
+     hardcoded amber hex here stayed bright in dark mode. */
   display: flex;
   align-items: center;
   justify-content: center;

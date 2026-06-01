@@ -30,27 +30,54 @@
       @update:path="onPathChange"
     />
 
+    <!-- RC-16: persisted "open destination" toggle (backed by the user's
+         redirectAfterCopyMove field — cross-device, default off). Bound
+         via explicit handler so only real toggles persist, not the
+         on-open seeding. -->
+    <label class="mcp-option">
+      <Toggle
+        :model-value="openDest"
+        :disabled="busy"
+        @update:model-value="onToggleOpenDest"
+      />
+      <span class="mcp-option__text">
+        <span class="mcp-option__label">
+          Open destination after {{ mode === "move" ? "moving" : "copying" }}
+        </span>
+        <span class="mcp-option__hint">
+          Go to the destination folder when the {{ mode }} finishes.
+        </span>
+      </span>
+    </label>
+
     <template #footer>
       <button
         v-if="canCreate"
         type="button"
         class="mcp-btn mcp-btn--ghost"
+        :disabled="busy"
         @click="onCreateFolder"
       >
         <Icon name="folder-plus" :size="13" />
         New folder
       </button>
       <div class="mcp-spacer"></div>
-      <button type="button" class="mcp-btn mcp-btn--ghost" @click="onCancel">
+      <button
+        type="button"
+        class="mcp-btn mcp-btn--ghost"
+        :disabled="busy"
+        @click="onCancel"
+      >
         Cancel
       </button>
       <button
         type="button"
         class="mcp-btn mcp-btn--primary"
-        :disabled="!canSubmit"
+        :disabled="!canSubmit || busy"
         @click="onSubmit"
       >
-        {{ actionLabel }}
+        <Icon v-if="busy" name="loader-circle" :size="13" class="mcp-spin" />
+        {{ busy ? (mode === "move" ? "Moving…" : "Copying…") : actionLabel }}
       </button>
     </template>
   </SlideOver>
@@ -62,12 +89,13 @@ import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
-import { files as api } from "@/api";
+import { files as api, users } from "@/api";
 import { removePrefix } from "@/api/utils";
 import * as upload from "@/utils/upload";
 import { inject } from "vue";
 import SlideOver from "@/components/SlideOver.vue";
 import FolderPicker from "@/components/files/FolderPicker.vue";
+import Toggle from "@/components/settings/Toggle.vue";
 import Icon from "@/components/Icon.vue";
 
 const props = defineProps<{
@@ -81,6 +109,7 @@ const emit = defineEmits<{
 }>();
 
 const $showError = inject<IToastError>("$showError")!;
+const $showSuccess = inject<(message: string) => void>("$showSuccess")!;
 
 const route = useRoute();
 const router = useRouter();
@@ -90,6 +119,26 @@ const layoutStore = useLayoutStore();
 
 const pickerRef = ref<InstanceType<typeof FolderPicker> | null>(null);
 const destPath = ref<string>("");
+// RC-16: in-flight indicator + the persisted "open destination" choice.
+const busy = ref<boolean>(false);
+const openDest = ref<boolean>(false);
+
+// Persist the toggle to the user's redirectAfterCopyMove field (only on a
+// real user toggle — see the explicit handler binding). Non-fatal if the
+// write fails; the choice still applies for this session.
+const onToggleOpenDest = async (val: boolean) => {
+  openDest.value = val;
+  const user = authStore.user;
+  if (!user) return;
+  try {
+    await users.update({ id: user.id, redirectAfterCopyMove: val }, [
+      "redirectAfterCopyMove",
+    ]);
+    authStore.updateUser({ redirectAfterCopyMove: val });
+  } catch {
+    /* swallow — toggle still works locally */
+  }
+};
 
 // Items being moved/copied — snapshotted on open so layout-store changes
 // don't pull the rug from under the panel.
@@ -190,6 +239,7 @@ const onSubmit = async () => {
   const conflict = await upload.checkConflict(items, dest);
 
   const performAction = async () => {
+    busy.value = true;
     try {
       if (props.mode === "move") {
         await api.move(items, false, false);
@@ -202,11 +252,19 @@ const onSubmit = async () => {
       fileStore.setPreselect(
         items.map((i) => decodeURIComponent(removePrefix(i.to)))
       );
-      if (
-        authStore.user?.redirectAfterCopyMove &&
-        dest !== route.path &&
-        dest !== route.path + "/"
-      ) {
+
+      // RC-16: explicit success feedback (the action used to complete
+      // silently, so a large move looked frozen until the view jumped).
+      const verb = props.mode === "move" ? "Moved" : "Copied";
+      const what =
+        items.length === 1 ? `“${items[0].name}”` : `${items.length} items`;
+      const destName =
+        decodeURIComponent(removePrefix(dest)).replace(/\/$/, "") || "/";
+      $showSuccess(`${verb} ${what} to ${destName}`);
+
+      // RC-16: only jump to the destination when the toggle is on;
+      // otherwise stay put and refresh.
+      if (openDest.value && dest !== route.path && dest !== route.path + "/") {
         router.push({ path: dest });
       } else {
         fileStore.reload = true;
@@ -214,6 +272,8 @@ const onSubmit = async () => {
       emit("done");
     } catch (e) {
       if (e instanceof Error) $showError(e);
+    } finally {
+      busy.value = false;
     }
   };
 
@@ -268,6 +328,9 @@ watch(
         modified: i.modified,
       }));
     destPath.value = initialPath.value;
+    busy.value = false;
+    // RC-16: seed the toggle from the persisted user field.
+    openDest.value = !!authStore.user?.redirectAfterCopyMove;
   }
 );
 </script>
@@ -296,6 +359,54 @@ watch(
 .mcp-instructions strong {
   color: var(--color-ink-1, #18181b);
   font-weight: 600;
+}
+
+/* RC-16: open-destination toggle row */
+.mcp-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface, #fff);
+  cursor: pointer;
+}
+
+.mcp-option__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mcp-option__label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--color-ink-1, #18181b);
+}
+
+.mcp-option__hint {
+  font-size: 11.5px;
+  color: var(--color-ink-3, #a1a1aa);
+  line-height: 1.4;
+}
+
+.mcp-spin {
+  animation: mcp-spin 0.9s linear infinite;
+}
+
+@keyframes mcp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mcp-spin {
+    animation: none;
+  }
 }
 
 .mcp-spacer {

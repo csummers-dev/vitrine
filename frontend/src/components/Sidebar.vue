@@ -7,7 +7,7 @@
       class="h-12 px-3 max-md:px-0 max-md:justify-center flex items-center gap-2.5 shrink-0"
     >
       <div
-        class="w-7 h-7 max-md:w-9 max-md:h-9 rounded-md bg-gradient-to-br from-[#5e6ad2] to-[#4f5ac4] flex items-center justify-center shadow-sm shrink-0"
+        class="w-7 h-7 max-md:w-9 max-md:h-9 rounded-md bg-gradient-to-br from-accent to-accent-strong flex items-center justify-center shadow-sm shrink-0"
       >
         <Icon name="folder" :size="14" :stroke-width="1.8" class="text-white" />
       </div>
@@ -105,9 +105,26 @@
           Favorites
         </div>
         <ul class="list-none m-0 p-0 space-y-0.5">
-          <li v-for="path in favorites" :key="path">
+          <li
+            v-for="(path, index) in favorites"
+            :key="path"
+            draggable="true"
+            class="rounded-md transition"
+            :class="[
+              favDragOverIndex === index
+                ? 'ring-2 ring-accent ring-inset bg-selected'
+                : '',
+              draggingFavIndex === index ? 'opacity-40' : '',
+            ]"
+            @dragstart="onFavDragStart(index, $event)"
+            @dragover="onFavDragOver(index, $event)"
+            @dragleave="onFavDragLeave(index)"
+            @drop="onFavDrop(index, path, $event)"
+            @dragend="onFavDragEnd"
+          >
             <router-link
               :to="path"
+              draggable="false"
               class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] hover:bg-hover text-ink-2 transition"
               :title="path"
             >
@@ -256,7 +273,7 @@
         </div>
         <div class="h-1.5 rounded-full bg-elevated overflow-hidden">
           <div
-            class="h-full rounded-full bg-gradient-to-r from-accent to-[#7c87e5] transition-all"
+            class="h-full rounded-full bg-gradient-to-r from-accent to-[var(--color-accent-grad)] transition-all"
             :style="{ width: usage.usedPercentage + '%' }"
           ></div>
         </div>
@@ -278,7 +295,7 @@
         :title="user.username"
       >
         <div
-          class="w-7 h-7 max-md:w-9 max-md:h-9 rounded-full bg-gradient-to-br from-[#7c87e5] to-[#4f5ac4] flex items-center justify-center text-white text-[11px] font-semibold shadow-sm shrink-0"
+          class="w-7 h-7 max-md:w-9 max-md:h-9 rounded-full bg-gradient-to-br from-accent to-accent-strong flex items-center justify-center text-white text-[11px] font-semibold shadow-sm shrink-0"
         >
           {{ userInitials }}
         </div>
@@ -332,6 +349,7 @@ import prettyBytes from "pretty-bytes";
 import { usePreferences } from "@/composables/usePreferences";
 import { useRecents } from "@/composables/useRecents";
 import { useFavorites } from "@/composables/useFavorites";
+import { useDropTarget } from "@/composables/useDropTarget";
 
 // How many recents to show before the "View all" disclosure kicks in.
 // 5 keeps the section compact in the default sidebar layout.
@@ -361,6 +379,12 @@ export default {
     const recentsComposable = useRecents();
     const favoritesComposable = useFavorites();
     const recentsExpanded = ref(false);
+    // Favorites drag state (RC-25 reorder + RC-26 drop-file-in). The
+    // file-drop reuses the shared useDropTarget so move/conflict handling
+    // matches the rest of the app.
+    const { performDrop } = useDropTarget();
+    const draggingFavIndex = ref(null);
+    const favDragOverIndex = ref(null);
     return {
       usage,
       usageAbortController: new AbortController(),
@@ -371,6 +395,9 @@ export default {
       favoritesComposable,
       recentsExpanded,
       RECENTS_INITIAL,
+      performDrop,
+      draggingFavIndex,
+      favDragOverIndex,
     };
   },
   components: {
@@ -466,6 +493,58 @@ export default {
       } catch {
         return last;
       }
+    },
+    // ── Favorites drag handlers (RC-25 reorder + RC-26 drop file in) ──
+    onFavDragStart(index, event) {
+      this.draggingFavIndex = index;
+      if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = "move";
+        // Mark as an internal favorite-reorder drag (distinct from a
+        // listing file drag, which populates fileStore.draggedItems).
+        event.dataTransfer.setData("text/x-fb-favorite", String(index));
+      }
+    },
+    onFavDragOver(index, event) {
+      const fileStore = useFileStore();
+      const isFileDrag = fileStore.draggedItems.length > 0;
+      // Permit drop for both a file-into-favorite (RC-26) and a reorder
+      // (RC-25); ignore unrelated drags.
+      if (isFileDrag || this.draggingFavIndex !== null) {
+        event.preventDefault();
+        if (event.dataTransfer) {
+          event.dataTransfer.dropEffect = isFileDrag
+            ? event.ctrlKey || event.metaKey
+              ? "copy"
+              : "move"
+            : "move";
+        }
+        this.favDragOverIndex = index;
+      }
+    },
+    onFavDragLeave(index) {
+      if (this.favDragOverIndex === index) this.favDragOverIndex = null;
+    },
+    onFavDrop(index, path, event) {
+      const fileStore = useFileStore();
+      this.favDragOverIndex = null;
+      // RC-26: a file/folder dragged from the listing → move it into this
+      // favorite folder (reuses useDropTarget for move + conflict UI).
+      if (fileStore.draggedItems.length > 0) {
+        const targetUrl = path.endsWith("/") ? path : path + "/";
+        void this.performDrop(event, targetUrl);
+        this.draggingFavIndex = null;
+        return;
+      }
+      // RC-25: reorder the favorites list.
+      if (this.draggingFavIndex !== null) {
+        event.preventDefault();
+        this.favoritesComposable.reorder(this.draggingFavIndex, index);
+      }
+      this.draggingFavIndex = null;
+    },
+    onFavDragEnd() {
+      this.draggingFavIndex = null;
+      this.favDragOverIndex = null;
     },
     /** Open the SmartFolderSheet in create mode. Edit mode is reached
      *  by clicking the pencil icon inside SmartFolderView, which has

@@ -43,7 +43,9 @@ export const getEditorTheme = (themeName: string) => {
   if (themesByName[themeKey] !== undefined) {
     return themeName;
   } else if (getTheme() === "dark") {
-    return "ace/theme/twilight";
+    // RC-14: one_dark's cool blue-grey palette matches the app's zinc
+    // dark surfaces far better than the old warm-brown "twilight".
+    return "ace/theme/one_dark";
   } else {
     return "ace/theme/chrome";
   }

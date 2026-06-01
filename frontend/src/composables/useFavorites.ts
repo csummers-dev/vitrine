@@ -58,5 +58,19 @@ export function useFavorites() {
     }
   };
 
-  return { favorites, isFavorited, add, remove, toggle };
+  /** Move a favorite from one position to another (drag-to-reorder,
+   *  RC-25). Persists the new order. No-op for out-of-range or identical
+   *  indices. */
+  const reorder = (fromIndex: number, toIndex: number) => {
+    const current = prefs.get<string[]>(PREF_KEY, []);
+    if (fromIndex < 0 || fromIndex >= current.length) return;
+    if (toIndex < 0 || toIndex >= current.length) return;
+    if (fromIndex === toIndex) return;
+    const next = [...current];
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    void prefs.set(PREF_KEY, next);
+  };
+
+  return { favorites, isFavorited, add, remove, toggle, reorder };
 }

@@ -1,6 +1,6 @@
 <template>
   <aside
-    v-if="item"
+    v-if="paneVisible"
     class="info-pane w-[320px] shrink-0 border-l border-line bg-canvas flex flex-col overflow-y-auto max-lg:fixed max-lg:top-12 max-lg:right-0 max-lg:bottom-0 max-lg:h-[calc(100vh-48px)] max-lg:z-40 max-lg:shadow-2xl max-[540px]:left-16 max-[540px]:w-auto"
   >
     <!-- Pane header -->
@@ -9,234 +9,288 @@
     >
       <div class="text-[12px] font-semibold text-ink-2">Details</div>
       <button
-        @click="close"
+        @click="isMobile ? close() : toggleCollapse()"
         class="w-6 h-6 rounded hover:bg-hover flex items-center justify-center text-ink-3 hover:text-ink-1 transition"
-        title="Close"
-        aria-label="Close info pane"
+        :title="isMobile ? 'Close' : 'Collapse panel'"
+        :aria-label="isMobile ? 'Close info pane' : 'Collapse info pane'"
       >
-        <Icon name="x" :size="14" />
+        <Icon :name="isMobile ? 'x' : 'panel-right-close'" :size="14" />
       </button>
     </div>
 
-    <!-- Preview -->
-    <div class="p-4 pb-3">
-      <div
-        class="aspect-[4/3] rounded-lg border border-line overflow-hidden relative flex items-center justify-center preview-mesh"
-      >
-        <img
-          v-if="hasThumbnail"
-          :src="thumbnailUrl"
-          class="max-w-full max-h-full w-auto h-auto object-contain"
-          :alt="item.name"
-        />
+    <!-- ── State 1: a single item is selected (RC-4) ─────────────── -->
+    <template v-if="item">
+      <!-- Preview -->
+      <div class="p-4 pb-3">
         <div
-          v-else
-          class="w-14 h-14 rounded-xl flex items-center justify-center backdrop-blur-sm border border-line/60 shadow-sm"
-          :class="iconColorClass"
+          class="aspect-[4/3] rounded-lg border border-line overflow-hidden relative flex items-center justify-center preview-mesh"
         >
-          <Icon :name="iconName" :size="28" :stroke-width="1.4" />
+          <img
+            v-if="hasThumbnail"
+            :src="thumbnailUrl"
+            class="max-w-full max-h-full w-auto h-auto object-contain"
+            :alt="item.name"
+          />
+          <div
+            v-else
+            class="w-14 h-14 rounded-xl flex items-center justify-center backdrop-blur-sm border border-line/60 shadow-sm"
+            :class="iconColorClass"
+          >
+            <Icon :name="iconName" :size="28" :stroke-width="1.4" />
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Title -->
-    <div class="px-4 pb-3">
-      <div
-        class="text-[15px] font-semibold text-ink-1 break-words leading-snug"
-      >
-        {{ item.name }}
+      <!-- Title -->
+      <div class="px-4 pb-3">
+        <div
+          class="text-[15px] font-semibold text-ink-1 break-words leading-snug"
+        >
+          {{ item.name }}
+        </div>
+        <div class="text-[12px] text-ink-3 mt-0.5 tabular">
+          {{ typeLabel }}<span v-if="!item.isDir"> · {{ sizeLabel }}</span>
+        </div>
       </div>
-      <div class="text-[12px] text-ink-3 mt-0.5 tabular">
-        {{ typeLabel }}<span v-if="!item.isDir"> · {{ sizeLabel }}</span>
+
+      <!-- Primary action grid: Share / Download / Rename / Delete — fixed positions -->
+      <div class="px-4 pb-2 grid grid-cols-4 gap-1.5">
+        <button
+          v-if="canShare"
+          @click="action('share')"
+          class="info-action"
+          title="Share"
+        >
+          <Icon name="share" :size="14" />
+          <span>Share</span>
+        </button>
+        <button
+          v-if="canDownload"
+          @click="download"
+          class="info-action"
+          title="Download"
+        >
+          <Icon name="download" :size="14" />
+          <span>Download</span>
+        </button>
+        <button
+          v-if="canRename"
+          @click="action('rename')"
+          class="info-action"
+          title="Rename"
+        >
+          <Icon name="pencil" :size="14" />
+          <span>Rename</span>
+        </button>
+        <button
+          v-if="canDelete"
+          @click="action('delete')"
+          class="info-action info-action--danger"
+          title="Delete"
+        >
+          <Icon name="trash-2" :size="14" />
+          <span>Delete</span>
+        </button>
       </div>
-    </div>
 
-    <!-- Primary action grid: Share / Download / Rename / Delete — fixed positions -->
-    <div class="px-4 pb-2 grid grid-cols-4 gap-1.5">
-      <button
-        v-if="canShare"
-        @click="action('share')"
-        class="info-action"
-        title="Share"
-      >
-        <Icon name="share" :size="14" />
-        <span>Share</span>
-      </button>
-      <button
-        v-if="canDownload"
-        @click="download"
-        class="info-action"
-        title="Download"
-      >
-        <Icon name="download" :size="14" />
-        <span>Download</span>
-      </button>
-      <button
-        v-if="canRename"
-        @click="action('rename')"
-        class="info-action"
-        title="Rename"
-      >
-        <Icon name="pencil" :size="14" />
-        <span>Rename</span>
-      </button>
-      <button
-        v-if="canDelete"
-        @click="action('delete')"
-        class="info-action info-action--danger"
-        title="Delete"
-      >
-        <Icon name="trash-2" :size="14" />
-        <span>Delete</span>
-      </button>
-    </div>
-
-    <!-- Secondary action row: Move / Copy / (Preview or Extract).
+      <!-- Secondary action row: Move / Copy / (Preview or Extract).
          For files this is a clean 3-up grid; for folders Preview/Extract
          are omitted and the row falls back to 2-col so Move + Copy still
          fill the width. The third tile swaps to "Extract" when the file
          is a `.zip` and the user can create — a zip's "preview" really is
          its contents, which is what Extract opens. -->
-    <div
-      v-if="canMove || canCopy || !item.isDir"
-      class="px-4 pb-4 grid gap-1.5"
-      :class="!item.isDir ? 'grid-cols-3' : 'grid-cols-2'"
-    >
-      <button
-        v-if="canMove"
-        @click="action('move')"
-        class="info-action"
-        title="Move"
-      >
-        <Icon name="forward" :size="14" />
-        <span>Move</span>
-      </button>
-      <button
-        v-if="canCopy"
-        @click="action('copy')"
-        class="info-action"
-        title="Copy"
-      >
-        <Icon name="copy" :size="14" />
-        <span>Copy</span>
-      </button>
-      <button
-        v-if="!item.isDir && canExtract"
-        @click="action('extract')"
-        class="info-action"
-        title="Extract zip"
-      >
-        <Icon name="package-open" :size="14" />
-        <span>Extract</span>
-      </button>
-      <button
-        v-else-if="!item.isDir"
-        @click="open"
-        class="info-action"
-        title="Preview"
-      >
-        <Icon name="eye" :size="14" />
-        <span>Preview</span>
-      </button>
-    </div>
-    <div v-else class="pb-4"></div>
-
-    <!-- Properties -->
-    <div class="px-4 py-3 border-t border-line">
       <div
-        class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] mb-2"
+        v-if="canMove || canCopy || !item.isDir"
+        class="pb-4 grid gap-1.5"
+        :class="!item.isDir ? 'px-4 grid-cols-3' : 'grid-cols-2 w-2/3 mx-auto'"
       >
-        Properties
+        <button
+          v-if="canMove"
+          @click="action('move')"
+          class="info-action"
+          title="Move"
+        >
+          <Icon name="forward" :size="14" />
+          <span>Move</span>
+        </button>
+        <button
+          v-if="canCopy"
+          @click="action('copy')"
+          class="info-action"
+          title="Copy"
+        >
+          <Icon name="copy" :size="14" />
+          <span>Copy</span>
+        </button>
+        <button
+          v-if="!item.isDir && canExtract"
+          @click="action('extract')"
+          class="info-action"
+          title="Extract zip"
+        >
+          <Icon name="package-open" :size="14" />
+          <span>Extract</span>
+        </button>
+        <button
+          v-else-if="!item.isDir"
+          @click="open"
+          class="info-action"
+          title="Preview"
+        >
+          <Icon name="eye" :size="14" />
+          <span>Preview</span>
+        </button>
       </div>
-      <dl class="text-[12px] space-y-1.5">
-        <div class="flex justify-between gap-3">
-          <dt class="text-ink-3">Type</dt>
-          <dd class="text-ink-1">{{ typeLabel }}</dd>
-        </div>
-        <div v-if="!item.isDir" class="flex justify-between gap-3">
-          <dt class="text-ink-3">Size</dt>
-          <dd class="text-ink-1 tabular">{{ sizeLabel }}</dd>
-        </div>
-        <div class="flex justify-between gap-3">
-          <dt class="text-ink-3">Modified</dt>
-          <dd class="text-ink-1 tabular">{{ modifiedLabel }}</dd>
-        </div>
-        <div v-if="item.extension" class="flex justify-between gap-3">
-          <dt class="text-ink-3">Extension</dt>
-          <dd class="text-ink-1 font-mono text-[11px]">{{ item.extension }}</dd>
-        </div>
-      </dl>
-    </div>
+      <div v-else class="pb-4"></div>
 
-    <!-- Tags (v1.3 S2-5). Full chip list + "Manage tags" CTA that
+      <!-- Properties -->
+      <div class="px-4 py-3 border-t border-line">
+        <div
+          class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] mb-2"
+        >
+          Properties
+        </div>
+        <dl class="text-[12px] space-y-1.5">
+          <div class="flex justify-between gap-3">
+            <dt class="text-ink-3">Type</dt>
+            <dd class="text-ink-1">{{ typeLabel }}</dd>
+          </div>
+          <div v-if="!item.isDir" class="flex justify-between gap-3">
+            <dt class="text-ink-3">Size</dt>
+            <dd class="text-ink-1 tabular">{{ sizeLabel }}</dd>
+          </div>
+          <div class="flex justify-between gap-3">
+            <dt class="text-ink-3">Modified</dt>
+            <dd class="text-ink-1 tabular">{{ modifiedLabel }}</dd>
+          </div>
+          <div v-if="item.extension" class="flex justify-between gap-3">
+            <dt class="text-ink-3">Extension</dt>
+            <dd class="text-ink-1 font-mono text-[11px]">
+              {{ item.extension }}
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <!-- Tags (v1.3 S2-5). Full chip list + "Manage tags" CTA that
          opens the picker SlideOver. Empty state shows the CTA on its
          own. Reads tags from the cache populated by FileListing's
          batch fetch; falls back to forFile when stale. -->
-    <div class="px-4 py-3 border-t border-line">
-      <div class="mb-1.5 flex items-center justify-between gap-2">
-        <div
-          class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em]"
-        >
-          Tags
+      <div class="px-4 py-3 border-t border-line">
+        <div class="mb-1.5 flex items-center justify-between gap-2">
+          <div
+            class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em]"
+          >
+            Tags
+          </div>
+          <button
+            type="button"
+            class="info-pane__manage-tags"
+            :title="itemTags.length === 0 ? 'Add tags' : 'Manage tags'"
+            @click="tagPicker.open"
+          >
+            <Icon
+              :name="itemTags.length === 0 ? 'plus' : 'pencil'"
+              :size="11"
+            />
+            <span>{{ itemTags.length === 0 ? "Add" : "Manage" }}</span>
+          </button>
         </div>
-        <button
-          type="button"
-          class="info-pane__manage-tags"
-          :title="itemTags.length === 0 ? 'Add tags' : 'Manage tags'"
-          @click="tagPicker.open"
-        >
-          <Icon :name="itemTags.length === 0 ? 'plus' : 'pencil'" :size="11" />
-          <span>{{ itemTags.length === 0 ? "Add" : "Manage" }}</span>
-        </button>
+        <div v-if="itemTags.length > 0" class="info-pane__tag-list">
+          <TagChip
+            v-for="t in itemTags"
+            :key="t.id"
+            :tag="t"
+            size="md"
+            :focusable="false"
+          />
+        </div>
+        <div v-else class="info-pane__tag-empty">No tags</div>
       </div>
-      <div v-if="itemTags.length > 0" class="info-pane__tag-list">
-        <TagChip
-          v-for="t in itemTags"
-          :key="t.id"
-          :tag="t"
-          size="md"
-          :focusable="false"
-        />
-      </div>
-      <div v-else class="info-pane__tag-empty">No tags</div>
-    </div>
 
-    <!-- Location -->
-    <div class="px-4 py-3 border-t border-line">
-      <div class="mb-1.5 flex items-center justify-between gap-2">
-        <div
-          class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em]"
-        >
-          Location
-        </div>
-        <!-- G6: Copy path action. Lives next to the Location label so
+      <!-- Location -->
+      <div class="px-4 py-3 border-t border-line">
+        <div class="mb-1.5 flex items-center justify-between gap-2">
+          <div
+            class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em]"
+          >
+            Location
+          </div>
+          <!-- G6: Copy path action. Lives next to the Location label so
              the affordance is right where the user is looking when they
              want it. Uses the navigator.clipboard API (modern, no fallback
              needed for our target browsers). Toast confirms because the
              OS clipboard is invisible — the user needs feedback to know
              something happened. -->
-        <button
-          type="button"
-          class="info-pane__copy-path"
-          :title="copiedPath ? 'Copied!' : 'Copy path'"
-          :aria-label="copiedPath ? 'Path copied' : 'Copy path'"
-          @click="copyPath"
+          <button
+            type="button"
+            class="info-pane__copy-path"
+            :title="copiedPath ? 'Copied!' : 'Copy path'"
+            :aria-label="copiedPath ? 'Path copied' : 'Copy path'"
+            @click="copyPath"
+          >
+            <Icon :name="copiedPath ? 'check' : 'copy'" :size="12" />
+            <span>{{ copiedPath ? "Copied" : "Copy" }}</span>
+          </button>
+        </div>
+        <div
+          class="font-mono text-[11px] text-ink-2 break-all bg-elevated rounded-md px-2 py-1.5 border border-line"
         >
-          <Icon :name="copiedPath ? 'check' : 'copy'" :size="12" />
-          <span>{{ copiedPath ? "Copied" : "Copy" }}</span>
-        </button>
+          {{ item.path || item.url }}
+        </div>
       </div>
-      <div
-        class="font-mono text-[11px] text-ink-2 break-all bg-elevated rounded-md px-2 py-1.5 border border-line"
-      >
-        {{ item.path || item.url }}
+    </template>
+
+    <!-- ── State 2: 2+ items selected ─────────────────────────────── -->
+    <template v-else-if="selectedCount >= 2">
+      <div class="ip-summary">
+        <div class="ip-summary__icon ip-summary__icon--accent">
+          <Icon name="layers" :size="26" :stroke-width="1.4" />
+        </div>
+        <div class="ip-summary__title">{{ selectedCount }} items selected</div>
+        <div class="ip-summary__meta">{{ selectionSizeLabel }} total</div>
+        <p class="ip-summary__hint">
+          Use the action bar at the bottom of the list to move, copy, rename or
+          delete the selection.
+        </p>
       </div>
-    </div>
+    </template>
+
+    <!-- ── State 3: nothing selected → current folder summary ─────── -->
+    <template v-else>
+      <div class="ip-summary">
+        <div class="ip-summary__icon ip-summary__icon--folder">
+          <Icon name="folder" :size="26" :stroke-width="1.4" />
+        </div>
+        <div class="ip-summary__title">{{ folderName }}</div>
+        <div class="ip-summary__meta">
+          {{ folderItemCount }} {{ folderItemCount === 1 ? "item" : "items" }}
+        </div>
+        <dl class="ip-summary__props">
+          <div class="ip-summary__prop">
+            <dt>Folders</dt>
+            <dd class="tabular">{{ folderDirCount }}</dd>
+          </div>
+          <div class="ip-summary__prop">
+            <dt>Files</dt>
+            <dd class="tabular">{{ folderFileCount }}</dd>
+          </div>
+          <div class="ip-summary__prop">
+            <dt>Path</dt>
+            <dd class="ip-summary__path" :title="folderPath">
+              {{ folderPath }}
+            </dd>
+          </div>
+        </dl>
+        <p class="ip-summary__hint">Select an item to see its details.</p>
+      </div>
+    </template>
 
     <div class="flex-1"></div>
 
-    <!-- Keyboard hint footer -->
+    <!-- Keyboard hint footer — only meaningful with a selection -->
     <div
+      v-if="item"
       class="px-4 py-2.5 border-t border-line text-[11px] text-ink-3 flex items-center justify-between shrink-0"
     >
       <span class="flex items-center gap-1.5">
@@ -244,7 +298,7 @@
           class="font-mono text-[10px] px-1 py-px rounded border border-line bg-elevated"
           >Esc</kbd
         >
-        <span>to close</span>
+        <span>to clear</span>
       </span>
     </div>
 
@@ -258,6 +312,18 @@
       @saved="tagPicker.close"
     />
   </aside>
+
+  <!-- Collapsed rail (desktop): a thin strip with an expand affordance
+       so the pane can be reclaimed without losing the entry point. -->
+  <button
+    v-else-if="showRail"
+    class="info-pane-rail shrink-0 border-l border-line bg-canvas flex items-start justify-center pt-3 text-ink-3 hover:text-ink-1 hover:bg-hover transition"
+    title="Show details"
+    aria-label="Show details panel"
+    @click="toggleCollapse"
+  >
+    <Icon name="panel-left-open" :size="16" />
+  </button>
 </template>
 
 <script setup lang="ts">
@@ -275,6 +341,7 @@ import { files as api } from "@/api";
 import dayjs from "dayjs";
 import { computed, inject, onMounted, onUnmounted, ref } from "vue";
 import { useTagPicker } from "@/composables/useTagPicker";
+import { usePreferences } from "@/composables/usePreferences";
 
 const fileStore = useFileStore();
 const tagsStore = useTagsStore();
@@ -339,6 +406,63 @@ const item = computed<ResourceItem | null>(() => {
   if (!fileStore.req || fileStore.selectedCount !== 1) return null;
   const idx = fileStore.selected[0];
   return fileStore.req.items[idx] ?? null;
+});
+
+// ── RC-4: always-present details pane ───────────────────────────────
+// The pane stays docked so the listing never reflows when an item is
+// selected (which used to shift tiles mid-double-click and made
+// double-click-to-open impossible in grid/gallery). It shows three
+// states: a single item, a multi-select summary, or — when nothing is
+// selected — a summary of the current folder.
+const prefs = usePreferences();
+
+const selectedCount = computed(() => fileStore.selectedCount);
+
+// Below lg the pane reverts to an on-select overlay (an always-docked
+// 320px panel would dominate a phone). Tracked via matchMedia.
+const isMobile = ref(false);
+const updateIsMobile = () => {
+  isMobile.value =
+    typeof window !== "undefined" &&
+    window.matchMedia("(max-width: 1023px)").matches;
+};
+
+// Desktop collapse-to-rail, persisted across sessions.
+const collapsed = ref<boolean>(
+  prefs.get<boolean>("detailsPaneCollapsed", false)
+);
+const toggleCollapse = () => {
+  collapsed.value = !collapsed.value;
+  void prefs.set("detailsPaneCollapsed", collapsed.value);
+};
+
+// Full pane: desktop always (unless collapsed), or mobile when something
+// is selected (overlay). Collapsed rail: desktop only.
+const paneVisible = computed(
+  () =>
+    (!isMobile.value && !collapsed.value) ||
+    (isMobile.value && selectedCount.value >= 1)
+);
+const showRail = computed(() => !isMobile.value && collapsed.value);
+
+// Folder summary (nothing selected).
+const folderName = computed(() => fileStore.req?.name || "Home");
+const folderDirCount = computed(() => fileStore.req?.numDirs ?? 0);
+const folderFileCount = computed(() => fileStore.req?.numFiles ?? 0);
+const folderItemCount = computed(
+  () => folderDirCount.value + folderFileCount.value
+);
+const folderPath = computed(() => fileStore.req?.path ?? "/");
+
+// Multi-select summary (2+ selected).
+const selectionSizeLabel = computed(() => {
+  const req = fileStore.req;
+  if (!req) return "";
+  const total = fileStore.selected.reduce(
+    (sum, idx) => sum + (req.items[idx]?.size ?? 0),
+    0
+  );
+  return filesize(total);
 });
 
 // Tag list for the currently-selected item. Reads from the same
@@ -466,11 +590,99 @@ const onKey = (event: KeyboardEvent) => {
   }
 };
 
-onMounted(() => window.addEventListener("keydown", onKey));
-onUnmounted(() => window.removeEventListener("keydown", onKey));
+onMounted(() => {
+  window.addEventListener("keydown", onKey);
+  updateIsMobile();
+  window.addEventListener("resize", updateIsMobile);
+});
+onUnmounted(() => {
+  window.removeEventListener("keydown", onKey);
+  window.removeEventListener("resize", updateIsMobile);
+});
 </script>
 
 <style scoped>
+/* ── RC-4: folder-summary + multi-select states + collapsed rail ──── */
+.ip-summary {
+  padding: 22px 16px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.ip-summary__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+.ip-summary__icon--folder {
+  background: var(--color-amber-soft, rgba(245, 158, 11, 0.16));
+  color: var(--color-amber-strong, #d97706);
+}
+.ip-summary__icon--accent {
+  background: var(--color-accent-soft, rgba(94, 106, 210, 0.12));
+  color: var(--color-accent, #5e6ad2);
+}
+.ip-summary__title {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--color-ink-1, #18181b);
+  word-break: break-word;
+  line-height: 1.3;
+}
+.ip-summary__meta {
+  font-size: 12px;
+  color: var(--color-ink-3, #a1a1aa);
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+.ip-summary__props {
+  width: 100%;
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-line, #ececec);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  text-align: left;
+}
+.ip-summary__prop {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+}
+.ip-summary__prop dt {
+  color: var(--color-ink-3, #a1a1aa);
+}
+.ip-summary__prop dd {
+  color: var(--color-ink-1, #18181b);
+  margin: 0;
+  min-width: 0;
+}
+.ip-summary__path {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
+}
+.ip-summary__hint {
+  font-size: 11.5px;
+  color: var(--color-ink-3, #a1a1aa);
+  line-height: 1.45;
+  margin: 16px 0 0;
+}
+.info-pane-rail {
+  width: 36px;
+  cursor: pointer;
+}
+
 .preview-mesh {
   background:
     radial-gradient(at 20% 20%, rgba(244, 114, 182, 0.18) 0%, transparent 50%),
@@ -525,6 +737,15 @@ html.dark .preview-mesh {
   color: #dc2626;
   border-color: #fecaca;
   background: #fef2f2;
+}
+
+/* RC-21: the light-red hover above reads as a bright block on the dark
+   panel. Use deep, low-alpha red tones in dark mode (matches the
+   destructive treatment used elsewhere, e.g. the extract error banner). */
+html.dark .info-action--danger:hover {
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.4);
+  background: rgba(127, 29, 29, 0.22);
 }
 
 /* ── Copy-path button (G6) ────────────────────────────────────────

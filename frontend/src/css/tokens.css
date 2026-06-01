@@ -5,6 +5,10 @@
   --color-accent-strong: #4f5ac4;
   --color-accent-soft: rgba(94, 106, 210, 0.1);
   --color-accent-ring: rgba(94, 106, 210, 0.3);
+  /* Gradient end-stop for accent gradients (e.g. the sidebar storage
+     bar). Default = lighter lilac; the accent picker overrides per
+     preset with a hand-picked secondary (RC-7). */
+  --color-accent-grad: #7c87e5;
 
   --color-canvas: #fafaf9;
   --color-surface: #ffffff;

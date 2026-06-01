@@ -26,12 +26,16 @@ const titles = {
   Login: "sidebar.login",
   Share: "buttons.share",
   Files: "files.files",
+  SmartFolder: "files.smartFolder",
   Settings: "sidebar.settings",
   ProfileSettings: "settings.profileSettings",
   Shares: "settings.shareManagement",
+  Sessions: "settings.sessions",
   GlobalSettings: "settings.globalSettings",
   Users: "settings.users",
   User: "settings.user",
+  Audit: "settings.audit",
+  Webhooks: "settings.webhooks",
   Forbidden: "errors.forbidden",
   NotFound: "errors.notFound",
   InternalServerError: "errors.internal",
@@ -257,8 +261,12 @@ router.beforeEach(async (to, from) => {
 // The legacy `next(...)` callback still works but logs a deprecation
 // warning on every navigation, polluting the console.
 router.beforeResolve(async (to, from) => {
-  const title = i18n.global.t(titles[to.name as keyof typeof titles]);
-  document.title = title + " - " + name;
+  // Guard against a route whose name has no entry in `titles`: passing
+  // `undefined` to i18n.t throws and aborts navigation (this is what
+  // broke the Sessions/Audit/Webhooks routes). Fall back to the bare app
+  // name so a missing key degrades gracefully instead of dead-ending.
+  const titleKey = titles[to.name as keyof typeof titles];
+  document.title = titleKey ? i18n.global.t(titleKey) + " - " + name : name;
 
   const authStore = useAuthStore();
 

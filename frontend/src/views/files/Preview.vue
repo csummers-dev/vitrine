@@ -1288,9 +1288,11 @@ const key = (event: KeyboardEvent) => {
   const isVideo = fileStore.req?.type === "video";
   const k = event.key;
 
-  if (k === "Enter") {
-    if (hasNext.value) next();
-  } else if (k === "ArrowRight") {
+  // Enter is intentionally a no-op in preview (RC-11): it used to jump to
+  // the next file, but the focus trap now lands focus on the dialog
+  // container (not the close button), so Enter does nothing at all rather
+  // than unexpectedly closing the preview.
+  if (k === "ArrowRight") {
     if (isVideo) return;
     if (hasNext.value) {
       event.preventDefault();

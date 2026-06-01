@@ -291,7 +291,12 @@ const onItemClick = (_event: MouseEvent) => {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #5e6ad2 0%, #4f5ac4 100%);
+  /* Track the accent picker (RC-5) — fall back to lilac when unset. */
+  background: linear-gradient(
+    135deg,
+    var(--color-accent, #5e6ad2) 0%,
+    var(--color-accent-strong, #4f5ac4) 100%
+  );
   color: white;
   display: flex;
   align-items: center;
@@ -492,7 +497,12 @@ const onItemClick = (_event: MouseEvent) => {
 .sd__storage-fill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #5e6ad2 0%, #7c87e5 100%);
+  /* RC-7: track the accent + its per-preset gradient end-stop. */
+  background: linear-gradient(
+    90deg,
+    var(--color-accent, #5e6ad2) 0%,
+    var(--color-accent-grad, #7c87e5) 100%
+  );
   transition: width 0.3s ease;
 }
 
@@ -540,8 +550,12 @@ const onItemClick = (_event: MouseEvent) => {
   height: 32px;
   border-radius: 50%;
   /* Accent gradient — matches the brand mark + the inline-sidebar avatar.
-     Lighter lilac on top-left fading into the accent-strong bottom-right. */
-  background: linear-gradient(135deg, #7c87e5 0%, #4f5ac4 100%);
+     Tracks the accent picker (RC-5); falls back to lilac when unset. */
+  background: linear-gradient(
+    135deg,
+    var(--color-accent, #5e6ad2) 0%,
+    var(--color-accent-strong, #4f5ac4) 100%
+  );
   color: white;
   display: inline-flex;
   align-items: center;

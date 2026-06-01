@@ -58,6 +58,16 @@ func (e extractor) ExtractToken(r *http.Request) (string, error) {
 	}
 
 	if r.Method == http.MethodGet {
+		// Images / media load via <img>/<video>/<audio> tags that can't
+		// send the X-Auth header, so they pass the token as a query param.
+		// Checked before the cookie: the cookie can drift out of sync with
+		// the app's live (renewed) token and then expire, which 401'd every
+		// thumbnail/preview while header-authed API calls kept working
+		// (RC-18).
+		if q := r.URL.Query().Get("auth"); strings.Count(q, ".") == 2 {
+			return q, nil
+		}
+
 		cookie, _ := r.Cookie("auth")
 		if cookie != nil && strings.Count(cookie.Value, ".") == 2 {
 			return cookie.Value, nil

@@ -32,7 +32,11 @@ export function useDropTarget() {
     // survives those navigations.
     const dragged = fileStore.draggedItems;
     if (dragged.length === 0) {
-      $showError(new Error("Nothing to drop — drag source was cleared"));
+      // Empty snapshot at drop time isn't a user-facing error (RC-12): a
+      // single native drop bubbles to ancestor drop handlers, and by the
+      // time a later one runs `dragend` may already have cleared the
+      // snapshot. The real move was performed by the first handler — so
+      // surfacing an error toast here was spurious. Silently no-op.
       return;
     }
 

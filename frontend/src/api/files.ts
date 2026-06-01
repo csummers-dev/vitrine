@@ -266,9 +266,22 @@ export async function checksum(url: string, algo: ChecksumAlg) {
   return (await data.json()).checksums[algo];
 }
 
+// RC-18: <img>/<video>/<audio>/<track> tags can't send the X-Auth header,
+// so these media URLs carry the live JWT as an `auth` query param. The
+// backend extractor accepts ?auth on GET. This replaces sole reliance on
+// the `auth` cookie, which could drift out of sync with the renewed token
+// and then expire — 401-ing every thumbnail while the API kept working.
+// Guarded on jwt presence so logged-out public-share viewers are
+// unaffected (public shares use the pub.ts builders anyway).
+function authParam(): { auth: string } | Record<string, never> {
+  const jwt = useAuthStore().jwt;
+  return jwt ? { auth: jwt } : {};
+}
+
 export function getDownloadURL(file: ResourceItem, inline: any) {
   const params = {
     ...(inline && { inline: "true" }),
+    ...authParam(),
   };
 
   return createURL("api/raw" + file.path, params);
@@ -278,6 +291,7 @@ export function getPreviewURL(file: ResourceItem, size: string) {
   const params = {
     inline: "true",
     key: Date.parse(file.modified),
+    ...authParam(),
   };
 
   return createURL("api/preview/" + size + file.path, params);
@@ -286,6 +300,7 @@ export function getPreviewURL(file: ResourceItem, size: string) {
 export function getSubtitlesURL(file: ResourceItem) {
   const params = {
     inline: "true",
+    ...authParam(),
   };
 
   return file.subtitles?.map((d) => createURL("api/subtitle" + d, params));

@@ -505,7 +505,12 @@ onBeforeUnmount(() => {
 .img-editor__scrim {
   position: fixed;
   inset: 0;
-  z-index: 1200;
+  /* Must sit ABOVE the preview shell (.preview-shell is a fixed
+     full-screen overlay at z-index 9999). The editor is launched from
+     inside the preview and teleported to <body>, so a lower z-index made
+     it render behind the preview — the modal opened invisibly and looked
+     like the Edit button did nothing (RC-13). */
+  z-index: 10000;
   background: rgba(0, 0, 0, 0.55);
   display: flex;
   align-items: center;

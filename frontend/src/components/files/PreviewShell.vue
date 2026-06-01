@@ -6,6 +6,7 @@
     aria-modal="true"
     :aria-label="`Preview: ${name}`"
     tabindex="-1"
+    data-autofocus
     @mousemove="$emit('userActivity')"
     @touchstart="$emit('userActivity')"
   >

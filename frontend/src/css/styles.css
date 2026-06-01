@@ -173,8 +173,11 @@ main .spinner .bounce2 {
 #editor-container {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  background-color: var(--background);
+  /* RC-14: use the app's canvas token (was the legacy --background) so
+     the editor surroundings match the rest of the UI in both themes.
+     Dropped justify-content: center — the Ace surface (flex: 1) should
+     fill from the top, not sit centered. */
+  background-color: var(--color-canvas, var(--background));
   position: fixed;
   padding-top: 4em;
   top: 0;
@@ -186,11 +189,12 @@ main .spinner .bounce2 {
 }
 
 #editor-container .bar {
-  background: var(--surfacePrimary);
+  background: var(--color-surface, var(--surfacePrimary));
 }
 
 #editor-container #editor {
   flex: 1;
+  background-color: var(--color-canvas, var(--background));
 }
 
 #editor-container .breadcrumbs {

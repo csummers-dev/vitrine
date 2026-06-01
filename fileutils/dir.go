@@ -2,6 +2,7 @@ package fileutils
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 
 	"github.com/spf13/afero"
@@ -14,19 +15,25 @@ func CopyDir(afs afero.Fs, source, dest string, fileMode, dirMode fs.FileMode) e
 	// Get properties of source.
 	srcinfo, err := afs.Stat(source)
 	if err != nil {
-		return err
+		return fmt.Errorf("stat dir %q: %w", source, err)
 	}
 
-	// Create the destination directory.
-	err = afs.MkdirAll(dest, srcinfo.Mode())
+	// Create the destination directory, preserving the source's
+	// permission bits. Mask to .Perm() (the low permission bits) so the
+	// os.ModeDir / type bits are never handed to MkdirAll — some
+	// filesystems reject a mode that carries them.
+	if err = afs.MkdirAll(dest, srcinfo.Mode().Perm()); err != nil {
+		return fmt.Errorf("mkdir %q: %w", dest, err)
+	}
+
+	dir, err := afs.Open(source)
 	if err != nil {
-		return err
+		return fmt.Errorf("open dir %q: %w", source, err)
 	}
-
-	dir, _ := afs.Open(source)
 	obs, err := dir.Readdir(-1)
+	_ = dir.Close()
 	if err != nil {
-		return err
+		return fmt.Errorf("read dir %q: %w", source, err)
 	}
 
 	var errs []error
@@ -37,27 +44,18 @@ func CopyDir(afs afero.Fs, source, dest string, fileMode, dirMode fs.FileMode) e
 
 		if obj.IsDir() {
 			// Create sub-directories, recursively.
-			err = CopyDir(afs, fsource, fdest, fileMode, dirMode)
-			if err != nil {
+			if err = CopyDir(afs, fsource, fdest, fileMode, dirMode); err != nil {
 				errs = append(errs, err)
 			}
 		} else {
 			// Perform the file copy.
-			err = CopyFile(afs, fsource, fdest, fileMode, dirMode)
-			if err != nil {
+			if err = CopyFile(afs, fsource, fdest, fileMode, dirMode); err != nil {
 				errs = append(errs, err)
 			}
 		}
 	}
 
-	var errString string
-	for _, err := range errs {
-		errString += err.Error() + "\n"
-	}
-
-	if errString != "" {
-		return errors.New(errString)
-	}
-
-	return nil
+	// errors.Join returns nil when errs is empty, and preserves each
+	// wrapped child error (op + path + errno) for diagnosis.
+	return errors.Join(errs...)
 }

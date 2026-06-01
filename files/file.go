@@ -449,16 +449,20 @@ func (i *FileInfo) readListing(checker rules.Checker, readHeader bool, calcImgRe
 		if file.IsDir {
 			listing.NumDirs++
 		} else {
-			listing.NumFiles++
-
 			if isInvalidLink {
 				file.Type = "invalid_link"
-			} else {
-				err := file.detectType(true, false, readHeader, calcImgRes)
-				if err != nil {
-					return err
+			} else if err := file.detectType(true, false, readHeader, calcImgRes); err != nil {
+				// RC-17: a single file failing type detection must NOT 500
+				// the whole listing. The common trigger is the file being
+				// moved/deleted between readdir and now (detectType opens
+				// it to sniff the MIME type). Drop a vanished file; keep
+				// any other failure in the listing with no detected type.
+				if errors.Is(err, fs.ErrNotExist) {
+					continue
 				}
+				log.Printf("Skipping type detection for %s: %v", file.Path, err)
 			}
+			listing.NumFiles++
 		}
 
 		listing.Items = append(listing.Items, file)

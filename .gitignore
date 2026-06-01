@@ -39,3 +39,6 @@ default.nix
 Dockerfile.dev
 
 docs/*.md
+
+# Local build/push helper
+build-and-push.sh

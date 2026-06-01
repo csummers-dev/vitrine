@@ -79,6 +79,11 @@ func (s shareBackend) Delete(hash string) error {
 func (s shareBackend) DeleteWithPathPrefix(pathPrefix string) error {
 	var links []share.Link
 	if err := s.db.Prefix("Path", pathPrefix, &links); err != nil {
+		// No shares under this path is the normal case — most files are
+		// never shared, so deleting one shouldn't log a warning (RC-19).
+		if errors.Is(err, storm.ErrNotFound) {
+			return nil
+		}
 		return err
 	}
 
