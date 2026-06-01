@@ -85,6 +85,44 @@
       </router-link>
     </nav>
 
+    <!-- ── Favorites (mobile parity with the desktop sidebar) ───────────
+         Long-press a row to reorder (touch DnD); tap to open. -->
+    <nav v-if="isLoggedIn && favorites.length > 0" class="sd__section sd__favs">
+      <div class="sd__section-label">Favorites</div>
+      <ul ref="favListEl" class="sd__fav-list">
+        <li
+          v-for="(path, index) in favorites"
+          :key="path"
+          :data-fav-index="index"
+          class="sd__fav"
+          :class="{
+            'sd__fav--dragging': favDragIndex === index,
+            'sd__fav--drop-before':
+              favDropIndex === index && favDragIndex !== index && !favDropAfter,
+            'sd__fav--drop-after':
+              favDropIndex === index && favDragIndex !== index && favDropAfter,
+          }"
+          @pointerdown="(e) => favDrag.onPointerDown(e, { index, path })"
+        >
+          <button
+            type="button"
+            class="sd__fav-btn"
+            :title="path"
+            @click="(e) => onFavTap(path, e)"
+          >
+            <Icon
+              name="star"
+              :size="13"
+              :stroke-width="0"
+              fill="currentColor"
+              class="sd__fav-star"
+            />
+            <span class="sd__fav-name">{{ favoriteName(path) }}</span>
+          </button>
+        </li>
+      </ul>
+    </nav>
+
     <div class="sd__spacer"></div>
 
     <!-- ── Storage card ─────────────────────────────────────────────── -->
@@ -155,12 +193,14 @@
  * a tinted storage card. Click delegation in the root closes the drawer
  * via the parent's @click listener when the user picks any nav item.
  */
-import { computed, onMounted, onUnmounted, reactive, watch } from "vue";
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
+import { useFavorites } from "@/composables/useFavorites";
+import { useTouchDrag } from "@/composables/useTouchDrag";
 import * as auth from "@/utils/auth";
 import {
   version,
@@ -241,6 +281,74 @@ watch(
 
 onMounted(fetchUsage);
 onUnmounted(() => usageAbort?.abort());
+
+// ── Favorites (touch reorder) ──────────────────────────────────────────
+const favoritesComposable = useFavorites();
+const favorites = computed(() => favoritesComposable.favorites.value);
+
+const favListEl = ref<HTMLElement | null>(null);
+const favDragIndex = ref<number | null>(null);
+const favDropIndex = ref<number | null>(null);
+const favDropAfter = ref(false);
+// After a long-press reorder, the trailing click is suppressed so the row
+// doesn't also navigate (and close the drawer).
+let suppressClickUntil = 0;
+
+/** basename of a favorited folder path, URL-decoded. */
+const favoriteName = (path: string): string => {
+  const trimmed = String(path).replace(/\/+$/, "");
+  const last = trimmed.split("/").filter(Boolean).pop() ?? path;
+  try {
+    return decodeURIComponent(last);
+  } catch {
+    return last;
+  }
+};
+
+const favDrag = useTouchDrag<{ index: number; path: string }>({
+  ghostLabel: (p) => favoriteName(p.path),
+  scrollEl: () => favListEl.value,
+  onStart: (p) => {
+    favDragIndex.value = p.index;
+  },
+  onMove: (_p, _x, y, el) => {
+    const row =
+      (el?.closest?.("[data-fav-index]") as HTMLElement | null) ?? null;
+    if (!row) {
+      favDropIndex.value = null;
+      return;
+    }
+    const rect = row.getBoundingClientRect();
+    favDropIndex.value = Number(row.dataset.favIndex);
+    favDropAfter.value = y > rect.top + rect.height / 2;
+  },
+  onDrop: (p) => {
+    const over = favDropIndex.value;
+    if (over === null) return;
+    const from = p.index;
+    const len = favorites.value.length;
+    const slot = favDropAfter.value ? over + 1 : over;
+    let target = slot > from ? slot - 1 : slot;
+    target = Math.max(0, Math.min(target, len - 1));
+    favoritesComposable.reorder(from, target);
+  },
+  onEnd: () => {
+    favDragIndex.value = null;
+    favDropIndex.value = null;
+    favDropAfter.value = false;
+    suppressClickUntil = Date.now() + 350;
+  },
+});
+
+const onFavTap = (path: string, event: MouseEvent) => {
+  // Swallow the click that follows a long-press reorder so we don't navigate
+  // (and so the drawer doesn't auto-close on it).
+  if (Date.now() < suppressClickUntil) {
+    event.stopPropagation();
+    return;
+  }
+  router.push(path);
+};
 
 // ── Actions ────────────────────────────────────────────────────────────
 const newDir = () => layoutStore.showHover("newDir");
@@ -357,14 +465,14 @@ const onItemClick = (_event: MouseEvent) => {
 
 .sd__btn--primary {
   flex: 1;
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   color: white;
   border: 1px solid var(--color-accent, #5e6ad2);
   box-shadow: 0 1px 2px rgba(94, 106, 210, 0.18);
 }
 
 .sd__btn--primary:hover {
-  background: var(--color-accent-strong, #4f5ac4);
+  background: var(--accent-gradient-strong);
 }
 
 .sd__btn--ghost {
@@ -454,6 +562,90 @@ const onItemClick = (_event: MouseEvent) => {
 
 .sd__spacer {
   flex: 1;
+}
+
+/* ── Favorites ───────────────────────────────────────────────────────── */
+.sd__favs {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.sd__fav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 4px 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  /* Long favorite lists scroll within their own region; the touch-drag
+     composable auto-scrolls this element when a drag nears its edges. */
+  overflow-y: auto;
+  max-height: 240px;
+}
+
+.sd__fav {
+  position: relative;
+  border-radius: 8px;
+}
+
+.sd__fav-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 40px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  border-radius: 8px;
+  color: var(--color-ink-2, #52525b);
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sd__fav-btn:hover {
+  background: var(--color-hover, var(--color-elevated, #f4f4f5));
+  color: var(--color-ink-1, #18181b);
+}
+
+.sd__fav-star {
+  color: #b45309;
+  flex-shrink: 0;
+}
+
+.sd__fav-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Row lifted while being dragged for reorder. */
+.sd__fav--dragging {
+  opacity: 0.5;
+}
+
+/* Insertion line — top edge for a 'before' drop, bottom for 'after'. */
+.sd__fav--drop-before::before,
+.sd__fav--drop-after::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent-gradient);
+  box-shadow: 0 0 0 2px var(--color-canvas, #fafaf9);
+}
+.sd__fav--drop-before::before {
+  top: -1px;
+}
+.sd__fav--drop-after::after {
+  bottom: -1px;
 }
 
 /* ── Storage card ────────────────────────────────────────────────────── */

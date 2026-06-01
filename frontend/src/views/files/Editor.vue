@@ -362,7 +362,7 @@ onBeforeUnmount(() => {
   padding: 0 12px;
   border-radius: 7px;
   border: 0;
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   color: #fff;
   font-size: 12.5px;
   font-weight: 600;

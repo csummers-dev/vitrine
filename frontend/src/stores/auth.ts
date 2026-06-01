@@ -25,12 +25,14 @@ export const useAuthStore = defineStore("auth", {
         return;
       }
 
-      setLocale(user.locale || detectLocale());
+      // Fire-and-forget: messages load async, then the active locale flips.
+      // "en" (the fallback) is always preloaded, so there's no raw-key flash.
+      void setLocale(user.locale || detectLocale());
       this.user = user;
     },
     updateUser(user: Partial<IUser>) {
       if (user.locale) {
-        setLocale(user.locale);
+        void setLocale(user.locale);
       }
 
       this.user = { ...this.user, ...cloneDeep(user) } as IUser;

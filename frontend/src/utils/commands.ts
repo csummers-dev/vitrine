@@ -18,6 +18,7 @@ import type { useLayoutStore } from "@/stores/layout";
 import { users } from "@/api";
 import * as auth from "@/utils/auth";
 import { unzipEnabled } from "@/utils/constants";
+import { isExtractable } from "@/utils/archive";
 import { useBulkRename } from "@/composables/useBulkRename";
 
 export type CommandGroup =
@@ -260,19 +261,28 @@ export function buildStaticCommands(ctx: CommandContext): Command[] {
         run: () => layoutStore.showHover("delete"),
       });
     }
-    // Extract zip (PR #5746) — single .zip + perm.create + feature on.
-    // Conditional inside the same selection-count guard so the entry
-    // only renders when the action is genuinely available.
+    // Extract archive (PR #5746, generalized) — single supported archive
+    // (zip / 7z / rar / tar family) + perm.create + feature on. Conditional
+    // inside the same selection-count guard so the entry only renders when
+    // the action is genuinely available.
     if (selCount === 1 && canCreate && unzipEnabled) {
       const item = fileStore.req?.items[fileStore.selected[0]];
-      if (item && (item.extension ?? "").toLowerCase() === ".zip") {
+      if (item && isExtractable(item.name)) {
         cmds.push({
           id: "action.extractZip",
           group: "actions",
-          label: "Extract zip…",
+          label: "Extract…",
           hint: "E",
           icon: "package-open",
-          keywords: ["unzip", "decompress", "archive", "open"],
+          keywords: [
+            "unzip",
+            "decompress",
+            "archive",
+            "open",
+            "7z",
+            "rar",
+            "tar",
+          ],
           run: () => layoutStore.showHover("extract"),
         });
       }

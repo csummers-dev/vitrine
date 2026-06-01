@@ -54,9 +54,10 @@
       </div>
 
       <!-- Secondary action row — Move / Copy / Extract / Open direct.
-           Extract slides in only for .zip files where the user can
-           create files (same gate as InfoPane). This is the in-preview
-           equivalent of the row-level Extract button. -->
+           Extract slides in only for supported archives (zip / 7z / rar /
+           tar family) where the user can create files (same gate as
+           InfoPane). This is the in-preview equivalent of the row-level
+           Extract button. -->
       <div class="preview-info__secondary">
         <button
           v-if="canMove"
@@ -79,7 +80,7 @@
         <button
           v-if="canExtract"
           class="info-action"
-          title="Extract zip"
+          title="Extract"
           @click="$emit('extract')"
         >
           <Icon name="package-open" :size="14" />

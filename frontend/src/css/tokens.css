@@ -65,6 +65,28 @@
   --tag-color-teal-fg: #0f766e;
 }
 
+/* ── Accent gradients ────────────────────────────────────────────────────
+   A gentle primary → hand-picked-secondary sheen (same pairing the sidebar
+   storage bar uses). Reused by accent-filled surfaces — primary buttons, the
+   audio play control, the avatar / brand glyph, toggles, etc. — so the accent
+   reads as a soft gradient rather than a flat block. Defined in :root (not
+   @theme) so it stays a plain custom property; because it references the live
+   --color-accent / --color-accent-grad vars, it re-resolves automatically when
+   the accent-color picker swaps presets. `-strong` is the slightly deeper
+   hover variant. */
+:root {
+  --accent-gradient: linear-gradient(
+    135deg,
+    var(--color-accent) 0%,
+    var(--color-accent-grad) 100%
+  );
+  --accent-gradient-strong: linear-gradient(
+    135deg,
+    var(--color-accent-strong) 0%,
+    var(--color-accent) 100%
+  );
+}
+
 /* ── Dark mode tokens (Stage 11b) ────────────────────────────────────────
    Activated by `html.dark`. The plumbing in `utils/theme.ts` toggles the
    class based on user preference or system setting. Token names are

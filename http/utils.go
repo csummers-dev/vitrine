@@ -44,6 +44,10 @@ func errToStatus(err error) int {
 		return http.StatusForbidden
 	case errors.Is(err, libErrors.ErrInvalidRequestParams):
 		return http.StatusBadRequest
+	case errors.Is(err, libErrors.ErrUnsupportedArchive),
+		errors.Is(err, libErrors.ErrMultiVolumeUnsupported),
+		errors.Is(err, libErrors.ErrEncryptedArchiveUnsupported):
+		return http.StatusBadRequest
 	case errors.Is(err, libErrors.ErrRootUserDeletion):
 		return http.StatusForbidden
 	case errors.Is(err, imgErrors.ErrImageTooLarge):

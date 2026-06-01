@@ -1,12 +1,9 @@
 <template>
   <div
-    ref="rootEl"
     class="preview-shell"
-    role="dialog"
-    aria-modal="true"
+    role="region"
     :aria-label="`Preview: ${name}`"
     tabindex="-1"
-    data-autofocus
     @mousemove="$emit('userActivity')"
     @touchstart="$emit('userActivity')"
   >
@@ -170,7 +167,6 @@
 import { onBeforeUnmount, onMounted, ref } from "vue";
 import Icon from "@/components/Icon.vue";
 import Drawer from "@/components/Drawer.vue";
-import { useFocusTrap } from "@/composables/useFocusTrap";
 
 const props = defineProps<{
   /** Display filename. Sits next to the squircle in the toolbar. */
@@ -200,14 +196,10 @@ const updateIsMobile = () => {
   isMobile.value = window.matchMedia("(max-width: 767px)").matches;
 };
 
-// Focus-trap the entire preview surface while mounted. Returns focus
-// to whatever opened the preview (typically the row in the listing)
-// when the user closes it. Reuses the Stage 11h primitive — `active`
-// is always true while the shell is mounted, since Preview.vue itself
-// is route-mounted/unmounted as the user enters/leaves preview.
-const rootEl = ref<HTMLElement | null>(null);
-const isActive = ref<boolean>(true);
-useFocusTrap(rootEl, isActive);
+// No focus trap: the preview is now a docked content region beside the
+// main sidebar (not a take-over modal), so focus must stay free to reach
+// the sidebar. Keyboard nav (←/→, Esc) is handled by a window-level
+// listener in Preview.vue, so it works regardless of focus.
 
 onMounted(() => {
   updateIsMobile();
@@ -230,7 +222,13 @@ defineEmits<{
 
 <style scoped>
 .preview-shell {
-  position: fixed;
+  /* Docked content region: fills the <main> content column (Files.vue's
+     root is position:relative as the containing block) so the left sidebar
+     stays visible beside the preview instead of being covered. The sidebar
+     is a flex *sibling* of <main>, so it never overlaps this surface; the
+     high z-index is kept (unchanged) only so Layout-level prompts/toasts —
+     which sit above it — keep their existing stacking order. */
+  position: absolute;
   inset: 0;
   z-index: 9999;
   background: var(--color-canvas, #fafaf9);

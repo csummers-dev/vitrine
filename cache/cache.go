@@ -63,8 +63,9 @@ type Cache struct {
 
 // metaEntry is the per-key index row. Stored little-endian so the
 // fixed-size layout is easy to read back without a full JSON codec.
-//   bytes 0–7:   size (uint64)
-//   bytes 8–15:  lastAccess as unix-nano (int64)
+//
+//	bytes 0–7:   size (uint64)
+//	bytes 8–15:  lastAccess as unix-nano (int64)
 type metaEntry struct {
 	size       int64
 	lastAccess time.Time

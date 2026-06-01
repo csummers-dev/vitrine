@@ -187,6 +187,9 @@ user created with the credentials from options "username" and "password".`,
 			}
 			fileCache = diskcache.New(afero.NewOsFs(), cacheDir)
 		}
+		// Transcoded videos (#3) are cached on the same volume as the disk
+		// cache (falls back to a temp dir when no cacheDir is configured).
+		fbhttp.SetTranscodeCacheDir(cacheDir)
 
 		redisCacheURL := v.GetString("redisCacheUrl")
 		uploadCache, err := fbhttp.NewUploadCache(redisCacheURL)

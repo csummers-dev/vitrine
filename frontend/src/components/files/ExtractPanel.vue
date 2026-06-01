@@ -1,15 +1,5 @@
 <template>
-  <SlideOver
-    :open="open"
-    eyebrow="Extract zip"
-    :title="title"
-    :close-on-scrim-click="!loading"
-    @cancel="onCancel"
-  >
-    <!-- Positioning context for the loading overlay (covers everything
-         inside the body slot but not the SlideOver header / footer, so
-         the disabled-state Close X and Cancel button stay reachable for
-         screen-reader exploration even while extraction blocks input). -->
+  <SlideOver :open="open" eyebrow="Extract" :title="title" @cancel="onCancel">
     <div class="extract-body">
       <!-- Source meta card — matches the file-type squircle treatment used
          throughout the listing / info pane for visual continuity. -->
@@ -39,7 +29,7 @@
          so we explicitly grey it out with a helper tooltip. -->
       <div class="extract-options">
         <label class="extract-option">
-          <Toggle v-model="newSubfolder" :disabled="loading" />
+          <Toggle v-model="newSubfolder" />
           <span class="extract-option__text">
             <span class="extract-option__label">Extract into new folder</span>
             <span class="extract-option__hint">
@@ -57,7 +47,7 @@
             newSubfolder ? 'Not applicable — extracting into a new folder' : ''
           "
         >
-          <Toggle v-model="overwrite" :disabled="newSubfolder || loading" />
+          <Toggle v-model="overwrite" :disabled="newSubfolder" />
           <span class="extract-option__text">
             <span class="extract-option__label"
               >Overwrite conflicting files</span
@@ -73,7 +63,7 @@
              the user can retry). Off by default — the conservative
              choice; users opt in explicitly. -->
         <label class="extract-option">
-          <Toggle v-model="deleteOriginal" :disabled="loading" />
+          <Toggle v-model="deleteOriginal" />
           <span class="extract-option__text">
             <span class="extract-option__label"
               >Delete original after extraction</span
@@ -88,7 +78,7 @@
              Off by default (stay where you are); the choice is remembered
              across sessions via user prefs. -->
         <label class="extract-option">
-          <Toggle v-model="openFolder" :disabled="loading" />
+          <Toggle v-model="openFolder" />
           <span class="extract-option__text">
             <span class="extract-option__label">Open extracted folder</span>
             <span class="extract-option__hint">
@@ -101,41 +91,16 @@
       <p class="extract-hint">
         <Icon name="info" :size="11" />
         <span
-          >Large archives may take a few minutes. Don't close this tab.</span
+          >Extraction runs in the background — you can keep browsing while a
+          large archive unpacks.</span
         >
       </p>
-
-      <!-- Error banner — keeps panel open so the user can retry / cancel. -->
-      <Transition name="extract-error">
-        <div v-if="errorMessage" class="extract-error" role="alert">
-          <Icon name="triangle-alert" :size="13" />
-          <span>{{ errorMessage }}</span>
-        </div>
-      </Transition>
-
-      <!-- Loading overlay — covers the body during extraction. Footer
-         buttons are disabled separately; this just blocks accidental
-         input on the picker while the server works. -->
-      <Transition name="extract-loading">
-        <div
-          v-if="loading"
-          class="extract-loading"
-          aria-busy="true"
-          aria-live="polite"
-        >
-          <Icon name="loader-circle" :size="22" class="extract-spin" />
-          <div class="extract-loading__text">Extracting…</div>
-          <div class="extract-loading__sub">{{ snapshot?.name ?? "" }}</div>
-        </div>
-      </Transition>
     </div>
 
     <template #footer>
       <button
         type="button"
         class="extract-btn extract-btn--ghost"
-        :disabled="loading"
-        :title="loading ? 'Extraction can’t be cancelled mid-flight' : ''"
         @click="onCancel"
       >
         Cancel
@@ -143,30 +108,23 @@
       <button
         type="button"
         class="extract-btn extract-btn--primary"
-        :disabled="!canSubmit || loading"
+        :disabled="!canSubmit"
         @click="onSubmit"
       >
-        <Icon
-          v-if="loading"
-          name="loader-circle"
-          :size="13"
-          class="extract-spin"
-        />
-        <span>{{ loading ? "Extracting…" : "Extract" }}</span>
+        <span>Extract</span>
       </button>
     </template>
   </SlideOver>
 </template>
 
 <script setup lang="ts">
-import { computed, inject, onUnmounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { computed, ref, watch } from "vue";
+import { useRoute } from "vue-router";
 import { useFileStore } from "@/stores/file";
 import { usePreferences } from "@/composables/usePreferences";
-import { files as api } from "@/api";
+import { useExtractIndicator } from "@/composables/useExtractIndicator";
 import { filesize } from "@/utils";
-import { mapUnzipError, deriveSubfolderName } from "@/utils/unzipErrors";
-import { useToast } from "vue-toastification";
+import { deriveSubfolderName } from "@/utils/unzipErrors";
 import SlideOver from "@/components/SlideOver.vue";
 import FolderPicker from "@/components/files/FolderPicker.vue";
 import Toggle from "@/components/settings/Toggle.vue";
@@ -181,13 +139,10 @@ const emit = defineEmits<{
   (e: "done"): void;
 }>();
 
-const $showError = inject<IToastError>("$showError")!;
-
 const route = useRoute();
-const router = useRouter();
 const fileStore = useFileStore();
 const prefs = usePreferences();
-const toast = useToast();
+const { runExtract } = useExtractIndicator();
 
 const pickerRef = ref<InstanceType<typeof FolderPicker> | null>(null);
 const destPath = ref<string>("");
@@ -201,8 +156,6 @@ const deleteOriginal = ref<boolean>(false);
 // remembered across sessions in the prefs bag (unlike the per-open
 // toggles above) — "keep persistent whenever updated".
 const openFolder = ref<boolean>(false);
-const loading = ref<boolean>(false);
-const errorMessage = ref<string>("");
 
 // Persist the toggle the moment it changes. The redundant write when the
 // open-watch seeds it from prefs is harmless (optimistic + debounced).
@@ -243,7 +196,7 @@ const finalDest = computed(() => {
   return base;
 });
 
-const title = computed(() => snapshot.value?.name ?? "Extract zip");
+const title = computed(() => snapshot.value?.name ?? "Extract");
 
 const canSubmit = computed(() => {
   if (!snapshot.value) return false;
@@ -254,74 +207,30 @@ const canSubmit = computed(() => {
 
 const onPathChange = (p: string) => {
   destPath.value = p;
-  errorMessage.value = "";
 };
 
 const onCancel = () => {
-  if (loading.value) return;
   emit("cancel");
 };
 
 /**
- * Block accidental page-unload while an extraction is in flight. Backend
- * has no abort; closing the tab would leave a partial state with no way
- * to know how far it got. Standard browser confirm dialog.
+ * Kick off the extraction and immediately close the panel — the work runs
+ * in the background (useExtractIndicator) with a floating toast, so the
+ * user can keep navigating while a large archive extracts (mirrors the
+ * move/copy transfer indicator). Errors surface as a toast, not in-panel.
  */
-const onBeforeUnload = (event: BeforeUnloadEvent) => {
-  if (!loading.value) return;
-  event.preventDefault();
-  // Required for the prompt to appear in some browsers (Chrome <= 119).
-  event.returnValue = "";
-};
-
-const onSubmit = async () => {
+const onSubmit = () => {
   if (!canSubmit.value || !snapshot.value) return;
-  errorMessage.value = "";
-  loading.value = true;
-  window.addEventListener("beforeunload", onBeforeUnload);
-
-  const dest = finalDest.value;
-  const sourceUrl = snapshot.value.url;
-  try {
-    await api.unzip(sourceUrl, dest, overwrite.value);
-
-    // F7: Delete the source archive only on extract success. A failed
-    // remove is surfaced as a toast but doesn't block the navigation —
-    // the extraction itself worked, the user just has a stray .zip.
-    if (deleteOriginal.value) {
-      try {
-        await api.remove(sourceUrl);
-      } catch (delErr) {
-        toast.warning(
-          `Extracted, but couldn't delete the original .zip: ${
-            delErr instanceof Error ? delErr.message : "unknown error"
-          }`
-        );
-      }
-    }
-
-    // Success — close panel + toast.
-    toast.success(`Extracted to ${decodeURIComponent(dest)}`);
-    emit("done");
-    // RC-8: only land the user inside the destination when they opted in.
-    // Otherwise stay put and just refresh the current listing so a
-    // same-folder extraction's new folder still animates in.
-    if (openFolder.value) {
-      router.push({ path: dest.replace(/\/?$/, "/") });
-    } else {
-      fileStore.reload = true;
-    }
-  } catch (err) {
-    errorMessage.value = mapUnzipError(err);
-    // Also surface as a toast for users who closed the panel before
-    // the response arrived (shouldn't happen since Cancel is disabled
-    // during loading, but defensive — and the toast is the only signal
-    // if the panel is auto-closing on success).
-    if (err instanceof Error) $showError(err);
-  } finally {
-    loading.value = false;
-    window.removeEventListener("beforeunload", onBeforeUnload);
-  }
+  const params = {
+    sourceUrl: snapshot.value.url,
+    name: snapshot.value.name,
+    dest: finalDest.value,
+    overwrite: overwrite.value,
+    deleteOriginal: deleteOriginal.value,
+    openFolder: openFolder.value,
+  };
+  emit("done");
+  void runExtract(params);
 };
 
 /**
@@ -333,7 +242,6 @@ watch(
   () => props.open,
   (open) => {
     if (!open) return;
-    errorMessage.value = "";
     overwrite.value = false;
     deleteOriginal.value = false;
     newSubfolder.value = true;
@@ -358,16 +266,11 @@ watch(
     };
   }
 );
-
-onUnmounted(() => {
-  window.removeEventListener("beforeunload", onBeforeUnload);
-});
 </script>
 
 <style scoped>
-/* Positioning context for the loading overlay. min-height pads the
-   panel during loading so the spinner doesn't collapse on top of the
-   FolderPicker's own state. */
+/* Body wrapper. A min-height keeps the panel from collapsing while the
+   FolderPicker loads its first listing. */
 .extract-body {
   position: relative;
   min-height: 240px;
@@ -509,93 +412,6 @@ html.dark .extract-source__icon {
   color: var(--color-ink-1, #18181b);
 }
 
-/* ── Error banner ────────────────────────────────────────────────────── */
-.extract-error {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 12px;
-  border-radius: 8px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #b91c1c;
-  font-size: 12.5px;
-  font-weight: 500;
-  line-height: 1.4;
-  margin-top: 14px;
-}
-
-html.dark .extract-error {
-  background: rgba(127, 29, 29, 0.18);
-  border-color: rgba(248, 113, 113, 0.4);
-  color: #fca5a5;
-}
-
-.extract-error-enter-active,
-.extract-error-leave-active {
-  transition:
-    opacity 0.14s ease,
-    transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.extract-error-enter-from,
-.extract-error-leave-to {
-  opacity: 0;
-  transform: translateY(-4px);
-}
-
-/* ── Loading overlay ─────────────────────────────────────────────────── */
-.extract-loading {
-  position: absolute;
-  inset: 0;
-  background: color-mix(in srgb, var(--color-surface, #fff) 90%, transparent);
-  -webkit-backdrop-filter: blur(2px);
-  backdrop-filter: blur(2px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  z-index: 5;
-  pointer-events: auto;
-}
-
-.extract-loading__text {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-ink-1, #18181b);
-  margin-top: 2px;
-}
-
-.extract-loading__sub {
-  font-size: 11.5px;
-  color: var(--color-ink-3, #a1a1aa);
-  max-width: 260px;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.extract-loading-enter-active,
-.extract-loading-leave-active {
-  transition: opacity 0.18s ease;
-}
-.extract-loading-enter-from,
-.extract-loading-leave-to {
-  opacity: 0;
-}
-
-.extract-spin {
-  animation: extract-spin 0.9s linear infinite;
-  color: var(--color-accent, #5e6ad2);
-}
-
-@keyframes extract-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* ── Footer buttons (mirror MoveCopyPanel chrome) ────────────────────── */
 .extract-btn {
   height: 30px;
@@ -633,13 +449,13 @@ html.dark .extract-error {
 }
 
 .extract-btn--primary {
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   border-color: var(--color-accent, #5e6ad2);
   color: white;
 }
 
 .extract-btn--primary:hover:not(:disabled) {
-  background: var(--color-accent-strong, #4f5ac4);
+  background: var(--accent-gradient-strong);
   border-color: var(--color-accent-strong, #4f5ac4);
 }
 

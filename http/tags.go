@@ -137,7 +137,7 @@ var tagsDeleteHandler = withUser(func(_ http.ResponseWriter, r *http.Request, d 
 		return tagErrToStatus(err), err
 	}
 	return http.StatusNoContent, nil
-}, )
+})
 
 // fileTagsHandler — GET /api/files/{path:.*}/tags
 //
@@ -230,4 +230,3 @@ var fileTagsBatchHandler = withUser(func(w http.ResponseWriter, r *http.Request,
 	}
 	return renderJSON(w, r, out)
 })
-

@@ -515,7 +515,7 @@ html.dark .pdf-viewer__stage {
   height: 32px;
   padding: 0 14px;
   border-radius: 8px;
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   color: white;
   font-size: 13px;
   font-weight: 500;
@@ -523,6 +523,6 @@ html.dark .pdf-viewer__stage {
   transition: background-color 120ms ease;
 }
 .pdf-viewer__fallback-btn:hover {
-  background: var(--color-accent-strong, #4f5ac4);
+  background: var(--accent-gradient-strong);
 }
 </style>

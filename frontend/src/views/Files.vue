@@ -1,5 +1,8 @@
 <template>
-  <div class="flex-1 flex flex-col min-h-0 min-w-0">
+  <!-- `relative` makes this content column the containing block for the
+       preview shell (which is position:absolute), so the preview fills the
+       area beside the sidebar instead of covering the whole viewport. -->
+  <div class="relative flex-1 flex flex-col min-h-0 min-w-0">
     <header-bar v-if="error || fileStore.req?.type === undefined">
       <breadcrumbs base="/files" />
     </header-bar>

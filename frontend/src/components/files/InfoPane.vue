@@ -104,8 +104,9 @@
          For files this is a clean 3-up grid; for folders Preview/Extract
          are omitted and the row falls back to 2-col so Move + Copy still
          fill the width. The third tile swaps to "Extract" when the file
-         is a `.zip` and the user can create — a zip's "preview" really is
-         its contents, which is what Extract opens. -->
+         is a supported archive (zip / 7z / rar / tar family) and the user
+         can create — an archive's "preview" really is its contents, which
+         is what Extract opens. -->
       <div
         v-if="canMove || canCopy || !item.isDir"
         class="pb-4 grid gap-1.5"
@@ -133,7 +134,7 @@
           v-if="!item.isDir && canExtract"
           @click="action('extract')"
           class="info-action"
-          title="Extract zip"
+          title="Extract"
         >
           <Icon name="package-open" :size="14" />
           <span>Extract</span>
@@ -344,6 +345,7 @@ import { useTagsStore } from "@/stores/tags";
 import { fileIcon, fileIconColor } from "@/utils/fileIcon";
 import { filesize } from "@/utils";
 import { enableThumbs, unzipEnabled } from "@/utils/constants";
+import { isExtractable } from "@/utils/archive";
 import { files as api } from "@/api";
 import dayjs from "dayjs";
 import { computed, inject, onMounted, onUnmounted, ref, watch } from "vue";
@@ -628,17 +630,17 @@ const canDelete = computed(() => !!authStore.user?.perm.delete);
 // Move requires rename perm (same backend operation); Copy requires create.
 const canMove = computed(() => !!authStore.user?.perm.rename);
 const canCopy = computed(() => !!authStore.user?.perm.create);
-// Extract (PR #5746) — show in place of Preview when the selected file
-// is a `.zip` and the user can create + the operator hasn't disabled the
-// feature. Preview is useless for archives, so the slot is more valuable
-// as the entry point to the panel.
+// Extract (PR #5746, generalized) — show in place of Preview when the
+// selected file is a supported archive (zip / 7z / rar / tar family) and the
+// user can create + the operator hasn't disabled the feature. Preview is
+// useless for archives, so the slot is more valuable as the entry point.
 const canExtract = computed(
   () =>
     unzipEnabled &&
     !!authStore.user?.perm.create &&
     !!item.value &&
     !item.value.isDir &&
-    (item.value.extension ?? "").toLowerCase() === ".zip"
+    isExtractable(item.value.name)
 );
 
 const close = () => {

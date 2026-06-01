@@ -80,7 +80,13 @@ func NewHandler(
 	api.PathPrefix("/tus").Handler(monkey(tusPatchHandler(uploadCache), "/api/tus")).Methods("PATCH")
 	api.PathPrefix("/tus").Handler(monkey(tusDeleteHandler(uploadCache), "/api/tus")).Methods("DELETE")
 
-	api.PathPrefix("/unzip").Handler(monkey(unzipHandler(), "/api/unzip")).Methods("POST")
+	// Route name kept as "/unzip" for API compatibility; the handler now
+	// extracts any supported archive format (zip / 7z / rar / tar family).
+	api.PathPrefix("/unzip").Handler(monkey(extractHandler(), "/api/unzip")).Methods("POST")
+
+	// On-demand video transcode (#3): browser-unplayable containers (.mkv,
+	// .avi, …) are remuxed/transcoded to a cached, seekable MP4.
+	api.PathPrefix("/transcode").Handler(monkey(transcodeHandler(), "/api/transcode")).Methods("GET")
 
 	api.PathPrefix("/usage").Handler(monkey(diskUsage, "/api/usage")).Methods("GET")
 

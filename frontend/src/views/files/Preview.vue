@@ -215,6 +215,7 @@
             @navigate-next="next"
             @toc="onEpubToc"
             @chapter="onEpubChapter"
+            @cover="onEpubCover"
           />
 
           <!-- CSV -->
@@ -231,7 +232,7 @@
             :alt="name"
             :zoom-percent="zoomPercent"
             :fit-to-screen="fitToScreen"
-            :strip="imageStrip"
+            :strip="previewStrip"
             :current-url="currentItemUrl"
             @navigate="(u: string) => router.replace({ path: u })"
           />
@@ -260,6 +261,10 @@
             :subtitles="subtitles"
             :options="videoOptions"
             :default-subtitle="defaultSubtitle"
+            :transcode-source="transcodeUrl"
+            :prefer-transcode="preferTranscode"
+            :download-url="downloadUrl"
+            :direct-url="directUrl"
             @metadata="onVideoMetadata"
             @pip="onVideoPip"
           />
@@ -300,29 +305,29 @@
           <div v-else-if="fileStore.req?.type == 'blob'" class="preview-blob">
             <div
               class="preview-blob__icon"
-              :class="isZip ? 'preview-blob__icon--zip' : ''"
+              :class="isArchive ? 'preview-blob__icon--zip' : ''"
             >
               <Icon
-                :name="isZip ? 'package' : 'file-search'"
+                :name="isArchive ? 'package' : 'file-search'"
                 :size="28"
                 :stroke-width="1.4"
               />
             </div>
             <div class="preview-blob__title">
-              {{ isZip ? "Zip archive" : $t("files.noPreview") }}
+              {{ isArchive ? "Archive" : $t("files.noPreview") }}
             </div>
             <div class="preview-blob__hint">
               {{
-                isZip
+                isArchive
                   ? "This is a compressed archive. Extract to view the contents."
                   : "This file type can't be previewed in the browser."
               }}
             </div>
-            <!-- Zip: no inline actions — the Extract button lives in the
-                 details sidebar next to Move/Copy. Non-zip blobs still
+            <!-- Archive: no inline actions — the Extract button lives in the
+                 details sidebar next to Move/Copy. Non-archive blobs still
                  get Download/Open since there's no equivalent surface
                  for them. -->
-            <div v-if="!isZip" class="preview-blob__actions">
+            <div v-if="!isArchive" class="preview-blob__actions">
               <a
                 :href="downloadUrl"
                 target="_blank"
@@ -390,7 +395,7 @@
             videoMeta ||
             audioMeta ||
             imageExif ||
-            (isEpub && epubToc.length > 0)
+            (isEpub && (epubToc.length > 0 || !!epubCoverUrl))
           "
           #format-section
         >
@@ -563,6 +568,17 @@
             </dl>
           </template>
 
+          <!-- EPUB cover art — shown in the details rail when the book
+               declares a cover image (emitted by EpubViewer once metadata
+               resolves). -->
+          <div v-if="isEpub && epubCoverUrl" class="preview-epub-cover-wrap">
+            <img
+              :src="epubCoverUrl"
+              alt="Book cover"
+              class="preview-epub-cover"
+            />
+          </div>
+
           <!-- EPUB chapter list / TOC (S5-5). Clickable; the active
                chapter is highlighted. Scrolls within the rail for long
                books. Indentation reflects sub-chapter depth. -->
@@ -629,7 +645,12 @@ import SubtitleUpload from "@/components/files/SubtitleUpload.vue";
 import { useLayoutStore } from "@/stores/layout";
 
 import { files as api } from "@/api";
-import { resizePreview, unzipEnabled } from "@/utils/constants";
+import {
+  resizePreview,
+  unzipEnabled,
+  transcodeEnabled,
+} from "@/utils/constants";
+import { isExtractable } from "@/utils/archive";
 import url from "@/utils/url";
 import { throttle } from "lodash-es";
 import { filesize } from "@/utils";
@@ -736,15 +757,25 @@ const changeSize = (val: number) => {
 // The TOC + current chapter come from EpubViewer via @toc / @chapter.
 // The info-rail renders the clickable chapter list; clicks call back
 // into the viewer's exposed goTo(href).
-const epubViewer = ref<{ goTo: (href: string) => void } | null>(null);
+const epubViewer = ref<{
+  goTo: (href: string) => void;
+  nextPage: () => void;
+  prevPage: () => void;
+} | null>(null);
 const epubToc = ref<EpubTocEntry[]>([]);
 const epubChapter = ref<string>("");
+// Cover-art blob URL emitted by EpubViewer once the book metadata resolves
+// (empty when the epub has no cover). Shown in the info-rail.
+const epubCoverUrl = ref<string>("");
 
 const onEpubToc = (entries: EpubTocEntry[]) => {
   epubToc.value = entries;
 };
 const onEpubChapter = (href: string) => {
   epubChapter.value = href;
+};
+const onEpubCover = (url: string) => {
+  epubCoverUrl.value = url;
 };
 const goToChapter = (href: string) => {
   epubViewer.value?.goTo(href);
@@ -824,9 +855,11 @@ const toggleFit = () => {
 // ── Text preview state. content is loaded from fileStore.req.content
 // (the backend already returns the body when type is "text" or
 // "textImmutable" — same path Editor.vue used). Soft-wrap preference
-// persists across previews. ----------------------------------------
+// persists across previews and defaults ON (matches the Editor, which
+// uses "editor-soft-wrap" defaulting true) so long lines wrap instead of
+// scrolling sideways out of view. ----------------------------------
 const textContent = ref<string>("");
-const textSoftWrap = useStorage("preview-text-soft-wrap", false);
+const textSoftWrap = useStorage("preview-text-soft-wrap", true);
 
 // ── Markdown rendered preview (S5-2) ───────────────────────────────
 // `.md` / `.markdown` files get a Rendered / Raw toggle in the text
@@ -998,6 +1031,45 @@ const downloadUrl = computed(() =>
 const directUrl = computed(() =>
   fileStore.req ? api.getDownloadURL(fileStore.req, true) : ""
 );
+// #3: on-demand transcode URL for videos. Empty when the server lacks
+// ffmpeg, so VideoViewer skips the fallback attempt and shows the download
+// card straight away.
+const transcodeUrl = computed(() =>
+  fileStore.req && transcodeEnabled ? api.getTranscodeURL(fileStore.req) : ""
+);
+
+// Containers no browser can decode natively. For these we hand VideoViewer
+// the transcode stream up front (when ffmpeg is available) instead of
+// waiting for a <video> error that Safari often never fires for e.g. .avi.
+// mp4 / webm / ogg / mov are left to native playback with the error-driven
+// transcode fallback as a safety net.
+const UNPLAYABLE_VIDEO_EXT = new Set([
+  "avi",
+  "mkv",
+  "wmv",
+  "flv",
+  "ts",
+  "m2ts",
+  "mts",
+  "mpg",
+  "mpeg",
+  "vob",
+  "divx",
+  "ogm",
+  "rm",
+  "rmvb",
+  "asf",
+  "m2v",
+  "3gp",
+  "f4v",
+]);
+const preferTranscode = computed<boolean>(() => {
+  if (!transcodeUrl.value) return false;
+  const n = fileStore.req?.name ?? "";
+  const dot = n.lastIndexOf(".");
+  const ext = dot >= 0 ? n.slice(dot + 1).toLowerCase() : "";
+  return UNPLAYABLE_VIDEO_EXT.has(ext);
+});
 
 // ── Image editor (S5-4) ─────────────────────────────────────────────
 const imageEditorOpen = ref<boolean>(false);
@@ -1047,12 +1119,12 @@ const isCsv = computed(
     fileStore.req.size <= CSV_MAX_SIZE
 );
 
-// .zip in the blob (no-preview) state lights up the Extract CTA (F4).
-// canExtractZip mirrors the headerButtons.extract gate from FileListing
-// so the action only shows when it would actually succeed.
-const isZip = computed(() => fileStore.req?.extension.toLowerCase() === ".zip");
+// A supported archive in the blob (no-preview) state lights up the Extract
+// CTA (F4). canExtractZip mirrors the headerButtons.extract gate from
+// FileListing so the action only shows when it would actually succeed.
+const isArchive = computed(() => isExtractable(fileStore.req?.name ?? ""));
 const canExtractZip = computed(
-  () => unzipEnabled && !!authStore.user?.perm.create && isZip.value
+  () => unzipEnabled && !!authStore.user?.perm.create && isArchive.value
 );
 const openExtract = () => layoutStore.showHover("extract");
 
@@ -1200,13 +1272,22 @@ const canOpenDirect = computed(
     !!authStore.user?.perm.download
 );
 
-// ── Image film-strip: sibling images in the same directory, in source
-// order. Used only by the ImageViewer; other formats don't get a strip. -
-const imageStrip = computed(() => {
+// ── Film strip: EVERY previewable sibling (in source order), matching the
+// ←/→ navigation set — images render as thumbnails, everything else as a
+// type-icon tile. The strip only ever renders inside ImageViewer, so it's
+// shown only on image previews while still listing the whole set (e.g.
+// photo → text → photo shows three tiles, with the text one as an icon).
+const previewStrip = computed(() => {
   if (!listing.value) return [];
   return listing.value
-    .filter((it) => it.type === "image")
-    .map((it) => ({ name: it.name, url: it.url, path: it.path }));
+    .filter((it) => !it.isDir)
+    .map((it) => ({
+      name: it.name,
+      url: it.url,
+      path: it.path,
+      type: it.type,
+      isImage: it.type === "image",
+    }));
 });
 
 const currentItemUrl = computed(() => {
@@ -1226,6 +1307,7 @@ watch(route, () => {
   imageExif.value = null;
   epubToc.value = [];
   epubChapter.value = "";
+  epubCoverUrl.value = "";
   pdfPage.value = 1;
   pdfTotalPages.value = 0;
   updatePreview();
@@ -1293,24 +1375,45 @@ const key = (event: KeyboardEvent) => {
     tag === "input" || tag === "textarea" || target?.isContentEditable;
   if (typing) return;
 
-  const isVideo = fileStore.req?.type === "video";
   const k = event.key;
 
   // Enter is intentionally a no-op in preview (RC-11): it used to jump to
   // the next file, but the focus trap now lands focus on the dialog
   // container (not the close button), so Enter does nothing at all rather
   // than unexpectedly closing the preview.
+  //
+  // ←/→ navigate to the neighbor preview item for EVERY type, video
+  // included — video.js's own arrow-seek is disabled in VideoPlayer so the
+  // keys are free for file navigation (per request). ↑/↓ stay page-nav for
+  // paginated docs and volume for video (handled by video.js).
   if (k === "ArrowRight") {
-    if (isVideo) return;
     if (hasNext.value) {
       event.preventDefault();
       next();
     }
   } else if (k === "ArrowLeft") {
-    if (isVideo) return;
     if (hasPrevious.value) {
       event.preventDefault();
       prev();
+    }
+  } else if (k === "ArrowDown") {
+    // ↓ = next PAGE in paginated docs (←/→ stay file nav). For EPUB the
+    // book is usually focused in its iframe, where EpubViewer handles the
+    // key directly; this covers the case where focus is outside the iframe.
+    if (isPdf.value) {
+      event.preventDefault();
+      if (pdfPage.value < pdfTotalPages.value) pdfPage.value++;
+    } else if (isEpub.value) {
+      event.preventDefault();
+      epubViewer.value?.nextPage();
+    }
+  } else if (k === "ArrowUp") {
+    if (isPdf.value) {
+      event.preventDefault();
+      if (pdfPage.value > 1) pdfPage.value--;
+    } else if (isEpub.value) {
+      event.preventDefault();
+      epubViewer.value?.prevPage();
     }
   } else if (k === "Escape") {
     close();
@@ -1584,12 +1687,12 @@ html.dark .preview-blob__icon--zip {
 }
 
 .preview-blob__btn--primary {
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   border: 1px solid var(--color-accent, #5e6ad2);
   color: white;
 }
 .preview-blob__btn--primary:hover {
-  background: var(--color-accent-strong, #4f5ac4);
+  background: var(--accent-gradient-strong);
 }
 
 .preview-blob__btn--ghost {
@@ -1779,6 +1882,24 @@ html.dark .preview-info__artwork {
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.25),
     0 8px 24px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* ── EPUB cover art ──────────────────────────────────────────────────
+   Shown above the chapter list in the details rail. Constrained so a
+   tall cover doesn't dominate the rail; soft card chrome to match. */
+.preview-epub-cover-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 16px;
+}
+.preview-epub-cover {
+  max-width: 100%;
+  max-height: 240px;
+  width: auto;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.4);
+  background: var(--color-elevated, #f4f4f5);
 }
 
 /* ── EPUB chapter list (S5-5) ────────────────────────────────────────

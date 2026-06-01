@@ -658,7 +658,7 @@ html[dir="rtl"] .login-password-toggle {
   height: 36px;
   border-radius: 8px;
   border: 1px solid var(--color-accent, #5e6ad2);
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   color: white;
   font-family: inherit;
   font-size: 13.5px;
@@ -677,7 +677,7 @@ html[dir="rtl"] .login-password-toggle {
 }
 
 .login-submit:hover:not(:disabled) {
-  background: var(--color-accent-strong, #4f5ac4);
+  background: var(--accent-gradient-strong);
   border-color: var(--color-accent-strong, #4f5ac4);
   box-shadow: 0 4px 12px -4px rgba(94, 106, 210, 0.5);
 }

@@ -11,6 +11,8 @@
     @dragover="dragOver"
     @dragleave="onDragLeave"
     @drop="drop"
+    @pointerdown="onRowPointerDown"
+    :data-drop-url="isDir && !readOnly ? url : undefined"
     @click="itemClick"
     @mousedown="handleMouseDown"
     @mouseenter="handleMouseEnter"
@@ -231,6 +233,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   rowIntoZone: [active: boolean];
   dropAlongside: [event: DragEvent];
+  // Touch drag-and-drop is owned by a single useTouchDrag instance in
+  // FileListing (lifted out of every row). Rows just forward their
+  // pointerdown + index up; the parent decides whether to start a drag.
+  rowPointerDown: [event: PointerEvent, index: number];
 }>();
 
 const authStore = useAuthStore();
@@ -576,22 +582,10 @@ const onActionsClick = (event: MouseEvent) => {
 };
 
 const dragStart = (event: DragEvent) => {
-  if (fileStore.selectedCount === 0) {
-    fileStore.selected.push(props.index);
-  } else if (!isSelected.value) {
-    fileStore.selected = [];
-    fileStore.selected.push(props.index);
-  }
-
-  // Snapshot the dragged items now, before any spring-load navigation
-  // can mutate `req` and cause `updateRequest()` to drop the selection.
-  // Drop handlers read from `draggedItems`, not `selected`, so the move
-  // survives navigation between dragstart and drop.
-  if (fileStore.req) {
-    fileStore.draggedItems = fileStore.selected
-      .map((i) => fileStore.req!.items[i])
-      .filter((it): it is ResourceItem => it != null);
-  }
+  // Promote + snapshot the drag selection (shared with the lifted touch
+  // path) — see fileStore.snapshotDragSelection. Snapshotting up front
+  // means spring-load navigation can't drop the selection mid-drag.
+  fileStore.snapshotDragSelection(props.index);
 
   // v1.3 S4-4: replace the browser's ugly translucent row snapshot with
   // a compact ghost — the grabbed row's icon + filename (single) or a
@@ -603,6 +597,20 @@ const dragStart = (event: DragEvent) => {
     name: props.name,
     count,
   });
+};
+
+// ── Touch drag-and-drop ─────────────────────────────────────────────────
+// HTML5 DnD never fires on touch. A SINGLE useTouchDrag instance now lives
+// in FileListing (lifted out of every row so we don't pay one composable +
+// ghost-closure per mounted tile). Each row just forwards its pointerdown +
+// index up via `rowPointerDown`; the parent decides whether the gesture
+// elevates into a drag. Interactive children + read-only rows opt out here
+// so the parent never needs to know a row's internals.
+const onRowPointerDown = (event: PointerEvent) => {
+  if (props.readOnly) return;
+  const t = event.target as HTMLElement | null;
+  if (t?.closest("button, a, input")) return;
+  emit("rowPointerDown", event, props.index);
 };
 
 const dragEnd = () => {
@@ -827,6 +835,10 @@ const drop = async (event: DragEvent) => {
 };
 
 const itemClick = (event: Event | KeyboardEvent) => {
+  // Ignore the synthetic click that trails a touch drag-and-drop. The
+  // suppress window is set by the listing-level touch-drag onEnd (shared
+  // via the file store) so every recycled row honors it.
+  if (Date.now() < fileStore.suppressClicksUntil) return;
   if (
     singleClick.value &&
     !(event as KeyboardEvent).ctrlKey &&

@@ -133,9 +133,21 @@
                 ? 'ring-2 ring-accent ring-inset bg-selected'
                 : '',
               // Reordering one favorite among the others = show an insertion
-              // line, NOT the move-into ring (clarity fix).
-              favDragOverIndex === index && draggingFavIndex !== null
+              // line, NOT the move-into ring (clarity fix). The line renders
+              // on the row's top edge for a 'before' drop, or its bottom edge
+              // for an 'after' drop (so end-of-list drops are visible too).
+              // Never drawn on the row being dragged (it has its own style).
+              favDragOverIndex === index &&
+              draggingFavIndex !== null &&
+              draggingFavIndex !== index &&
+              !favDropAfter
                 ? 'fav-reorder-target'
+                : '',
+              favDragOverIndex === index &&
+              draggingFavIndex !== null &&
+              draggingFavIndex !== index &&
+              favDropAfter
+                ? 'fav-reorder-target--after'
                 : '',
               draggingFavIndex === index ? 'fav-dragging' : '',
             ]"
@@ -390,6 +402,11 @@ export default {
     const toast = useToast();
     const draggingFavIndex = ref(null);
     const favDragOverIndex = ref(null);
+    // Whether the insertion point is AFTER the hovered row (cursor in its
+    // bottom half) vs before it (top half). Drives which edge the insertion
+    // line renders on — and, crucially, lets a drop at the very END of the
+    // list show a line (previously only a top-edge line existed).
+    const favDropAfter = ref(false);
     const favWillRemove = ref(false);
     const removeHintPos = ref({ x: 0, y: 0 });
     const favListEl = ref(null);
@@ -415,6 +432,7 @@ export default {
     const cleanupFavDrag = () => {
       draggingFavIndex.value = null;
       favDragOverIndex.value = null;
+      favDropAfter.value = false;
       favWillRemove.value = false;
       document.removeEventListener("dragover", onFavDocDragOver, true);
       document.removeEventListener("drop", onFavDocDrop, true);
@@ -494,6 +512,13 @@ export default {
         event.preventDefault();
         if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
         favDragOverIndex.value = index;
+        // Top half → insert BEFORE this row; bottom half → AFTER it. The
+        // "after" case is what lets a drop at the very bottom of the list
+        // show an insertion line at the row's lower edge.
+        const rect = event.currentTarget?.getBoundingClientRect();
+        favDropAfter.value = rect
+          ? event.clientY > rect.top + rect.height / 2
+          : false;
         return;
       }
       // RC-26: a file/folder dragged from the listing drops INTO this favorite.
@@ -510,11 +535,22 @@ export default {
       if (favDragOverIndex.value === index) favDragOverIndex.value = null;
     };
     const onFavDrop = (index, path, event) => {
+      const after = favDropAfter.value;
       favDragOverIndex.value = null;
       // RC-32/33: favorite reorder — never a filesystem move/copy.
       if (draggingFavIndex.value !== null) {
         event.preventDefault();
-        favoritesComposable.reorder(draggingFavIndex.value, index);
+        const from = draggingFavIndex.value;
+        const len = favoritesComposable.favorites.value.length;
+        // Gap in the ORIGINAL array where the item should land: before the
+        // hovered row, or after it (bottom-half / end-of-list drop).
+        const insertSlot = after ? index + 1 : index;
+        // reorder() removes first then re-inserts, so any slot past `from`
+        // shifts down by one — convert to the post-removal target index and
+        // clamp to a valid insert position (max = len-1 = append at end).
+        let target = insertSlot > from ? insertSlot - 1 : insertSlot;
+        target = Math.max(0, Math.min(target, len - 1));
+        favoritesComposable.reorder(from, target);
         cleanupFavDrag();
         return;
       }
@@ -551,6 +587,7 @@ export default {
       RECENTS_INITIAL,
       performDrop,
       draggingFavIndex,
+      favDropAfter,
       favDragOverIndex,
       favWillRemove,
       removeHintPos,
@@ -680,20 +717,29 @@ export default {
    reordering instead shows a thin insertion line where the item will land,
    plus a "lifted" dashed treatment on the row being dragged. */
 
-/* Insertion line at the top edge of the row the favorite will drop before. */
-.fav-reorder-target {
+/* Insertion line marking where the favorite will land: the TOP edge of the
+   hovered row for a 'before' drop, or the BOTTOM edge for an 'after' drop
+   (the latter is what makes a drop at the very end of the list visible). */
+.fav-reorder-target,
+.fav-reorder-target--after {
   position: relative;
 }
-.fav-reorder-target::before {
+.fav-reorder-target::before,
+.fav-reorder-target--after::after {
   content: "";
   position: absolute;
   left: 6px;
   right: 6px;
-  top: -1px;
   height: 2px;
   border-radius: 2px;
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   box-shadow: 0 0 0 2px var(--color-canvas, #fafaf9);
+}
+.fav-reorder-target::before {
+  top: -1px;
+}
+.fav-reorder-target--after::after {
+  bottom: -1px;
 }
 
 /* The favorite currently being dragged for reorder: lifted, dashed — clearly

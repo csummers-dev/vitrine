@@ -51,10 +51,14 @@ func handleWithStaticData(w http.ResponseWriter, _ *http.Request, d *data, fSys 
 		// requests them only when they can be served.
 		"EnableVideoThumbnails": d.server.EnableThumbnails && videoThumbnailsEnabled(),
 		"ResizePreview":         d.server.ResizePreview,
-		"EnableExec":            d.server.EnableExec,
-		"TusSettings":           d.settings.Tus,
-		"HideLoginButton":       d.settings.HideLoginButton,
-		"UnzipEnabled":          d.server.UnzipEnabled,
+		// #3: advertise on-demand transcoding only when ffmpeg is available,
+		// so the player attempts the transcode fallback only when it can be
+		// served (otherwise it goes straight to the download card).
+		"TranscodeEnabled": videoTranscodeEnabled(),
+		"EnableExec":       d.server.EnableExec,
+		"TusSettings":      d.settings.Tus,
+		"HideLoginButton":  d.settings.HideLoginButton,
+		"UnzipEnabled":     d.server.UnzipEnabled,
 	}
 
 	if d.settings.Branding.Files != "" {

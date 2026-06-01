@@ -12,142 +12,146 @@
         role="img"
       ></div>
 
-      <!-- Track info — prefers parsed ID3 over props, props over filename. -->
-      <div class="audio-viewer__track">
-        <div class="audio-viewer__eyebrow">Track</div>
-        <h1 class="audio-viewer__title">{{ displayedTitle }}</h1>
-        <div v-if="displayedSubtitle" class="audio-viewer__subtitle">
-          {{ displayedSubtitle }}
-        </div>
-      </div>
-
-      <!-- Plain scrubber (per design feedback — no waveform).
-           Click anywhere on the track to seek. -->
-      <div class="audio-viewer__scrubber-wrap">
-        <button
-          ref="scrubberEl"
-          type="button"
-          class="audio-viewer__scrubber"
-          :aria-label="`Seek · ${formatTime(currentTime)} of ${formatTime(duration)}`"
-          @click="onScrub"
-          @keydown="onScrubKey"
-        >
-          <div
-            class="audio-viewer__scrubber-progress"
-            :style="{ width: `${progressPct}%` }"
-          >
-            <span class="audio-viewer__scrubber-thumb"></span>
+      <!-- Everything except the art lives in __body so a wide preview area
+           can lay art + body out side-by-side (see the container query). -->
+      <div class="audio-viewer__body">
+        <!-- Track info — prefers parsed ID3 over props, props over filename. -->
+        <div class="audio-viewer__track">
+          <div class="audio-viewer__eyebrow">Track</div>
+          <h1 class="audio-viewer__title">{{ displayedTitle }}</h1>
+          <div v-if="displayedSubtitle" class="audio-viewer__subtitle">
+            {{ displayedSubtitle }}
           </div>
-        </button>
-        <div class="audio-viewer__time">
-          <span class="tabular">{{ formatTime(currentTime) }}</span>
-          <span class="tabular">{{ formatTime(duration) }}</span>
         </div>
-      </div>
 
-      <!-- Transport controls. The play/pause icon sits inside a 48px
+        <!-- Plain scrubber (per design feedback — no waveform).
+           Click anywhere on the track to seek. -->
+        <div class="audio-viewer__scrubber-wrap">
+          <button
+            ref="scrubberEl"
+            type="button"
+            class="audio-viewer__scrubber"
+            :aria-label="`Seek · ${formatTime(currentTime)} of ${formatTime(duration)}`"
+            @click="onScrub"
+            @keydown="onScrubKey"
+          >
+            <div
+              class="audio-viewer__scrubber-progress"
+              :style="{ width: `${progressPct}%` }"
+            >
+              <span class="audio-viewer__scrubber-thumb"></span>
+            </div>
+          </button>
+          <div class="audio-viewer__time">
+            <span class="tabular">{{ formatTime(currentTime) }}</span>
+            <span class="tabular">{{ formatTime(duration) }}</span>
+          </div>
+        </div>
+
+        <!-- Transport controls. The play/pause icon sits inside a 48px
            circular button. Lucide's `play` glyph is visually
            asymmetric (triangle points right) so we nudge it 1px right
            in the play state; `pause` is symmetric and centers
            naturally. -->
-      <div class="audio-viewer__controls">
-        <button
-          type="button"
-          class="audio-viewer__btn"
-          :disabled="!hasPrevious"
-          title="Previous track"
-          aria-label="Previous track"
-          @click="$emit('prev')"
-        >
-          <Icon name="skip-back" :size="16" :stroke-width="2" />
-        </button>
-        <button
-          type="button"
-          class="audio-viewer__btn"
-          title="Back 10s"
-          aria-label="Back 10s"
-          @click="seek(-10)"
-        >
-          <Icon name="rotate-ccw" :size="16" />
-        </button>
-        <button
-          type="button"
-          class="audio-viewer__btn audio-viewer__btn--play"
-          :title="isPlaying ? 'Pause (Space)' : 'Play (Space)'"
-          :aria-label="isPlaying ? 'Pause' : 'Play'"
-          @click="togglePlay"
-        >
-          <!-- Distinct icon nodes so the play-triangle nudge doesn't
+        <div class="audio-viewer__controls">
+          <button
+            type="button"
+            class="audio-viewer__btn"
+            :disabled="!hasPrevious"
+            title="Previous track"
+            aria-label="Previous track"
+            @click="$emit('prev')"
+          >
+            <Icon name="skip-back" :size="16" :stroke-width="2" />
+          </button>
+          <button
+            type="button"
+            class="audio-viewer__btn"
+            title="Back 10s"
+            aria-label="Back 10s"
+            @click="seek(-10)"
+          >
+            <Icon name="rotate-ccw" :size="16" />
+          </button>
+          <button
+            type="button"
+            class="audio-viewer__btn audio-viewer__btn--play"
+            :title="isPlaying ? 'Pause (Space)' : 'Play (Space)'"
+            :aria-label="isPlaying ? 'Pause' : 'Play'"
+            @click="togglePlay"
+          >
+            <!-- Distinct icon nodes so the play-triangle nudge doesn't
                leak to the pause state. -->
-          <Icon
-            v-if="isPlaying"
-            name="pause"
-            :size="20"
-            :stroke-width="2"
-            class="audio-viewer__play-icon"
-          />
-          <Icon
-            v-else
-            name="play"
-            :size="20"
-            :stroke-width="2"
-            class="audio-viewer__play-icon audio-viewer__play-icon--nudge"
-          />
-        </button>
-        <button
-          type="button"
-          class="audio-viewer__btn"
-          title="Forward 10s"
-          aria-label="Forward 10s"
-          @click="seek(10)"
-        >
-          <Icon name="rotate-cw" :size="16" />
-        </button>
-        <button
-          type="button"
-          class="audio-viewer__btn"
-          :disabled="!hasNext"
-          title="Next track"
-          aria-label="Next track"
-          @click="$emit('next')"
-        >
-          <Icon name="skip-forward" :size="16" :stroke-width="2" />
-        </button>
-      </div>
+            <Icon
+              v-if="isPlaying"
+              name="pause"
+              :size="20"
+              :stroke-width="2"
+              class="audio-viewer__play-icon"
+            />
+            <Icon
+              v-else
+              name="play"
+              :size="20"
+              :stroke-width="2"
+              class="audio-viewer__play-icon audio-viewer__play-icon--nudge"
+            />
+          </button>
+          <button
+            type="button"
+            class="audio-viewer__btn"
+            title="Forward 10s"
+            aria-label="Forward 10s"
+            @click="seek(10)"
+          >
+            <Icon name="rotate-cw" :size="16" />
+          </button>
+          <button
+            type="button"
+            class="audio-viewer__btn"
+            :disabled="!hasNext"
+            title="Next track"
+            aria-label="Next track"
+            @click="$emit('next')"
+          >
+            <Icon name="skip-forward" :size="16" :stroke-width="2" />
+          </button>
+        </div>
 
-      <!-- Volume strip (footer of the card) -->
-      <div class="audio-viewer__volume">
-        <button
-          type="button"
-          class="audio-viewer__volume-btn"
-          :title="muted ? 'Unmute' : 'Mute'"
-          :aria-label="muted ? 'Unmute' : 'Mute'"
-          @click="toggleMute"
-        >
-          <Icon
-            :name="
-              muted || volume === 0
-                ? 'volume-x'
-                : volume < 0.5
-                  ? 'volume-1'
-                  : 'volume-2'
-            "
-            :size="14"
+        <!-- Volume strip (footer of the card) -->
+        <div class="audio-viewer__volume">
+          <button
+            type="button"
+            class="audio-viewer__volume-btn"
+            :title="muted ? 'Unmute' : 'Mute'"
+            :aria-label="muted ? 'Unmute' : 'Mute'"
+            @click="toggleMute"
+          >
+            <Icon
+              :name="
+                muted || volume === 0
+                  ? 'volume-x'
+                  : volume < 0.5
+                    ? 'volume-1'
+                    : 'volume-2'
+              "
+              :size="14"
+            />
+          </button>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            :value="muted ? 0 : Math.round(volume * 100)"
+            aria-label="Volume"
+            class="audio-viewer__volume-bar"
+            @input="onVolumeInput"
           />
-        </button>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          step="1"
-          :value="muted ? 0 : Math.round(volume * 100)"
-          aria-label="Volume"
-          class="audio-viewer__volume-bar"
-          @input="onVolumeInput"
-        />
-        <span class="audio-viewer__volume-pct tabular">
-          {{ muted ? 0 : Math.round(volume * 100) }}%
-        </span>
+          <span class="audio-viewer__volume-pct tabular">
+            {{ muted ? 0 : Math.round(volume * 100) }}%
+          </span>
+        </div>
       </div>
 
       <!-- Hidden HTML5 audio element that owns playback. Everything
@@ -524,10 +528,14 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Query container so the card can go landscape based on the ACTUAL
+     available width (shrinks when the info pane is open), not the viewport. */
+  container-type: inline-size;
+  padding: 16px;
 }
 
 .audio-viewer__card {
-  width: min(360px, 100%);
+  width: min(440px, 100%);
   background: var(--color-surface, #fff);
   border: 1px solid var(--color-line, #ececec);
   border-radius: var(--radius-lg, 12px);
@@ -535,6 +543,40 @@ onBeforeUnmount(() => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+/* Wrapper for everything beside the art — keeps the vertical stacking of
+   track/scrubber/controls/volume identical in the narrow layout. */
+.audio-viewer__body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Landscape: when the preview area is wide enough, place the art beside a
+   wider body so the player fills the space instead of a fixed 360px column. */
+@container (min-width: 560px) {
+  .audio-viewer__card {
+    flex-direction: row;
+    /* Fill the available stage width (up to a generous cap) instead of a
+       fixed narrow column — the player should feel like it owns the space. */
+    width: 100%;
+    max-width: 960px;
+    align-items: stretch;
+  }
+  .audio-viewer__art {
+    /* Art scales with the card but never dominates; the body keeps the rest. */
+    width: clamp(220px, 34cqw, 360px);
+    height: auto;
+    aspect-ratio: auto;
+    flex-shrink: 0;
+  }
+  .audio-viewer__body {
+    flex: 1;
+    min-width: 0;
+    justify-content: center;
+    /* A touch more breathing room for the controls in the wide layout. */
+    padding: 8px 4px;
+  }
 }
 
 /* ── Album art ────────────────────────────────────────────────── */
@@ -625,7 +667,7 @@ html.dark .audio-viewer__art--fallback {
   transform: translateY(-50%);
   height: 4px;
   border-radius: 999px;
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   pointer-events: none;
 }
 .audio-viewer__scrubber-thumb {
@@ -636,7 +678,7 @@ html.dark .audio-viewer__art--fallback {
   width: 12px;
   height: 12px;
   border-radius: 999px;
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   box-shadow: 0 0 0 4px var(--color-accent-soft, rgba(94, 106, 210, 0.1));
 }
 
@@ -695,7 +737,7 @@ html.dark .audio-viewer__art--fallback {
   width: 48px;
   height: 48px;
   border-radius: 999px;
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   color: white;
   display: inline-flex;
   align-items: center;
@@ -703,7 +745,7 @@ html.dark .audio-viewer__art--fallback {
   position: relative;
 }
 .audio-viewer__btn--play:hover:not(:disabled) {
-  background: var(--color-accent-strong, #4f5ac4);
+  background: var(--accent-gradient-strong);
   color: white;
 }
 
@@ -762,7 +804,7 @@ html.dark .audio-viewer__art--fallback {
   width: 12px;
   height: 12px;
   border-radius: 999px;
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   border: 0;
   cursor: pointer;
 }
@@ -770,7 +812,7 @@ html.dark .audio-viewer__art--fallback {
   width: 12px;
   height: 12px;
   border-radius: 999px;
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   border: 0;
   cursor: pointer;
 }

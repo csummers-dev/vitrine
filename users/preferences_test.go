@@ -15,9 +15,9 @@ func TestPreferencesJSONRoundTrip(t *testing.T) {
 		ID:       1,
 		Username: "test",
 		Preferences: map[string]json.RawMessage{
-			"tags.recent":         json.RawMessage(`["work","todo"]`),
-			"view.mode.byFolder":  json.RawMessage(`{"/Documents":"list","/Photos":"gallery"}`),
-			"theme.accentColor":   json.RawMessage(`"#5e6ad2"`),
+			"tags.recent":        json.RawMessage(`["work","todo"]`),
+			"view.mode.byFolder": json.RawMessage(`{"/Documents":"list","/Photos":"gallery"}`),
+			"theme.accentColor":  json.RawMessage(`"#5e6ad2"`),
 		},
 	}
 

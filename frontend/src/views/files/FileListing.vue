@@ -386,6 +386,7 @@
             ref="listing"
             class="file-icons"
             data-clear-on-click="true"
+            :data-drop-url="currentFolderUrl || undefined"
             :class="[viewMode, { 'listing--virtual': isListVirtual }]"
             @click="handleEmptyAreaClick"
             @contextmenu="onListingContextMenu"
@@ -497,34 +498,54 @@
                 v-bind:path="row.item.path"
                 @rowIntoZone="onRowIntoZone"
                 @dropAlongside="onItemDropAlongside"
+                @rowPointerDown="onItemPointerDown"
               >
               </item>
             </RecycleScroller>
 
             <template v-else>
-              <TransitionGroup
-                v-if="fileStore.req?.numDirs ?? false"
-                tag="div"
-                name="list"
-                class="listing-section"
+              <!-- CH-1: the folders + files grids are windowed — only the
+                   tiles near the viewport mount. The top/bottom spacer
+                   blocks stand in for the rows scrolled out of view so the
+                   scroll height + position stay exact. Spacers are block
+                   siblings of the grid (not grid cells), so there's no gap
+                   math to get wrong, and each section's total height stays
+                   constant as you scroll. -->
+              <div
+                v-if="(fileStore.req?.numDirs ?? 0) > 0"
+                ref="dirsSectionRef"
+                class="listing-section-pad"
                 data-clear-on-click="true"
               >
-                <item
-                  v-for="item in dirs"
-                  :key="base64(item.name)"
-                  v-bind:index="item.index"
-                  v-bind:name="item.name"
-                  v-bind:isDir="item.isDir"
-                  v-bind:url="item.url"
-                  v-bind:modified="item.modified"
-                  v-bind:type="item.type"
-                  v-bind:size="item.size"
-                  v-bind:path="item.path"
-                  @rowIntoZone="onRowIntoZone"
-                  @dropAlongside="onItemDropAlongside"
-                >
-                </item>
-              </TransitionGroup>
+                <div
+                  class="grid-pad"
+                  data-clear-on-click="true"
+                  :style="{ height: dirsWin.topPad + 'px' }"
+                ></div>
+                <div class="listing-section" data-clear-on-click="true">
+                  <item
+                    v-for="item in dirs"
+                    :key="base64(item.name)"
+                    v-bind:index="item.index"
+                    v-bind:name="item.name"
+                    v-bind:isDir="item.isDir"
+                    v-bind:url="item.url"
+                    v-bind:modified="item.modified"
+                    v-bind:type="item.type"
+                    v-bind:size="item.size"
+                    v-bind:path="item.path"
+                    @rowIntoZone="onRowIntoZone"
+                    @dropAlongside="onItemDropAlongside"
+                    @rowPointerDown="onItemPointerDown"
+                  >
+                  </item>
+                </div>
+                <div
+                  class="grid-pad"
+                  data-clear-on-click="true"
+                  :style="{ height: dirsWin.botPad + 'px' }"
+                ></div>
+              </div>
 
               <div
                 v-if="
@@ -535,29 +556,41 @@
                 data-clear-on-click="true"
               ></div>
 
-              <TransitionGroup
-                v-if="fileStore.req?.numFiles ?? false"
-                tag="div"
-                name="list"
-                class="listing-section"
+              <div
+                v-if="(fileStore.req?.numFiles ?? 0) > 0"
+                ref="filesSectionRef"
+                class="listing-section-pad"
                 data-clear-on-click="true"
               >
-                <item
-                  v-for="item in files"
-                  :key="base64(item.name)"
-                  v-bind:index="item.index"
-                  v-bind:name="item.name"
-                  v-bind:isDir="item.isDir"
-                  v-bind:url="item.url"
-                  v-bind:modified="item.modified"
-                  v-bind:type="item.type"
-                  v-bind:size="item.size"
-                  v-bind:path="item.path"
-                  @rowIntoZone="onRowIntoZone"
-                  @dropAlongside="onItemDropAlongside"
-                >
-                </item>
-              </TransitionGroup>
+                <div
+                  class="grid-pad"
+                  data-clear-on-click="true"
+                  :style="{ height: filesWin.topPad + 'px' }"
+                ></div>
+                <div class="listing-section" data-clear-on-click="true">
+                  <item
+                    v-for="item in files"
+                    :key="base64(item.name)"
+                    v-bind:index="item.index"
+                    v-bind:name="item.name"
+                    v-bind:isDir="item.isDir"
+                    v-bind:url="item.url"
+                    v-bind:modified="item.modified"
+                    v-bind:type="item.type"
+                    v-bind:size="item.size"
+                    v-bind:path="item.path"
+                    @rowIntoZone="onRowIntoZone"
+                    @dropAlongside="onItemDropAlongside"
+                    @rowPointerDown="onItemPointerDown"
+                  >
+                  </item>
+                </div>
+                <div
+                  class="grid-pad"
+                  data-clear-on-click="true"
+                  :style="{ height: filesWin.botPad + 'px' }"
+                ></div>
+              </div>
             </template>
 
             <!-- v1.3 H11: "Drop into current folder" target.
@@ -769,6 +802,7 @@ import { usePreferences } from "@/composables/usePreferences";
 import { useTagPicker } from "@/composables/useTagPicker";
 import { useBulkRename } from "@/composables/useBulkRename";
 import { useDragSelect } from "@/composables/useDragSelect";
+import { useListingGrid } from "@/composables/useListingGrid";
 import { useTouchDevice } from "@/composables/useTouchDevice";
 import { usePullToRefresh } from "@/composables/usePullToRefresh";
 import { copy } from "@/utils/clipboard";
@@ -776,6 +810,7 @@ import { applySecondarySort } from "@/utils/secondarySort";
 
 import { users, files as api } from "@/api";
 import { enableExec, unzipEnabled } from "@/utils/constants";
+import { isExtractable } from "@/utils/archive";
 import { filesize } from "@/utils";
 import * as upload from "@/utils/upload";
 import { throttle } from "lodash-es";
@@ -806,6 +841,7 @@ import { usePendingDelete } from "@/composables/usePendingDelete";
 import ContextMenu, { type MenuItem } from "@/components/ContextMenu.vue";
 import { useShortcuts } from "@/composables/useShortcuts";
 import { useDropTarget } from "@/composables/useDropTarget";
+import { useTouchDrag } from "@/composables/useTouchDrag";
 import {
   computed,
   inject,
@@ -821,10 +857,8 @@ import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
 import { removePrefix } from "@/api/utils";
 
-const showLimit = ref<number>(50);
 const dragCounter = ref<number>(0);
 const width = ref<number>(window.innerWidth);
-const itemWeight = ref<number>(0);
 const isContextMenuVisible = ref<boolean>(false);
 const contextMenuPos = ref<{ x: number; y: number }>({ x: 0, y: 0 });
 
@@ -923,7 +957,7 @@ registerShortcut({
     if (!authStore.user?.perm.create) return;
     if (fileStore.selectedCount !== 1) return;
     const item = fileStore.req?.items[fileStore.selected[0]];
-    if (!item || (item.extension ?? "").toLowerCase() !== ".zip") return;
+    if (!item || !isExtractable(item.name)) return;
     layoutStore.showHover("extract");
   },
 });
@@ -962,11 +996,38 @@ const listScroller = ref<{ scrollToItem: (index: number) => void } | null>(
   null
 );
 
+// ── Grid/gallery virtualization (CH-1) ──────────────────────────────
+// Window the folders + files grids so a huge folder only mounts the tiles
+// near the viewport (+ a buffer) instead of the old ever-growing
+// `showLimit` slice. `dirsSectionRef`/`filesSectionRef` point at the two
+// section WRAPPERS (`.listing-section-pad`) — not the inner grid — so their
+// top edge is the section's stable row-0 origin (the wrapper spans the top
+// spacer + grid + bottom spacer, total height held constant). The composable
+// measures column count + tile height from the grid inside, computes the
+// window, and the spacer pads keep the scroll height/position stable. Using
+// the wrapper (not the grid, whose top shifts with the top pad) is essential:
+// it keeps the window math + lasso hit-test anchored to a fixed origin.
+const dirsSectionRef = ref<HTMLElement | null>(null);
+const filesSectionRef = ref<HTMLElement | null>(null);
+const listingGrid = useListingGrid({
+  enabled: () => viewMode.value !== "list",
+  gallery: () => viewMode.value === "mosaic gallery",
+  scrollEl: () => scrollSection.value,
+  dirsSectionEl: () => dirsSectionRef.value,
+  filesSectionEl: () => filesSectionRef.value,
+  dirsCount: () => items.value.dirs.length,
+  filesCount: () => items.value.files.length,
+});
+const { dirsWin, filesWin } = listingGrid;
+const scheduleGridUpdate = throttle(() => listingGrid.update(), 60);
+
 // ── S4-3 drag-select lasso (grid + gallery only) ───────────────────
 // Rubber-band selection bound to #listing's @mousedown. `enabled`
 // gates on viewMode (declared later — the closure only reads it at
 // mouse-down time, well after init). Writes straight to
 // fileStore.selected so the marquee live-updates the listing.
+// `hitTest` (CH-1) computes intersections by geometry so tiles that have
+// been windowed out of the DOM are still selectable across a long drag.
 const dragSelect = useDragSelect({
   enabled: () => viewMode.value !== "list",
   getScrollContainer: () => scrollSection.value,
@@ -974,6 +1035,12 @@ const dragSelect = useDragSelect({
   setSelection: (indices) => {
     fileStore.selected = indices;
   },
+  hitTest: (rect) =>
+    listingGrid.hitTest(
+      rect,
+      items.value.dirs.map((d) => d.index),
+      items.value.files.map((f) => f.index)
+    ),
 });
 onBeforeUnmount(() => dragSelect.cleanup());
 
@@ -1211,6 +1278,111 @@ const onItemDropAlongside = (event: DragEvent) => {
   void performParentDrop(event, currentFolderUrl.value);
 };
 
+// ── Touch drag-and-drop (lifted from ListingItem, CH-2) ─────────────
+// HTML5 DnD never fires on touch, so a single pointer-based gesture
+// drives the SAME move pipeline (`useDropTarget.performDrop`) — conflict
+// prompt, self-drop guard, transfer indicator. This used to be one
+// useTouchDrag instance PER row; hoisting it here means the listing owns
+// exactly one regardless of how many rows are mounted. Rows forward their
+// pointerdown via the `rowPointerDown` event (mouse pointers are ignored
+// inside the composable, so desktop is untouched). Drop targets are any
+// element carrying `data-drop-url` — folder rows, breadcrumb segments,
+// and the current-folder area.
+let touchHighlightEl: HTMLElement | null = null;
+let touchSpringUrl: string | null = null;
+let touchSpringTimer: number | null = null;
+
+const clearTouchHighlight = () => {
+  if (touchHighlightEl) {
+    touchHighlightEl.style.outline = "";
+    touchHighlightEl.style.outlineOffset = "";
+    touchHighlightEl = null;
+  }
+};
+const cancelTouchSpring = () => {
+  if (touchSpringTimer !== null) {
+    window.clearTimeout(touchSpringTimer);
+    touchSpringTimer = null;
+  }
+  touchSpringUrl = null;
+};
+const resolveDropEl = (el: Element | null): HTMLElement | null =>
+  (el?.closest?.("[data-drop-url]") as HTMLElement | null) ?? null;
+
+const listingTouchDrag = useTouchDrag<{ index: number }>({
+  // The ghost is created before onStart runs (so draggedItems isn't
+  // populated yet for this gesture); read the pressed row's name straight
+  // off the listing for the single-item label, matching the old per-row
+  // behavior. Multi-select uses the snapshot count once it exists.
+  ghostLabel: (p) => {
+    const c = fileStore.draggedItems.length;
+    if (c > 1) return `${c} items`;
+    return fileStore.req?.items[p.index]?.name ?? "";
+  },
+  // Edge auto-scroll during a touch drag targets the ACTUAL scroll
+  // container (the recycler in list view, the <section> in grid/gallery) —
+  // resolved by ptrScrollEl — rather than #listing, which isn't the scroller.
+  scrollEl: () => ptrScrollEl.value,
+  onStart: (p) => fileStore.snapshotDragSelection(p.index),
+  onMove: (_p, _x, _y, el) => {
+    const target = resolveDropEl(el);
+    if (target !== touchHighlightEl) {
+      clearTouchHighlight();
+      if (target) {
+        target.style.outline = "2px solid var(--color-accent, #5e6ad2)";
+        target.style.outlineOffset = "-2px";
+        touchHighlightEl = target;
+      }
+    }
+    // Spring-load: hovering a *folder row* (not the current-folder area)
+    // for 2s drills into it so nested drops are possible (F6 parity).
+    const url = target?.dataset.dropUrl ?? null;
+    const isFolderRow =
+      !!target &&
+      target.classList.contains("item") &&
+      target.getAttribute("data-dir") === "true";
+    if (isFolderRow && url && url !== fileStore.req?.url) {
+      if (touchSpringUrl !== url) {
+        cancelTouchSpring();
+        touchSpringUrl = url;
+        touchSpringTimer = window.setTimeout(() => {
+          touchSpringTimer = null;
+          void router.push({ path: url });
+        }, 2000);
+      }
+    } else {
+      cancelTouchSpring();
+    }
+  },
+  onDrop: (_p, _x, _y, el) => {
+    cancelTouchSpring();
+    clearTouchHighlight();
+    const url = resolveDropEl(el)?.dataset.dropUrl;
+    if (!url) return;
+    // Touch has no Ctrl/Cmd → always a move. performParentDrop reads the
+    // snapshot from fileStore.draggedItems and applies all the usual guards.
+    const synthetic = {
+      preventDefault: () => {},
+      ctrlKey: false,
+      metaKey: false,
+    } as unknown as DragEvent;
+    void performParentDrop(synthetic, url);
+  },
+  onEnd: () => {
+    cancelTouchSpring();
+    clearTouchHighlight();
+    fileStore.draggedItems = [];
+    // Swallow the synthetic click the browser fires on the drop row.
+    fileStore.suppressClicksUntil = Date.now() + 350;
+  },
+});
+
+// Forwarded from each row's pointerdown (after the row's own read-only +
+// interactive-child guard). Mouse pointers are ignored inside the gesture.
+const onItemPointerDown = (event: PointerEvent, index: number) => {
+  listingTouchDrag.onPointerDown(event, { index });
+};
+
 // ── Rename the currently-viewed folder ─────────────────────────────────
 // Surfaced as a "Rename folder" action in the ⋯ menu (header section title
 // More dropdown). UX matches the inline row rename in ListingItem: swap
@@ -1301,7 +1473,17 @@ const folderMeta = computed(() => {
   return parts.join(" · ");
 });
 
-const dirs = computed(() => items.value.dirs.slice(0, showLimit.value));
+// CH-1: render only the windowed slice of each grid section. Before the
+// first measure (window still {0,0}) fall back to a small bootstrap slice
+// so there ARE tiles to measure + fill the first paint.
+const BOOTSTRAP_TILES = 60;
+const dirs = computed(() => {
+  const all = items.value.dirs;
+  if (dirsWin.end <= dirsWin.start) {
+    return all.slice(0, Math.min(all.length, BOOTSTRAP_TILES));
+  }
+  return all.slice(dirsWin.start, dirsWin.end);
+});
 
 const items = computed(() => {
   const dirs: ResourceItem[] = [];
@@ -1331,11 +1513,11 @@ const items = computed(() => {
 });
 
 const files = computed((): ResourceItem[] => {
-  let _showLimit = showLimit.value - items.value.dirs.length;
-
-  if (_showLimit < 0) _showLimit = 0;
-
-  return items.value.files.slice(0, _showLimit);
+  const all = items.value.files;
+  if (filesWin.end <= filesWin.start) {
+    return all.slice(0, Math.min(all.length, BOOTSTRAP_TILES));
+  }
+  return all.slice(filesWin.start, filesWin.end);
 });
 
 // ── List virtualization (v1.3 S6-1) ─────────────────────────────────
@@ -1441,9 +1623,7 @@ const headerButtons = computed(() => {
       fileStore.selectedCount === 1 &&
       fileStore.req != null &&
       fileStore.req.items.length > 0 &&
-      (
-        fileStore.req.items[fileStore.selected[0]]?.extension ?? ""
-      ).toLowerCase() === ".zip",
+      isExtractable(fileStore.req.items[fileStore.selected[0]]?.name ?? ""),
   };
 });
 
@@ -1452,9 +1632,6 @@ const isMobile = computed(() => {
 });
 
 watch(req, () => {
-  // Reset the show value
-  showLimit.value = 50;
-
   nextTick(() => {
     // S6-1: the list view virtualizes, so there's no window to fill —
     // just scroll a previously-opened item back into view if any.
@@ -1463,40 +1640,49 @@ watch(req, () => {
       return;
     }
 
-    // Ensures that the listing is displayed
-    // How much every listing item affects the window height
-    setItemWeight();
-
-    // Scroll to the item opened previously
-    if (!revealPreviousItem()) {
-      // Fill and fit the window with listing items
-      fillWindow(true);
-    }
+    // CH-1: grid/gallery — measure + compute the initial window, then
+    // reveal a previously-opened tile if we're returning from a preview.
+    listingGrid.measure();
+    listingGrid.update();
+    revealPreviousItem();
   });
 });
 
+// CH-1: observes the grid/gallery scroll container so InfoPane open/close
+// and window resizes re-measure the column count + window. Created on
+// mount, disconnected on unmount.
+let gridResizeObserver: ResizeObserver | null = null;
+
 onMounted(() => {
-  // Check the columns size for the first time.
+  // Measure the grid columns/tile-height for the first time.
   columnsResize();
 
   // S6-1: virtualized list skips the window-fill math entirely.
   if (isListVirtual.value) {
     revealInVirtualList();
   } else {
-    // How much every listing item affects the window height
-    setItemWeight();
-
-    // Scroll to the item opened previously
-    if (!revealPreviousItem()) {
-      // Fill and fit the window with listing items
-      fillWindow(true);
-    }
+    listingGrid.measure();
+    listingGrid.update();
+    revealPreviousItem();
   }
 
   // Add the needed event listeners to the window and document.
   window.addEventListener("keydown", keyEvent);
   window.addEventListener("scroll", scrollEvent);
   window.addEventListener("resize", windowsResize);
+
+  // CH-1: the grid/gallery scroll the <section>, so window-scroll doesn't
+  // fire — listen on the section directly to drive the virtualization
+  // window, and observe its size so column count tracks width changes
+  // (e.g. the InfoPane opening). The list view manages its own recycler.
+  const sc = scrollSection.value;
+  if (sc) {
+    sc.addEventListener("scroll", scheduleGridUpdate, { passive: true });
+    if (typeof ResizeObserver !== "undefined") {
+      gridResizeObserver = new ResizeObserver(() => listingGrid.update());
+      gridResizeObserver.observe(sc);
+    }
+  }
 
   if (!authStore.user?.perm.create) return;
   document.addEventListener("dragover", preventDefault);
@@ -1510,6 +1696,11 @@ onBeforeUnmount(() => {
   window.removeEventListener("keydown", keyEvent);
   window.removeEventListener("scroll", scrollEvent);
   window.removeEventListener("resize", windowsResize);
+
+  scrollSection.value?.removeEventListener("scroll", scheduleGridUpdate);
+  scheduleGridUpdate.cancel();
+  gridResizeObserver?.disconnect();
+  gridResizeObserver = null;
 
   if (authStore.user && !authStore.user?.perm.create) return;
   document.removeEventListener("dragover", preventDefault);
@@ -1741,34 +1932,19 @@ const paste = async (event: Event) => {
 };
 
 const columnsResize = () => {
-  // No-op. CSS Grid now sizes mosaic/gallery tiles via auto-fill minmax in listing.css.
-  // (Previous implementation set inline `style.width = calc(33% - 1em)` on every .item,
-  //  which forced legacy 3-column flex behavior and overrode the new grid template.)
+  // CH-1: recompute grid columns + tile height + the visible window from
+  // the live container width. CSS Grid still sizes the tiles (auto-fill
+  // minmax in listing.css); this only refreshes the virtualization window.
+  listingGrid.measure();
+  listingGrid.update();
 };
 
+// Window-level scroll fallback. Grid/gallery scroll the <section> (we bind
+// a listener to it directly in onMounted), but keep this so any ancestor
+// scroll still refreshes the window. The list view manages its own.
 const scrollEvent = throttle(() => {
-  // S6-1: the virtualized list manages its own scroll/window — the
-  // global showLimit infinite-scroll only drives grid/gallery.
   if (isListVirtual.value) return;
-
-  const totalItems =
-    (fileStore.req?.numDirs ?? 0) + (fileStore.req?.numFiles ?? 0);
-
-  // All items are displayed
-  if (showLimit.value >= totalItems) return;
-
-  const currentPos = window.innerHeight + window.scrollY;
-
-  // Trigger at the 75% of the window height
-  const triggerPos = document.body.offsetHeight - window.innerHeight * 0.25;
-
-  if (currentPos > triggerPos) {
-    // Quantity of items needed to fill 2x of the window height
-    const showQuantity = Math.ceil((window.innerHeight * 2) / itemWeight.value);
-
-    // Increase the number of displayed items
-    showLimit.value += showQuantity;
-  }
+  listingGrid.update();
 }, 100);
 
 const dragEnter = () => {
@@ -2116,6 +2292,17 @@ watch(
     viewMode.value = resolveViewMode();
   }
 );
+
+// CH-1: a view-mode switch (list ↔ grid ↔ gallery) changes the tile
+// dimensions + column count. Re-measure + re-window AFTER the DOM has
+// re-rendered with the new mode's classes (so the grid metrics are read
+// from the correct layout, not the outgoing one).
+watch(viewMode, () => {
+  nextTick(() => {
+    listingGrid.measure();
+    listingGrid.update();
+  });
+});
 void switchView;
 
 const totalItems = computed(
@@ -2362,7 +2549,7 @@ watch(
       if (!unzipEnabled) return;
       if (!fileStore.isListing || fileStore.selectedCount !== 1) return;
       const item = fileStore.req?.items[fileStore.selected[0]];
-      if (!item || (item.extension ?? "").toLowerCase() !== ".zip") return;
+      if (!item || !isExtractable(item.name)) return;
       layoutStore.closeHovers();
       closeAllPanels();
       extractOpen.value = true;
@@ -2688,40 +2875,18 @@ const uploadFunc = () => {
 };
 
 const setItemWeight = () => {
-  // S6-1: irrelevant under virtualization (no fixed window to weight).
+  // CH-1: legacy hook from the old showLimit windowing. Now it just
+  // re-measures the grid (columns + tile height). Kept (rather than ripped
+  // out of every caller) so the call sites stay readable.
   if (isListVirtual.value) return;
-  // Listing element is not displayed
-  if (listing.value === null || fileStore.req === null) return;
-
-  let itemQuantity = fileStore.req.numDirs + fileStore.req.numFiles;
-  if (itemQuantity > showLimit.value) itemQuantity = showLimit.value;
-
-  // How much every listing item affects the window height
-  itemWeight.value = listing.value.offsetHeight / itemQuantity;
+  listingGrid.measure();
 };
 
-const fillWindow = (fit = false) => {
-  // S6-1: the recycler renders the full list virtually — nothing to fill.
+const fillWindow = () => {
+  // CH-1: legacy hook — recompute the grid/gallery visible window. The
+  // virtualized list view manages its own window inside the recycler.
   if (isListVirtual.value) return;
-  if (fileStore.req === null) return;
-
-  const totalItems = fileStore.req.numDirs + fileStore.req.numFiles;
-
-  // More items are displayed than the total
-  if (showLimit.value >= totalItems && !fit) return;
-
-  const windowHeight = window.innerHeight;
-
-  // Quantity of items needed to fill 2x of the window height
-  const showQuantity = Math.ceil(
-    (windowHeight + windowHeight * 2) / itemWeight.value
-  );
-
-  // Less items to display than current
-  if (showLimit.value > showQuantity && !fit) return;
-
-  // Set the number of displayed items
-  showLimit.value = showQuantity > totalItems ? totalItems : showQuantity;
+  listingGrid.update();
 };
 
 const revealPreviousItem = () => {
@@ -2730,12 +2895,33 @@ const revealPreviousItem = () => {
   const index = fileStore.selected[0];
   if (index === undefined) return;
 
-  showLimit.value =
-    index + Math.ceil((window.innerHeight * 2) / itemWeight.value);
+  // CH-1: the target tile may be windowed out of the DOM, so scroll the
+  // section to its computed row first, then let the scroll handler mount
+  // it. Locate the item's position within its section (folders or files),
+  // compute the content-space Y, and center it in the viewport.
+  const sc = scrollSection.value;
+  if (!sc) return;
+  const { dirs: dItems, files: fItems } = items.value;
+  let ordinal = dItems.findIndex((it) => it.index === index);
+  let sectionEl = dirsSectionRef.value;
+  if (ordinal < 0) {
+    ordinal = fItems.findIndex((it) => it.index === index);
+    sectionEl = filesSectionRef.value;
+  }
+  if (ordinal < 0) return;
 
   nextTick(() => {
-    const items = document.querySelectorAll("#listing .item");
-    items[index].scrollIntoView({ block: "center" });
+    const cols = listingGrid.cols.value || 1;
+    const stride = listingGrid.tileH.value + 12;
+    const row = Math.floor(ordinal / cols);
+    const secTop = sectionEl
+      ? sectionEl.getBoundingClientRect().top -
+        sc.getBoundingClientRect().top +
+        sc.scrollTop
+      : 0;
+    const target = secTop + row * stride - sc.clientHeight / 2;
+    sc.scrollTop = Math.max(0, target);
+    listingGrid.update();
   });
 
   return true;
@@ -3407,7 +3593,7 @@ html.dark .current-folder-dropzone {
   height: 32px;
   padding: 0 14px;
   border-radius: 8px;
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   border: 1px solid var(--color-accent, #5e6ad2);
   color: white;
   font-family: inherit;
@@ -3421,7 +3607,7 @@ html.dark .current-folder-dropzone {
 }
 
 .empty-cta:hover {
-  background: var(--color-accent-strong, #4f5ac4);
+  background: var(--accent-gradient-strong);
   border-color: var(--color-accent-strong, #4f5ac4);
   box-shadow: 0 4px 12px -4px rgba(94, 106, 210, 0.4);
 }

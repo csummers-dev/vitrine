@@ -110,6 +110,12 @@ const getOptions = (...srcOpt: any[]) => {
         volumeStep: 0.1,
         seekStep: 10,
         enableModifiersForNumbers: false,
+        // Free ←/→ for app-level neighbor-file navigation (Preview.vue):
+        // returning false from these detectors disables video.js's
+        // arrow-key seeking. Space (play/pause), M (mute), F (fullscreen),
+        // and ↑/↓ (volume) all keep working.
+        rewindKey: () => false,
+        forwardKey: () => false,
       },
     },
   };
@@ -117,9 +123,18 @@ const getOptions = (...srcOpt: any[]) => {
   return videojs.obj.merge(options, ...srcOpt);
 };
 
-//  Attempting to fix the issue of being unable to play .MKV format video files
 const getSourceType = (source: string) => {
-  const fileExtension = source ? source.split("?")[0].split(".").pop() : "";
+  if (!source) return "";
+  // The on-demand transcode endpoint always streams H.264/AAC MP4 — but its
+  // URL keeps the ORIGINAL file path (e.g. …/api/transcode/movie.avi), so
+  // without an explicit type video.js would infer an unplayable MIME
+  // (video/x-msvideo, …) from the .avi/.wmv/… suffix and refuse the (really
+  // MP4) stream. Force MP4 for any transcode source. (#3)
+  if (source.includes("api/transcode")) {
+    return "video/mp4";
+  }
+  // Native .mkv: tell video.js it's MP4 so it'll attempt H.264-in-Matroska.
+  const fileExtension = source.split("?")[0].split(".").pop();
   if (fileExtension?.toLowerCase() === "mkv") {
     return "video/mp4";
   }

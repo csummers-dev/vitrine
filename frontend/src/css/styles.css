@@ -355,6 +355,35 @@ html[dir="rtl"] .card.floating .card-content .file-list {
   }
 }
 
+/* ── Themed scrollbars (UI polish) ───────────────────────────────────────
+   Thin, muted, pill-shaped scrollbars that read as part of the surface
+   rather than the heavy OS default. Firefox uses scrollbar-width/-color;
+   WebKit/Blink use the pseudo-elements. The thumb is inset via a transparent
+   border + padding-box clip so it looks like a slim floating pill. Tokens
+   flip automatically in dark mode. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong, #d4d4d8) transparent;
+}
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong, #d4d4d8);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ink-3, #a1a1aa);
+  background-clip: padding-box;
+}
+
 /* ── Skip-to-content link (Stage 11a) ────────────────────────────────────
    Hidden by default; revealed when focused via keyboard tab. First link in
    the document so it's always the first stop on Tab. Targets #main, which
@@ -366,7 +395,7 @@ html[dir="rtl"] .card.floating .card-content .file-list {
   z-index: 10000;
   padding: 8px 12px;
   border-radius: 6px;
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   color: white;
   font-family: var(--font-sans, system-ui);
   font-size: 13px;
@@ -575,12 +604,12 @@ html.dark .confirm-prompt__icon.is-warn {
 }
 
 .confirm-prompt__btn--primary {
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   border-color: var(--color-accent, #5e6ad2);
   color: white;
 }
 .confirm-prompt__btn--primary:hover {
-  background: var(--color-accent-strong, #4f5ac4);
+  background: var(--accent-gradient-strong);
   border-color: var(--color-accent-strong, #4f5ac4);
 }
 

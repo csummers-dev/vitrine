@@ -69,8 +69,16 @@ const toneClass = computed(() => `is-${props.tone}`);
 }
 
 .empty-state__icon.is-muted {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-3, #a1a1aa);
+  /* Subtle accent-tinted chip (a faint lilac → surface sheen) with the icon
+     in the accent color — warmer + more on-brand than a flat gray block,
+     matching the app's accent-gradient treatment elsewhere. */
+  background: linear-gradient(
+    140deg,
+    var(--color-accent-soft, rgba(94, 106, 210, 0.1)) 0%,
+    var(--color-elevated, #f4f4f5) 100%
+  );
+  color: var(--color-accent, #5e6ad2);
+  box-shadow: inset 0 0 0 1px var(--color-accent-soft, rgba(94, 106, 210, 0.1));
 }
 
 .empty-state__icon.is-info {

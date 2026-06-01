@@ -36,6 +36,15 @@ export const useFileStore = defineStore("file", {
      * Cleared by the drag-source row's `dragend` handler.
      */
     draggedItems: ResourceItem[];
+    /**
+     * Epoch-ms timestamp until which row clicks should be swallowed.
+     * After a touch drag-and-drop the browser fires a synthetic click on
+     * the drop row; without this guard the row would also open/select on
+     * release. Set by the listing's touch-drag `onEnd` (FileListing) and
+     * read by `ListingItem.itemClick`. Lives in the store so the single
+     * lifted touch-drag instance can signal every row.
+     */
+    suppressClicksUntil: number;
   } => ({
     req: null,
     oldReq: null,
@@ -45,6 +54,7 @@ export const useFileStore = defineStore("file", {
     isFiles: false,
     preselect: [],
     draggedItems: [],
+    suppressClicksUntil: 0,
   }),
   getters: {
     selectedCount: (state) => state.selected.length,
@@ -101,6 +111,27 @@ export const useFileStore = defineStore("file", {
      */
     setPreselect(paths: string | string[]) {
       this.preselect = Array.isArray(paths) ? [...paths] : [paths];
+    },
+    /**
+     * Promote a row into the active selection and snapshot the selected
+     * items into `draggedItems`. Shared by the mouse (HTML5) dragstart in
+     * ListingItem and the touch-drag `onStart` in FileListing so both
+     * input paths drag the SAME set: the whole multi-selection when the
+     * row is part of it, otherwise just that row. Snapshotting up front
+     * means spring-load navigation can later mutate `req`/`selected`
+     * without losing the drag set (drop handlers read `draggedItems`).
+     */
+    snapshotDragSelection(index: number) {
+      if (this.selected.length === 0) {
+        this.selected.push(index);
+      } else if (this.selected.indexOf(index) === -1) {
+        this.selected = [index];
+      }
+      if (this.req) {
+        this.draggedItems = this.selected
+          .map((i) => this.req!.items[i])
+          .filter((it): it is ResourceItem => it != null);
+      }
     },
     // easily reset state using `$reset`
     clearFile() {

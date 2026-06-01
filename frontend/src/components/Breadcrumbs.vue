@@ -10,6 +10,7 @@
       :title="t('files.home')"
       class="breadcrumb-link breadcrumb-link--root"
       :class="{ 'is-drop-target': dragOver === 'root' }"
+      :data-drop-url="rootUrl"
       @dragenter="onDragEnter('root', $event)"
       @dragover="onDragOver($event)"
       @dragleave="onDragLeave('root')"
@@ -78,6 +79,7 @@
             : 'text-ink-2 max-md:hidden',
           dragOver === entry.link.url && 'is-drop-target',
         ]"
+        :data-drop-url="entry.link.url"
         @dragenter="onDragEnter(entry.link.url, $event)"
         @dragover="onDragOver($event)"
         @dragleave="onDragLeave(entry.link.url)"

@@ -29,6 +29,10 @@ COPY --chown=user:user filebrowser /bin/filebrowser
 # S6-2: static ffmpeg → /usr/local/bin (on PATH for video-thumbnail
 # generation). If PATH ever misses it, detection just fails gracefully.
 COPY --from=ffmpeg /ffmpeg /usr/local/bin/ffmpeg
+# #3: ffprobe enables the transcode remux fast-path (probe codecs → stream-
+# copy when already H.264/AAC). Optional — without it everything is fully
+# transcoded, which is correct, just slower.
+COPY --from=ffmpeg /ffprobe /usr/local/bin/ffprobe
 COPY --chown=user:user docker/common/ /
 COPY --chown=user:user docker/alpine/ /
 COPY --chown=user:user --from=fetcher /sbin/tini-static /bin/tini

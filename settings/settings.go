@@ -16,15 +16,22 @@ const DefaultMinimumPasswordLength = 12
 const DefaultFileMode = 0640
 const DefaultDirMode = 0750
 
-// Zip-extraction safety limits (PR #5746, fork variant).
-// Surfaces in the admin Server settings; operators may override via
-// `--unzipEnabled=false` / config to disable the feature entirely.
-//   - MaxZipFileSize: pre-open cap on the archive itself (5 GB).
-//   - MaxZipFileEntries: refuses archives declaring >100k entries.
+// Archive-extraction safety limits (PR #5746, fork variant). Originally
+// zip-only; now apply to every supported archive format (zip / 7z / rar /
+// tar family) — the field names keep the historical "Zip" spelling so config
+// keys / CLI flags stay backward-compatible. Surfaces in the admin Server
+// settings; operators may override via `--unzipEnabled=false` / config to
+// disable extraction entirely.
+//   - MaxZipFileSize: pre-open cap on the archive itself (5 GB). For a
+//     multi-volume set this caps the clicked volume only.
+//   - MaxZipFileEntries: refuses archives with more than ~100k entries
+//     (enforced as a running count during the streaming walk).
 //   - MaxTotalUncompressedSize: cumulative cap across all entries (20 GB).
 //   - MaxUncompressedSizeRate: zip-bomb defense — rejects entries whose
 //     compression ratio (compressed/uncompressed) is below this floor.
 //     0.01 means "compressed must be at least 1% of declared uncompressed".
+//     Zip-only: other formats don't expose per-entry compressed size, so they
+//     rely on the total / per-file / entry-count / outer-size caps instead.
 //   - MaxUncompressedFileSize: per-entry decompressed cap (5 GB).
 const DefaultMaxZipFileSize = 5 * 1024 * 1024 * 1024            // 5GB
 const DefaultMaxZipFileEntries = 100000                         // 100k files
@@ -37,10 +44,10 @@ type AuthMethod string
 
 // Settings contain the main settings of the application.
 type Settings struct {
-	Key                   []byte              `json:"key"`
-	Signup                bool                `json:"signup"`
-	HideLoginButton       bool                `json:"hideLoginButton"`
-	CreateUserDir         bool                `json:"createUserDir"`
+	Key             []byte `json:"key"`
+	Signup          bool   `json:"signup"`
+	HideLoginButton bool   `json:"hideLoginButton"`
+	CreateUserDir   bool   `json:"createUserDir"`
 	// When true, the frontend remembers the last /files path a user had open
 	// and redirects there on next successful login. When false (default),
 	// login always lands on /files/.

@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="branding/logo.svg" width="120" alt="filebrowser pretty" />
+<img src="branding/banner.svg" width="120" alt="filebrowser pretty" />
 
 # filebrowser pretty
 

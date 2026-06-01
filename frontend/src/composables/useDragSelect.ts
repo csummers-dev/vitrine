@@ -44,6 +44,22 @@ export interface UseDragSelectOptions {
   getSelection: () => number[];
   /** Write the computed selection back to the store. */
   setSelection: (indices: number[]) => void;
+  /**
+   * Optional geometry hit-test (CH-1). When the listing is virtualized,
+   * off-screen tiles have no DOM node, so the default `.item[data-index]`
+   * query can only see what's rendered — a marquee spanning more than one
+   * screen would drop the tiles that scrolled out of the window. Supplying
+   * a math-based hit-test (index → row/col → rect) lets the lasso select
+   * every overlapped item regardless of what's currently mounted. Receives
+   * the marquee rect in VIEWPORT coordinates and returns resource indices.
+   * When omitted, the DOM-query path is used (non-virtualized callers).
+   */
+  hitTest?: (rect: {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+  }) => number[];
 }
 
 // Pixels of movement before a press becomes a lasso (vs. a plain
@@ -179,24 +195,33 @@ export function useDragSelect(opts: UseDragSelectOptions) {
     right: number;
     bottom: number;
   }) => {
-    const container = opts.getScrollContainer();
-    if (!container) return;
-    const items = container.querySelectorAll<HTMLElement>(".item[data-index]");
-    const hit = new Set<number>();
-    items.forEach((el) => {
-      if (el.classList.contains("header")) return;
-      const b = el.getBoundingClientRect();
-      // Any pixel overlap counts (locked spec).
-      const intersects =
-        b.left <= rect.right &&
-        b.right >= rect.left &&
-        b.top <= rect.bottom &&
-        b.bottom >= rect.top;
-      if (intersects) {
-        const idx = Number(el.dataset.index);
-        if (!Number.isNaN(idx)) hit.add(idx);
-      }
-    });
+    let hit: Set<number>;
+    if (opts.hitTest) {
+      // Virtualized path (CH-1): compute hits by geometry so tiles that
+      // have been recycled off-screen are still selectable.
+      hit = new Set(opts.hitTest(rect));
+    } else {
+      // DOM-query path: intersect the live `.item` nodes (non-virtualized).
+      const container = opts.getScrollContainer();
+      if (!container) return;
+      const items =
+        container.querySelectorAll<HTMLElement>(".item[data-index]");
+      hit = new Set<number>();
+      items.forEach((el) => {
+        if (el.classList.contains("header")) return;
+        const b = el.getBoundingClientRect();
+        // Any pixel overlap counts (locked spec).
+        const intersects =
+          b.left <= rect.right &&
+          b.right >= rect.left &&
+          b.top <= rect.bottom &&
+          b.bottom >= rect.top;
+        if (intersects) {
+          const idx = Number(el.dataset.index);
+          if (!Number.isNaN(idx)) hit.add(idx);
+        }
+      });
+    }
 
     let final: number[];
     if (mode === "replace") {

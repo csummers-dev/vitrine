@@ -263,7 +263,16 @@ func (i *FileInfo) detectType(modify, saveContent, readHeader bool, calcImgRes b
 	case strings.HasSuffix(mimetype, "pdf"):
 		i.Type = "pdf"
 		return nil
-	case (strings.HasPrefix(mimetype, "text") || !isBinary(buffer)) && i.Size <= 10*1024*1024: // 10 MB
+	// Text classification. The `!isBinary(buffer)` clause is a fallback that
+	// rescues text files whose MIME isn't `text/*` (e.g. application/json).
+	// But when the content sniff returned "application/octet-stream" — Go's
+	// explicit "this is unknown/binary" verdict — trust it and fall through
+	// to the blob (download) card instead of letting the heuristic force a
+	// text preview on an unknown file. `text/*` MIMEs (incl. extensionless
+	// files DetectContentType reads as text/plain) still preview as text.
+	case mimetype != "application/octet-stream" &&
+		(strings.HasPrefix(mimetype, "text") || !isBinary(buffer)) &&
+		i.Size <= 10*1024*1024: // 10 MB
 		i.Type = "text"
 
 		if !modify {

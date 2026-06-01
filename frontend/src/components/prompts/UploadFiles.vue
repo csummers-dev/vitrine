@@ -469,7 +469,7 @@ html.dark .upload-dock__btn--danger:hover {
 }
 .upload-dock__bar-fill {
   height: 100%;
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   transition:
     width 200ms ease,
     background-color 200ms ease;
@@ -620,7 +620,7 @@ html.dark .upload-dock__file-remove:hover {
 }
 .upload-dock__file-bar-fill {
   height: 100%;
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   transition: width 200ms ease;
   border-radius: 999px;
 }

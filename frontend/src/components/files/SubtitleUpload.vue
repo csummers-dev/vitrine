@@ -265,7 +265,7 @@ const upload = async () => {
   padding: 0 14px;
   border: 0;
   border-radius: 6px;
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   color: white;
   font-size: 12.5px;
   font-weight: 500;

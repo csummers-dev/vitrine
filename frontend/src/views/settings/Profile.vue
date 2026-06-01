@@ -457,13 +457,13 @@ const updatePassword = async () => {
 }
 
 .settings-btn--primary {
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   border-color: var(--color-accent, #5e6ad2);
   color: white;
 }
 
 .settings-btn--primary:hover:not(:disabled) {
-  background: var(--color-accent-strong, #4f5ac4);
+  background: var(--accent-gradient-strong);
   border-color: var(--color-accent-strong, #4f5ac4);
 }
 
@@ -487,7 +487,7 @@ const updatePassword = async () => {
   font-weight: 500;
   /* Saving state uses the app accent (lilac). Saved keeps the calm
      green; error keeps red — both still readable on the same chrome. */
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   color: #fff;
   box-shadow: 0 8px 24px -8px rgba(94, 106, 210, 0.45);
 }

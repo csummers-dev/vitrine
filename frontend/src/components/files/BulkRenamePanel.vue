@@ -692,7 +692,7 @@ html.dark .brp-preview-row--conflict .brp-reason {
   color: var(--color-ink-1, #18181b);
 }
 .brp-btn--primary {
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   color: white;
 }
 .brp-btn--primary:hover:not(:disabled) {

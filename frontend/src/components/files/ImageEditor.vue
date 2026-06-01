@@ -891,7 +891,7 @@ html.dark .img-editor__save-error {
   color: var(--color-ink-1, #18181b);
 }
 .img-editor__btn--primary {
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   color: white;
 }
 .img-editor__btn--primary:hover:not(:disabled) {

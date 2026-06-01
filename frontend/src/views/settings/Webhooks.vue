@@ -454,12 +454,12 @@ load();
   background: var(--color-elevated, #f4f4f5);
 }
 .wh-btn--primary {
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   border-color: var(--color-accent, #5e6ad2);
   color: #fff;
 }
 .wh-btn--primary:hover:not(:disabled) {
-  background: var(--color-accent-strong, #4f5ac4);
+  background: var(--accent-gradient-strong);
 }
 .wh-btn:disabled {
   opacity: 0.5;

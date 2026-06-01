@@ -25,12 +25,19 @@ var (
 	ErrCurrentPasswordIncorrect = errors.New("the current password is incorrect")
 	ErrShareRequiresDownload    = errors.New("permission to share requires permission to download")
 
-	// Zip-extraction errors (PR #5746).
-	ErrZipFileIsTooLarge         = errors.New("the zip file is too large")
+	// Archive-extraction errors. Originally zip-only (PR #5746); the names
+	// are kept generic-enough and now apply to every supported archive
+	// format (zip / 7z / rar / tar family).
+	ErrZipFileIsTooLarge         = errors.New("the archive is too large")
 	ErrCompressionRateIsTooLarge = errors.New("one of the files has too high a decompression rate")
-	ErrInvalidZipFilePath        = errors.New("invalid path in some files of the zip archive")
+	ErrInvalidZipFilePath        = errors.New("invalid path in some files of the archive")
 	ErrUncompressSizeIsTooLarge  = errors.New("one of the files has too high a decompression size")
-	ErrInvalidZipEntry           = errors.New("some files are invalid in zip archive")
+	ErrInvalidZipEntry           = errors.New("some files are invalid in the archive")
+
+	// Generalized extract errors (zip/7z/rar + tar family).
+	ErrUnsupportedArchive          = errors.New("this archive format isn't supported")
+	ErrMultiVolumeUnsupported      = errors.New("split or multi-volume archives of this format aren't supported")
+	ErrEncryptedArchiveUnsupported = errors.New("password-protected archives aren't supported")
 )
 
 type ErrShortPassword struct {

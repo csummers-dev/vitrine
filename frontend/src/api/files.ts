@@ -287,6 +287,13 @@ export function getDownloadURL(file: ResourceItem, inline: any) {
   return createURL("api/raw" + file.path, params);
 }
 
+// #3: on-demand transcode endpoint. The <video> tag loads this (carrying
+// ?auth like other media URLs) when native playback fails; the server
+// remuxes/transcodes to a cached, seekable MP4.
+export function getTranscodeURL(file: ResourceItem) {
+  return createURL("api/transcode" + file.path, authParam());
+}
+
 export function getPreviewURL(file: ResourceItem, size: string) {
   const params = {
     inline: "true",

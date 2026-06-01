@@ -1,10 +1,20 @@
 <template>
-  <div class="epub-viewer">
+  <div ref="rootEl" class="epub-viewer">
+    <!--
+      openAs: 'epub' is REQUIRED, do not remove. The `src` carries a
+      `?auth=<JWT>` query (RC-44, so the request authenticates). epub.js
+      sniffs the file type from the URL extension, but it re-appends the
+      query string before parsing — and a JWT's dots (header.payload.sig)
+      make it read the "extension" as the JWT's last segment instead of
+      "epub". It then misclassifies the book as an unpacked directory and
+      fails with "Error loading book". Forcing openAs:'epub' skips the
+      sniff and loads the authenticated URL as a packaged epub.
+    -->
     <vue-reader
       :location="location"
       :url="src"
       :get-rendition="captureRendition"
-      :epubInitOptions="{ requestCredentials: true }"
+      :epubInitOptions="{ requestCredentials: true, openAs: 'epub' }"
       :epubOptions="{ allowPopups: true }"
       @update:location="$emit('update:location', $event)"
     />
@@ -73,6 +83,9 @@ const emit = defineEmits<{
   (e: "toc", entries: EpubTocEntry[]): void;
   /** Current chapter href on each relocate, for active-row highlight. */
   (e: "chapter", href: string): void;
+  /** Cover-image blob URL once the book metadata resolves, so the
+   *  info-rail can show the book's cover art (empty if the epub has none). */
+  (e: "cover", url: string): void;
 }>();
 
 /** One flattened TOC row. `depth` drives indentation (subchapters). */
@@ -83,6 +96,7 @@ export interface EpubTocEntry {
 }
 
 const rendition = ref<Rendition | null>(null);
+const rootEl = ref<HTMLElement | null>(null);
 
 /** Flatten epubjs's nested toc (items + subitems) into a depth-tagged
  *  list the info-rail can render without recursion. */
@@ -106,7 +120,16 @@ const flattenToc = (
 const goTo = (href: string) => {
   rendition.value?.display(href);
 };
-defineExpose({ goTo });
+// Page-turn within the book — driven by ↑/↓ from the parent (←/→ stay
+// reserved for file-to-file navigation). epubjs prev()/next() flip one
+// rendered page (or spread) in the current flow.
+const nextPage = () => {
+  rendition.value?.next();
+};
+const prevPage = () => {
+  rendition.value?.prev();
+};
+defineExpose({ goTo, nextPage, prevPage });
 
 const isDarkNow = () => document.documentElement.classList.contains("dark");
 
@@ -169,6 +192,15 @@ const handleIframeKey = (event: KeyboardEvent) => {
     event.preventDefault();
     event.stopImmediatePropagation();
     emit("navigateNext");
+  } else if (event.key === "ArrowDown") {
+    // ↓ turns to the next page WITHIN the book (←/→ change files).
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    nextPage();
+  } else if (event.key === "ArrowUp") {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    prevPage();
   } else if (event.key === "Escape") {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
   }
@@ -203,6 +235,48 @@ const attachIframeKey = (view: { iframe?: HTMLIFrameElement } | null) => {
   doc.addEventListener("keydown", handleIframeKey as EventListener, true);
 };
 
+/**
+ * Route 3 — the reliable one. Rather than depend on epubjs's `rendered`
+ * event exposing a usable `view.iframe.contentDocument` (which proved
+ * flaky — when it doesn't, focus stays trapped in the book iframe and ALL
+ * arrows die), we watch the viewer subtree for iframes and attach the
+ * capture-phase keydown listener directly to each iframe's document. We
+ * dedupe per-document (epubjs swaps the doc when turning chapters) and per-
+ * iframe (so the `load` re-hook is registered once). A handful of timed
+ * retries cover the async gap between the iframe appearing and its document
+ * being navigable.
+ */
+const wiredDocs = new WeakSet<Document>();
+const hookedIframes = new WeakSet<HTMLIFrameElement>();
+
+const wireIframeDoc = (ifr: HTMLIFrameElement) => {
+  let doc: Document | null = null;
+  try {
+    doc = ifr.contentDocument;
+  } catch {
+    return; // cross-origin (shouldn't happen for our same-origin iframes)
+  }
+  if (!doc || wiredDocs.has(doc)) return;
+  doc.addEventListener("keydown", handleIframeKey as EventListener, true);
+  wiredDocs.add(doc);
+};
+
+const wireIframes = () => {
+  const root = rootEl.value;
+  if (!root) return;
+  root.querySelectorAll("iframe").forEach((ifr) => {
+    wireIframeDoc(ifr);
+    if (!hookedIframes.has(ifr)) {
+      // epubjs reloads the iframe's document per chapter — re-wire the
+      // fresh document each time it loads.
+      ifr.addEventListener("load", () => wireIframeDoc(ifr));
+      hookedIframes.add(ifr);
+    }
+  });
+};
+
+let iframeObserver: MutationObserver | null = null;
+
 const captureRendition = (r: Rendition) => {
   rendition.value = r;
   applyTheme();
@@ -220,6 +294,22 @@ const captureRendition = (r: Rendition) => {
     .catch(() => {
       /* no navigation doc — leave the TOC empty */
     });
+
+  // Cover art for the info-rail. `coverUrl()` resolves the packaged cover
+  // image to a blob URL (or null when the epub declares no cover).
+  try {
+    void r.book
+      .coverUrl()
+      .then((url: string | null) => {
+        if (url) emit("cover", url);
+      })
+      .catch(() => {
+        /* no cover — info-rail falls back to the generic book glyph */
+      });
+  } catch {
+    /* older epubjs without coverUrl — ignore */
+  }
+
   r.on("relocated", (loc: { start?: { href?: string } }) => {
     const href = loc?.start?.href;
     if (href) emit("chapter", href);
@@ -255,11 +345,24 @@ onMounted(() => {
     attributes: true,
     attributeFilter: ["class"],
   });
+
+  // Wire arrow-key handling into the book iframe(s). Watch the viewer
+  // subtree so we catch the iframe whenever vue-reader (re)creates it, and
+  // run a few timed passes for the async window between the iframe
+  // appearing and its document becoming navigable.
+  if (rootEl.value) {
+    iframeObserver = new MutationObserver(() => wireIframes());
+    iframeObserver.observe(rootEl.value, { childList: true, subtree: true });
+  }
+  wireIframes();
+  [100, 300, 600, 1200].forEach((ms) => window.setTimeout(wireIframes, ms));
 });
 
 onBeforeUnmount(() => {
   themeObserver?.disconnect();
   themeObserver = null;
+  iframeObserver?.disconnect();
+  iframeObserver = null;
 });
 </script>
 

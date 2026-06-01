@@ -3,7 +3,7 @@ import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 import { files as api } from "@/api";
 import * as upload from "@/utils/upload";
-import { isSelfOrDescendantTarget } from "@/utils/dragdrop";
+import { isSelfOrDescendantTarget, isNoopMove } from "@/utils/dragdrop";
 import { useTransferIndicator } from "@/composables/useTransferIndicator";
 
 /**
@@ -43,15 +43,34 @@ export function useDropTarget() {
       return;
     }
 
-    // Reject moving a folder into itself or its own subtree (illegal — the
-    // backend would error). Unlike the listing rows, this path (favorites /
-    // breadcrumb) has no dragover cursor gate, so warn when the whole drop
-    // is an illegal self-drop.
-    const dragged = snapshot.filter(
-      (it) => !isSelfOrDescendantTarget(it.url, it.isDir, targetUrl)
+    // Track whether the user is explicitly trying to drop a folder INTO
+    // itself or its own subtree (a cycle the backend rejects). We warn for
+    // that, but stay silent for a plain same-location no-op (below).
+    const isCycleDrop = snapshot.some((it) =>
+      isSelfOrDescendantTarget(it.url, it.isDir, targetUrl)
     );
+
+    // Drop two classes of illegal/pointless targets up front:
+    //   1. A folder moved INTO itself or its own subtree (cycle).
+    //   2. An item dropped exactly where it ALREADY lives (no-op). Folder
+    //      urls carry a trailing slash while the computed destination does
+    //      not, so compare canonically — this trailing-slash mismatch is
+    //      what previously let a folder be "dropped onto itself" and trip
+    //      the conflict prompt instead of being refused.
+    const dragged = snapshot.filter((it) => {
+      const dest = targetUrl + encodeURIComponent(it.name);
+      return (
+        !isSelfOrDescendantTarget(it.url, it.isDir, targetUrl) &&
+        !isNoopMove(it.url, dest)
+      );
+    });
+
     if (dragged.length === 0) {
-      toast.warning("You can't move a folder into itself.");
+      // Nothing legal left to move. Warn only when the user was actually
+      // dropping a folder onto / into itself (the invalid action they
+      // expect to be blocked); a pure same-spot no-op stays silent so an
+      // accidental micro-drag doesn't nag.
+      if (isCycleDrop) toast.warning("You can't move a folder onto itself.");
       return;
     }
 
@@ -68,9 +87,6 @@ export function useDropTarget() {
     }));
 
     if (items.length === 0) return;
-
-    // Same source folder + same target = no-op.
-    if (items.every((it) => it.from === it.to)) return;
 
     const isCopy = event.ctrlKey || event.metaKey;
     const action = (overwrite?: boolean, rename?: boolean) => {

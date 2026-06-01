@@ -88,7 +88,7 @@ header .action .counter {
   position: absolute;
   bottom: -2px;
   right: -2px;
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   color: white;
   border-radius: 9999px;
   font-size: 9px;

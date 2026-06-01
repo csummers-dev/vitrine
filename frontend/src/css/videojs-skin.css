@@ -78,7 +78,7 @@
   margin: 0;
 }
 .video-js .vjs-play-progress {
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   border-radius: 999px;
 }
 .video-js .vjs-play-progress::before {
@@ -87,7 +87,7 @@
   width: 12px;
   height: 12px;
   border-radius: 999px;
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   box-shadow: 0 0 0 4px rgba(94, 106, 210, 0.32);
   position: absolute;
   right: -6px;
@@ -144,7 +144,7 @@
   font-weight: 500;
 }
 .video-js .vjs-menu li.vjs-selected {
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   color: white;
 }
 .video-js .vjs-menu li:hover:not(.vjs-selected) {
