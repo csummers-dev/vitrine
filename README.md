@@ -4,7 +4,7 @@
 
 # filebrowser pretty
 
-[![Version](https://img.shields.io/badge/version-1.2.1-5e6ad2?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-1.3.0--rc.1-5e6ad2?style=flat-square)](#)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
 [![Vue](https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js&logoColor=white)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
@@ -14,33 +14,116 @@
 
 ---
 
+## Features
+
+**Browsing & navigation**
+
+- List, grid, and gallery views — remembered per folder
+- Command palette (⌘K) with instant file search and quick actions
+- Search-as-you-type, including tag and file-type filters
+- Recents and favorites in the sidebar
+- Multi-column sort — name, size, modified, or extension
+- Breadcrumb navigation with depth ellipsis and sibling-folder jump
+- Smooth scrolling in folders with tens of thousands of files
+
+**Files**
+
+- Create, rename, move, copy, and delete inline — delete is undoable
+- Right-click context menus on files and empty space
+- Bulk rename with pattern or find-and-replace and a live preview
+- Drag and drop — into folders, up via breadcrumbs, and rubber-band select
+- Spring-loaded folders that open on hover while dragging
+- Extract zip archives, optionally removing the original
+- Copy a file's path to the clipboard
+
+**Tags & smart folders**
+
+- Color-coded tags with inline chips and a picker
+- Smart folders — saved searches over tags, type, and name
+- Tags follow files through renames and moves
+
+**Uploads**
+
+- Drag-and-drop, file, and folder uploads
+- Resumable — uploads survive a dropped connection
+- Floating dock with per-file progress, cancel, and queueing
+- Photo and camera-roll upload on mobile
+
+**Previews**
+
+- Images — zoom, fit, film strip, EXIF, and rotate / flip / crop editing
+- Video — playback, thumbnails, subtitle upload, picture-in-picture, track info
+- Audio — playback with album art, ID3 tags, and previous/next track
+- PDF — rendered pages, navigation, zoom, and text search
+- EPUB — reader with chapter list and remembered position
+- Text and Markdown — rendered or raw, with an inline editor
+- CSV tables
+
+**Sharing**
+
+- Public links with optional password and expiration periods
+- Share management page
+
+**Mobile**
+
+- Responsive on every screen, with a slide-out sidebar
+- Pull-to-refresh, and swipe between files in the preview
+
+**Appearance**
+
+- Light, dark, and system themes, per user
+- Six-preset accent color
+- Per-account language and code-editor theme
+
+**Admin & integrations**
+
+- User management and global settings
+- Audit log — every file op, share, sign-in, and setting change, filterable
+- Webhooks — POST to your services on file changes, with test and retry
+- Sign out of every other session at once
+
+**Reliability**
+
+- Loads and runs offline, with a clear offline indicator
+- Named error states with one-click retry
+- Full keyboard shortcuts with a built-in cheat sheet (press `?`)
+
+---
+
 <p align="center">
   <img src="docs/screenshots/listing-list.png" width="80%" alt="List view with file-icon system and inline meta" />
+  <br/><em>List view with file-icon system and inline meta</em>
 </p>
 
 <p align="center">
   <img src="docs/screenshots/listing-grid.png" width="49%" alt="Grid view" />
   <img src="docs/screenshots/listing-gallery.png" width="49%" alt="Gallery view with image thumbnails" />
+  <br/><em>Grid and gallery views with file-icon system and inline meta</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/preview-image.png" width="80%" alt="Image preview with EXIF info rail" />
+  <img src="docs/screenshots/preview-image.png" width="80%" alt="Image preview with EXIF info" />
+  <br/><em>Image preview with EXIF info</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/preview-video.png" width="80%" alt="Video preview with track info" />
+  <img src="docs/screenshots/preview-video.png" width="80%" alt="Video preview and playback with media info" />
+  <br/><em>Video preview and playback with media info</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/preview-audio.png" width="80%" alt="Audio preview with album art and custom transport" />
+  <img src="docs/screenshots/preview-audio.png" width="80%" alt="Audio preview and playback with album art and custom transport" />
+  <br/><em>Audio preview and playback with album art and custom transport</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/preview-pdf.png" width="80%" alt="PDF preview with thumbnail rail" />
+  <img src="docs/screenshots/preview-pdf.png" width="80%" alt="PDF preview with thumbnail" />
+  <br/><em>PDF preview with thumbnail</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/preview-epub.png" width="80%" alt="EPUB preview with dark mode applied to chapter text" />
+  <img src="docs/screenshots/preview-epub.png" width="80%" alt="EPUB preview" />
+  <br/><em>EPUB preview</em>
 </p>
 
 <table>
@@ -59,17 +142,20 @@
 </table>
 
 <p align="center">
-  <img src="docs/screenshots/command-palette.png" width="70%" alt="⌘K command palette with backend file search" />
+  <img src="docs/screenshots/command-palette.png" width="70%" alt="⌘K command palette with file search" />
+  <br/><em>⌘K command palette with file search</em>
 </p>
 
 <p align="center">
   <img src="docs/screenshots/mobile-drawer.png" width="32%" alt="Mobile sidebar drawer" />
   <img src="docs/screenshots/mobile-listing.png" width="32%" alt="Mobile file listing" />
   <img src="docs/screenshots/mobile-preview.png" width="32%" alt="Mobile preview" />
+  <br/><em>Mobile-friendly design principles</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/settings-profile.png" width="80%" alt="Profile settings with theme switcher and auto-save indicator" />
+  <img src="docs/screenshots/settings-profile.png" width="80%" alt="Global and per-user pofile settings" />
+  <br/><em>Global and per-user pofile settings</em>
 </p>
 
 ---
@@ -131,27 +217,19 @@ Or skip Docker entirely and run the binary directly: `./filebrowser` — opens o
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│  Browser                                                     │
-│  ┌────────────────────────────────────────────────────────┐  │
-│  │  Vue 3 + TypeScript + Pinia                            │  │
-│  │  • Composition API, <script setup>                     │  │
-│  │  • Tailwind v4 design tokens                           │  │
-│  │  • Composables for shortcuts, drag, focus, theme       │  │
-│  │  • Format-specific viewers: pdfjs / videojs /          │  │
-│  │    vue-reader (EPUB) / Ace / music-metadata / exifr    │  │
-│  └────────────────────────────────────────────────────────┘  │
-│                            │ HTTP / WebSocket                │
-│                            ▼                                 │
-│  ┌────────────────────────────────────────────────────────┐  │
-│  │  Go backend (unchanged from upstream)                  │  │
-│  │  • Gorilla mux router                                  │  │
-│  │  • Storm/BoltDB for users + shares + settings          │  │
-│  │  • afero filesystem abstraction                        │  │
-│  │  • JWT auth (or proxy / noauth / hooks)                │  │
-│  │  • Embedded frontend assets (one binary deploys)       │  │
-│  └────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────┘
+Browser  —  Vue 3 · TypeScript · Pinia · Tailwind v4
+  • Composition API + composables (shortcuts, drag, focus, theme)
+  • Format viewers — pdf.js · video.js · epub.js · Ace · music-metadata · exifr
+  • Virtual scrolling · service-worker offline shell
+
+        │  HTTP / WebSocket
+        ▼
+
+Go backend  —  Gorilla mux · JWT auth · afero filesystem
+  • Storm/BoltDB — users · shares · settings
+  • In-process event bus → audit log + webhooks (BoltDB siblings)
+  • Tags · disk cache · resumable uploads (TUS) · ffmpeg thumbnails
+  • Frontend assets embedded — deploys as a single binary
 ```
 
 ### Tech stack
@@ -166,14 +244,35 @@ Or skip Docker entirely and run the binary directly: `./filebrowser` — opens o
 | Build | **Vite + Rolldown** |
 | Routing | **vue-router 5** |
 | i18n | **vue-i18n** |
+| Uploads | **TUS (tus-js-client)** |
+| Virtual list | **vue-virtual-scroller** |
 | PDF | **pdfjs-dist 6** |
-| Video | **video.js 8** |
+| Video | **video.js 8** + **ffmpeg** thumbnails |
 | Audio | **music-metadata 11** |
 | EPUB | **vue-reader + epub.js** |
 | Code | **Ace 1.44** |
+| Markdown | **marked + KaTeX** |
 | EXIF | **exifr 7** |
 
 ---
+
+### v1.3.0 — Tags, scale, and admin tooling
+
+- **Tags & smart folders** — per-file color-coded tags with inline chips and a picker, plus saved-search "smart folders" over a compound `tag:` / `type:` / `name:` query syntax. Tags follow files through renames and moves
+- **Right-click context menus** — on file rows and empty listing space, with keyboard navigation and type-ahead
+- **Bulk rename** — pattern and find-and-replace modes in a slide-over, with live preview and conflict highlighting
+- **Drag-select lasso** — rubber-band selection in grid and gallery; a drag ghost shows what's being moved; spring-loaded folders open on hover
+- **Preview enhancements** — PDF text search with highlights; rendered Markdown (toggle to raw); an image film strip and basic editing (rotate / flip / crop, saved as a copy); EPUB chapter list and remembered reading position; subtitle upload and picture-in-picture for video; size-capped image hover-preview in the listing
+- **Virtual scrolling** — the list view stays smooth in folders with tens of thousands of files
+- **Server-side video thumbnails** — ffmpeg-generated poster frames, bundled in the Docker image, with a clean fall back to the generic icon when ffmpeg isn't present
+- **Resumable uploads** — uploads survive a dropped connection and resume from where they left off; per-file cancel / remove in the dock; smarter retry handling
+- **Offline app shell** — the interface loads without a connection, with an "offline" indicator and clear, named error states (server unreachable / permission denied / not found) with one-click retry
+- **Mobile gestures** — pull-to-refresh, camera-roll / photo upload, and swipe between files (plus swipe-down to close) in the preview
+- **Audit log** — admin page recording file operations, shares, sign-ins, and settings changes, filterable by action / user / date / path
+- **Webhooks** — POST a JSON payload to configured endpoints on file events, with per-endpoint event filters, a test button, last-delivery status, and retry with backoff
+- **Session management** — "sign out everywhere" revokes every other session at once
+- **Accent color** — six-preset picker that recolors the whole interface, synced per user
+- **Power-user navigation** — recents and favorites in the sidebar, per-folder view-mode memory, multi-column sort (including by extension), breadcrumb depth-ellipsis with a sibling-folder dropdown, and command-palette recents
 
 ### v1.2.1 — Keyboard + search + preview
 
@@ -227,90 +326,6 @@ Or skip Docker entirely and run the binary directly: `./filebrowser` — opens o
 
 ---
 
-The next release is **v1.3.0**. 
-
-- `User.Preferences` JSON field, API round-trip, migration safety
-- `usePreferences` frontend composable with debounced persistence
-- `ContextMenu.vue` primitive — smart viewport positioning, keyboard nav, separators, destructive variant
-- Event bus package with sync dispatch and panic-safe subscribers
-- Audit log backbone — BoltDB bucket, event subscriber, query API (no UI yet)
-- File ops + auth flows wired to publish events
-- `/cache` package — filesystem-backed LRU with background eviction tick
-
-### Tags + smart folders
-
-- Tag schema + CRUD API (`/api/tags`, file ↔ tag association)
-- `<TagChip>` primitive (colored, removable, focusable)
-- Tag display on file rows and in the info pane
-- Tag picker SlideOver with search + on-the-fly create
-- Smart folders — saved tag queries surfaced as virtual entries in the sidebar
-- Palette `tag:foo` syntax in command palette and header search
-- 8-color tag palette tied to design-system accent variables
-
-### Discovery and navigation
-
-- Recently accessed (per-user log, surfaced in sidebar + palette `recents` group)
-- Favorites / pinned folders (sidebar pin list, star toggle on rows)
-- Per-folder view-mode memory (list / grid / gallery remembered per directory)
-- Multi-column sort (primary + secondary criteria, persisted)
-- Sort by extension
-- Better breadcrumbs at depth — middle-ellipsis dropdown when path is long
-- Breadcrumb hover dropdown — shows siblings of any path segment
-- Quick-action row in command palette empty state — top 5 most-used commands
-
-### Interaction model
-
-- Right-click context menu on file rows (built on the Stage 1 primitive)
-- Bulk rename SlideOver — pattern input with `{n}` / `{ext}` / `{####}` placeholders, find/replace, live preview
-- Drag-select lasso in gallery + grid views
-- Custom drag preview ghost showing file icon + count badge
-- `Delete` shortcut prompts confirmation; `Shift+Delete` skips the prompt for power users
-
-### Preview enhancements
-
-- PDF text search (`Cmd+F`) using PDF.js's existing text-content API
-- Markdown rendered preview with GFM extensions (toggle in TextViewer toolbar)
-- Image film strip — thumbnail row of siblings below the image preview
-- Image basic edit — canvas rotate + crop, backend save as a copy
-- EPUB chapter list (TOC) in info-rail
-- EPUB persistent position + bookmarks; CFI carried in the URL hash for deep links
-- Subtitle upload UI in video preview info-rail
-- Picture-in-picture toggle in video preview
-- Hover preview tooltip for image rows (500 ms delay)
-
-### Performance and scale
-
-- Virtual scrolling for huge folders (list / grid / gallery; tested against 10k+ files)
-- Server-side video thumbnails — ffmpeg frame extraction, cached in `/cache`, backgrounded queue
-- Resumable uploads via TUS protocol (`tus-js-client` + `tusd` backend handler)
-- Service worker — shell + last-viewed listing caching only; offline overlay for uncached routes
-- Better error states — "Server unreachable" / "Permission denied" / "Not found" overlays replacing silent fetch failures
-
-### Mobile polish
-
-- Pull-to-refresh
-- Camera roll upload (`accept="image/*,video/*" capture`)
-- Swipe gestures in preview for previous/next file
-
-### Admin and integrations
-
-- Audit log UI — `Settings → Audit` page, filterable by user / action / date
-- Webhooks — event bus subscriber posting to user-configured URLs on file change, with retry/backoff; Settings page to manage endpoints
-- Session management UI — list active JWTs, revoke per-session
-- Theme accent color picker — 6-preset chooser in Profile, tokenized so the cascade just works
-
-### Beyond v1.3.0
-
-- **ID3 tag editing** — edit title / artist / album / year / track number / artwork in place from the audio preview rail, write back to the file
-- **Full-text content search** — index document text (PDFs, code, plaintext, EPUB) so the palette finds matches inside files, not just filenames
-- **Pluggable preview types** — register a new format viewer via a config file
-- **WebDAV polish** — works today, but the UX for mounting it could be friendlier
-- **Multi-tenant scopes** — multiple roots per user with independent permissions
-- **2FA / WebAuthn passkeys** — passwordless login at the front door
-- **Per-folder + per-user storage analytics**
-
----
-
 ## Credits
 
 This project began as a fork of [filebrowser/filebrowser](https://github.com/filebrowser/filebrowser) by [@hacdias](https://github.com/hacdias) and the original maintainers.
@@ -325,6 +340,6 @@ Apache License 2.0. See [LICENSE](LICENSE).
 
 <div align="center">
 
-**Built with love.**
+**Built with love by csummers-dev.**
 
 </div>

@@ -18,8 +18,15 @@ import type { useLayoutStore } from "@/stores/layout";
 import { users } from "@/api";
 import * as auth from "@/utils/auth";
 import { unzipEnabled } from "@/utils/constants";
+import { useBulkRename } from "@/composables/useBulkRename";
 
-export type CommandGroup = "files" | "actions" | "view" | "navigation";
+export type CommandGroup =
+  | "quickActions"
+  | "recent"
+  | "files"
+  | "actions"
+  | "view"
+  | "navigation";
 
 export interface Command {
   id: string;
@@ -42,13 +49,28 @@ export interface CommandContext {
 }
 
 const GROUP_LABEL: Record<CommandGroup, string> = {
+  quickActions: "Quick actions",
+  recent: "Recent",
   files: "Files",
   actions: "Actions",
   view: "View",
   navigation: "Go to",
 };
 
-const GROUP_ORDER: CommandGroup[] = ["files", "actions", "view", "navigation"];
+// "quickActions" sits at the very top (S3-8): the user's most-used
+// commands (or starter set for first-time users) are the highest-value
+// rows when the palette opens empty. "recent" (recently-opened files)
+// follows. "files" (search hits) only appears with an active query but
+// is listed above static commands so search results take precedence
+// when the user has typed something.
+const GROUP_ORDER: CommandGroup[] = [
+  "quickActions",
+  "recent",
+  "files",
+  "actions",
+  "view",
+  "navigation",
+];
 
 export function groupLabel(group: CommandGroup): string {
   return GROUP_LABEL[group];
@@ -187,6 +209,20 @@ export function buildStaticCommands(ctx: CommandContext): Command[] {
         hint: "F2",
         icon: "pencil",
         run: () => layoutStore.showHover("rename"),
+      });
+    }
+    // v1.3 S4-2: bulk rename. Distinct from the single-item Rename
+    // above — opens the SlideOver pipeline (pattern/find-replace +
+    // preview) instead of the inline rename input. Multi-selection
+    // only; single-selection users want the inline rename UX.
+    if (canRename && selCount > 1) {
+      cmds.push({
+        id: "action.bulkRename",
+        group: "actions",
+        label: `Bulk rename ${selCount} items…`,
+        icon: "pencil",
+        keywords: ["batch", "pattern", "find", "replace"],
+        run: () => useBulkRename().open(),
       });
     }
     // Move requires perm.rename (same backend op as rename). Available for

@@ -7,7 +7,7 @@
       :key="index"
       :src="sub"
       :label="subLabel(sub)"
-      :default="index === 0"
+      :default="defaultSubtitle ? sub === defaultSubtitle : index === 0"
     />
     <p class="vjs-no-js">
       Sorry, your browser doesn't support embedded videos, but don't worry, you
@@ -34,6 +34,10 @@ const props = withDefaults(
     source: string;
     subtitles?: string[];
     options?: any;
+    /** S5-7: URL of the track to show by default (e.g. a just-uploaded
+     *  subtitle). When set, this track gets `default` instead of the
+     *  first one, so video.js shows it on init. */
+    defaultSubtitle?: string;
   }>(),
   {
     options: {},

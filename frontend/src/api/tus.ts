@@ -31,8 +31,20 @@ export async function upload(
     const upload = new tus.Upload(content, {
       endpoint: `${origin}${baseURL}${resourcePath}`,
       chunkSize: tusSettings.chunkSize,
+      // `retryDelays` is what makes uploads RESUMABLE across a connection
+      // drop: on a retryable failure the tus client waits the backoff,
+      // re-HEADs the upload URL for the server's current `Upload-Offset`,
+      // and continues the PATCH from there. Defaults: 5 retries, 10MB
+      // chunks (settings/tus.go). The server's 3-min upload-cache TTL
+      // comfortably outlasts the ~15s total backoff window.
       retryDelays: computeRetryDelays(tusSettings),
       parallelUploads: 1,
+      // Resume is IN-SESSION only (a live drop → reconnect). We don't
+      // persist the upload URL across reloads: the dock's queue state is
+      // in-memory and lost on refresh, so there'd be nothing to resume
+      // into. Keeping this false avoids leaving stale fingerprints in
+      // localStorage. Cross-reload resume is a deferred feature, not a
+      // hardening.
       storeFingerprintForResuming: false,
       headers: {
         "X-Auth": authStore.jwt,
@@ -42,11 +54,25 @@ export async function upload(
           ? err.originalResponse.getStatus()
           : 0;
 
-        // Do not retry for file conflict.
-        if (status === 409) {
-          return false;
-        }
+        // No HTTP response at all → a network drop / server unreachable.
+        // THIS is the resume-on-reconnect path: keep retrying so the
+        // client re-syncs the offset and continues when the link returns.
+        if (status === 0) return true;
 
+        // Terminal failures a retry can never fix — fail fast instead of
+        // burning the full backoff budget (each delay up to 20s) before
+        // surfacing the error:
+        //   401 — token expired (this app renews only on load/login, not
+        //         in the background, so a retry resends the same token)
+        //   403 — permission denied
+        //   404 — upload record gone (e.g. cache entry evicted)
+        //   409 — conflict: file exists (POST) / offset mismatch (PATCH)
+        //   413 — payload too large   415 — wrong content type
+        const terminal = [401, 403, 404, 409, 413, 415];
+        if (terminal.includes(status)) return false;
+
+        // Everything else (5xx, 429, transient gateway errors) is exactly
+        // what resumable uploads exist for — retry with backoff.
         return true;
       },
       onError: function (error: Error | tus.DetailedError) {
@@ -119,4 +145,22 @@ export function abortAllUploads() {
     }
     delete CURRENT_UPLOAD_LIST[filePath];
   }
+}
+
+/**
+ * Abort a single in-flight TUS upload by path (v1.3 H13). The key
+ * matches the `CURRENT_UPLOAD_LIST` registry, which is keyed by the
+ * prefix-stripped path (see `upload()` above). Returns true if a
+ * matching upload was found + aborted. Mirrors abortAllUploads'
+ * abort + manual onError so the awaiting `upload()` promise rejects
+ * with "Upload aborted".
+ */
+export function abortUpload(filePath: string): boolean {
+  const key = removePrefix(filePath);
+  const up = CURRENT_UPLOAD_LIST[key];
+  if (!up) return false;
+  up.abort(true);
+  up.options!.onError!(new Error("Upload aborted"));
+  delete CURRENT_UPLOAD_LIST[key];
+  return true;
 }

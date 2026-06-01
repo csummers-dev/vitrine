@@ -17,6 +17,12 @@ const logoutPage: string = window.FileBrowser.LogoutPage;
 const loginPage: boolean = window.FileBrowser.LoginPage;
 const theme: UserTheme = window.FileBrowser.Theme;
 const enableThumbs: boolean = window.FileBrowser.EnableThumbs;
+// S6-2: video poster-frame thumbnails. True only when thumbnails are on
+// AND the server detected ffmpeg — so rows request a video thumb only
+// when one can actually be served (else they keep the generic icon).
+// `?? false` keeps older bootstraps (no field) safely off.
+const enableVideoThumbs: boolean =
+  window.FileBrowser.EnableVideoThumbnails ?? false;
 const resizePreview: boolean = window.FileBrowser.ResizePreview;
 const enableExec: boolean = window.FileBrowser.EnableExec;
 const tusSettings = window.FileBrowser.TusSettings;
@@ -45,6 +51,7 @@ export {
   loginPage,
   theme,
   enableThumbs,
+  enableVideoThumbs,
   resizePreview,
   enableExec,
   tusSettings,

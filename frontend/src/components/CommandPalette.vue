@@ -112,7 +112,13 @@ import { useFocusTrap } from "@/composables/useFocusTrap";
 import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
-import { search } from "@/api";
+import { searchSmart } from "@/utils/searchSmart";
+import { useRecents } from "@/composables/useRecents";
+import {
+  useCommandMRU,
+  STARTER_COMMAND_IDS,
+} from "@/composables/useCommandMRU";
+import { fileIcon as iconForFile } from "@/utils/fileIcon";
 import url from "@/utils/url";
 import { fileIcon } from "@/utils/fileIcon";
 import {
@@ -145,6 +151,21 @@ const layoutStore = useLayoutStore();
 
 // File search state (live results streamed in from the backend).
 const fileResults = ref<Command[]>([]);
+
+// v1.3 S3-1: Recents log composable. Reads from user prefs; reactive,
+// so the recent group updates as files are previewed.
+const recents = useRecents();
+
+// v1.3 S3-8: Palette MRU — surfaces recently-run commands (or starter
+// commands for first-time users) as a top "Quick actions" group. The
+// composable owns persistence; we only need to (a) read mruIds to
+// build the surfaced rows and (b) call .record() on every run.
+const commandMRU = useCommandMRU();
+
+// How many recent items to surface in the palette's empty-query
+// state. Smaller than the sidebar's 5 so the palette stays compact
+// (the palette is meant to be navigated quickly with the keyboard).
+const PALETTE_RECENT_COUNT = 5;
 // G7: in-flight indicator so the palette doesn't look empty during the
 // debounce + fetch window. Goes true the moment the user types (with
 // enough characters) and only flips false once the fetch resolves
@@ -197,21 +218,24 @@ const runSearch = async (q: string) => {
       base = url.removeLastDir(base) + "/";
     }
     try {
-      await search(base, q, ctrl.signal, (item) => {
+      // searchSmart routes through /api/search/recursive when the
+      // query carries structured filters (tag:, ext:); otherwise it
+      // falls through to the existing streaming search. Callback
+      // shape is the same either way.
+      await searchSmart(base, q, ctrl.signal, (hit) => {
         if (ctrl.signal.aborted) return;
         if (fileResults.value.length >= MAX_FILE_RESULTS) return;
-        const itemUrl = item.url;
         fileResults.value.push({
-          id: `file:${item.path}`,
+          id: `file:${hit.path}`,
           group: "files",
-          label: item.name,
-          hint: item.path,
+          label: hit.name,
+          hint: hit.path,
           icon: fileIcon({
-            isDir: item.isDir,
-            type: item.type,
-            name: item.name,
+            isDir: hit.dir,
+            type: hit.dir ? "dir" : "blob",
+            name: hit.name,
           }),
-          run: () => void router.push(itemUrl),
+          run: () => void router.push(hit.url),
         });
       });
     } catch (err: unknown) {
@@ -252,12 +276,67 @@ const placeholder = computed(() => {
 });
 
 // Rebuild commands each time the palette opens (cheap; ensures fresh perms).
+/** Recent-files commands surfaced when the query is empty (S3-1).
+ *  Suppressed while the user is typing — search results take over the
+ *  top of the list. Iterating recents directly keeps the palette in
+ *  sync with the MRU log without a separate watcher. */
+const recentCommands = computed<Command[]>(() => {
+  if (!isOpen.value) return [];
+  if (query.value.trim() !== "") return [];
+  return recents.recents.value.slice(0, PALETTE_RECENT_COUNT).map((r) => ({
+    id: `recent:${r.path}`,
+    group: "recent" as const,
+    label: r.name,
+    hint: r.path,
+    icon: iconForFile({ isDir: r.isDir, type: "blob", name: r.name }),
+    run: () => void router.push(`/files${r.path}`),
+  }));
+});
+
+/** Quick-actions row (v1.3 S3-8). Shown only when the query is empty.
+ *  Maps the MRU list onto live static commands (so perm changes /
+ *  contextual availability are respected — an entry only renders if
+ *  the underlying command still exists). Falls back to a hardcoded
+ *  starter set for first-time users with no MRU history. Capped at
+ *  SURFACE_COUNT regardless of source so the row stays compact. */
+const quickActionCommands = computed<Command[]>(() => {
+  if (!isOpen.value) return [];
+  if (query.value.trim() !== "") return [];
+  const allStatic = buildStaticCommands({
+    router,
+    authStore,
+    fileStore,
+    layoutStore,
+  });
+  const byId = new Map(allStatic.map((c) => [c.id, c]));
+  const ids =
+    commandMRU.mruIds.value.length > 0
+      ? commandMRU.mruIds.value
+      : STARTER_COMMAND_IDS;
+  const out: Command[] = [];
+  for (const id of ids) {
+    const cmd = byId.get(id);
+    if (!cmd) continue; // command no longer available (perms / context)
+    // Tag with the quickActions group so the grouping pass renders it
+    // at the top. Keep the original `id` so MRU recording stays stable
+    // when the user re-runs from the quick-actions surface.
+    out.push({ ...cmd, group: "quickActions" });
+    if (out.length >= commandMRU.SURFACE_COUNT) break;
+  }
+  return out;
+});
+
 const commands = computed<Command[]>(() => {
   if (!isOpen.value) return [];
-  // File results first so they appear at the top of the merged list. The
-  // grouping pass below preserves group order, so this is just to seed the
-  // list — group sort puts `files` group on top anyway.
+  // Quick actions first (MRU / starter, only when query is empty).
+  // Recent files next. File search results in the middle (only when
+  // query non-empty). Static commands fill out the bottom — the
+  // grouping pass below sorts by group order regardless of order
+  // here, but keeping the array in display order makes the pipeline
+  // easier to reason about.
   return [
+    ...quickActionCommands.value,
+    ...recentCommands.value,
     ...fileResults.value,
     ...buildStaticCommands({
       router,
@@ -280,13 +359,22 @@ const groupedResults = computed<ResultGroup[]>(() => {
     // name, or a content match, would have a basename the fuzzy scorer
     // can't satisfy. Trust the backend's filtering; preserve arrival
     // order with a stable positive score so file results stay at the top.
-    if (cmd.group === "files") {
+    if (
+      cmd.group === "files" ||
+      cmd.group === "recent" ||
+      cmd.group === "quickActions"
+    ) {
+      // File results: trust the backend's filtering (see note below).
+      // Recent + quickActions: only emitted when query is empty, so
+      // fuzzy scoring is moot — preserve insertion order (MRU). All
+      // three categories get a high baseline score so they outrank
+      // static commands' label matches.
       scored.push({
         ...cmd,
-        // Descending score by index so backend order is preserved when
-        // we sort by score below. A small magnitude ensures static
-        // commands with matching keywords can still rank above them
-        // when the user types a command-y query.
+        // Descending score by index so backend / MRU order is
+        // preserved when we sort by score below. A small magnitude
+        // ensures static commands with matching keywords can still
+        // rank above them when the user types a command-y query.
         _score: 1_000_000 - scored.length,
         _flatIndex: 0,
       });
@@ -435,6 +523,11 @@ const run = async (cmd: Command) => {
   // Close first so the command's side-effects (route changes, modals) take
   // over a clean stage.
   close();
+  // S3-8: record into the MRU log so the next palette open surfaces
+  // this command in the quick-actions row. The composable filters out
+  // ephemeral IDs (file:, recent:) internally, so we can fire-and-forget
+  // for every cmd type.
+  commandMRU.record(cmd.id);
   try {
     await cmd.run();
   } catch (err) {

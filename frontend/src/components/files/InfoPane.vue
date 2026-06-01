@@ -168,6 +168,39 @@
       </dl>
     </div>
 
+    <!-- Tags (v1.3 S2-5). Full chip list + "Manage tags" CTA that
+         opens the picker SlideOver. Empty state shows the CTA on its
+         own. Reads tags from the cache populated by FileListing's
+         batch fetch; falls back to forFile when stale. -->
+    <div class="px-4 py-3 border-t border-line">
+      <div class="mb-1.5 flex items-center justify-between gap-2">
+        <div
+          class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em]"
+        >
+          Tags
+        </div>
+        <button
+          type="button"
+          class="info-pane__manage-tags"
+          :title="itemTags.length === 0 ? 'Add tags' : 'Manage tags'"
+          @click="tagPicker.open"
+        >
+          <Icon :name="itemTags.length === 0 ? 'plus' : 'pencil'" :size="11" />
+          <span>{{ itemTags.length === 0 ? "Add" : "Manage" }}</span>
+        </button>
+      </div>
+      <div v-if="itemTags.length > 0" class="info-pane__tag-list">
+        <TagChip
+          v-for="t in itemTags"
+          :key="t.id"
+          :tag="t"
+          size="md"
+          :focusable="false"
+        />
+      </div>
+      <div v-else class="info-pane__tag-empty">No tags</div>
+    </div>
+
     <!-- Location -->
     <div class="px-4 py-3 border-t border-line">
       <div class="mb-1.5 flex items-center justify-between gap-2">
@@ -214,22 +247,42 @@
         <span>to close</span>
       </span>
     </div>
+
+    <!-- Tag picker sheet (v1.3 S2-5). Renders as a SlideOver via
+         Teleport so it sits above the InfoPane in stacking order. -->
+    <TagPickerSheet
+      v-if="item"
+      :open="tagPicker.isOpen.value"
+      :path="item.url"
+      @cancel="tagPicker.close"
+      @saved="tagPicker.close"
+    />
   </aside>
 </template>
 
 <script setup lang="ts">
 import Icon from "@/components/Icon.vue";
+import TagChip from "@/components/TagChip.vue";
+import TagPickerSheet from "@/components/files/TagPickerSheet.vue";
 import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
+import { useTagsStore } from "@/stores/tags";
 import { fileIcon, fileIconColor } from "@/utils/fileIcon";
 import { filesize } from "@/utils";
 import { enableThumbs, unzipEnabled } from "@/utils/constants";
 import { files as api } from "@/api";
 import dayjs from "dayjs";
 import { computed, inject, onMounted, onUnmounted, ref } from "vue";
+import { useTagPicker } from "@/composables/useTagPicker";
 
 const fileStore = useFileStore();
+const tagsStore = useTagsStore();
+
+// Tag picker open-state (v1.3 S2-5; hoisted to a singleton composable
+// in S4-1 so the row context menu can also open it). The actual sheet
+// component still lives in this file — only the flag moved out.
+const tagPicker = useTagPicker();
 const authStore = useAuthStore();
 const layoutStore = useLayoutStore();
 const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
@@ -286,6 +339,14 @@ const item = computed<ResourceItem | null>(() => {
   if (!fileStore.req || fileStore.selectedCount !== 1) return null;
   const idx = fileStore.selected[0];
   return fileStore.req.items[idx] ?? null;
+});
+
+// Tag list for the currently-selected item. Reads from the same
+// byPath cache the listing rows use → no extra HTTP, and the chip
+// set stays consistent between the row + the info pane.
+const itemTags = computed<Tag[]>(() => {
+  if (!item.value) return [];
+  return tagsStore.forPath(item.value.url);
 });
 
 const iconName = computed(() =>
@@ -497,6 +558,50 @@ html.dark .preview-mesh {
 .info-pane__copy-path:focus-visible {
   outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
   outline-offset: 1px;
+}
+
+/* Tag section (v1.3 S2-5) — chip list + "Manage" button. Same visual
+   shape as the Copy-path affordance so the section header pattern
+   stays consistent. */
+.info-pane__manage-tags {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-ink-2, #52525b);
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-line, #ececec);
+  cursor: pointer;
+  transition:
+    background-color 0.1s ease,
+    color 0.1s ease,
+    border-color 0.1s ease;
+}
+.info-pane__manage-tags:hover {
+  background: var(--color-elevated, #f4f4f5);
+  color: var(--color-accent, #5e6ad2);
+  border-color: var(--color-line-strong, #d4d4d8);
+}
+.info-pane__manage-tags:focus-visible {
+  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline-offset: 1px;
+}
+
+.info-pane__tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.info-pane__tag-empty {
+  font-size: 12px;
+  color: var(--color-ink-3, #a1a1aa);
+  font-style: italic;
 }
 /* Activate when the path is freshly in the clipboard. Subtle accent
    wash + matching ink so the flash reads as "yes, it happened". */

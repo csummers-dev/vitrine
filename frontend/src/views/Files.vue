@@ -4,7 +4,8 @@
       <breadcrumbs base="/files" />
     </header-bar>
 
-    <errors v-if="error" :errorCode="error.status" />
+    <!-- S6-5: offer an in-place retry on transient listing failures. -->
+    <errors v-if="error" :errorCode="error.status" @retry="fetchData" />
     <component v-else-if="currentView" :is="currentView"></component>
     <!-- Boot-time loading (no view component yet): use the same listing
          skeleton FileListing shows so the layout stays consistent. -->
@@ -107,29 +108,39 @@ watch(reload, (newValue) => {
 // Define functions
 
 const applyPreSelection = () => {
+  // Drain the queue immediately so a re-entrant fetch doesn't double-
+  // apply. Snapshot first, then clear.
   const preselect = fileStore.preselect;
-  fileStore.preselect = null;
+  fileStore.preselect = [];
 
   if (!fileStore.req?.isDir || fileStore.oldReq === null) return;
 
-  let index = -1;
-  if (preselect) {
-    // Find item with the specified path
-    index = fileStore.req.items.findIndex((item) => item.path === preselect);
-  } else if (fileStore.oldReq.path.startsWith(fileStore.req.path)) {
-    // Get immediate child folder of the previous path
+  if (preselect.length > 0) {
+    // Re-select every queued path that exists in the new listing.
+    // Preselect paths are decoded (per setPreselect's contract);
+    // item.path is also decoded — direct equality is correct.
+    // Missing paths are silently skipped (e.g., a moved-then-deleted
+    // file should just drop out of the selection).
+    for (const path of preselect) {
+      const idx = fileStore.req.items.findIndex((item) => item.path === path);
+      if (idx !== -1) fileStore.selected.push(idx);
+    }
+    return;
+  }
+
+  // Fallback: navigating UP a level (parent breadcrumb, browser back)
+  // selects the child folder we just came from. Only fires when no
+  // explicit preselect was queued.
+  if (fileStore.oldReq.path.startsWith(fileStore.req.path)) {
     const name = fileStore.oldReq.path
       .substring(fileStore.req.path.length)
       .split("/")
       .shift();
-
-    index = fileStore.req.items.findIndex(
+    const index = fileStore.req.items.findIndex(
       (val) => val.path == fileStore.req!.path + name
     );
+    if (index !== -1) fileStore.selected.push(index);
   }
-
-  if (index === -1) return;
-  fileStore.selected.push(index);
 };
 
 const fetchData = async () => {

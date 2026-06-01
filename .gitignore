@@ -37,3 +37,5 @@ build/
 
 default.nix
 Dockerfile.dev
+
+docs/*.md

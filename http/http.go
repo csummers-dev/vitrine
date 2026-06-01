@@ -6,8 +6,11 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"github.com/filebrowser/filebrowser/v2/audit"
 	"github.com/filebrowser/filebrowser/v2/settings"
 	"github.com/filebrowser/filebrowser/v2/storage"
+	"github.com/filebrowser/filebrowser/v2/tags"
+	"github.com/filebrowser/filebrowser/v2/webhooks"
 )
 
 type modifyRequest struct {
@@ -21,6 +24,10 @@ func NewHandler(
 	fileCache FileCache,
 	uploadCache UploadCache,
 	store *storage.Storage,
+	tagsStore *tags.Store,
+	auditLog *audit.Log,
+	webhookStore *webhooks.Store,
+	webhookDispatcher *webhooks.Dispatcher,
 	server *settings.Server,
 	assetsFs fs.FS,
 ) (http.Handler, error) {
@@ -36,10 +43,14 @@ func NewHandler(
 	index, static := getStaticHandlers(store, server, assetsFs)
 
 	monkey := func(fn handleFunc, prefix string) http.Handler {
-		return handle(fn, prefix, store, server)
+		return handle(fn, prefix, store, tagsStore, server)
 	}
 
 	r.HandleFunc("/health", healthHandler)
+	// S6-4: serve the offline-shell service worker at the app root so its
+	// scope covers the whole SPA (navigations + /static). Registered
+	// before NotFoundHandler so it isn't swallowed by the SPA fallback.
+	r.Handle("/service-worker.js", serviceWorkerHandler(assetsFs))
 	r.PathPrefix("/static").Handler(static)
 	r.NotFoundHandler = index
 
@@ -73,6 +84,21 @@ func NewHandler(
 
 	api.PathPrefix("/usage").Handler(monkey(diskUsage, "/api/usage")).Methods("GET")
 
+	// Tags CRUD (v1.3 S2). All scoped to authenticated user.
+	api.Handle("/tags", monkey(tagsListHandler, "")).Methods("GET")
+	api.Handle("/tags", monkey(tagsCreateHandler, "")).Methods("POST")
+	api.Handle("/tags/batch", monkey(fileTagsBatchHandler, "")).Methods("POST")
+	api.Handle("/tags/{id:[0-9]+}", monkey(tagsUpdateHandler, "")).Methods("PATCH")
+	api.Handle("/tags/{id:[0-9]+}", monkey(tagsDeleteHandler, "")).Methods("DELETE")
+	// File ↔ tag mapping. Path is in the URL after /api/files-tags;
+	// tag ID is a query param (?id=N) so the path can be `.*` without
+	// fighting gorilla/mux for a second `{}` segment. The shared
+	// stripPrefix in handle() leaves r.URL.Path holding just the file
+	// path by the time the handler runs.
+	api.PathPrefix("/files-tags").Handler(monkey(fileTagsListHandler, "/api/files-tags")).Methods("GET")
+	api.PathPrefix("/files-tags").Handler(monkey(fileTagAddHandler, "/api/files-tags")).Methods("POST")
+	api.PathPrefix("/files-tags").Handler(monkey(fileTagRemoveHandler, "/api/files-tags")).Methods("DELETE")
+
 	api.Handle("/shares", monkey(shareListHandler, "")).Methods("GET")
 	api.PathPrefix("/share").Handler(monkey(shareGetsHandler, "/api/share")).Methods("GET")
 	api.PathPrefix("/share").Handler(monkey(sharePostHandler, "/api/share")).Methods("POST")
@@ -81,10 +107,31 @@ func NewHandler(
 	api.Handle("/settings", monkey(settingsGetHandler, "")).Methods("GET")
 	api.Handle("/settings", monkey(settingsPutHandler, "")).Methods("PUT")
 
+	// Audit log (v1.3 S8-1). Admin-only; read-only — the log itself is
+	// populated by the S1-5 events-bus subscriber.
+	api.Handle("/audit", monkey(auditGetHandler(auditLog), "")).Methods("GET")
+
+	// Sessions (v1.3 S8-3). "Sign out everywhere" — per-user, bumps the
+	// session epoch + re-issues the caller's token.
+	api.Handle("/sessions/revoke-others", monkey(sessionsRevokeOthersHandler(tokenExpirationTime), "")).Methods("POST")
+
+	// Webhooks (v1.3 S8-2). Admin-only CRUD + test; deliveries are
+	// fired by the events-bus dispatcher wired up in cmd/root.go.
+	api.Handle("/webhooks", monkey(webhooksListHandler(webhookStore), "")).Methods("GET")
+	api.Handle("/webhooks", monkey(webhooksCreateHandler(webhookStore), "")).Methods("POST")
+	api.Handle("/webhooks/{id:[0-9]+}", monkey(webhooksUpdateHandler(webhookStore), "")).Methods("PUT")
+	api.Handle("/webhooks/{id:[0-9]+}", monkey(webhooksDeleteHandler(webhookStore), "")).Methods("DELETE")
+	api.Handle("/webhooks/{id:[0-9]+}/test", monkey(webhooksTestHandler(webhookStore, webhookDispatcher), "")).Methods("POST")
+
 	api.PathPrefix("/raw").Handler(monkey(rawHandler, "/api/raw")).Methods("GET")
 	api.PathPrefix("/preview/{size}/{path:.*}").
 		Handler(monkey(previewHandler(imgSvc, fileCache, server.EnableThumbnails, server.ResizePreview), "/api/preview")).Methods("GET")
 	api.PathPrefix("/command").Handler(monkey(commandsHandler, "/api/command")).Methods("GET")
+	// Order matters: the more-specific /search/recursive prefix must
+	// register before the plain /search catch-all, otherwise the
+	// catch-all would swallow recursive requests.
+	api.PathPrefix("/search/recursive").
+		Handler(monkey(searchRecursiveHandler, "/api/search/recursive")).Methods("GET")
 	api.PathPrefix("/search").Handler(monkey(searchHandler, "/api/search")).Methods("GET")
 	api.PathPrefix("/subtitle").Handler(monkey(subtitleHandler, "/api/subtitle")).Methods("GET")
 

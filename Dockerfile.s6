@@ -1,7 +1,10 @@
 FROM ghcr.io/linuxserver/baseimage-alpine:3.23
 
+# ffmpeg powers server-side video thumbnails (v1.3 S6-2). The app
+# runtime-detects it and silently falls back to the generic video icon
+# when absent, so this is a convenience, not a hard dependency.
 RUN apk update && \
-  apk --no-cache add ca-certificates mailcap jq libcap
+  apk --no-cache add ca-certificates mailcap jq libcap ffmpeg
 
 # Make user and create necessary directories
 RUN mkdir -p /config /database /srv && \

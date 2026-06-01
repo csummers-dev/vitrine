@@ -92,6 +92,62 @@
   overflow: hidden;
 }
 
+/* Inline tag chips strip (v1.3 S2-5). Sits below the filename on a
+   new line. flex-wrap kept off so they don't push other rows; overflow
+   shows ellipsis. The cap-at-2 + "+N" chip lives in ListingItem's
+   template — this just lays the strip out. */
+#listing .item__tags {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+#listing .item__tags-overflow {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 9999px;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--color-ink-3, #a1a1aa);
+  background: var(--color-elevated, #f4f4f5);
+  white-space: nowrap;
+  cursor: help;
+}
+
+/* Smart-folder color dots (v1.3 S2-6). Sidebar.vue uses these in its
+   smart folder list; SmartFolderView has its own scoped version. Kept
+   in the global stylesheet so the sidebar (which has no <style scoped>
+   block) can reach them. */
+.smart-folder-dot--lilac {
+  background: var(--tag-color-lilac-fg);
+}
+.smart-folder-dot--blue {
+  background: var(--tag-color-blue-fg);
+}
+.smart-folder-dot--green {
+  background: var(--tag-color-green-fg);
+}
+.smart-folder-dot--amber {
+  background: var(--tag-color-amber-fg);
+}
+.smart-folder-dot--red {
+  background: var(--tag-color-red-fg);
+}
+.smart-folder-dot--pink {
+  background: var(--tag-color-pink-fg);
+}
+.smart-folder-dot--slate {
+  background: var(--tag-color-slate-fg);
+}
+.smart-folder-dot--teal {
+  background: var(--tag-color-teal-fg);
+}
+
 /* Inline rename input — sits in place of `.item__name-text` (Stage 8). */
 #listing .item__rename-input {
   width: 100%;
@@ -278,9 +334,11 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 2px;
 }
 
-.item__actions-btn {
+.item__actions-btn,
+.item__fav-btn {
   width: 24px;
   height: 24px;
   border-radius: var(--radius-sm, 6px);
@@ -292,24 +350,46 @@
   justify-content: center;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.12s ease, background-color 0.12s ease, color 0.12s ease;
+  transition:
+    opacity 0.12s ease,
+    background-color 0.12s ease,
+    color 0.12s ease;
 }
 
 #listing.list .item:hover .item__actions-btn,
-#listing.mosaic .item:hover .item__actions-btn {
+#listing.list .item:hover .item__fav-btn,
+#listing.mosaic .item:hover .item__actions-btn,
+#listing.mosaic .item:hover .item__fav-btn {
   opacity: 1;
 }
 
-.item__actions-btn:hover {
+.item__actions-btn:hover,
+.item__fav-btn:hover {
   background: var(--color-elevated, var(--surfaceSecondary));
   color: var(--color-ink-1, var(--textSecondary));
 }
 
+/* Active (favorited) state: persistent visibility + amber tint so
+   pinned folders stand out at a glance, even without hover.
+   v1.3 S3-2 — folders only. */
+.item__fav-btn--active {
+  opacity: 1 !important;
+  color: var(--tag-color-amber-fg, #b45309);
+}
+
+.item__fav-btn--active:hover {
+  color: var(--tag-color-amber-fg, #b45309);
+  background: var(--tag-color-amber-bg, rgba(217, 119, 6, 0.12));
+}
+
 /* Touch-target sweep (Stage 11f): bump the row action button to 32px
-   on mobile so it's comfortably tappable. */
+   on mobile so it's comfortably tappable. v1.3 S3-2 — same treatment
+   for the favorites star. */
 @media (max-width: 640px) {
   .item__actions-btn,
-  #listing.mosaic .item__actions-btn {
+  .item__fav-btn,
+  #listing.mosaic .item__actions-btn,
+  #listing.mosaic .item__fav-btn {
     width: 32px;
     height: 32px;
   }

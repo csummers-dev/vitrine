@@ -196,8 +196,12 @@ const onSubmit = async () => {
       } else {
         await api.copy(items, false, false);
       }
-      // Keep the first moved/copied item highlighted in the destination
-      fileStore.preselect = removePrefix(items[0].to);
+      // Re-select EVERY moved/copied item in the destination so the
+      // user's multi-selection survives the action. Decode each path
+      // (items[].to was built with encodeURIComponent on the name).
+      fileStore.setPreselect(
+        items.map((i) => decodeURIComponent(removePrefix(i.to)))
+      );
       if (
         authStore.user?.redirectAfterCopyMove &&
         dest !== route.path &&
@@ -215,10 +219,14 @@ const onSubmit = async () => {
 
   if (conflict.length > 0) {
     // Hand off to the existing conflict-resolution prompt; on confirm, apply
-    // the rename/overwrite/skip choices and re-run the action.
+    // the rename/overwrite/skip choices and re-run the action. Source for
+    // the header line = parent dir of the first selected item; dest = the
+    // folder the picker resolved to.
+    const firstFrom = items[0]?.from ?? "";
+    const sourceUrl = firstFrom.replace(/[^/]+\/?$/, "");
     layoutStore.showHover({
       prompt: "resolve-conflict",
-      props: { conflict, files: items },
+      props: { conflict, files: items, from: sourceUrl, to: dest },
       confirm: (event: any, result: any[]) => {
         event?.preventDefault?.();
         layoutStore.closeHovers();

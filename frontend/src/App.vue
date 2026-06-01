@@ -3,6 +3,9 @@
     <router-view></router-view>
     <CommandPalette v-if="isLoggedIn" />
     <ShortcutsOverlay v-if="isLoggedIn" />
+    <!-- S6-4: global offline indicator — shown on every surface,
+         including login, independent of auth + the service worker. -->
+    <OfflineBanner />
   </div>
 </template>
 
@@ -17,6 +20,7 @@ import { useCommandPalette } from "@/composables/useCommandPalette";
 import { useShortcutsOverlay } from "@/composables/useShortcutsOverlay";
 import { installShortcuts, useShortcuts } from "@/composables/useShortcuts";
 import { useThemeBootstrap } from "@/composables/useThemePreference";
+import { useAccentBootstrap } from "@/composables/useAccentColor";
 import CommandPalette from "@/components/CommandPalette.vue";
 import ShortcutsOverlay from "@/components/ShortcutsOverlay.vue";
 
@@ -33,6 +37,9 @@ const { register } = useShortcuts();
 // preference, applies it, and starts watching the OS color-scheme setting
 // so "System" updates live without a refresh.
 useThemeBootstrap();
+
+// S8-4: apply the user's saved accent-color preset (per-user, prefs bag).
+useAccentBootstrap();
 
 // Install the global shortcut dispatcher (window-level listener). Idempotent.
 installShortcuts();

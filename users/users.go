@@ -1,6 +1,7 @@
 package users
 
 import (
+	"encoding/json"
 	"path/filepath"
 
 	"github.com/spf13/afero"
@@ -37,6 +38,19 @@ type User struct {
 	HideDotfiles          bool          `json:"hideDotfiles"`
 	DateFormat            bool          `json:"dateFormat"`
 	AceEditorTheme        string        `json:"aceEditorTheme"`
+	// SessionsRevokedAt is the "sign out everywhere" epoch (Unix seconds,
+	// v1.3 S8-3). Any JWT whose IssuedAt predates it is rejected by the
+	// auth middleware — without any per-session storage. Zero means
+	// "never revoked".
+	SessionsRevokedAt int64 `json:"sessionsRevokedAt"`
+	// Preferences is an open, feature-prefixed key/value store for
+	// per-user UI state that doesn't deserve its own column (recents,
+	// favorites, tag picker state, per-folder view mode, accent color,
+	// etc.). Values are raw JSON so the backend doesn't have to know
+	// each entry's schema — the frontend feature that owns the key
+	// owns the shape. New v1.3.0 features should namespace their keys
+	// (e.g., "tags.recent", "view.mode.byFolder", "favorites").
+	Preferences map[string]json.RawMessage `json:"preferences"`
 }
 
 // GetRules implements rules.Provider.
@@ -94,6 +108,16 @@ func (u *User) Clean(baseScope string, fields ...string) error {
 		scope := u.Scope
 		scope = filepath.Join(baseScope, filepath.Join("/", scope))
 		u.Fs = afero.NewBasePathFs(afero.NewOsFs(), scope)
+	}
+
+	// Existing rows persisted before the Preferences field was added
+	// come back from storm with a nil map. Normalize to an empty map
+	// so the JSON response always carries `"preferences": {}` instead
+	// of `"preferences": null` — the frontend composable treats the
+	// two equivalently but the explicit empty form keeps DevTools +
+	// API consumers honest about the field existing.
+	if u.Preferences == nil {
+		u.Preferences = map[string]json.RawMessage{}
 	}
 
 	return nil

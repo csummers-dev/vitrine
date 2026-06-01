@@ -95,6 +95,32 @@ export async function renew(jwt: string) {
   }
 }
 
+/**
+ * "Sign out everywhere" (v1.3 S8-3). Bumps the server-side session epoch
+ * so every OTHER device's token is invalidated, and swaps in the fresh
+ * token the server returns so THIS device stays signed in.
+ */
+export async function revokeOtherSessions() {
+  const authStore = useAuthStore();
+  const res = await fetch(`${baseURL}/api/sessions/revoke-others`, {
+    method: "POST",
+    headers: {
+      "X-Auth": authStore.jwt,
+    },
+  });
+
+  const body = await res.text();
+
+  if (res.status === 200) {
+    parseToken(body);
+  } else {
+    throw new StatusError(
+      body || `${res.status} ${res.statusText}`,
+      res.status
+    );
+  }
+}
+
 export async function signup(username: string, password: string) {
   const data = { username, password };
 

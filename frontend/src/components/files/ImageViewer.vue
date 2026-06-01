@@ -23,7 +23,7 @@
     </div>
 
     <!-- ── Film strip (image only, hidden at < md) ───────────────── -->
-    <div v-if="strip.length > 1" class="image-viewer__strip">
+    <div v-if="strip.length > 1" ref="stripEl" class="image-viewer__strip">
       <button
         v-for="item in strip"
         :key="item.url"
@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { files as api } from "@/api";
 
 interface StripItem {
@@ -74,8 +74,34 @@ defineEmits<{
 }>();
 
 const imgEl = ref<HTMLImageElement | null>(null);
+const stripEl = ref<HTMLElement | null>(null);
 const naturalWidth = ref<number>(0);
 const naturalHeight = ref<number>(0);
+
+// v1.3 S5-3: keep the active thumbnail centered in the horizontal
+// strip as the user navigates (arrow keys or clicking a far-off thumb).
+// Without this the active thumb can sit off-screen in a long strip.
+// Scoped to the strip element's own scrollLeft — no `scrollIntoView`,
+// which would also scroll ancestor containers. Respects reduced-motion.
+const centerActiveThumb = () => {
+  const parent = stripEl.value;
+  if (!parent) return;
+  const active = parent.querySelector<HTMLElement>(".is-active");
+  if (!active) return;
+  const target =
+    active.offsetLeft - parent.clientWidth / 2 + active.clientWidth / 2;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  parent.scrollTo({
+    left: Math.max(0, target),
+    behavior: reduce ? "auto" : "smooth",
+  });
+};
+
+watch(
+  () => props.currentUrl,
+  () => nextTick(centerActiveThumb)
+);
+onMounted(() => nextTick(centerActiveThumb));
 
 const onLoad = () => {
   if (!imgEl.value) return;

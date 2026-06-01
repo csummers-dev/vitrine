@@ -21,6 +21,24 @@
               : $t("prompts.fastConflictResolve", { count: conflict.length })
           }}
         </p>
+        <!-- Source → destination context line. Only renders when the
+             caller supplied `from`/`to`; the legacy upload path supplies
+             only `to` (origin is the user's local filesystem). -->
+        <p v-if="contextLine" class="rc-prompt__context">
+          <Icon
+            name="arrow-right"
+            :size="11"
+            :stroke-width="2"
+            aria-hidden="true"
+          />
+          <span v-text="contextLine"></span>
+        </p>
+        <!-- Inline filename preview so users in the quick-action view
+             don't have to enter the personalized view just to see which
+             files are colliding. -->
+        <p v-if="!personalized" class="rc-prompt__files">
+          {{ filePreview }}
+        </p>
       </div>
     </div>
 
@@ -103,7 +121,17 @@
           <Icon name="undo-2" :size="14" />
           <span>{{ $t("buttons.skipAll") }}</span>
         </button>
-        <button class="rc-quick__btn" @click="(e) => resume(e)">
+        <!-- Resume is upload-specific (H9). The isSmallerOnServer
+             heuristic identifies likely-partial uploads on the server
+             and re-uploads just those; for move/copy conflicts the
+             same heuristic becomes a confusing "keep the larger file"
+             rule that doesn't match the button's name. Hide for non-
+             upload paths. -->
+        <button
+          v-if="isUploadAction"
+          class="rc-quick__btn"
+          @click="(e) => resume(e)"
+        >
           <Icon name="rotate-ccw" :size="14" />
           <span>{{ $t("buttons.resumeTransfer") }}</span>
           <span
@@ -124,6 +152,24 @@
     </div>
 
     <div class="rc-prompt__actions">
+      <!-- Back button (H9). Only visible in personalized mode.
+           Returns to the quick-action view without losing per-row
+           selections — the user's `conflict[].checked` state survives
+           the toggle so re-entering personalized resumes where they
+           left off. Reduces the friction of "I clicked Decide-for-
+           each by mistake and now have to cancel + redo the whole
+           action." Positioned left-aligned so it reads as navigation,
+           separate from the destructive Cancel + commit OK. -->
+      <button
+        v-if="personalized"
+        type="button"
+        class="rc-btn rc-btn--ghost rc-btn--back"
+        @click="personalized = false"
+      >
+        <Icon name="arrow-left" :size="13" :stroke-width="1.8" />
+        <span>Back</span>
+      </button>
+      <div class="rc-prompt__actions-spacer" />
       <button type="button" class="rc-btn rc-btn--ghost" @click="close">
         {{ $t("buttons.cancel") }}
       </button>
@@ -155,6 +201,54 @@ const isUploadAction = ref<boolean | undefined>(
   currentPrompt?.props.isUploadAction
 );
 const personalized = ref(false);
+
+// Source/destination context. `from` is omitted on uploads (the origin
+// is the user's local filesystem, not a server path) — in that case we
+// still show the "→ <dest>" half so users at least know WHERE files
+// are landing.
+const fromPath = computed<string | undefined>(() => currentPrompt?.props.from);
+const toPath = computed<string | undefined>(() => currentPrompt?.props.to);
+
+/**
+ * Render a server URL as a user-readable path. Strips the API prefix
+ * (`/files/`), the trailing slash, and decodes URI components.
+ * Collapses to the last two segments so deep paths stay readable
+ * (`/A/B/C/D/E/` → "D/E"). Returns "Root" for the storage root.
+ */
+const friendlyPath = (raw: string): string => {
+  const trimmed = raw
+    .replace(/^\/files\//, "")
+    .replace(/^\/api\/resources\//, "")
+    .replace(/\/$/, "");
+  if (!trimmed) return "Root";
+  const segments = trimmed.split("/");
+  const tail = segments.slice(-2).join("/");
+  try {
+    return decodeURIComponent(tail);
+  } catch {
+    return tail;
+  }
+};
+
+const contextLine = computed<string | null>(() => {
+  if (!toPath.value) return null;
+  if (fromPath.value) {
+    return `${friendlyPath(fromPath.value)} → ${friendlyPath(toPath.value)}`;
+  }
+  // Upload path — only destination is known.
+  return `Uploading to ${friendlyPath(toPath.value)}`;
+});
+
+/**
+ * "draft.txt, notes.md, +N more" inline filename preview shown in the
+ * quick-action view. Capped at 3 names so the header doesn't blow up
+ * with a 50-file rename.
+ */
+const filePreview = computed<string>(() => {
+  const names = conflict.value.map((c) => c.name);
+  if (names.length <= 3) return names.join(", ");
+  return `${names.slice(0, 3).join(", ")}, +${names.length - 3} more`;
+});
 
 const originAllChecked = computed(() =>
   conflict.value.every((it) => it.checked.includes("origin"))
@@ -269,6 +363,39 @@ const toogleCheckAll = (e: Event) => {
   font-size: 12.5px;
   line-height: 1.45;
   color: var(--color-ink-2, #52525b);
+}
+
+/* "Downloads/completed → Movies" — surfaces the source + destination
+   folders so the user knows what's about to move where, not just how
+   many files are colliding. */
+.rc-prompt__context {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-ink-2, #52525b);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: var(--color-elevated, #f4f4f5);
+  border-radius: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-prompt__context :deep(svg) {
+  color: var(--color-ink-3, #a1a1aa);
+  flex-shrink: 0;
+}
+
+/* Inline filename preview ("draft.txt, notes.md, +2 more") shown only
+   in the quick-action view — saves a click into the personalized view
+   just to find out WHICH files are conflicting. */
+.rc-prompt__files {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--color-ink-3, #a1a1aa);
+  word-break: break-all;
 }
 
 .rc-prompt__body {
@@ -451,11 +578,30 @@ const toogleCheckAll = (e: Event) => {
 /* ── Footer ────────────────────────────────────────────────────────── */
 .rc-prompt__actions {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
   gap: 8px;
   padding: 12px 14px;
   border-top: 1px solid var(--color-line, #ececec);
   background: var(--color-canvas, #fafaf9);
+}
+
+/* H9: Spacer separates the left-aligned Back nav button from the
+   right-aligned Cancel + OK pair. Pure visual grouping — Back is
+   navigation (return to prior view), the right side is commit/
+   abort. */
+.rc-prompt__actions-spacer {
+  flex: 1;
+}
+
+/* H9: Back button gets an icon + label + a slightly inset left edge
+   so it reads as navigation rather than a primary action. Same ghost
+   chrome as Cancel for consistency. */
+.rc-btn--back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-left: 8px;
+  padding-right: 10px;
 }
 
 .rc-btn {

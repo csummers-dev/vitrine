@@ -83,7 +83,7 @@ const uploadInput = async (event: Event) => {
   if (conflict.length > 0) {
     layoutStore.showHover({
       prompt: "resolve-conflict",
-      props: { conflict, isUploadAction: true },
+      props: { conflict, isUploadAction: true, to: path },
       confirm: (event: Event, result: Array<ConflictingResource>) => {
         event.preventDefault();
         layoutStore.closeHovers();

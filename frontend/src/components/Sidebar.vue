@@ -89,6 +89,124 @@
           <span class="flex-1 max-md:hidden">{{ $t("sidebar.settings") }}</span>
         </button>
       </nav>
+
+      <!-- Favorites (v1.3 S3-2). Pinned folders from useFavorites.
+           Hidden in icon-rail mode. Empty list is suppressed entirely
+           (no "None yet" filler) — the sidebar only shows the section
+           when there's content, so first-time users aren't presented
+           with empty scaffolding. -->
+      <nav
+        v-if="isLoggedIn && favorites.length > 0"
+        class="px-2 pt-4 max-md:hidden"
+      >
+        <div
+          class="px-2 pb-1.5 text-[10px] font-semibold text-ink-3 uppercase tracking-[0.06em]"
+        >
+          Favorites
+        </div>
+        <ul class="list-none m-0 p-0 space-y-0.5">
+          <li v-for="path in favorites" :key="path">
+            <router-link
+              :to="path"
+              class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] hover:bg-hover text-ink-2 transition"
+              :title="path"
+            >
+              <Icon
+                name="star"
+                :size="12"
+                :stroke-width="0"
+                fill="currentColor"
+                class="text-amber-700 shrink-0"
+              />
+              <span class="truncate flex-1">{{ favoriteName(path) }}</span>
+            </router-link>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Recent (v1.3 S3-1). MRU log of recently-previewed files.
+           Capped at 5 visible; "View all" disclosure expands the rest
+           (up to the 50-cap from the store). Click opens preview by
+           routing to the file's URL. -->
+      <nav
+        v-if="isLoggedIn && recents.length > 0"
+        class="px-2 pt-4 max-md:hidden"
+      >
+        <div
+          class="px-2 pb-1.5 flex items-center justify-between gap-2 text-[10px] font-semibold text-ink-3 uppercase tracking-[0.06em]"
+        >
+          <span>Recent</span>
+          <button
+            v-if="recents.length > RECENTS_INITIAL"
+            type="button"
+            class="text-[10px] font-medium text-ink-3 hover:text-accent transition"
+            @click="recentsExpanded = !recentsExpanded"
+          >
+            {{ recentsExpanded ? "Show less" : "View all" }}
+          </button>
+        </div>
+        <ul class="list-none m-0 p-0 space-y-0.5">
+          <li v-for="r in visibleRecents" :key="r.path">
+            <router-link
+              :to="`/files${r.path}`"
+              class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] hover:bg-hover text-ink-2 transition"
+              :title="r.path"
+            >
+              <Icon name="file" :size="12" class="text-ink-3 shrink-0" />
+              <span class="truncate flex-1">{{ r.name }}</span>
+            </router-link>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Smart folders (v1.3 S2-6). Section header + list + "+ New"
+           CTA. Hidden in icon-rail mode (the eyebrow + list don't
+           collapse gracefully to 40 px width). -->
+      <nav class="px-2 pt-4 max-md:hidden" v-if="isLoggedIn">
+        <div
+          class="px-2 pb-1.5 flex items-center justify-between gap-2 text-[10px] font-semibold text-ink-3 uppercase tracking-[0.06em]"
+        >
+          <span>Smart folders</span>
+          <button
+            type="button"
+            class="w-4 h-4 inline-flex items-center justify-center rounded text-ink-3 hover:text-accent hover:bg-hover transition"
+            title="New smart folder"
+            aria-label="New smart folder"
+            @click="openNewSmartFolder"
+          >
+            <Icon name="plus" :size="11" :stroke-width="2" />
+          </button>
+        </div>
+        <ul class="list-none m-0 p-0 space-y-0.5">
+          <li v-for="f in smartFolders" :key="f.id">
+            <router-link
+              :to="`/smart/${f.id}`"
+              class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] hover:bg-hover text-ink-2 transition"
+              :title="f.query || f.name"
+            >
+              <span
+                class="w-2 h-2 rounded-full shrink-0"
+                :class="`smart-folder-dot--${f.color}`"
+              />
+              <span class="truncate flex-1">{{ f.name }}</span>
+            </router-link>
+          </li>
+          <li
+            v-if="smartFolders.length === 0"
+            class="px-2 py-1 text-[11.5px] text-ink-3 italic"
+          >
+            None yet.
+          </li>
+        </ul>
+      </nav>
+
+      <SmartFolderSheet
+        :open="smartSheetOpen"
+        :folder="smartSheetTarget"
+        @cancel="closeSmartSheet"
+        @saved="closeSmartSheet"
+        @deleted="closeSmartSheet"
+      />
     </template>
 
     <template v-else>
@@ -189,7 +307,7 @@
 </template>
 
 <script>
-import { reactive } from "vue";
+import { reactive, ref } from "vue";
 import { mapActions, mapState } from "pinia";
 import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
@@ -209,7 +327,15 @@ import {
 import { files as api } from "@/api";
 import Icon from "@/components/Icon.vue";
 import BrandName from "@/components/BrandName.vue";
+import SmartFolderSheet from "@/components/SmartFolderSheet.vue";
 import prettyBytes from "pretty-bytes";
+import { usePreferences } from "@/composables/usePreferences";
+import { useRecents } from "@/composables/useRecents";
+import { useFavorites } from "@/composables/useFavorites";
+
+// How many recents to show before the "View all" disclosure kicks in.
+// 5 keeps the section compact in the default sidebar layout.
+const RECENTS_INITIAL = 5;
 
 const USAGE_DEFAULT = { used: "0 B", total: "0 B", usedPercentage: 0 };
 
@@ -217,11 +343,40 @@ export default {
   name: "sidebar",
   setup() {
     const usage = reactive(USAGE_DEFAULT);
-    return { usage, usageAbortController: new AbortController() };
+    // Smart folder sheet state (v1.3 S2-6). Lives in the Sidebar so
+    // the "+ New" affordance + the sheet share a parent. Refs so they
+    // unwrap correctly in the template and via `this.` access.
+    const prefs = usePreferences();
+    const smartSheetOpen = ref(false);
+    // `smartSheetTarget` holds either a SmartFolder when editing or
+    // null when creating. No explicit annotation because this <script>
+    // block isn't lang=ts; the assignments at the call sites carry
+    // enough shape info for Vue's template type-check.
+    const smartSheetTarget = ref(null);
+
+    // v1.3 S3-1 / S3-2: Recents + Favorites composables threaded into
+    // the Options API via setup() so the computed below can read
+    // them. RECENTS_INITIAL is exposed too so the template can show
+    // the "View all" disclosure conditionally.
+    const recentsComposable = useRecents();
+    const favoritesComposable = useFavorites();
+    const recentsExpanded = ref(false);
+    return {
+      usage,
+      usageAbortController: new AbortController(),
+      prefs,
+      smartSheetOpen,
+      smartSheetTarget,
+      recentsComposable,
+      favoritesComposable,
+      recentsExpanded,
+      RECENTS_INITIAL,
+    };
   },
   components: {
     Icon,
     BrandName,
+    SmartFolderSheet,
   },
   inject: ["$showError"],
   computed: {
@@ -245,6 +400,29 @@ export default {
     filesCount() {
       const fileStore = useFileStore();
       return (fileStore.req?.numDirs ?? 0) + (fileStore.req?.numFiles ?? 0);
+    },
+    /** Smart-folder list straight from user prefs (S1-2 composable).
+     *  Reactive because usePreferences's get reads through the auth
+     *  store's user.preferences map, which Pinia tracks. */
+    smartFolders() {
+      return this.prefs.get("smartFolders", []);
+    },
+    /** Recents + Favorites (v1.3 S3-1 / S3-2). Reactive reads from
+     *  the composables — the underlying prefs Pinia store handles
+     *  cross-tab + post-mutation reactivity. */
+    recents() {
+      return this.recentsComposable.recents.value;
+    },
+    favorites() {
+      return this.favoritesComposable.favorites.value;
+    },
+    /** First N recents OR the full list depending on the
+     *  "View all" toggle. Cap from useRecents (50) is the upper
+     *  bound; the toggle just expands within that. */
+    visibleRecents() {
+      return this.recentsExpanded
+        ? this.recents
+        : this.recents.slice(0, RECENTS_INITIAL);
     },
   },
   methods: {
@@ -276,6 +454,30 @@ export default {
     toRoot() {
       this.$router.push({ path: "/files" });
       this.closeHovers();
+    },
+    /** Display name for a favorited folder — basename of the path,
+     *  URL-decoded. "/files/Documents/Letters/" → "Letters". v1.3 S3-2. */
+    favoriteName(path) {
+      const trimmed = path.replace(/\/+$/, "");
+      const segments = trimmed.split("/").filter(Boolean);
+      const last = segments[segments.length - 1] ?? path;
+      try {
+        return decodeURIComponent(last);
+      } catch {
+        return last;
+      }
+    },
+    /** Open the SmartFolderSheet in create mode. Edit mode is reached
+     *  by clicking the pencil icon inside SmartFolderView, which has
+     *  its own sheet instance — we don't try to share state across
+     *  the two locations. */
+    openNewSmartFolder() {
+      this.smartSheetTarget = null;
+      this.smartSheetOpen = true;
+    },
+    closeSmartSheet() {
+      this.smartSheetOpen = false;
+      this.smartSheetTarget = null;
     },
     toAccountSettings() {
       this.$router.push({ path: "/settings/profile" });

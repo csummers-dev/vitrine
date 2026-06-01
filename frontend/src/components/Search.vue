@@ -69,7 +69,7 @@ import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 
 import url from "@/utils/url";
-import { search } from "@/api";
+import { searchSmart } from "@/utils/searchSmart";
 import { fileIcon, fileIconColor } from "@/utils/fileIcon";
 import { computed, inject, onMounted, ref, watch, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
@@ -229,8 +229,13 @@ const runSearch = async () => {
     abortLastSearch();
     searchAbortController = new AbortController();
     results.value = [];
-    await search(path, prompt.value, searchAbortController.signal, (item) =>
-      results.value.push(item)
+    // searchSmart routes through /api/search/recursive when the query
+    // has tag:/ext: filters; otherwise falls through to the streaming
+    // endpoint. The SearchHit shape carries both `path` and `url` so
+    // the existing template renders can keep using the same fields
+    // without caring which backend served the result.
+    await searchSmart(path, prompt.value, searchAbortController.signal, (hit) =>
+      results.value.push(hit)
     );
   } catch (error: any) {
     if (error instanceof StatusError && error.is_canceled) return;

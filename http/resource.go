@@ -19,6 +19,7 @@ import (
 	"github.com/spf13/afero"
 
 	fberrors "github.com/filebrowser/filebrowser/v2/errors"
+	"github.com/filebrowser/filebrowser/v2/events"
 	"github.com/filebrowser/filebrowser/v2/files"
 	"github.com/filebrowser/filebrowser/v2/fileutils"
 )
@@ -119,6 +120,12 @@ func resourceDeleteHandler(fileCache FileCache) handleFunc {
 			return errToStatus(err), err
 		}
 
+		events.Publish(events.FileDeleted{
+			Base:  eventBase(r, d),
+			Path:  r.URL.Path,
+			IsDir: file.IsDir,
+		})
+
 		return http.StatusNoContent, nil
 	})
 }
@@ -132,6 +139,13 @@ func resourcePostHandler(fileCache FileCache) handleFunc {
 		// Directories creation on POST.
 		if strings.HasSuffix(r.URL.Path, "/") {
 			err := d.user.Fs.MkdirAll(r.URL.Path, d.settings.DirMode)
+			if err == nil {
+				events.Publish(events.FileCreated{
+					Base:  eventBase(r, d),
+					Path:  r.URL.Path,
+					IsDir: true,
+				})
+			}
 			return errToStatus(err), err
 		}
 
@@ -159,11 +173,15 @@ func resourcePostHandler(fileCache FileCache) handleFunc {
 			}
 		}
 
+		// Capture the written size for FileUploaded so the audit log
+		// + webhook consumers don't have to re-stat the file.
+		var uploadedSize int64
 		err = d.RunHook(func() error {
 			info, writeErr := writeFile(d.user.Fs, r.URL.Path, r.Body, d.settings.FileMode, d.settings.DirMode)
 			if writeErr != nil {
 				return writeErr
 			}
+			uploadedSize = info.Size()
 
 			etag := fmt.Sprintf(`"%x%x"`, info.ModTime().UnixNano(), info.Size())
 			w.Header().Set("ETag", etag)
@@ -172,6 +190,12 @@ func resourcePostHandler(fileCache FileCache) handleFunc {
 
 		if err != nil {
 			_ = d.user.Fs.RemoveAll(r.URL.Path)
+		} else {
+			events.Publish(events.FileUploaded{
+				Base: eventBase(r, d),
+				Path: r.URL.Path,
+				Size: uploadedSize,
+			})
 		}
 
 		return errToStatus(err), err
@@ -258,8 +282,30 @@ func resourcePatchHandler(fileCache FileCache) handleFunc {
 			return patchAction(r.Context(), action, src, dst, d, fileCache)
 		}, action, src, dst, d.user)
 
+		if err == nil {
+			publishPatch(r, d, action, src, dst)
+		}
+
 		return errToStatus(err), err
 	})
+}
+
+// publishPatch fans the PATCH action out onto the right event type. The
+// HTTP "rename" action covers both rename-in-place and move-across-
+// folders; we pick FileRenamed vs FileMoved based on whether the parent
+// directory changed. "copy" always maps to FileCopied.
+func publishPatch(r *http.Request, d *data, action, src, dst string) {
+	base := eventBase(r, d)
+	switch action {
+	case "rename":
+		if looksLikeMove(src, dst) {
+			events.Publish(events.FileMoved{Base: base, From: src, To: dst})
+		} else {
+			events.Publish(events.FileRenamed{Base: base, From: src, To: dst})
+		}
+	case "copy":
+		events.Publish(events.FileCopied{Base: base, From: src, To: dst})
+	}
 }
 
 func checkParent(src, dst string) error {

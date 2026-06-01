@@ -1,7 +1,7 @@
 import { useAuthStore } from "@/stores/auth";
 import { useLayoutStore } from "@/stores/layout";
 import { baseURL } from "@/utils/constants";
-import { upload as postTus, useTus } from "./tus";
+import { upload as postTus, useTus, abortUpload as abortTus } from "./tus";
 import { createURL, fetchURL, removePrefix, StatusError } from "./utils";
 import { isEncodableResponse, makeRawResource } from "@/utils/encodings";
 
@@ -123,6 +123,12 @@ export async function post(
     : postTus(url, content, overwrite, onupload);
 }
 
+// v1.3 H13: registry of in-flight non-TUS (XHR) uploads, keyed by the
+// prefix-stripped path, so a single upload can be aborted by path
+// (the dock's per-row cancel). TUS uploads have their own registry in
+// tus.ts; `cancelUpload` below tries both.
+const CURRENT_XHR_LIST: Record<string, XMLHttpRequest> = {};
+
 async function postResources(
   url: string,
   content: ApiContent = "",
@@ -153,7 +159,10 @@ async function postResources(
       request.upload.onprogress = onupload;
     }
 
+    CURRENT_XHR_LIST[url] = request;
+
     request.onload = () => {
+      delete CURRENT_XHR_LIST[url];
       if (request.status === 200) {
         resolve(request.responseText);
       } else if (request.status === 409) {
@@ -164,11 +173,32 @@ async function postResources(
     };
 
     request.onerror = () => {
+      delete CURRENT_XHR_LIST[url];
       reject(new Error("001 Connection aborted"));
+    };
+
+    // request.abort() fires `onabort` (NOT `onerror`), so we reject
+    // here with the same sentinel the store + tus path use so callers
+    // can swallow user-initiated cancels uniformly.
+    request.onabort = () => {
+      delete CURRENT_XHR_LIST[url];
+      reject(new Error("Upload aborted"));
     };
 
     request.send(bufferContent || content);
   });
+}
+
+/**
+ * Cancel a single in-flight upload by path (v1.3 H13). Tries the TUS
+ * registry first (the primary upload path on http/https), then the
+ * XHR fallback. No-op if neither has a matching in-flight upload.
+ */
+export function cancelUpload(path: string) {
+  if (abortTus(path)) return;
+  const key = removePrefix(path);
+  const req = CURRENT_XHR_LIST[key];
+  if (req) req.abort();
 }
 
 function moveCopy(

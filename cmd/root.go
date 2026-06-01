@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -22,14 +23,18 @@ import (
 	"github.com/spf13/viper"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
+	"github.com/filebrowser/filebrowser/v2/audit"
 	"github.com/filebrowser/filebrowser/v2/auth"
 	"github.com/filebrowser/filebrowser/v2/diskcache"
+	"github.com/filebrowser/filebrowser/v2/events"
 	"github.com/filebrowser/filebrowser/v2/frontend"
 	fbhttp "github.com/filebrowser/filebrowser/v2/http"
 	"github.com/filebrowser/filebrowser/v2/img"
 	"github.com/filebrowser/filebrowser/v2/settings"
 	"github.com/filebrowser/filebrowser/v2/storage"
+	"github.com/filebrowser/filebrowser/v2/tags"
 	"github.com/filebrowser/filebrowser/v2/users"
+	"github.com/filebrowser/filebrowser/v2/webhooks"
 )
 
 var (
@@ -189,6 +194,56 @@ user created with the credentials from options "username" and "password".`,
 			return fmt.Errorf("failed to initialize upload cache: %w", err)
 		}
 
+		// Audit log: persisted alongside the main DB so operators only
+		// have one location to back up. Path derives from the main DB
+		// path (filebrowser.db → filebrowser-audit.db); using a sibling
+		// file rather than the main DB keeps audit growth or corruption
+		// from touching authoritative user data.
+		dbBase := strings.TrimSuffix(st.path, filepath.Ext(st.path))
+		auditPath := dbBase + "-audit.db"
+		auditLog, err := audit.New(auditPath)
+		if err != nil {
+			return fmt.Errorf("audit: open log: %w", err)
+		}
+		defer auditLog.Close()
+		// Subscribe to the in-process event bus. The unsubscribe handle
+		// runs on shutdown so audit doesn't keep writing after Close.
+		unsubscribeAudit := auditLog.Attach(events.Subscribe)
+		defer unsubscribeAudit()
+		log.Println("Audit log: " + auditPath)
+
+		// Tags store (v1.3 S2). Same sibling-file pattern as audit so
+		// the operator's backup story is unchanged. The HTTP handlers
+		// read this via the data struct; nil disables them with 503.
+		tagsPath := dbBase + "-tags.db"
+		tagsStore, err := tags.New(tagsPath)
+		if err != nil {
+			return fmt.Errorf("tags: open store: %w", err)
+		}
+		defer tagsStore.Close()
+		// Subscribe to the events bus so file_tags entries follow
+		// their underlying paths on rename/move/delete. FileCopied is
+		// intentionally not handled (locked decision: tags don't
+		// follow copies).
+		unsubscribeTags := tagsStore.AttachIndexMaintainer(events.Subscribe)
+		defer unsubscribeTags()
+		log.Println("Tags store: " + tagsPath)
+
+		// Webhooks (v1.3 S8-2). Sibling bolt DB for endpoint config +
+		// last-delivery status; the dispatcher subscribes to the events
+		// bus and POSTs file events to enabled endpoints in the
+		// background.
+		webhooksPath := dbBase + "-webhooks.db"
+		webhookStore, err := webhooks.New(webhooksPath)
+		if err != nil {
+			return fmt.Errorf("webhooks: open store: %w", err)
+		}
+		defer webhookStore.Close()
+		webhookDispatcher := webhooks.NewDispatcher(webhookStore)
+		unsubscribeWebhooks := webhookDispatcher.Attach(events.Subscribe)
+		defer unsubscribeWebhooks()
+		log.Println("Webhooks store: " + webhooksPath)
+
 		server, err := getServerSettings(v, st.Storage)
 		if err != nil {
 			return err
@@ -240,7 +295,7 @@ user created with the credentials from options "username" and "password".`,
 			panic(err)
 		}
 
-		handler, err := fbhttp.NewHandler(imageService, fileCache, uploadCache, st.Storage, server, assetsFs)
+		handler, err := fbhttp.NewHandler(imageService, fileCache, uploadCache, st.Storage, tagsStore, auditLog, webhookStore, webhookDispatcher, server, assetsFs)
 		if err != nil {
 			return err
 		}
@@ -498,19 +553,19 @@ func quickSetup(v *viper.Viper, s *storage.Storage) error {
 	}
 
 	ser := &settings.Server{
-		BaseURL:                  v.GetString("baseURL"),
-		Port:                     v.GetString("port"),
-		Log:                      v.GetString("log"),
-		TLSKey:                   v.GetString("key"),
-		TLSCert:                  v.GetString("cert"),
-		Address:                  v.GetString("address"),
-		Root:                     v.GetString("root"),
-		TokenExpirationTime:      v.GetString("tokenExpirationTime"),
-		EnableThumbnails:         !v.GetBool("disableThumbnails"),
-		ResizePreview:            !v.GetBool("disablePreviewResize"),
-		EnableExec:               !v.GetBool("disableExec"),
-		TypeDetectionByHeader:    !v.GetBool("disableTypeDetectionByHeader"),
-		ImageResolutionCal:       !v.GetBool("disableImageResolutionCalc"),
+		BaseURL:               v.GetString("baseURL"),
+		Port:                  v.GetString("port"),
+		Log:                   v.GetString("log"),
+		TLSKey:                v.GetString("key"),
+		TLSCert:               v.GetString("cert"),
+		Address:               v.GetString("address"),
+		Root:                  v.GetString("root"),
+		TokenExpirationTime:   v.GetString("tokenExpirationTime"),
+		EnableThumbnails:      !v.GetBool("disableThumbnails"),
+		ResizePreview:         !v.GetBool("disablePreviewResize"),
+		EnableExec:            !v.GetBool("disableExec"),
+		TypeDetectionByHeader: !v.GetBool("disableTypeDetectionByHeader"),
+		ImageResolutionCal:    !v.GetBool("disableImageResolutionCalc"),
 		// Upstream PR used `v.GetBool("UnzipEnabled")` (TitleCase) — viper
 		// normalizes keys lowercase, so that always returned false at
 		// quickSetup time. Use the lowercase form like every sibling key.

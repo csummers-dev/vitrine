@@ -6,6 +6,7 @@
         :source="source"
         :subtitles="subtitles"
         :options="options"
+        :default-subtitle="defaultSubtitle"
       />
     </div>
   </div>
@@ -28,15 +29,20 @@ const props = defineProps<{
   source: string;
   subtitles?: string[];
   options?: any;
+  /** S5-7: URL of the subtitle track to show by default. */
+  defaultSubtitle?: string;
 }>();
 void props;
 
 const emit = defineEmits<{
   (e: "metadata", meta: VideoMeta): void;
+  /** Picture-in-Picture availability + state (v1.3 S5-8). Emitted on
+   *  attach and whenever PiP enters/leaves so the toolbar button can
+   *  show/hide + reflect the active state. */
+  (e: "pip", state: { supported: boolean; active: boolean }): void;
 }>();
 
 const player = ref<InstanceType<typeof VideoPlayer> | null>(null);
-defineExpose({ player });
 
 /**
  * The actual <video> element is deep inside VideoPlayer (which is the
@@ -62,12 +68,51 @@ const onLoadedMetadata = (event: Event) => {
   });
 };
 
+// ── Picture-in-Picture (v1.3 S5-8) ─────────────────────────────────
+/** Report PiP support + current active state to the parent toolbar. */
+const emitPipState = () => {
+  const supported =
+    !!document.pictureInPictureEnabled && !video?.disablePictureInPicture;
+  emit("pip", {
+    supported,
+    active: !!video && document.pictureInPictureElement === video,
+  });
+};
+
+/** Toggle PiP for the current <video>. Exposed for the toolbar button.
+ *  Wrapped in try/catch: requestPictureInPicture rejects if the frame
+ *  isn't ready or the gesture isn't trusted — a no-op is the right
+ *  fallback (the button just does nothing rather than throwing). */
+const togglePip = async () => {
+  if (!video) return;
+  try {
+    if (document.pictureInPictureElement === video) {
+      await document.exitPictureInPicture();
+    } else {
+      await video.requestPictureInPicture();
+    }
+  } catch {
+    /* not ready / not permitted — ignore */
+  }
+};
+
+defineExpose({ player, togglePip });
+
 let video: HTMLVideoElement | null = null;
 const attach = () => {
   video?.removeEventListener("loadedmetadata", onLoadedMetadata);
+  video?.removeEventListener("enterpictureinpicture", emitPipState);
+  video?.removeEventListener("leavepictureinpicture", emitPipState);
   video = findVideoEl();
-  if (!video) return;
+  if (!video) {
+    // No element yet — report PiP unsupported so the button hides.
+    emit("pip", { supported: false, active: false });
+    return;
+  }
   video.addEventListener("loadedmetadata", onLoadedMetadata);
+  video.addEventListener("enterpictureinpicture", emitPipState);
+  video.addEventListener("leavepictureinpicture", emitPipState);
+  emitPipState();
   // Already loaded (e.g. cached) — fire immediately.
   if (video.readyState >= 1) {
     onLoadedMetadata({ currentTarget: video } as unknown as Event);
@@ -87,6 +132,8 @@ watch(
 
 onBeforeUnmount(() => {
   video?.removeEventListener("loadedmetadata", onLoadedMetadata);
+  video?.removeEventListener("enterpictureinpicture", emitPipState);
+  video?.removeEventListener("leavepictureinpicture", emitPipState);
   video = null;
 });
 </script>

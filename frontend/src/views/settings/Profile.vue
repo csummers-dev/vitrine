@@ -35,6 +35,18 @@
       >
         <Toggle v-model="dateFormat" @update:model-value="autoSave" />
       </SettingsRow>
+      <!-- v1.3 S2-5: Inline tag visibility on file rows. Persisted via
+           the usePreferences composable (S1-2), separately from the
+           legacy user-fields path — no autoSave needed. -->
+      <SettingsRow
+        label="Show tags on file rows"
+        description="When off, file tags only appear in the details sidebar — not inline on each row."
+      >
+        <Toggle
+          v-model="showTagsOnRows"
+          @update:model-value="onShowTagsChange"
+        />
+      </SettingsRow>
     </SettingsSection>
 
     <!-- ── Language ─────────────────────────────────────────────────── -->
@@ -65,6 +77,39 @@
           :options="themeOptions"
           aria-label="Theme"
         />
+      </SettingsRow>
+      <!-- S8-4: accent color picker. Per-user (prefs bag, cross-device);
+           overrides the --color-accent token + derivatives at runtime. -->
+      <SettingsRow
+        label="Accent color"
+        description="Used across buttons, links, and highlights. Syncs to your account."
+      >
+        <div
+          class="accent-swatches"
+          role="radiogroup"
+          aria-label="Accent color"
+        >
+          <button
+            v-for="preset in accentPresets"
+            :key="preset.key"
+            type="button"
+            class="accent-swatch"
+            :class="{ 'accent-swatch--active': accentKey === preset.key }"
+            :style="{ '--swatch': preset.base }"
+            :title="preset.label"
+            :aria-label="preset.label"
+            role="radio"
+            :aria-checked="accentKey === preset.key"
+            @click="setAccent(preset.key)"
+          >
+            <Icon
+              v-if="accentKey === preset.key"
+              name="check"
+              :size="13"
+              :stroke-width="3"
+            />
+          </button>
+        </div>
       </SettingsRow>
     </SettingsSection>
 
@@ -181,6 +226,8 @@ import {
   useThemePreference,
   type ThemePreference,
 } from "@/composables/useThemePreference";
+import { usePreferences } from "@/composables/usePreferences";
+import { useAccentColor } from "@/composables/useAccentColor";
 
 const { t } = useI18n();
 const authStore = useAuthStore();
@@ -196,6 +243,25 @@ const redirectAfterCopyMove = ref(false);
 const dateFormat = ref(false);
 const locale = ref<string>("");
 const aceEditorTheme = ref<string>("");
+
+// v1.3 S2-5: inline tag visibility on file rows. Persists via the
+// usePreferences composable rather than the legacy users.update path
+// — keeps the surface-area split clean (server-validated fields vs.
+// opaque UI prefs bag).
+const prefs = usePreferences();
+const showTagsOnRows = ref<boolean>(
+  prefs.get<boolean>("tags.showOnRows", true)
+);
+
+// S8-4: accent color picker. Singleton composable shared with the
+// app-wide bootstrap; `set` persists to the prefs bag + applies live.
+const accentColor = useAccentColor();
+const accentPresets = accentColor.presets;
+const accentKey = accentColor.accent;
+const setAccent = (key: string) => accentColor.set(key);
+const onShowTagsChange = (val: boolean) => {
+  void prefs.set("tags.showOnRows", val);
+};
 
 // ── Appearance (theme preference) ────────────────────────────────────
 const themePrefStore = useThemePreference();
@@ -476,5 +542,57 @@ const updatePassword = async () => {
 .savestate-leave-to {
   opacity: 0;
   transform: translateY(6px);
+}
+
+/* ── S8-4: accent swatch picker ─────────────────────────────────────── */
+.accent-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.accent-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full, 9999px);
+  background: var(--swatch);
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.accent-swatch:hover {
+  transform: scale(1.08);
+}
+
+.accent-swatch:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--color-surface, #fff),
+    0 0 0 4px var(--swatch);
+}
+
+/* Selected: a ringed halo using the swatch's own color. */
+.accent-swatch--active {
+  box-shadow:
+    0 0 0 2px var(--color-surface, #fff),
+    0 0 0 4px var(--swatch);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .accent-swatch {
+    transition: none;
+  }
+  .accent-swatch:hover {
+    transform: none;
+  }
 }
 </style>

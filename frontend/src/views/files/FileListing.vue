@@ -54,20 +54,50 @@
           </button>
         </div>
 
-        <!-- Sort cycle button. Click cycles through Name → Modified →
-             Size (and back). No chevron — this is a cycle button, not a
-             dropdown menu. Collapses to icon-only at < md. `min-w` is
-             sized to fit the widest label ("Modified") so the button
-             stays the same width regardless of the active sort. -->
+        <!-- Sort popover trigger (v1.3 S3-4). Was a cycle button —
+             now opens a ContextMenu with primary + secondary criteria
+             selection. min-w sized to fit the widest label ("Modified"
+             / "Extension") so layout doesn't jump as the user changes
+             the active sort. -->
         <button
           class="h-7 px-2 min-w-[110px] max-md:min-w-0 max-md:w-7 max-md:h-7 max-md:px-0 max-md:justify-center rounded-md border border-line bg-surface hover:bg-elevated inline-flex items-center justify-center gap-1.5 text-[13px] text-ink-2 transition"
-          @click="cycleSort"
+          @click.stop="openSortMenu"
           :title="`Sort: ${sortLabel}`"
           :aria-label="`Sort: ${sortLabel}`"
         >
           <Icon name="arrow-down-narrow-wide" :size="14" />
           <span class="max-md:hidden">{{ sortLabel }}</span>
         </button>
+        <context-menu
+          :show="sortMenuShow"
+          :pos="sortMenuPos"
+          :items="sortMenuItems"
+          @hide="sortMenuShow = false"
+        />
+
+        <!-- S7-2: camera-roll / photo-library upload. Touch devices only
+             (the native file chooser is the win here; desktops already
+             have the rich Upload prompt). No `capture` attr, so iOS /
+             Android show their full sheet — Photo Library / Take Photo /
+             Browse — and the chosen files flow through the SAME upload
+             pipeline as everything else (uploadInput). -->
+        <button
+          v-if="headerButtons.upload && isTouchDevice"
+          class="h-7 w-7 rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 inline-flex items-center justify-center transition"
+          @click="photoInput?.click()"
+          title="Add photos or videos"
+          aria-label="Add photos or videos"
+        >
+          <Icon name="image-plus" :size="14" />
+        </button>
+        <input
+          ref="photoInput"
+          style="display: none"
+          type="file"
+          accept="image/*,video/*"
+          multiple
+          @change="uploadInput($event)"
+        />
 
         <!-- Upload (primary; collapses to icon-only at < md) -->
         <button
@@ -84,7 +114,40 @@
     </header-bar>
 
     <div class="flex-1 flex min-h-0 overflow-hidden">
-      <section class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      <section
+        ref="scrollSection"
+        class="flex-1 flex flex-col min-w-0 overflow-y-auto ptr-host"
+        :class="{ 'scroll-section--virtual': isListVirtual }"
+      >
+        <!-- S7-1: pull-to-refresh indicator. Only visible during a pull
+             or while refreshing; pinned at the visible top (scrollTop is
+             held at 0 throughout the gesture, so absolute top:0 = top of
+             the viewport). -->
+        <div
+          v-if="ptrActive"
+          class="ptr-indicator"
+          :class="{ 'ptr-indicator--pulling': ptrPulling }"
+          :style="{
+            transform: `translate(-50%, ${ptrOffset}px)`,
+            opacity: ptrOpacity,
+          }"
+          aria-hidden="true"
+        >
+          <div class="ptr-indicator__pill">
+            <Icon
+              name="loader-circle"
+              :size="18"
+              class="ptr-indicator__spin"
+              :class="{ 'ptr-indicator__spin--active': ptrRefreshing }"
+              :style="
+                ptrRefreshing
+                  ? undefined
+                  : { transform: `rotate(${ptrRotation}deg)` }
+              "
+            />
+          </div>
+        </div>
+
         <div
           v-if="isMobile"
           id="file-selection"
@@ -144,9 +207,53 @@
         >
           <div class="min-w-0">
             <div
-              class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] mb-1"
+              class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] mb-1 flex items-center gap-1.5"
             >
-              Folder
+              <span>Folder</span>
+              <!-- Parent-folder nav button (H5). Same destination as the
+                   F2 spring-load on this section title — explicit click
+                   affordance for users who don't think to drag-hover.
+                   Hidden at root where parentFolderUrl is null. -->
+              <button
+                v-if="parentFolderUrl"
+                type="button"
+                class="parent-up-btn"
+                :title="`Go to parent folder${parentFolderName ? ` (${parentFolderName})` : ''}`"
+                :aria-label="`Go to parent folder${parentFolderName ? ` (${parentFolderName})` : ''}`"
+                @click.stop="goToParentFolder"
+              >
+                <Icon name="arrow-up" :size="11" :stroke-width="2.2" />
+              </button>
+              <!-- Favorite star for the current folder (v1.3 S3-2).
+                   Pairs visually with the parent-up button. Always
+                   visible (filled when favorited, outline when not)
+                   — discoverable affordance for the canonical
+                   "pin this folder" action. -->
+              <button
+                v-if="fileStore.req?.isDir && currentFolderPath"
+                type="button"
+                class="current-fav-btn"
+                :class="{ 'current-fav-btn--active': currentFolderFavorited }"
+                :title="
+                  currentFolderFavorited
+                    ? 'Remove from Favorites'
+                    : 'Add to Favorites'
+                "
+                :aria-label="
+                  currentFolderFavorited
+                    ? 'Remove from Favorites'
+                    : 'Add to Favorites'
+                "
+                :aria-pressed="currentFolderFavorited"
+                @click.stop="onCurrentFolderFavToggle"
+              >
+                <Icon
+                  name="star"
+                  :size="11"
+                  :stroke-width="currentFolderFavorited ? 0 : 2"
+                  :fill="currentFolderFavorited ? 'currentColor' : 'none'"
+                />
+              </button>
             </div>
             <!-- Inline rename for the current folder: when the user picks
                  "Rename folder" from the ⋯ menu, swap the h1 for an input
@@ -207,35 +314,16 @@
           </div>
         </div>
 
-        <!-- Section title "More" dropdown -->
+        <!-- Section title "More" dropdown.
+             Migrated to the items-based ContextMenu API (v1.3.0 S1-3) —
+             keyboard nav, type-ahead, separators all come along for
+             free. The action array below is built in the script. -->
         <context-menu
           :show="sectionMoreShow"
           :pos="sectionMorePos"
+          :items="sectionMoreItems"
           @hide="hideSectionMore"
-        >
-          <action
-            v-if="authStore.user?.perm.create"
-            icon="folder-plus"
-            :label="t('sidebar.newFolder')"
-            show="newDir"
-          />
-          <action
-            v-if="authStore.user?.perm.create"
-            icon="file-plus"
-            :label="t('sidebar.newFile')"
-            show="newFile"
-          />
-          <!-- Rename the CURRENTLY VIEWED folder (not selected items).
-               Hidden at the storage root since you can't rename "/". -->
-          <action
-            v-if="canRenameCurrentFolder"
-            icon="pencil"
-            label="Rename folder"
-            @action="startFolderRename"
-          />
-          <action icon="rotate-ccw" label="Refresh" @action="refresh" />
-          <action icon="info" :label="t('buttons.info')" show="info" />
-        </context-menu>
+        />
 
         <!-- Loading: skeleton rows matching the current view mode. Mirrors
          the real ListingItem layout so the page doesn't reflow on load. -->
@@ -245,10 +333,18 @@
           :count="viewMode === 'list' ? 10 : 12"
         />
         <template v-else>
+          <!-- Empty state vs. listing chrome. Critical detail (H6):
+               when the user is mid-creation (`inlineNewKind` is set)
+               we MUST render the listing branch even on an empty
+               folder — otherwise the InlineNewItem (which only lives
+               inside #listing) has nowhere to mount and clicking
+               "New Folder" silently no-ops. The listing's header +
+               inline input form a clean "creating in empty folder"
+               surface; EmptyState comes back when the prompt closes. -->
           <div
             v-if="
               (fileStore.req?.numDirs ?? 0) + (fileStore.req?.numFiles ?? 0) ==
-              0
+                0 && !inlineNewKind
             "
           >
             <EmptyState
@@ -290,8 +386,10 @@
             ref="listing"
             class="file-icons"
             data-clear-on-click="true"
-            :class="authStore.user?.viewMode ?? ''"
+            :class="[viewMode, { 'listing--virtual': isListVirtual }]"
             @click="handleEmptyAreaClick"
+            @contextmenu="onListingContextMenu"
+            @mousedown="dragSelect.onMouseDown"
           >
             <div>
               <div class="item header">
@@ -362,116 +460,145 @@
               <InlineNewItem :kind="inlineNewKind" />
             </div>
 
-            <TransitionGroup
-              v-if="fileStore.req?.numDirs ?? false"
-              tag="div"
-              name="list"
-              class="listing-section"
+            <!-- v1.3 S6-1: the LIST view is virtualized with
+                 RecycleScroller (fixed 44px rows) so a 10k-file folder
+                 only ever mounts the visible window + a small buffer.
+                 dirs → divider → files are flattened into `listRows`;
+                 selection/drag/rename all stay index-based so they keep
+                 working through recycling. Grid + gallery keep the
+                 incremental `showLimit` windowing in the v-else branch —
+                 their tiles wrap to variable heights, so list-first per
+                 the locked Stage 6 plan. -->
+            <RecycleScroller
+              v-if="isListVirtual"
+              ref="listScroller"
+              class="listing-virtual"
+              :items="listRows"
+              :item-size="44"
+              key-field="id"
+              :buffer="320"
               data-clear-on-click="true"
-              @contextmenu="showContextMenu"
+              v-slot="{ item: row }"
             >
+              <div
+                v-if="row.divider"
+                class="folder-file-divider"
+                data-clear-on-click="true"
+              ></div>
               <item
-                v-for="item in dirs"
-                :key="base64(item.name)"
-                v-bind:index="item.index"
-                v-bind:name="item.name"
-                v-bind:isDir="item.isDir"
-                v-bind:url="item.url"
-                v-bind:modified="item.modified"
-                v-bind:type="item.type"
-                v-bind:size="item.size"
-                v-bind:path="item.path"
+                v-else-if="row.item"
+                v-bind:index="row.item.index"
+                v-bind:name="row.item.name"
+                v-bind:isDir="row.item.isDir"
+                v-bind:url="row.item.url"
+                v-bind:modified="row.item.modified"
+                v-bind:type="row.item.type"
+                v-bind:size="row.item.size"
+                v-bind:path="row.item.path"
+                @rowIntoZone="onRowIntoZone"
+                @dropAlongside="onItemDropAlongside"
               >
               </item>
-            </TransitionGroup>
+            </RecycleScroller>
 
+            <template v-else>
+              <TransitionGroup
+                v-if="fileStore.req?.numDirs ?? false"
+                tag="div"
+                name="list"
+                class="listing-section"
+                data-clear-on-click="true"
+              >
+                <item
+                  v-for="item in dirs"
+                  :key="base64(item.name)"
+                  v-bind:index="item.index"
+                  v-bind:name="item.name"
+                  v-bind:isDir="item.isDir"
+                  v-bind:url="item.url"
+                  v-bind:modified="item.modified"
+                  v-bind:type="item.type"
+                  v-bind:size="item.size"
+                  v-bind:path="item.path"
+                  @rowIntoZone="onRowIntoZone"
+                  @dropAlongside="onItemDropAlongside"
+                >
+                </item>
+              </TransitionGroup>
+
+              <div
+                v-if="
+                  (fileStore.req?.numDirs ?? 0) > 0 &&
+                  (fileStore.req?.numFiles ?? 0) > 0
+                "
+                class="folder-file-divider"
+                data-clear-on-click="true"
+              ></div>
+
+              <TransitionGroup
+                v-if="fileStore.req?.numFiles ?? false"
+                tag="div"
+                name="list"
+                class="listing-section"
+                data-clear-on-click="true"
+              >
+                <item
+                  v-for="item in files"
+                  :key="base64(item.name)"
+                  v-bind:index="item.index"
+                  v-bind:name="item.name"
+                  v-bind:isDir="item.isDir"
+                  v-bind:url="item.url"
+                  v-bind:modified="item.modified"
+                  v-bind:type="item.type"
+                  v-bind:size="item.size"
+                  v-bind:path="item.path"
+                  @rowIntoZone="onRowIntoZone"
+                  @dropAlongside="onItemDropAlongside"
+                >
+                </item>
+              </TransitionGroup>
+            </template>
+
+            <!-- v1.3 H11: "Drop into current folder" target.
+                 Renders only during an internal drag whose items don't
+                 already live in this folder. Sits beneath the last row
+                 with generous vertical reach so folder-heavy listings
+                 still give the user a tolerant safe area to drop INTO
+                 the current directory — without having to land in the
+                 gaps between rows or aim at a non-folder. -->
             <div
-              v-if="
-                (fileStore.req?.numDirs ?? 0) > 0 &&
-                (fileStore.req?.numFiles ?? 0) > 0
-              "
-              class="folder-file-divider"
-              data-clear-on-click="true"
-            ></div>
-
-            <TransitionGroup
-              v-if="fileStore.req?.numFiles ?? false"
-              tag="div"
-              name="list"
-              class="listing-section"
-              data-clear-on-click="true"
-              @contextmenu="showContextMenu"
+              v-if="currentFolderDropZoneVisible"
+              class="current-folder-dropzone"
+              :class="{
+                'current-folder-dropzone--active': listingDropActive,
+              }"
+              @dragenter="onListingDropEnter"
+              @dragover="onListingDropOver"
+              @dragleave="onListingDropLeave"
+              @drop="onListingDrop"
             >
-              <item
-                v-for="item in files"
-                :key="base64(item.name)"
-                v-bind:index="item.index"
-                v-bind:name="item.name"
-                v-bind:isDir="item.isDir"
-                v-bind:url="item.url"
-                v-bind:modified="item.modified"
-                v-bind:type="item.type"
-                v-bind:size="item.size"
-                v-bind:path="item.path"
-              >
-              </item>
-            </TransitionGroup>
+              <div class="current-folder-dropzone__inner">
+                <Icon name="folder-open" :size="16" :stroke-width="1.8" />
+                <span>
+                  Drop to move into
+                  <strong>{{ folderTitle || "this folder" }}</strong>
+                </span>
+              </div>
+            </div>
+
+            <!-- S4-1: items-based context menu. The same `<context-menu>`
+                 instance serves both right-click on a row (rowMenuItems)
+                 and right-click on empty listing space (background-
+                 MenuItems) — `onListingContextMenu` decides which to
+                 hand it based on event.target. ContextMenu handles
+                 keyboard nav, type-ahead, smart positioning. -->
             <context-menu
               :show="isContextMenuVisible"
               :pos="contextMenuPos"
+              :items="contextMenuItems"
               @hide="hideContextMenu"
-            >
-              <!-- Extract appears at the top so a zip-on-zip workflow
-               (open archive, extract elsewhere) doesn't require hunting
-               through the menu. Gated on single .zip selection. -->
-              <action
-                v-if="headerButtons.extract"
-                icon="package-open"
-                :label="t('buttons.unzip')"
-                show="extract"
-              />
-              <action
-                v-if="headerButtons.share"
-                icon="share"
-                :label="t('buttons.share')"
-                show="share"
-              />
-              <action
-                v-if="headerButtons.rename"
-                icon="pencil"
-                :label="t('buttons.rename')"
-                show="rename"
-              />
-              <action
-                v-if="headerButtons.copy"
-                id="copy-button"
-                icon="copy"
-                :label="t('buttons.copyFile')"
-                show="copy"
-              />
-              <action
-                v-if="headerButtons.move"
-                id="move-button"
-                icon="forward"
-                :label="t('buttons.moveFile')"
-                show="move"
-              />
-              <action
-                v-if="headerButtons.delete"
-                id="delete-button"
-                icon="trash-2"
-                :label="t('buttons.delete')"
-                show="delete"
-              />
-              <action
-                v-if="headerButtons.download"
-                icon="download"
-                :label="t('buttons.download')"
-                @action="download"
-                :counter="fileStore.selectedCount"
-              />
-              <action icon="info" :label="t('buttons.info')" show="info" />
-            </context-menu>
+            />
 
             <input
               style="display: none"
@@ -524,6 +651,19 @@
                 <Icon name="forward" :size="14" />
                 <span>{{ t("buttons.moveFile") }}</span>
               </button>
+              <!-- v1.3 S4-2: Bulk rename pill button. Only renders for
+                   multi-select (single-select uses inline rename in
+                   ListingItem). Gated on perm.rename. -->
+              <button
+                v-if="
+                  fileStore.selectedCount > 1 && authStore.user?.perm.rename
+                "
+                @click="bulkRename.open"
+                title="Bulk rename"
+              >
+                <Icon name="pencil" :size="14" />
+                <span>Rename</span>
+              </button>
               <button
                 v-if="headerButtons.delete"
                 @click="layoutStore.showHover('delete')"
@@ -571,6 +711,17 @@
       @done="closeMoveCopy"
     />
 
+    <!-- Bulk rename slide-over (v1.3 S4-2). Pattern / find-replace
+         modes with live preview + conflict highlighting; client-loops
+         api.move with continue-on-error semantics. Open-state lives in
+         the useBulkRename singleton so the command palette can trigger
+         it without prop-drilling through FileListing. -->
+    <BulkRenamePanel
+      :open="bulkRename.isOpen.value"
+      @cancel="bulkRename.close"
+      @done="bulkRename.close"
+    />
+
     <!-- Share slide-over (Stage 8). -->
     <SharePanel :open="shareOpen" @cancel="closeShare" />
 
@@ -580,6 +731,28 @@
       @cancel="closeExtract"
       @done="closeExtract"
     />
+
+    <!-- Drag-select lasso rectangle (v1.3 S4-3). Teleported to body so
+         fixed-position viewport coords aren't clipped by the listing's
+         overflow. Only present while a marquee is active in grid /
+         gallery. -->
+    <Teleport to="body">
+      <div
+        v-if="dragSelect.lasso.value"
+        class="drag-lasso"
+        :style="{
+          left: dragSelect.lasso.value.x + 'px',
+          top: dragSelect.lasso.value.y + 'px',
+          width: dragSelect.lasso.value.w + 'px',
+          height: dragSelect.lasso.value.h + 'px',
+        }"
+      ></div>
+    </Teleport>
+
+    <!-- Image hover-preview overlay (v1.3 S5-9). Single instance driven
+         by the useImageHoverPreview singleton; rows schedule/cancel it.
+         Self-teleports to body + size-caps the image. -->
+    <ImageHoverPreview />
   </div>
 </template>
 
@@ -589,6 +762,17 @@ import { useAuthStore } from "@/stores/auth";
 import { useClipboardStore } from "@/stores/clipboard";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
+import { useTagsStore } from "@/stores/tags";
+import { useFavorites } from "@/composables/useFavorites";
+import { useFolderViewMode } from "@/composables/useFolderViewMode";
+import { usePreferences } from "@/composables/usePreferences";
+import { useTagPicker } from "@/composables/useTagPicker";
+import { useBulkRename } from "@/composables/useBulkRename";
+import { useDragSelect } from "@/composables/useDragSelect";
+import { useTouchDevice } from "@/composables/useTouchDevice";
+import { usePullToRefresh } from "@/composables/usePullToRefresh";
+import { copy } from "@/utils/clipboard";
+import { applySecondarySort } from "@/utils/secondarySort";
 
 import { users, files as api } from "@/api";
 import { enableExec, unzipEnabled } from "@/utils/constants";
@@ -597,6 +781,9 @@ import * as upload from "@/utils/upload";
 import { throttle } from "lodash-es";
 import { Base64 } from "js-base64";
 import dayjs from "dayjs";
+// v1.3 S6-1: fixed-size list virtualization for huge folders.
+import { RecycleScroller } from "vue-virtual-scroller";
+import "vue-virtual-scroller/dist/vue-virtual-scroller.css";
 
 import HeaderBar from "@/components/header/HeaderBar.vue";
 import Breadcrumbs from "@/components/Breadcrumbs.vue";
@@ -604,17 +791,19 @@ import Action from "@/components/header/Action.vue";
 import Search from "@/components/Search.vue";
 import Item from "@/components/files/ListingItem.vue";
 import InfoPane from "@/components/files/InfoPane.vue";
+import ImageHoverPreview from "@/components/files/ImageHoverPreview.vue";
 import InlineNewItem from "@/components/files/InlineNewItem.vue";
 import ListingSkeleton from "@/components/files/ListingSkeleton.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import UndoToast from "@/components/UndoToast.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import MoveCopyPanel from "@/components/files/MoveCopyPanel.vue";
+import BulkRenamePanel from "@/components/files/BulkRenamePanel.vue";
 import ExtractPanel from "@/components/files/ExtractPanel.vue";
 import SharePanel from "@/components/files/SharePanel.vue";
 import { useToast } from "vue-toastification";
 import { usePendingDelete } from "@/composables/usePendingDelete";
-import ContextMenu from "@/components/ContextMenu.vue";
+import ContextMenu, { type MenuItem } from "@/components/ContextMenu.vue";
 import { useShortcuts } from "@/composables/useShortcuts";
 import { useDropTarget } from "@/composables/useDropTarget";
 import {
@@ -640,11 +829,39 @@ const isContextMenuVisible = ref<boolean>(false);
 const contextMenuPos = ref<{ x: number; y: number }>({ x: 0, y: 0 });
 
 const $showError = inject<IToastError>("$showError")!;
+const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
 
 const clipboardStore = useClipboardStore();
 const authStore = useAuthStore();
 const fileStore = useFileStore();
 const layoutStore = useLayoutStore();
+const tagsStore = useTagsStore();
+const prefs = usePreferences();
+// S4-1: shared open-state for the TagPickerSheet so the row context
+// menu can open it from outside InfoPane.
+const tagPicker = useTagPicker();
+// S4-2: shared open-state for the BulkRenamePanel so the row context
+// menu, the bulk-pill button, and the command palette all trigger
+// through the same flag.
+const bulkRename = useBulkRename();
+
+// ── Inline tag chip plumbing (v1.3 S2-5) ────────────────────────────
+// After each listing fetch, do ONE batched call to /api/tags/batch so
+// every row can render its chips without N+1 lookups. Triggered by a
+// watch on fileStore.req — fires on initial load AND every reload
+// (rename, paste, upload, etc.). Failure is silent: chips just don't
+// render. The store also pre-loads the user's full tag list so the
+// info-pane picker has its autocomplete ready.
+watch(
+  () => fileStore.req,
+  (req) => {
+    if (!req?.isDir || !Array.isArray(req.items)) return;
+    void tagsStore.ensureLoaded();
+    const paths = req.items.map((i) => i.url).filter(Boolean);
+    void tagsStore.loadForPaths(paths);
+  },
+  { immediate: true }
+);
 
 const { req } = storeToRefs(fileStore);
 
@@ -730,6 +947,35 @@ onBeforeRouteUpdate(() => {
 const { t } = useI18n();
 
 const listing = ref<HTMLElement | null>(null);
+const scrollSection = ref<HTMLElement | null>(null);
+
+// S7-2: touch-only camera-roll / photo-library upload. `isTouchDevice`
+// gates the header affordance; `photoInput` is the hidden <input> it
+// triggers (change → existing uploadInput pipeline).
+const isTouchDevice = useTouchDevice();
+const photoInput = ref<HTMLInputElement | null>(null);
+// v1.3 S6-1: RecycleScroller instance for the virtualized list view.
+// Held so we can scroll a previously-opened item back into view when the
+// user navigates back from a preview (the recycler's analog of the
+// non-virtual `revealPreviousItem` querySelector + scrollIntoView).
+const listScroller = ref<{ scrollToItem: (index: number) => void } | null>(
+  null
+);
+
+// ── S4-3 drag-select lasso (grid + gallery only) ───────────────────
+// Rubber-band selection bound to #listing's @mousedown. `enabled`
+// gates on viewMode (declared later — the closure only reads it at
+// mouse-down time, well after init). Writes straight to
+// fileStore.selected so the marquee live-updates the listing.
+const dragSelect = useDragSelect({
+  enabled: () => viewMode.value !== "list",
+  getScrollContainer: () => scrollSection.value,
+  getSelection: () => [...fileStore.selected],
+  setSelection: (indices) => {
+    fileStore.selected = indices;
+  },
+});
+onBeforeUnmount(() => dragSelect.cleanup());
 
 const nameSorted = computed(() =>
   fileStore.req ? fileStore.req.sorting.by === "name" : false
@@ -778,6 +1024,50 @@ const parentFolderUrl = computed<string | null>(() => {
   if (parent === here) return null;
   return parent;
 });
+
+/** Human-readable name of the parent folder, used as the tooltip on
+ *  the inline ↑ button. "/" → "root"; "/Documents/Letters/" → "Documents".
+ *  Decoded so `%20` shows up as space. */
+const parentFolderName = computed<string>(() => {
+  const parent = parentFolderUrl.value;
+  if (!parent) return "";
+  // Trim trailing slash + extract the last segment. URL-decode so
+  // multibyte / spaced names render correctly in the title attribute.
+  const trimmed = parent.endsWith("/") ? parent.slice(0, -1) : parent;
+  const segments = trimmed.split("/").filter(Boolean);
+  if (segments.length === 0) return "root";
+  try {
+    return decodeURIComponent(segments[segments.length - 1]);
+  } catch {
+    return segments[segments.length - 1];
+  }
+});
+
+/** Click handler for the inline ↑ button. Same destination as the
+ *  spring-load drag behavior so users get one mental model regardless
+ *  of which input modality they're using. */
+const goToParentFolder = () => {
+  if (parentFolderUrl.value) router.push({ path: parentFolderUrl.value });
+};
+
+// ── Current-folder favorites (v1.3 S3-2) ────────────────────────────
+// Star toggle in the section-title eyebrow. Pinning the current
+// folder adds it to the sidebar's Favorites list for one-click
+// return. Folders only — file pinning belongs in Recents.
+const favoritesComposable = useFavorites();
+/** The path the favorites composable persists. Uses the listing's
+ *  url field (the /files/...-prefixed form) since that's the same
+ *  string the ListingItem star uses for child folders. */
+const currentFolderPath = computed<string>(() => fileStore.req?.url ?? "");
+const currentFolderFavorited = computed<boolean>(() =>
+  currentFolderPath.value
+    ? favoritesComposable.isFavorited(currentFolderPath.value)
+    : false
+);
+const onCurrentFolderFavToggle = () => {
+  if (!currentFolderPath.value) return;
+  favoritesComposable.toggle(currentFolderPath.value);
+};
 
 const cancelSectionSpring = () => {
   if (sectionSpringTimer !== null) {
@@ -830,6 +1120,95 @@ const onSectionDrop = (event: DragEvent) => {
   sectionDropActive.value = false;
   if (!parentFolderUrl.value) return;
   void performParentDrop(event, parentFolderUrl.value);
+};
+
+// ── Drop-into-current-folder zone (v1.3 H11) ────────────────────────
+// Folder-heavy listings used to trap internal drops: every visible row
+// was a folder, so anywhere the user released became "move INTO that
+// child folder" — there was no tolerant "drop here = current dir"
+// target. This zone sits below the rows during an active internal
+// drag and provides one. The `performParentDrop` from `useDropTarget`
+// is target-agnostic (it just takes a destination URL), so we reuse it.
+const listingDropActive = ref<boolean>(false);
+let listingDragDepth = 0;
+
+/** URL the dropzone resolves to: the current folder. Mirrors the
+ *  `url` shape ListingItem rows use (ends with "/") so the conflict
+ *  prompt's `to` field matches what the user sees in the breadcrumb. */
+const currentFolderUrl = computed<string>(() => fileStore.req?.url ?? "");
+
+/** True when every dragged item's parent directory equals the current
+ *  folder — i.e. dragging from here to here. We hide the dropzone in
+ *  that case because the move is a no-op (the composable short-circuits
+ *  on identical from/to) and showing it would just confuse. */
+const draggedFromCurrentFolder = computed<boolean>(() => {
+  const here = currentFolderUrl.value;
+  const dragged = fileStore.draggedItems;
+  if (!here || dragged.length === 0) return false;
+  return dragged.every((it) => {
+    // Item url shape: "/files/Docs/foo.txt" → parent "/files/Docs/".
+    // Strip the trailing basename (with optional trailing slash for
+    // folder items) — that's the item's parent dir.
+    const parent = it.url.replace(/[^/]+\/?$/, "");
+    return parent === here;
+  });
+});
+
+/** Visibility gate: an internal drag is in flight AND the items
+ *  aren't already in this folder AND we have a current folder URL. */
+const currentFolderDropZoneVisible = computed<boolean>(
+  () =>
+    fileStore.draggedItems.length > 0 &&
+    !!currentFolderUrl.value &&
+    !draggedFromCurrentFolder.value
+);
+
+const onListingDropEnter = (event: DragEvent) => {
+  event.preventDefault();
+  listingDragDepth++;
+  if (listingDragDepth === 1) listingDropActive.value = true;
+};
+
+const onListingDropOver = (event: DragEvent) => {
+  event.preventDefault();
+  if (event.dataTransfer) {
+    // Mirror ListingItem's modifier handling so the cursor matches
+    // the action (move by default, copy with ctrl/cmd).
+    event.dataTransfer.dropEffect =
+      event.ctrlKey || event.metaKey ? "copy" : "move";
+  }
+};
+
+const onListingDropLeave = () => {
+  listingDragDepth = Math.max(0, listingDragDepth - 1);
+  if (listingDragDepth === 0) listingDropActive.value = false;
+};
+
+const onListingDrop = (event: DragEvent) => {
+  listingDragDepth = 0;
+  listingDropActive.value = false;
+  if (!currentFolderUrl.value) return;
+  void performParentDrop(event, currentFolderUrl.value);
+};
+
+// v1.3 H12: rows broadcast which zone the cursor is in so the bottom
+// dropzone visual always tells the truth about where a release will
+// land. When `active=true`, the cursor is inside a folder's into-zone
+// — the row owns the drop, bottom zone goes neutral. When `active=false`,
+// the cursor is on a row's alongside area (or any file row) — the
+// destination is the CURRENT folder, so the bottom zone lights up
+// to advertise that.
+const onRowIntoZone = (active: boolean) => {
+  listingDropActive.value = !active;
+};
+
+// v1.3 H12: alongside drop on any row — route to current folder via
+// the same `useDropTarget.performDrop` that powers the bottom zone +
+// parent-folder shortcut. No-op if we somehow have no current folder.
+const onItemDropAlongside = (event: DragEvent) => {
+  if (!currentFolderUrl.value) return;
+  listingDropActive.value = false;
+  void performParentDrop(event, currentFolderUrl.value);
 };
 
 // ── Rename the currently-viewed folder ─────────────────────────────────
@@ -925,8 +1304,8 @@ const folderMeta = computed(() => {
 const dirs = computed(() => items.value.dirs.slice(0, showLimit.value));
 
 const items = computed(() => {
-  const dirs: any[] = [];
-  const files: any[] = [];
+  const dirs: ResourceItem[] = [];
+  const files: ResourceItem[] = [];
 
   fileStore.req?.items.forEach((item) => {
     // Stage 8: items in the pending-delete window are visually removed from
@@ -940,16 +1319,81 @@ const items = computed(() => {
     }
   });
 
-  return { dirs, files };
+  // v1.3 S3-4: apply secondary sort as a tiebreaker within tied
+  // primary-key groups. dirs/files sorted independently so the
+  // existing dirs-first / files-first grouping isn't disturbed.
+  const primaryBy = (fileStore.req?.sorting.by ?? "name") as SortKey;
+  const sec = secondarySort.value;
+  return {
+    dirs: applySecondarySort(dirs, primaryBy, sec),
+    files: applySecondarySort(files, primaryBy, sec),
+  };
 });
 
-const files = computed((): Resource[] => {
+const files = computed((): ResourceItem[] => {
   let _showLimit = showLimit.value - items.value.dirs.length;
 
   if (_showLimit < 0) _showLimit = 0;
 
   return items.value.files.slice(0, _showLimit);
 });
+
+// ── List virtualization (v1.3 S6-1) ─────────────────────────────────
+// Only the LIST view virtualizes (uniform 40px rows). Grid + gallery
+// tiles wrap to variable heights, so they stay on the incremental
+// `showLimit` windowing above — list-first per the locked Stage 6 plan.
+const isListVirtual = computed<boolean>(() => viewMode.value === "list");
+
+// Flat row model the RecycleScroller consumes: every dir, an optional
+// folder/file divider sentinel, then every file. Crucially this is the
+// FULL list (no `showLimit` slice) — the recycler only mounts the
+// on-screen window, so a 10k-entry array costs almost nothing. Reuses
+// `items` (already secondary-sorted + pending-delete-filtered), so sort
+// and the delete-undo flow stay correct through virtualization.
+// Flat shape uses a nullable `item` (rather than a discriminated union)
+// so the template can narrow with a plain `v-else-if="row.item"` — Vue's
+// template type-checker narrows truthiness reliably but not always a
+// `kind` discriminant across v-else.
+interface ListRow {
+  /** Stable key for the recycler. */
+  id: string;
+  /** True for the single folder/file divider sentinel. */
+  divider: boolean;
+  /** The file/folder for a normal row; null on the divider. */
+  item: ResourceItem | null;
+}
+
+const listRows = computed<ListRow[]>(() => {
+  const { dirs, files } = items.value;
+  const rows: ListRow[] = [];
+  for (const d of dirs) {
+    rows.push({ id: "d:" + base64(d.name), divider: false, item: d });
+  }
+  if (dirs.length > 0 && files.length > 0) {
+    rows.push({ id: "__divider__", divider: true, item: null });
+  }
+  for (const f of files) {
+    rows.push({ id: "f:" + base64(f.name), divider: false, item: f });
+  }
+  return rows;
+});
+
+/** Virtualized analog of `revealPreviousItem`: when the user returns to
+ *  a folder with a previously-opened item selected, scroll the recycler
+ *  so that row is in view (the off-screen DOM node doesn't exist, so we
+ *  can't use scrollIntoView). */
+const revealInVirtualList = (): boolean => {
+  if (!fileStore.req || !fileStore.oldReq) return false;
+  const index = fileStore.selected[0];
+  if (index === undefined) return false;
+  nextTick(() => {
+    const rowIdx = listRows.value.findIndex(
+      (r) => r.item !== null && r.item.index === index
+    );
+    if (rowIdx >= 0) listScroller.value?.scrollToItem(rowIdx);
+  });
+  return true;
+};
 
 const nameIcon = computed(() => {
   if (nameSorted.value && !ascOrdered.value) {
@@ -1012,6 +1456,13 @@ watch(req, () => {
   showLimit.value = 50;
 
   nextTick(() => {
+    // S6-1: the list view virtualizes, so there's no window to fill —
+    // just scroll a previously-opened item back into view if any.
+    if (isListVirtual.value) {
+      revealInVirtualList();
+      return;
+    }
+
     // Ensures that the listing is displayed
     // How much every listing item affects the window height
     setItemWeight();
@@ -1028,13 +1479,18 @@ onMounted(() => {
   // Check the columns size for the first time.
   columnsResize();
 
-  // How much every listing item affects the window height
-  setItemWeight();
+  // S6-1: virtualized list skips the window-fill math entirely.
+  if (isListVirtual.value) {
+    revealInVirtualList();
+  } else {
+    // How much every listing item affects the window height
+    setItemWeight();
 
-  // Scroll to the item opened previously
-  if (!revealPreviousItem()) {
-    // Fill and fit the window with listing items
-    fillWindow(true);
+    // Scroll to the item opened previously
+    if (!revealPreviousItem()) {
+      // Fill and fit the window with listing items
+      fillWindow(true);
+    }
   }
 
   // Add the needed event listeners to the window and document.
@@ -1075,11 +1531,30 @@ const keyEvent = (event: KeyboardEvent) => {
     fileStore.selected = [];
   }
 
-  if (event.key === "Delete") {
-    if (!authStore.user?.perm.delete || fileStore.selectedCount == 0) return;
-
-    // Show delete prompt.
-    layoutStore.showHover("delete");
+  // v1.3 S4-5: Delete / Backspace remove the current selection.
+  //   • Backspace is the macOS Finder convention; aliased to Delete.
+  //   • bare Delete / Backspace  → ConfirmDialog (the default safe path)
+  //   • Shift + Delete/Backspace → skip the dialog, straight to the
+  //     optimistic delete + 10s undo toast (power-user escape hatch).
+  //   • Cmd/Ctrl + Delete        → same as bare Delete (confirm); this
+  //     branch sits above the modifier guard below so it still fires.
+  // Guarded against text-entry targets: Backspace is heavily used while
+  // typing (search box, inline rename, bulk-rename inputs), and without
+  // this check it would silently delete the selected files instead.
+  if (event.key === "Delete" || event.key === "Backspace") {
+    const t = event.target as HTMLElement | null;
+    const tg = t?.tagName?.toLowerCase();
+    if (tg === "input" || tg === "textarea" || t?.isContentEditable) {
+      return;
+    }
+    if (!authStore.user?.perm.delete || fileStore.selectedCount === 0) return;
+    event.preventDefault();
+    if (event.shiftKey) {
+      triggerImmediateDelete();
+    } else {
+      layoutStore.showHover("delete");
+    }
+    return;
   }
 
   if (event.key === "F2") {
@@ -1197,13 +1672,17 @@ const paste = async (event: Event) => {
     return;
   }
 
-  const preselect = removePrefix(route.path) + items[0].name;
+  // Re-select EVERY pasted item in the destination, not just items[0]
+  // (the previous single-string behavior dropped N-1 selections on a
+  // multi-item paste). items[].name is already decoded.
+  const destPathPrefix = removePrefix(route.path);
+  const preselectPaths = items.map((it) => destPathPrefix + it.name);
 
   let action = (overwrite?: boolean, rename?: boolean) => {
     api
       .copy(items, overwrite, rename)
       .then(() => {
-        fileStore.preselect = preselect;
+        fileStore.setPreselect(preselectPaths);
         fileStore.reload = true;
       })
       .catch($showError);
@@ -1215,7 +1694,7 @@ const paste = async (event: Event) => {
         .move(items, overwrite, rename)
         .then(() => {
           clipboardStore.resetClipboard();
-          fileStore.preselect = preselect;
+          fileStore.setPreselect(preselectPaths);
           fileStore.reload = true;
         })
         .catch($showError);
@@ -1226,10 +1705,15 @@ const paste = async (event: Event) => {
   const conflict = await upload.checkConflict(items, path);
 
   if (conflict.length > 0) {
+    // Paste path: source is the clipboard's origin folder, target is
+    // the current route. clipboardStore.path is the directory the cut
+    // / copied items came from.
     layoutStore.showHover({
       prompt: "resolve-conflict",
       props: {
         conflict: conflict,
+        from: clipboardStore.path,
+        to: path,
       },
       confirm: (event: Event, result: Array<ConflictingResource>) => {
         event.preventDefault();
@@ -1263,6 +1747,10 @@ const columnsResize = () => {
 };
 
 const scrollEvent = throttle(() => {
+  // S6-1: the virtualized list manages its own scroll/window — the
+  // global showLimit infinite-scroll only drives grid/gallery.
+  if (isListVirtual.value) return;
+
   const totalItems =
     (fileStore.req?.numDirs ?? 0) + (fileStore.req?.numFiles ?? 0);
 
@@ -1341,7 +1829,12 @@ const drop = async (event: DragEvent) => {
 
   const conflict = await upload.checkConflict(files, path);
 
-  const preselect = removePrefix(path) + (files[0].fullPath || files[0].name);
+  // Build a preselect list of every uploaded file's destination path.
+  // For folder-uploads, `fullPath` carries the relative path inside
+  // the dropped folder (already decoded from webkitRelativePath); for
+  // plain file drops, `name` is the bare filename (also decoded).
+  const buildPreselect = (sourceFiles: typeof files) =>
+    sourceFiles.map((f) => removePrefix(path) + (f.fullPath || f.name));
 
   if (conflict.length > 0) {
     layoutStore.showHover({
@@ -1349,6 +1842,7 @@ const drop = async (event: DragEvent) => {
       props: {
         conflict: conflict,
         isUploadAction: true,
+        to: path,
       },
       confirm: (event: Event, result: Array<ConflictingResource>) => {
         event.preventDefault();
@@ -1365,7 +1859,9 @@ const drop = async (event: DragEvent) => {
         }
         if (files.length > 0) {
           upload.handleFiles(files, path, true);
-          fileStore.preselect = preselect;
+          // Re-select against the post-conflict-resolution survivors
+          // so skipped files don't end up "selected but missing".
+          fileStore.setPreselect(buildPreselect(files));
         }
       },
     });
@@ -1374,7 +1870,7 @@ const drop = async (event: DragEvent) => {
   }
 
   upload.handleFiles(files, path);
-  fileStore.preselect = preselect;
+  fileStore.setPreselect(buildPreselect(files));
 };
 
 const uploadInput = async (event: Event) => {
@@ -1399,12 +1895,19 @@ const uploadInput = async (event: Event) => {
   const path = route.path.endsWith("/") ? route.path : route.path + "/";
   const conflict = await upload.checkConflict(uploadFiles, path);
 
+  // Mirror dropUpload's preselect behavior so users see their freshly-
+  // uploaded files highlighted in the destination — consistent UX
+  // regardless of which upload entry point they used.
+  const buildPreselect = (sourceFiles: typeof uploadFiles) =>
+    sourceFiles.map((f) => removePrefix(path) + (f.fullPath || f.name));
+
   if (conflict.length > 0) {
     layoutStore.showHover({
       prompt: "resolve-conflict",
       props: {
         conflict: conflict,
         isUploadAction: true,
+        to: path,
       },
       confirm: (event: Event, result: Array<ConflictingResource>) => {
         event.preventDefault();
@@ -1421,6 +1924,7 @@ const uploadInput = async (event: Event) => {
         }
         if (uploadFiles.length > 0) {
           upload.handleFiles(uploadFiles, path, true);
+          fileStore.setPreselect(buildPreselect(uploadFiles));
         }
       },
     });
@@ -1429,6 +1933,7 @@ const uploadInput = async (event: Event) => {
   }
 
   upload.handleFiles(uploadFiles, path);
+  fileStore.setPreselect(buildPreselect(uploadFiles));
 };
 
 const resetOpacity = () => {
@@ -1454,6 +1959,13 @@ const sort = async (by: string) => {
     if (modifiedIcon.value === "arrow-up") {
       asc = true;
     }
+  } else if (by === "extension") {
+    // v1.3 S3-5: default to ascending alphabetical extension order
+    // when first selected; subsequent clicks toggle direction. No
+    // column-header for extension yet (S3-4 popover will add proper
+    // direction toggling for it), so the cycle-button entry point
+    // just commits ascending the first time.
+    asc = true;
   }
 
   try {
@@ -1523,24 +2035,37 @@ const download = () => {
   });
 };
 
+// ── Per-folder view-mode memory (v1.3 S3-3) ─────────────────────────
+// localStorage map keyed by folder URL. Per-folder overrides win over
+// the user's global default. Locked decision: per-device, not
+// cross-device — view mode is fundamentally shaped by viewport.
+const folderViewMode = useFolderViewMode();
+
 const switchView = async () => {
   layoutStore.closeHovers();
 
-  const modes = {
+  const modes: Record<ViewModeType, ViewModeType> = {
     list: "mosaic",
     mosaic: "mosaic gallery",
     "mosaic gallery": "list",
   };
+  const current = viewMode.value;
+  const next = modes[current] ?? "list";
 
-  const data = {
-    id: authStore.user?.id,
-    viewMode: (modes[authStore.user?.viewMode ?? "list"] ||
-      "list") as ViewModeType,
-  };
-
-  users.update(data, ["viewMode"]).catch($showError);
-
-  authStore.updateUser(data);
+  // Per-folder save (S3-3) instead of touching the user record. The
+  // global default is now changed only via Profile settings (or
+  // explicit "set as default" UI, future). This keeps "set list view
+  // for /Photos" from secretly changing the default everywhere.
+  const folderPath = fileStore.req?.url;
+  if (folderPath) {
+    folderViewMode.setModeForPath(folderPath, next);
+  }
+  // Mutate the auth-store local copy so the viewMode computed
+  // re-evaluates immediately. Server isn't notified — the per-folder
+  // override is local-only.
+  if (authStore.user) {
+    authStore.user.viewMode = next;
+  }
 
   setItemWeight();
   fillWindow();
@@ -1548,22 +2073,33 @@ const switchView = async () => {
 
 const setView = async (mode: string) => {
   if (!authStore.user) return;
-  if (authStore.user.viewMode === mode) return;
+  if (viewMode.value === mode) return;
 
   layoutStore.closeHovers();
 
-  const data = {
-    id: authStore.user.id,
-    viewMode: mode as ViewModeType,
-  };
-
-  users.update(data, ["viewMode"]).catch($showError);
-  authStore.updateUser(data);
+  // Per-folder save instead of touching the user record (S3-3).
+  const folderPath = fileStore.req?.url;
+  if (folderPath) {
+    folderViewMode.setModeForPath(folderPath, mode as ViewModeType);
+  }
+  // Local mutation so the computed reflects the change. See
+  // switchView for why we don't go through the user-update API.
+  authStore.user.viewMode = mode as ViewModeType;
   setItemWeight();
   fillWindow();
 };
 
-const viewMode = computed(() => authStore.user?.viewMode ?? "list");
+/** Effective view mode for the current folder: per-folder override
+ *  if set, else the user's account-wide default. Reactive on both
+ *  the auth store (default change in Profile) and on folder
+ *  navigation (req.url changes). */
+const viewMode = computed<ViewModeType>(() => {
+  const folderPath = fileStore.req?.url;
+  if (folderPath) {
+    return folderViewMode.getModeForPath(folderPath);
+  }
+  return authStore.user?.viewMode ?? "list";
+});
 void switchView;
 
 const totalItems = computed(
@@ -1664,6 +2200,29 @@ const onDeleteCancel = () => {
   pendingConfirm.value = [];
 };
 
+// Build the {url, name}[] list for the current listing selection.
+// Shared by the confirm-dialog intercept watcher and the S4-5
+// skip-confirm shortcut path so both agree on what "the selection" is.
+const collectSelectedDeleteItems = (): { url: string; name: string }[] => {
+  const req = fileStore.req;
+  if (!req) return [];
+  return fileStore.selected
+    .map((idx) => req.items[idx])
+    .filter(Boolean)
+    .map((i) => ({ url: i.url, name: i.name }));
+};
+
+// v1.3 S4-5: Shift+Delete / Shift+Backspace bypass the ConfirmDialog
+// and go straight to the optimistic delete + 10s undo flow. The undo
+// toast IS the safety net here — confirmation is the cost a power user
+// opts out of. Still listing-scoped + selection-gated.
+const triggerImmediateDelete = () => {
+  if (!fileStore.isListing) return;
+  const items = collectSelectedDeleteItems();
+  if (items.length === 0) return;
+  startUndoDelete(items);
+};
+
 // ── Stage 8: Move / Copy / Share slide-overs ──────────────────────────
 // Same intercept pattern as delete: when one of these prompts fires from
 // the listing context, snapshot what we need, dismiss the prompt, and
@@ -1673,6 +2232,11 @@ const moveCopyOpen = ref(false);
 const moveCopyMode = ref<"move" | "copy">("move");
 const shareOpen = ref(false);
 const extractOpen = ref(false);
+// v1.3 S4-2: BulkRenamePanel state lives on `bulkRename` (composable
+// declared up top with the other singleton composables) so the
+// command palette can flip it without prop drilling. Local helpers
+// are just thin wrappers that match the SlideOver's cancel/done
+// emit shape.
 
 const closeMoveCopy = () => {
   moveCopyOpen.value = false;
@@ -1732,10 +2296,7 @@ watch(
 
     const req = fileStore.req;
     if (!req) return;
-    const items = fileStore.selected
-      .map((idx) => req.items[idx])
-      .filter(Boolean)
-      .map((i) => ({ url: i.url, name: i.name }));
+    const items = collectSelectedDeleteItems();
     if (items.length === 0) return;
 
     // Dismiss the prompt so the legacy modal doesn't render alongside ours
@@ -1779,9 +2340,114 @@ const hideSectionMore = () => {
   sectionMoreShow.value = false;
 };
 
+// Items array for the items-based ContextMenu (v1.3.0 S1-3). Built as
+// a computed so per-render permission checks (e.g., canRenameCurrentFolder
+// reactive on route) flow through naturally. `.filter(Boolean)` drops
+// items gated off by permissions — TS narrows the result back to the
+// non-null MenuItem[] via the explicit return type.
+const sectionMoreItems = computed<MenuItem[]>(() => {
+  const canCreate = !!authStore.user?.perm.create;
+  const items: (MenuItem | null)[] = [
+    canCreate
+      ? {
+          label: t("sidebar.newFolder"),
+          icon: "folder-plus",
+          action: () => layoutStore.showHover("newDir"),
+        }
+      : null,
+    canCreate
+      ? {
+          label: t("sidebar.newFile"),
+          icon: "file-plus",
+          action: () => layoutStore.showHover("newFile"),
+        }
+      : null,
+    // Rename the CURRENTLY VIEWED folder (not selected items).
+    // Hidden at the storage root since you can't rename "/".
+    canRenameCurrentFolder.value
+      ? {
+          label: "Rename folder",
+          icon: "pencil",
+          action: startFolderRename,
+        }
+      : null,
+    { label: "Refresh", icon: "rotate-ccw", action: refresh, kbd: "R" },
+    {
+      label: t("buttons.info"),
+      icon: "info",
+      action: () => layoutStore.showHover("info"),
+    },
+  ];
+  return items.filter((i): i is MenuItem => i !== null);
+});
+
 const refresh = () => {
   fileStore.reload = true;
 };
+
+// ── S7-1: pull-to-refresh (touch only) ──────────────────────────────
+// The scroll container differs by view (S6-1): list view scrolls inside
+// the RecycleScroller, grid/gallery scroll the <section>. Resolve the
+// active one reactively; the composable re-binds its listeners when this
+// swaps on a view-mode change.
+const ptrScrollEl = computed<HTMLElement | null>(() => {
+  if (isListVirtual.value) {
+    const inst = listScroller.value as unknown as { $el?: HTMLElement } | null;
+    return inst?.$el ?? null;
+  }
+  return scrollSection.value;
+});
+
+// Reload the folder and hold the spinner until the fetch settles. A
+// reload flips layoutStore.loading true→false (Files.vue fetchData), so
+// we resolve on that transition — with a small floor so the spinner
+// doesn't flash, and a safety timeout in case loading never toggles.
+const onPullRefresh = () =>
+  new Promise<void>((resolve) => {
+    const startedAt = Date.now();
+    let sawLoading = false;
+    const settle = () => {
+      stop();
+      clearTimeout(safety);
+      setTimeout(resolve, Math.max(0, 450 - (Date.now() - startedAt)));
+    };
+    const stop = watch(
+      () => layoutStore.loading,
+      (loading) => {
+        if (loading) sawLoading = true;
+        else if (sawLoading) settle();
+      }
+    );
+    // Safety net: resolve anyway if a reload never toggles `loading`.
+    const safety = setTimeout(() => {
+      stop();
+      resolve();
+    }, 5000);
+    refresh();
+  });
+
+const {
+  active: ptrActive,
+  offset: ptrOffset,
+  opacity: ptrOpacity,
+  rotation: ptrRotation,
+  refreshing: ptrRefreshing,
+  pulling: ptrPulling,
+} = usePullToRefresh({
+  el: ptrScrollEl,
+  threshold: 64,
+  onRefresh: onPullRefresh,
+  // Suppressed unless we're on a touch device with nothing else going on:
+  // not already loading, no open prompt, no active selection / drag /
+  // lasso (those own the gesture surface).
+  enabled: () =>
+    isTouchDevice.value &&
+    !layoutStore.loading &&
+    layoutStore.currentPrompt === null &&
+    fileStore.selectedCount === 0 &&
+    fileStore.draggedItems.length === 0 &&
+    dragSelect.lasso.value === null,
+});
 
 const sortLabel = computed(() => {
   const by = fileStore.req?.sorting.by ?? "name";
@@ -1790,14 +2456,139 @@ const sortLabel = computed(() => {
   // "Modified" instead of "Last modified" — the longer string overflowed
   // the header sort button at near-md widths once the chevron was removed.
   if (by === "modified") return "Modified";
+  // v1.3 S3-5: extension sort label. "Type" is shorter than
+  // "Extension" and reads naturally in the cycle button at narrow
+  // widths without needing min-width adjustment.
+  if (by === "extension") return "Type";
   return by;
 });
 
-const cycleSort = () => {
-  const order = ["name", "modified", "size"];
-  const currentBy = fileStore.req?.sorting.by ?? "name";
-  const next = order[(order.indexOf(currentBy) + 1) % order.length];
-  sort(next);
+// ── Multi-column sort popover (v1.3 S3-4) ───────────────────────────
+// Replaces the legacy cycle button (and the brief S3-5-extension
+// cycle extension). Click → ContextMenu with primary + secondary
+// criterion selection. Primary persists server-side via the existing
+// users.update flow; secondary persists client-side via
+// usePreferences and applies as an in-memory tiebreaker after fetch.
+
+const SORT_OPTIONS: Array<{ key: SortKey; label: string }> = [
+  { key: "name", label: t("files.name") },
+  { key: "size", label: t("files.size") },
+  { key: "modified", label: "Modified" },
+  { key: "extension", label: "Type" },
+];
+
+const sortMenuShow = ref(false);
+const sortMenuPos = ref<{ x: number; y: number }>({ x: 0, y: 0 });
+
+const openSortMenu = (event: MouseEvent) => {
+  const target = event.currentTarget as HTMLElement;
+  const rect = target.getBoundingClientRect();
+  // Anchor the popover to the bottom-left corner of the button so it
+  // reads as "belongs to the button." ContextMenu's positioner clamps
+  // to viewport, so right-edge overflow is auto-handled.
+  sortMenuPos.value = { x: rect.left, y: rect.bottom + 4 };
+  sortMenuShow.value = true;
+};
+
+/** Read the saved secondary criterion (if any). Stored in prefs as a
+ *  SortCriterion or null. */
+const secondarySort = computed<SortCriterion | null>(() =>
+  prefs.get<SortCriterion | null>("sort.secondary", null)
+);
+
+/** Apply the user's choice to the PRIMARY axis. Same flow as before:
+ *  PUT to user.sorting + trigger a reload. */
+const setPrimarySort = (by: SortKey, asc: boolean) => {
+  sortMenuShow.value = false;
+  void sortRaw(by, asc);
+};
+
+/** Update the SECONDARY axis. Stored in prefs; no server round-trip;
+ *  no reload — the items computed re-applies the tiebreaker reactively. */
+const setSecondarySort = (criterion: SortCriterion | null) => {
+  sortMenuShow.value = false;
+  void prefs.set("sort.secondary", criterion);
+};
+
+/** Build the ContextMenu items array. Layout:
+ *
+ *    PRIMARY                ← header
+ *    Name           [arrow] ← active criterion shows direction arrow
+ *    Size
+ *    Modified
+ *    Type
+ *    ────────────           ← separator
+ *    THEN BY                ← header
+ *    None
+ *    Name           [arrow]
+ *    Size
+ *    Modified
+ *    Type
+ *
+ * Clicking the active primary toggles its direction. Clicking an
+ * inactive primary sets it to ascending. Same for secondary. "None"
+ * clears the secondary. */
+const sortMenuItems = computed<MenuItem[]>(() => {
+  const primaryBy = (fileStore.req?.sorting.by ?? "name") as SortKey;
+  const primaryAsc = fileStore.req?.sorting.asc ?? false;
+  const sec = secondarySort.value;
+
+  const items: MenuItem[] = [
+    { type: "header", label: "Primary" },
+    ...SORT_OPTIONS.map((opt) => ({
+      label: opt.label,
+      icon:
+        primaryBy === opt.key
+          ? primaryAsc
+            ? "arrow-up"
+            : "arrow-down"
+          : undefined,
+      action: () => {
+        // Re-clicking the active primary toggles direction; clicking
+        // a different criterion picks it ascending by default.
+        const nextAsc = primaryBy === opt.key ? !primaryAsc : true;
+        setPrimarySort(opt.key, nextAsc);
+      },
+    })),
+    { type: "separator" },
+    { type: "header", label: "Then by" },
+    {
+      label: "None",
+      icon: sec === null ? "check" : undefined,
+      action: () => setSecondarySort(null),
+    },
+    ...SORT_OPTIONS.map((opt) => ({
+      // Disable picking the same key for primary + secondary — that
+      // would be a no-op tiebreaker (every primary tie also ties on
+      // the same key). Greyed out so the rule is visible.
+      label: opt.label,
+      disabled: opt.key === primaryBy,
+      icon:
+        sec?.by === opt.key ? (sec.asc ? "arrow-up" : "arrow-down") : undefined,
+      action: () => {
+        const nextAsc = sec?.by === opt.key ? !sec.asc : true;
+        setSecondarySort({ by: opt.key, asc: nextAsc });
+      },
+    })),
+  ];
+  return items;
+});
+
+/** Pure sort dispatcher — used by the popover. The legacy `sort()`
+ *  function still exists below (called by column-header clicks) and
+ *  reuses this codepath internally so the persistence story is
+ *  centralized. */
+const sortRaw = async (by: SortKey, asc: boolean) => {
+  try {
+    if (authStore.user?.id) {
+      await users.update({ id: authStore.user?.id, sorting: { by, asc } }, [
+        "sorting",
+      ]);
+    }
+  } catch (e: any) {
+    $showError(e);
+  }
+  fileStore.reload = true;
 };
 
 const uploadFunc = () => {
@@ -1812,6 +2603,8 @@ const uploadFunc = () => {
 };
 
 const setItemWeight = () => {
+  // S6-1: irrelevant under virtualization (no fixed window to weight).
+  if (isListVirtual.value) return;
   // Listing element is not displayed
   if (listing.value === null || fileStore.req === null) return;
 
@@ -1823,6 +2616,8 @@ const setItemWeight = () => {
 };
 
 const fillWindow = (fit = false) => {
+  // S6-1: the recycler renders the full list virtually — nothing to fill.
+  if (isListVirtual.value) return;
   if (fileStore.req === null) return;
 
   const totalItems = fileStore.req.numDirs + fileStore.req.numFiles;
@@ -1861,8 +2656,32 @@ const revealPreviousItem = () => {
   return true;
 };
 
-const showContextMenu = (event: MouseEvent) => {
+// ── S4-1 context menu dispatch ──────────────────────────────────────
+// Single entry point invoked by `#listing`'s @contextmenu. We decide
+// which menu (row vs background) based on whether the event target sits
+// inside an `.item` element. Both menus reuse the same `<context-menu>`
+// instance — we just hand it a different `:items` array.
+//
+// Row context: each ListingItem's own @contextmenu has already fired
+// FIRST (events bubble inside-out) and adopted/replaced the selection
+// per the locked spec (right-click on unselected = select that row;
+// right-click on already-selected = preserve multi). All we do here
+// is open the menu with the current selection-derived items.
+//
+// Background context: emit a different items array (New folder, etc.).
+const contextMenuMode = ref<"row" | "background">("row");
+
+const onListingContextMenu = (event: MouseEvent) => {
   event.preventDefault();
+  const target = event.target as HTMLElement | null;
+  // Treat `.item.header` (the column-header row) as background — it
+  // shares the `.item` class for layout grid reasons but isn't a
+  // selectable file row. Without this, right-clicking the header
+  // would put us in "row" mode with an empty selection and the menu
+  // would open with no items.
+  const itemEl = target?.closest?.(".item") as HTMLElement | null;
+  const insideRealItem = itemEl != null && !itemEl.classList.contains("header");
+  contextMenuMode.value = insideRealItem ? "row" : "background";
   isContextMenuVisible.value = true;
   contextMenuPos.value = {
     x: event.clientX + 8,
@@ -1872,6 +2691,267 @@ const showContextMenu = (event: MouseEvent) => {
 
 const hideContextMenu = () => {
   isContextMenuVisible.value = false;
+};
+
+// ── S4-1 row context menu items ─────────────────────────────────────
+// Computed `MenuItem[]` for right-clicks landing on a row. Reuses
+// `headerButtons` for the permission/selection-size/file-type gating
+// the bulk pill already does, then adds the S4-1 additions (Open,
+// Tag, Copy path). Items that don't pass their gate aren't emitted at
+// all — the ContextMenu primitive handles separators between groups
+// even when leading items disappear.
+//
+// `Open` is single-selection only (multi-open opens N tabs which we
+// don't want — would also race the route guard). `Rename` is single
+// too (bulk rename is S4-2). `Move` / `Copy` / `Delete` / `Download`
+// work on the full selection. `Extract` is single .zip only (gated
+// inside headerButtons.extract). `Share` is single-only too.
+const rowMenuItems = computed<MenuItem[]>(() => {
+  const sel = fileStore.selectedCount;
+  if (sel === 0) return []; // shouldn't open the menu with no selection
+  const items: MenuItem[] = [];
+  const hb = headerButtons.value;
+  const singleItem =
+    sel === 1 ? (fileStore.req?.items[fileStore.selected[0]] ?? null) : null;
+
+  // ── Open / Tag / Copy path (single-selection actions) ────────────
+  if (singleItem) {
+    items.push({
+      label: singleItem.isDir ? "Open folder" : "Open",
+      icon: "external-link",
+      action: () => {
+        hideContextMenu();
+        if (singleItem) void router.push({ path: singleItem.url });
+      },
+    });
+  }
+  if (singleItem) {
+    items.push({
+      label: "Tag…",
+      icon: "tag",
+      action: () => {
+        hideContextMenu();
+        tagPicker.open();
+      },
+    });
+  }
+
+  // ── Share / Extract (single-only, gated by perms + file type) ────
+  if (hb.share) {
+    items.push({
+      label: t("buttons.share"),
+      icon: "share",
+      action: () => {
+        hideContextMenu();
+        layoutStore.showHover("share");
+      },
+    });
+  }
+  if (hb.extract) {
+    items.push({
+      label: t("buttons.unzip"),
+      icon: "package-open",
+      action: () => {
+        hideContextMenu();
+        layoutStore.showHover("extract");
+      },
+    });
+  }
+
+  // ── Rename / Move / Copy / Copy path / Download (varies) ─────────
+  if (items.length > 0) items.push({ type: "separator" });
+  // Single-selection rename → existing inline rename flow.
+  // Multi-selection rename → S4-2 BulkRenamePanel (different code path,
+  // entirely different UX). Permission gate is the same (perm.rename).
+  if (hb.rename) {
+    items.push({
+      label: t("buttons.rename"),
+      icon: "pencil",
+      kbd: "F2",
+      action: () => {
+        hideContextMenu();
+        layoutStore.showHover("rename");
+      },
+    });
+  } else if (authStore.user?.perm.rename && sel > 1) {
+    items.push({
+      label: `Bulk rename ${sel} items…`,
+      icon: "pencil",
+      action: () => {
+        hideContextMenu();
+        bulkRename.open();
+      },
+    });
+  }
+  if (hb.move) {
+    items.push({
+      label: sel === 1 ? t("buttons.moveFile") : `Move ${sel} items…`,
+      icon: "forward",
+      action: () => {
+        hideContextMenu();
+        layoutStore.showHover("move");
+      },
+    });
+  }
+  if (hb.copy) {
+    items.push({
+      label: sel === 1 ? t("buttons.copyFile") : `Copy ${sel} items…`,
+      icon: "copy",
+      action: () => {
+        hideContextMenu();
+        layoutStore.showHover("copy");
+      },
+    });
+  }
+  if (singleItem) {
+    items.push({
+      label: "Copy path",
+      icon: "link",
+      action: () => {
+        hideContextMenu();
+        void copyItemPath(singleItem);
+      },
+    });
+  }
+  if (hb.download) {
+    items.push({
+      label:
+        sel === 1
+          ? t("buttons.download")
+          : `${t("buttons.download")} ${sel} items`,
+      icon: "download",
+      action: () => {
+        hideContextMenu();
+        download();
+      },
+    });
+  }
+
+  // ── Delete (destructive — visual separation + red tint) ──────────
+  if (hb.delete) {
+    items.push({ type: "separator" });
+    items.push({
+      label: sel === 1 ? t("buttons.delete") : `Delete ${sel} items`,
+      icon: "trash-2",
+      destructive: true,
+      kbd: "⌫",
+      action: () => {
+        hideContextMenu();
+        layoutStore.showHover("delete");
+      },
+    });
+  }
+
+  return items;
+});
+
+// ── S4-1 background context menu items ──────────────────────────────
+// Shown when right-click lands on empty listing space (gaps between
+// rows, the area below the last row, the area beneath the
+// folder-file divider). Distinct intent from the row menu — these are
+// "act on the current folder" not "act on a selection."
+const backgroundMenuItems = computed<MenuItem[]>(() => {
+  const items: MenuItem[] = [];
+  const canCreate = !!authStore.user?.perm.create;
+
+  if (canCreate) {
+    items.push({
+      label: "New folder",
+      icon: "folder-plus",
+      kbd: "N",
+      action: () => {
+        hideContextMenu();
+        layoutStore.showHover("newDir");
+      },
+    });
+    items.push({
+      label: "New file",
+      icon: "file-plus",
+      action: () => {
+        hideContextMenu();
+        layoutStore.showHover("newFile");
+      },
+    });
+    items.push({
+      label: t("buttons.upload"),
+      icon: "upload",
+      kbd: "U",
+      action: () => {
+        hideContextMenu();
+        uploadFunc();
+      },
+    });
+  }
+
+  // Paste only when the clipboard store has cut/copy contents. Items
+  // were placed by the legacy "X" (cut) / "C" (copy) keyboard handlers
+  // — Paste is the corresponding "V" intake. The `paste(event)` helper
+  // already handles conflict resolution + clipboard reset for cut.
+  if (clipboardStore.items.length > 0) {
+    items.push({
+      label: "Paste",
+      icon: "clipboard",
+      kbd: "⌘V",
+      action: () => {
+        hideContextMenu();
+        // paste expects an event so we don't accidentally trigger from
+        // an input; synthesize a non-input target.
+        void paste(new Event("paste"));
+      },
+    });
+  }
+
+  if (items.length > 0) items.push({ type: "separator" });
+
+  // "Sort by…" hops to the existing sort popover. The submenu support
+  // ContextMenu doesn't currently have means we re-anchor the sort
+  // menu where the context menu opened (close-enough), so the user
+  // sees a continuous popover flow rather than a sudden teleport.
+  items.push({
+    label: "Sort by…",
+    icon: "arrow-down-narrow-wide",
+    action: () => {
+      const { x, y } = contextMenuPos.value;
+      hideContextMenu();
+      sortMenuPos.value = { x, y };
+      sortMenuShow.value = true;
+    },
+  });
+
+  items.push({
+    label: "Refresh",
+    icon: "rotate-ccw",
+    kbd: "R",
+    action: () => {
+      hideContextMenu();
+      fileStore.reload = true;
+    },
+  });
+
+  return items;
+});
+
+/** Active items array passed to the shared `<context-menu>` instance.
+ *  Switches on `contextMenuMode`, set by `onListingContextMenu`. */
+const contextMenuItems = computed<MenuItem[]>(() =>
+  contextMenuMode.value === "row"
+    ? rowMenuItems.value
+    : backgroundMenuItems.value
+);
+
+/** Copy the given item's path to the system clipboard. Mirrors the
+ *  InfoPane copy-path behavior (toast on success, silent on total
+ *  failure) but uses the shared `copy({ text })` util from
+ *  `@/utils/clipboard` which already handles secure-context fallback. */
+const copyItemPath = async (item: ResourceItem) => {
+  const path = item.path || item.url;
+  if (!path) return;
+  try {
+    await copy({ text: path });
+    $showSuccess(`Path copied: ${path}`);
+  } catch {
+    /* swallow — copy() already tried both APIs; nothing more to do */
+  }
 };
 
 const handleEmptyAreaClick = (e: MouseEvent) => {
@@ -1886,6 +2966,115 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
 <style scoped>
 #listing {
   min-height: calc(100vh - 8rem);
+}
+
+/* ── List virtualization layout (v1.3 S6-1) ──────────────────────────
+   In list view the rows live inside a RecycleScroller that owns the
+   scroll. The surrounding <section> must NOT also scroll (that would
+   double-scroll), and #listing becomes a flex column so the recycler can
+   flex to fill the height beneath the now-pinned column header. All of
+   this is gated behind the virtual-mode flag classes, so grid + gallery
+   keep their native section scroll + showLimit windowing untouched. */
+.scroll-section--virtual {
+  overflow: hidden;
+}
+
+#listing.listing--virtual {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  /* Override the tall default min-height (id-specificity) so the column
+     can actually shrink to its flex track and hand the recycler a
+     bounded height to virtualize against. */
+  min-height: 0;
+}
+
+.listing-virtual {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  /* Keep row width steady as the scrollbar appears; on macOS overlay
+     scrollbars this reserves 0px so the header + rows stay pixel-aligned. */
+  scrollbar-gutter: stable;
+}
+
+/* The recycler wraps each row in an absolutely-positioned item-view (its
+   own BFC). Drop the row's 2px margins there and let the fixed 44px
+   item-size supply the rhythm: a 40px row sits atop a 4px gap — visually
+   identical to the non-virtual list, but deterministic regardless of
+   margin-collapse quirks. */
+#listing.list :deep(.vue-recycle-scroller__item-view > .item) {
+  margin: 0;
+}
+
+/* ── Pull-to-refresh (v1.3 S7-1) ─────────────────────────────────────
+   The <section> hosts the indicator; it's only ever shown mid-gesture,
+   when scrollTop is pinned at 0, so absolute top:0 sits at the visible
+   top. Tracks the finger 1:1 while pulling (no transition); animates the
+   snap-back / hold once released. */
+.ptr-host {
+  position: relative;
+}
+
+.ptr-indicator {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 30;
+  pointer-events: none;
+  transition:
+    transform 0.22s ease,
+    opacity 0.22s ease;
+}
+.ptr-indicator--pulling {
+  transition: none;
+}
+
+.ptr-indicator__pill {
+  margin-top: 8px;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-full, 9999px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface, #fff);
+  color: var(--color-accent, #5e6ad2);
+  border: 1px solid var(--color-line, #ececec);
+  box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+}
+
+.ptr-indicator__spin--active {
+  animation: ptr-spin 0.8s linear infinite;
+}
+
+@keyframes ptr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ptr-indicator {
+    transition: none;
+  }
+  .ptr-indicator__spin--active {
+    animation: none;
+  }
+}
+
+/* ── Drag-select lasso (v1.3 S4-3) ────────────────────────────────────
+   Teleported to <body>, so the rule is :global — scoped hashing would
+   never match a body-level node. Fixed-position rectangle with an
+   accent fill + ring. pointer-events:none so it never intercepts the
+   mousemove/up that drive the marquee. */
+:global(.drag-lasso) {
+  position: fixed;
+  z-index: 900;
+  pointer-events: none;
+  border: 1px solid var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(94, 106, 210, 0.12));
+  border-radius: 2px;
 }
 
 /* ── Mobile selection toolbar (#file-selection) ───────────────────────
@@ -1987,6 +3176,141 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
 .section-title--drop {
   background: var(--color-accent-soft, rgba(94, 106, 210, 0.08));
   box-shadow: inset 0 0 0 2px var(--color-accent, #5e6ad2);
+}
+
+/* ── Current-folder drop zone (v1.3 H11) ──────────────────────────────
+   Appears beneath the rows during an active internal drag whose source
+   isn't this folder. Gives the user a generous, unmissable safe area
+   to drop INTO the current directory — especially valuable in
+   folder-heavy listings where every row above resolves to a SUBfolder.
+
+   • Default state: subtle dashed outline, muted text — visible but
+     quiet so it reads as a guide, not a CTA.
+   • Hover (--active): accent-tinted fill + solid ring + bold copy.
+   • min-height is sized so it dominates the viewport's lower half even
+     on short listings; users don't have to aim precisely. */
+.current-folder-dropzone {
+  margin: 12px 12px 24px;
+  min-height: 220px;
+  border-radius: 12px;
+  border: 1.5px dashed var(--color-line-strong, #d4d4d8);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-ink-3, #a1a1aa);
+  font-size: 13px;
+  text-align: center;
+  padding: 16px;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease,
+    box-shadow 120ms ease;
+  /* Defensive: ensure dragenter/leave fire only on this wrapper, not
+     on its decorative children — prevents flicker as the cursor moves
+     between the icon and the label. */
+}
+.current-folder-dropzone__inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+.current-folder-dropzone__inner strong {
+  color: var(--color-ink-2, #52525b);
+  font-weight: 600;
+}
+.current-folder-dropzone--active {
+  background: var(--color-accent-soft, rgba(94, 106, 210, 0.08));
+  border-color: var(--color-accent, #5e6ad2);
+  border-style: solid;
+  color: var(--color-accent, #5e6ad2);
+  box-shadow: inset 0 0 0 1px var(--color-accent, #5e6ad2);
+}
+.current-folder-dropzone--active .current-folder-dropzone__inner strong {
+  color: var(--color-accent, #5e6ad2);
+}
+html.dark .current-folder-dropzone {
+  border-color: var(--color-line-strong, #3f3f46);
+}
+
+/* Parent-folder ↑ button (H5). Inline with the FOLDER eyebrow label so
+   the visual weight matches the eyebrow's quiet caps treatment — small,
+   muted by default, accent-tinted on hover. Same destination as the
+   F2 spring-load on this section title; this is the click affordance
+   for users who don't drag-hover. */
+.parent-up-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-ink-3, #a1a1aa);
+  cursor: pointer;
+  transition:
+    background-color 0.1s ease,
+    color 0.1s ease;
+}
+
+.parent-up-btn:hover {
+  background: var(--color-hover, rgba(24, 24, 27, 0.045));
+  color: var(--color-accent, #5e6ad2);
+}
+
+.parent-up-btn:focus-visible {
+  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline-offset: 1px;
+  color: var(--color-accent, #5e6ad2);
+}
+
+/* Current-folder favorites star (v1.3 S3-2). Sits next to the
+   parent-up button; matches its visual weight. Amber tint when
+   active so pinned folders read distinctly. */
+.current-fav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-ink-3, #a1a1aa);
+  cursor: pointer;
+  transition:
+    background-color 0.1s ease,
+    color 0.1s ease;
+}
+
+.current-fav-btn:hover {
+  background: var(--color-hover, rgba(24, 24, 27, 0.045));
+  color: var(--tag-color-amber-fg, #b45309);
+}
+
+.current-fav-btn:focus-visible {
+  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline-offset: 1px;
+}
+
+.current-fav-btn--active {
+  color: var(--tag-color-amber-fg, #b45309);
+}
+
+.current-fav-btn--active:hover {
+  background: var(--tag-color-amber-bg, rgba(217, 119, 6, 0.12));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .parent-up-btn,
+  .current-fav-btn {
+    transition: none;
+  }
 }
 
 /* Primary CTA shown inside the empty-folder state. Same chrome as the

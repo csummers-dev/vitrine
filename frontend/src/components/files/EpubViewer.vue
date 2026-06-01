@@ -67,9 +67,46 @@ const emit = defineEmits<{
    *  swallows keydowns, blocking the global preview nav). */
   (e: "navigatePrev"): void;
   (e: "navigateNext"): void;
+  /** Book table-of-contents, flattened with depth (v1.3 S5-5). Emitted
+   *  once the navigation document loads so the info-rail can render a
+   *  clickable chapter list. */
+  (e: "toc", entries: EpubTocEntry[]): void;
+  /** Current chapter href on each relocate, for active-row highlight. */
+  (e: "chapter", href: string): void;
 }>();
 
+/** One flattened TOC row. `depth` drives indentation (subchapters). */
+export interface EpubTocEntry {
+  label: string;
+  href: string;
+  depth: number;
+}
+
 const rendition = ref<Rendition | null>(null);
+
+/** Flatten epubjs's nested toc (items + subitems) into a depth-tagged
+ *  list the info-rail can render without recursion. */
+const flattenToc = (
+  items: { label?: string; href?: string; subitems?: unknown[] }[],
+  depth = 0,
+  out: EpubTocEntry[] = []
+): EpubTocEntry[] => {
+  for (const it of items) {
+    if (it.href) {
+      out.push({ label: (it.label || "").trim(), href: it.href, depth });
+    }
+    if (Array.isArray(it.subitems) && it.subitems.length) {
+      flattenToc(it.subitems as typeof items, depth + 1, out);
+    }
+  }
+  return out;
+};
+
+/** Jump to a TOC entry's href. Exposed for the info-rail click handler. */
+const goTo = (href: string) => {
+  rendition.value?.display(href);
+};
+defineExpose({ goTo });
 
 const isDarkNow = () => document.documentElement.classList.contains("dark");
 
@@ -169,6 +206,24 @@ const attachIframeKey = (view: { iframe?: HTMLIFrameElement } | null) => {
 const captureRendition = (r: Rendition) => {
   rendition.value = r;
   applyTheme();
+
+  // S5-5: surface the book's TOC to the parent once the navigation
+  // document resolves, and report the current chapter on each relocate
+  // so the info-rail can highlight the active row.
+  r.book.loaded.navigation
+    .then((nav: { toc?: unknown[] }) => {
+      emit(
+        "toc",
+        flattenToc((nav.toc as Parameters<typeof flattenToc>[0]) ?? [])
+      );
+    })
+    .catch(() => {
+      /* no navigation doc — leave the TOC empty */
+    });
+  r.on("relocated", (loc: { start?: { href?: string } }) => {
+    const href = loc?.start?.href;
+    if (href) emit("chapter", href);
+  });
   // Re-apply theme each time a new chapter renders — `override` rules
   // need to be present BEFORE the iframe paints, but a brand-new view
   // can be created when the user turns pages. Also re-attach our

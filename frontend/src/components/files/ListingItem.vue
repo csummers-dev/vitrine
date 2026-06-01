@@ -5,7 +5,8 @@
     role="button"
     tabindex="0"
     :draggable="isDraggable"
-    @dragstart="dragStart"
+    @dragstart="dragStart($event)"
+    @dragend="dragEnd"
     @dragenter="onDragEnter"
     @dragover="dragOver"
     @dragleave="onDragLeave"
@@ -13,6 +14,7 @@
     @click="itemClick"
     @mousedown="handleMouseDown"
     @mouseup="handleMouseUp"
+    @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
     @touchstart="handleTouchStart"
     @touchend="handleTouchEnd"
@@ -20,6 +22,7 @@
     @touchmove="handleTouchMove"
     :data-dir="isDir"
     :data-type="type"
+    :data-index="index"
     :aria-label="name"
     :aria-selected="isSelected"
     :data-ext="getExtension(name).toLowerCase()"
@@ -41,11 +44,7 @@
     <!-- Name cell: icon squircle + name (inline) -->
     <div class="item__name">
       <div class="item__icon" :class="iconColorClass">
-        <img
-          v-if="!readOnly && type === 'image' && isThumbsEnabled"
-          v-lazy="thumbnailUrl"
-          class="item__thumb"
-        />
+        <img v-if="showThumbnail" v-lazy="thumbnailUrl" class="item__thumb" />
         <!-- Inner wrapper: display:contents in list/grid (layout-transparent),
              becomes a visible squircle in gallery for non-folder/non-image files -->
         <div v-else class="item__icon-inner">
@@ -94,6 +93,7 @@
           autocomplete="off"
           spellcheck="false"
           @click.stop
+          @mousedown="onRenameMouseDown"
           @keydown.enter.prevent.stop="submitRename"
           @keydown.esc.prevent.stop="cancelRename"
           @blur="onRenameBlur"
@@ -102,6 +102,30 @@
         <div class="item__name-compact-meta">
           <time :datetime="modified">{{ humanTime() }}</time>
           <span v-if="!isDir"> · {{ humanSize() }}</span>
+        </div>
+        <!-- Inline tag chips (v1.3 S2-5). Capped at 2 visible + a "+N"
+             overflow chip per locked decision. Tags come from the
+             pre-batched listing fetch in FileListing.vue so this is a
+             pure prop read — no per-row API call. Hidden when the user
+             has opted out via the "Show tags on rows" Profile toggle. -->
+        <div
+          v-if="inlineTags.length > 0 && showTagsOnRows"
+          class="item__tags"
+          aria-label="Tags"
+        >
+          <TagChip
+            v-for="t in visibleTags"
+            :key="t.id"
+            :tag="t"
+            size="sm"
+            :focusable="false"
+          />
+          <span
+            v-if="overflowTagCount > 0"
+            class="item__tags-overflow"
+            :title="overflowTagNames"
+            >+{{ overflowTagCount }}</span
+          >
         </div>
       </div>
     </div>
@@ -123,6 +147,25 @@
 
     <!-- Actions menu trigger -->
     <div class="item__actions">
+      <!-- Favorite star (v1.3 S3-2). Folders only. Hover-visible
+           when not favorited; permanently visible (filled) when
+           favorited so the user can find their pins at a glance. -->
+      <button
+        v-if="isDir"
+        class="item__fav-btn"
+        :class="{ 'item__fav-btn--active': isFavorited }"
+        :title="isFavorited ? 'Remove from Favorites' : 'Add to Favorites'"
+        :aria-label="isFavorited ? 'Remove from Favorites' : 'Add to Favorites'"
+        :aria-pressed="isFavorited"
+        @click.stop="onFavoriteToggle"
+      >
+        <Icon
+          :name="isFavorited ? 'star' : 'star'"
+          :size="13"
+          :stroke-width="isFavorited ? 0 : 1.8"
+          :fill="isFavorited ? 'currentColor' : 'none'"
+        />
+      </button>
       <button
         class="item__actions-btn"
         @click.stop="onActionsClick"
@@ -137,19 +180,25 @@
 
 <script setup lang="ts">
 import Icon from "@/components/Icon.vue";
+import TagChip from "@/components/TagChip.vue";
 import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
+import { useTagsStore } from "@/stores/tags";
+import { usePreferences } from "@/composables/usePreferences";
+import { useFavorites } from "@/composables/useFavorites";
+import { useImageHoverPreview } from "@/composables/useImageHoverPreview";
 
-import { enableThumbs } from "@/utils/constants";
+import { enableThumbs, enableVideoThumbs } from "@/utils/constants";
 import { filesize } from "@/utils";
 import { fileIcon, fileIconColor } from "@/utils/fileIcon";
+import { setDragGhost } from "@/utils/dragGhost";
 import dayjs from "dayjs";
 import { files as api } from "@/api";
 import { removePrefix } from "@/api/utils";
 import urlUtil from "@/utils/url";
 import * as upload from "@/utils/upload";
-import { computed, inject, nextTick, ref, watch } from "vue";
+import { computed, inject, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
 const touches = ref<number>(0);
@@ -175,9 +224,69 @@ const props = defineProps<{
   path?: string;
 }>();
 
+// v1.3 H12: row drag-drop notifications so FileListing can mirror the
+// active-target state into its bottom "drop into current folder" zone.
+//   • rowIntoZone(true)  — cursor entered this folder's INTO-zone
+//                          (icon/name area, list view) or its icon
+//                          (mosaic/gallery). FileListing hides the
+//                          bottom zone's active highlight.
+//   • rowIntoZone(false) — cursor is on this row but OUTSIDE the
+//                          into-zone (the "alongside" area). FileListing
+//                          lights up the bottom zone since that's
+//                          truthfully where a drop will land.
+//   • dropAlongside(e)   — drop happened in the alongside area; ask
+//                          FileListing to route it to current folder.
+const emit = defineEmits<{
+  rowIntoZone: [active: boolean];
+  dropAlongside: [event: DragEvent];
+}>();
+
 const authStore = useAuthStore();
 const fileStore = useFileStore();
 const layoutStore = useLayoutStore();
+const tagsStore = useTagsStore();
+const prefs = usePreferences();
+const favorites = useFavorites();
+
+// ── Favorites star (v1.3 S3-2) ──────────────────────────────────────
+// Folder-only affordance: pin frequently-visited folders to the
+// sidebar for one-click navigation. The button only renders when
+// `isDir` is true (template guard). Star tracks favorited-ness; click
+// toggles. Optimistic via usePreferences — sidebar list updates
+// immediately, server PUT debounced.
+const isFavorited = computed<boolean>(() =>
+  props.isDir ? favorites.isFavorited(props.url) : false
+);
+const onFavoriteToggle = () => {
+  if (!props.isDir) return;
+  favorites.toggle(props.url);
+};
+
+// ── Inline tag chips (v1.3 S2-5) ────────────────────────────────────
+// Tags come from the pre-batched listing fetch (FileListing fires a
+// single tagsApi.batchForFiles call after each directory load). This
+// computed is a pure store read — no per-row HTTP. Cap-2 + overflow
+// per the locked Stage 2 decision; can be hidden entirely via the
+// "Show tags on file rows" Profile toggle.
+const MAX_VISIBLE_TAGS = 2;
+const showTagsOnRows = computed<boolean>(() =>
+  prefs.get<boolean>("tags.showOnRows", true)
+);
+const inlineTags = computed<Tag[]>(() => tagsStore.forPath(props.url));
+const visibleTags = computed<Tag[]>(() =>
+  inlineTags.value.slice(0, MAX_VISIBLE_TAGS)
+);
+const overflowTagCount = computed<number>(() =>
+  Math.max(0, inlineTags.value.length - MAX_VISIBLE_TAGS)
+);
+// Tooltip lists the tags hidden in the "+N" chip so users can see
+// what's there without opening the picker.
+const overflowTagNames = computed<string>(() =>
+  inlineTags.value
+    .slice(MAX_VISIBLE_TAGS)
+    .map((t) => t.name)
+    .join(", ")
+);
 
 const singleClick = computed(
   () => !props.readOnly && authStore.user?.singleClick
@@ -201,6 +310,70 @@ const canDrop = computed(() => {
   return true;
 });
 
+// v1.3 H12: even non-droppable rows (files, or folders that are the
+// drag source) participate in drag-drop as alongside-forwarders. The
+// row geometry still lets the user release "alongside" to mean "drop
+// into the current folder" — so the whole listing surface routes
+// drops correctly without dead zones. Only readOnly rows opt out
+// entirely.
+const canForwardDrop = computed(() => !props.readOnly);
+
+// v1.3 H12 geometry helper. Computes whether the cursor is currently
+// over this row's "drop INTO this folder" zone, which is tighter than
+// the full row:
+//   • List view  → bounding rect of `.item__name` (icon + name stack)
+//                  expanded by 12px horizontally and 8px vertically
+//                  for forgiving targeting.
+//   • Mosaic     → bounding rect of `.item__icon` only (the central
+//   /  Gallery     squircle / thumbnail dominates the tile so the
+//                  surrounding padding feels naturally "alongside").
+// Returning false for non-folder rows means file rows always treat
+// hovers as alongside, which is correct: files aren't drop targets.
+const isInIntoZone = (event: DragEvent, rowEl: HTMLElement): boolean => {
+  if (!props.isDir) return false;
+  const listingEl = rowEl.closest("#listing");
+  const isMosaic = listingEl?.classList.contains("mosaic") ?? false;
+  const selector = isMosaic ? ".item__icon" : ".item__name";
+  const target = rowEl.querySelector(selector) as HTMLElement | null;
+  if (!target) return false;
+  const rect = target.getBoundingClientRect();
+  const padX = isMosaic ? 0 : 12;
+  const padY = isMosaic ? 0 : 8;
+  return (
+    event.clientX >= rect.left - padX &&
+    event.clientX <= rect.right + padX &&
+    event.clientY >= rect.top - padY &&
+    event.clientY <= rect.bottom + padY
+  );
+};
+
+// Track in-zone state with a plain let — nothing in the template
+// observes it, so reactivity overhead is wasted. State machine: enter
+// the into-zone → highlight row + start spring-load + emit(true);
+// leave the into-zone → dim row + cancel spring + emit(false). All
+// transitions go through enterIntoZone/leaveIntoZone so we never
+// double-fire emits or leak a spring-load timer.
+let inIntoZone = false;
+
+const enterIntoZone = (rowEl: HTMLElement) => {
+  if (inIntoZone) return;
+  inIntoZone = true;
+  rowEl.style.opacity = "1";
+  startSpringLoad();
+  emit("rowIntoZone", true);
+};
+
+const leaveIntoZone = (rowEl: HTMLElement) => {
+  if (!inIntoZone) return;
+  inIntoZone = false;
+  // Restore the global drag-active fade. The document-level dragEnter
+  // sets all .item to 0.5 opacity; we just undo our override so it
+  // re-asserts naturally if a drag is still in flight.
+  rowEl.style.opacity = "0.5";
+  cancelSpringLoad();
+  emit("rowIntoZone", false);
+};
+
 const thumbnailUrl = computed(() => {
   const file = {
     path: props.path,
@@ -210,8 +383,15 @@ const thumbnailUrl = computed(() => {
   return api.getPreviewURL(file as Resource, "thumb");
 });
 
-const isThumbsEnabled = computed(() => {
-  return enableThumbs;
+// S6-2: render the thumbnail <img> (vs. the generic icon) for images
+// whenever thumbs are on, and for videos only when the server can produce
+// poster frames (ffmpeg present). The same /api/preview/thumb endpoint
+// serves both — for videos it returns an ffmpeg-extracted JPEG.
+const showThumbnail = computed(() => {
+  if (props.readOnly || !props.path) return false;
+  if (props.type === "image") return enableThumbs;
+  if (props.type === "video") return enableThumbs && enableVideoThumbs;
+  return false;
 });
 
 const iconName = computed(() =>
@@ -224,11 +404,24 @@ const iconColorClass = computed(() =>
 
 // ── Inline rename (Stage 8) ─────────────────────────────────────────────
 // This row enters edit mode when the rename prompt is active and it's the
-// only selected item. Auto-focus the input on entry; ↵ commits, Esc cancels,
-// blur cancels (with a small race guard so submitting doesn't double-fire).
+// only selected item. Auto-focus the input on entry; ↵ commits, Esc cancels.
+//
+// Blur handling is subtle: when the user mousedown-drags a text selection
+// that escapes the input bounds and releases outside, the browser fires
+// `blur` even though the user clearly wanted to keep editing. The
+// `mouseDownInsideInput` flag distinguishes legitimate drag-selection-
+// escape (refocus) from a genuine click-away (cancel).
 const renameValue = ref<string>("");
 const renameInputEl = ref<HTMLInputElement | null>(null);
 let renameSubmitting = false;
+// Set true on input mousedown; cleared on document mouseup after blur
+// has had a chance to inspect it. While true, a blur is interpreted as
+// drag-select-escape (the mouse was held down inside the input) rather
+// than a click-away.
+let mouseDownInsideInput = false;
+// Document-level mouseup handler; held in a ref so we can install on
+// rename start and tear down on rename end without leaking listeners.
+let docMouseUpHandler: ((e: MouseEvent) => void) | null = null;
 
 const isRenaming = computed(() => {
   return (
@@ -239,7 +432,16 @@ const isRenaming = computed(() => {
 });
 
 watch(isRenaming, async (active) => {
-  if (!active) return;
+  if (!active) {
+    // Tear down the document listener so it doesn't keep firing for
+    // every mouseup across the page after the rename ends.
+    if (docMouseUpHandler) {
+      document.removeEventListener("mouseup", docMouseUpHandler);
+      docMouseUpHandler = null;
+    }
+    mouseDownInsideInput = false;
+    return;
+  }
   renameValue.value = props.name;
   renameSubmitting = false;
   await nextTick();
@@ -249,6 +451,34 @@ watch(isRenaming, async (active) => {
   // Select the filename stem (everything before the last "." for files)
   const dot = !props.isDir ? props.name.lastIndexOf(".") : -1;
   el.setSelectionRange(0, dot > 0 ? dot : props.name.length);
+
+  // Install a document-level mouseup so we can clear the flag after
+  // any drag-release, no matter where it lands. setTimeout(0) gives the
+  // blur handler one tick to inspect the flag before we reset it.
+  docMouseUpHandler = () => {
+    setTimeout(() => {
+      mouseDownInsideInput = false;
+    }, 0);
+  };
+  document.addEventListener("mouseup", docMouseUpHandler);
+});
+
+const onRenameMouseDown = () => {
+  mouseDownInsideInput = true;
+};
+
+// Safety net: tear down the document listener if the row unmounts
+// mid-rename (e.g. user navigates away during edit). The watch handles
+// the normal close path; this catches the edge case.
+onBeforeUnmount(() => {
+  if (docMouseUpHandler) {
+    document.removeEventListener("mouseup", docMouseUpHandler);
+    docMouseUpHandler = null;
+  }
+  // S5-9: if this row unmounts while its hover preview is pending /
+  // showing (e.g. reload or route change mid-hover), dismiss it so the
+  // overlay doesn't linger.
+  hoverPreview.cancel();
 });
 
 const cancelRename = () => {
@@ -258,8 +488,20 @@ const cancelRename = () => {
 
 const onRenameBlur = () => {
   if (renameSubmitting) return;
-  // Tiny delay so a sibling click (e.g. on a hypothetical "Save" button)
-  // can register before we cancel.
+  // If a mousedown started inside the input, this blur was almost
+  // certainly caused by the user dragging a text selection beyond the
+  // input bounds and releasing — they didn't intend to leave the input.
+  // Refocus on the next tick instead of cancelling.
+  if (mouseDownInsideInput) {
+    nextTick(() => {
+      const el = renameInputEl.value;
+      if (el && isRenaming.value) el.focus();
+    });
+    return;
+  }
+  // Genuine click-away / Tab-out — cancel after a small delay so a
+  // sibling click handler (e.g. on a future Save button) can register
+  // before we tear down.
   setTimeout(() => {
     if (!renameSubmitting && isRenaming.value) cancelRename();
   }, 120);
@@ -278,7 +520,13 @@ const submitRename = async () => {
     urlUtil.removeLastDir(oldLink) + "/" + encodeURIComponent(next);
   try {
     await api.move([{ from: oldLink, to: newLink }]);
-    fileStore.preselect = removePrefix(newLink);
+    // Decode the path before queueing it — removePrefix(newLink) is
+    // URL-encoded (we built newLink with encodeURIComponent), but
+    // item.path in the next listing is decoded. Without this decode
+    // applyPreSelection would silently fail to find the renamed item
+    // and the row would lose its selection — the exact "feels broken"
+    // UX the user reported.
+    fileStore.setPreselect(decodeURIComponent(removePrefix(newLink)));
     fileStore.reload = true;
   } catch (e) {
     if (e instanceof Error) $showError(e);
@@ -322,31 +570,61 @@ const onActionsClick = (event: MouseEvent) => {
   contextMenu(event);
 };
 
-const dragStart = () => {
+const dragStart = (event: DragEvent) => {
   if (fileStore.selectedCount === 0) {
     fileStore.selected.push(props.index);
-    return;
-  }
-
-  if (!isSelected.value) {
+  } else if (!isSelected.value) {
     fileStore.selected = [];
     fileStore.selected.push(props.index);
   }
+
+  // Snapshot the dragged items now, before any spring-load navigation
+  // can mutate `req` and cause `updateRequest()` to drop the selection.
+  // Drop handlers read from `draggedItems`, not `selected`, so the move
+  // survives navigation between dragstart and drop.
+  if (fileStore.req) {
+    fileStore.draggedItems = fileStore.selected
+      .map((i) => fileStore.req!.items[i])
+      .filter((it): it is ResourceItem => it != null);
+  }
+
+  // v1.3 S4-4: replace the browser's ugly translucent row snapshot with
+  // a compact ghost — the grabbed row's icon + filename (single) or a
+  // count badge (multi). Uses the row element under the cursor as the
+  // icon source, so the ghost shows what the user actually grabbed.
+  const count = fileStore.draggedItems.length;
+  setDragGhost(event, {
+    rowEl: event.currentTarget as HTMLElement,
+    name: props.name,
+    count,
+  });
 };
 
-const dragOver = (event: Event) => {
-  if (!canDrop.value) return;
+const dragEnd = () => {
+  // Browsers fire dragend on the source after drop/cancel — always.
+  // Use it as the canonical "drag is over" signal to clear the snapshot.
+  fileStore.draggedItems = [];
+};
 
+const dragOver = (event: DragEvent) => {
+  // v1.3 H12: dragover now also fires on file rows + self-drop folders
+  // (anything not read-only) so the whole listing is a coherent
+  // drop surface — file rows route alongside-drops to the current
+  // folder via FileListing. We preventDefault on every forward so the
+  // cursor advertises a valid drop target everywhere along the row.
+  if (!canForwardDrop.value) return;
   event.preventDefault();
-  let el = event.target as HTMLElement | null;
-  if (el !== null) {
-    for (let i = 0; i < 5; i++) {
-      if (!el?.classList.contains("item")) {
-        el = el?.parentElement ?? null;
-      }
-    }
 
-    if (el !== null) el.style.opacity = "1";
+  const rowEl = event.currentTarget as HTMLElement;
+  if (canDrop.value && isInIntoZone(event, rowEl)) {
+    enterIntoZone(rowEl);
+  } else {
+    leaveIntoZone(rowEl);
+  }
+
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect =
+      event.ctrlKey || event.metaKey ? "copy" : "move";
   }
 };
 
@@ -397,29 +675,67 @@ const startSpringLoad = () => {
 };
 
 const onDragEnter = (event: DragEvent) => {
-  if (!canDrop.value) return;
+  // v1.3 H12: spring-load no longer auto-starts on row enter — dragOver
+  // decides based on whether the cursor is in the into-zone. This way
+  // entering a row's right-side / actions area doesn't prematurely
+  // start the navigate-into timer.
+  if (!canForwardDrop.value) return;
   event.preventDefault();
   dragDepth++;
-  if (dragDepth === 1) startSpringLoad();
 };
 
 const onDragLeave = (event: DragEvent) => {
-  if (!canDrop.value) return;
+  if (!canForwardDrop.value) return;
   dragDepth = Math.max(0, dragDepth - 1);
-  if (dragDepth === 0) cancelSpringLoad();
-  void event;
+  if (dragDepth === 0) {
+    // Leaving the row entirely — clear into-zone state. Spring-load is
+    // cancelled inside leaveIntoZone. Note we don't emit rowIntoZone
+    // here because leaveIntoZone already emits(false) when transitioning
+    // out of the into-zone; the redundant emit would just be a no-op.
+    const rowEl = event.currentTarget as HTMLElement;
+    leaveIntoZone(rowEl);
+  }
 };
 
-const drop = async (event: Event) => {
+const drop = async (event: DragEvent) => {
   // A real drop wins over the pending spring-load — kill the timer
   // before any conflict prompts so we don't navigate mid-resolve.
   dragDepth = 0;
   cancelSpringLoad();
 
-  if (!canDrop.value) return;
+  if (!canForwardDrop.value) return;
   event.preventDefault();
 
-  if (fileStore.selectedCount === 0) return;
+  // v1.3 H12: geometry decides which destination this drop resolves to.
+  //   • In the into-zone of a droppable folder → drop INTO that folder
+  //     (existing behavior below this guard).
+  //   • Anywhere else on the row (alongside, or any drop on a file row,
+  //     or a self-drop folder row) → forward to FileListing, which
+  //     routes the move to the CURRENT folder.
+  const rowEl = event.currentTarget as HTMLElement;
+  const intoZone = canDrop.value && isInIntoZone(event, rowEl);
+
+  // Always clear into-state on drop (it ends the hover regardless of
+  // which branch we take).
+  if (inIntoZone) {
+    inIntoZone = false;
+    rowEl.style.opacity = "0.5";
+    emit("rowIntoZone", false);
+  }
+
+  if (!intoZone) {
+    emit("dropAlongside", event);
+    return;
+  }
+
+  // Pull dragged items from the snapshot taken at dragstart, NOT from
+  // `selected`. Spring-load navigation may have wiped `selected` between
+  // dragstart and now; the snapshot is the source of truth.
+  const dragged = fileStore.draggedItems;
+  if (dragged.length === 0) {
+    $showError(new Error("Nothing to drop — drag source was cleared"));
+    return;
+  }
 
   let el = event.target as HTMLElement | null;
   for (let i = 0; i < 5; i++) {
@@ -428,21 +744,15 @@ const drop = async (event: Event) => {
     }
   }
 
-  const items: any[] = [];
-
-  for (const i of fileStore.selected) {
-    if (fileStore.req) {
-      items.push({
-        from: fileStore.req?.items[i].url,
-        to: props.url + encodeURIComponent(fileStore.req?.items[i].name),
-        name: fileStore.req?.items[i].name,
-        size: fileStore.req?.items[i].size,
-        modified: fileStore.req?.items[i].modified,
-        overwrite: false,
-        rename: false,
-      });
-    }
-  }
+  const items: any[] = dragged.map((it) => ({
+    from: it.url,
+    to: props.url + encodeURIComponent(it.name),
+    name: it.name,
+    size: it.size,
+    modified: it.modified,
+    overwrite: false,
+    rename: false,
+  }));
 
   // Get url from ListingItem instance
   if (el === null) {
@@ -451,10 +761,10 @@ const drop = async (event: Event) => {
   const path = el.__vue__.url;
 
   const action = (overwrite?: boolean, rename?: boolean) => {
-    const action =
-      (event as KeyboardEvent).ctrlKey || (event as KeyboardEvent).metaKey
-        ? api.copy
-        : api.move;
+    // DragEvent inherits ctrlKey/metaKey from MouseEvent — no cast needed
+    // (the legacy `KeyboardEvent` cast was a leftover from when this
+    // handler was typed as the generic `Event`).
+    const action = event.ctrlKey || event.metaKey ? api.copy : api.move;
     action(items, overwrite, rename)
       .then(() => {
         fileStore.reload = true;
@@ -465,10 +775,16 @@ const drop = async (event: Event) => {
   const conflict = await upload.checkConflict(items, path);
 
   if (conflict.length > 0) {
+    // Source folder = parent of the first dragged item; target = the
+    // folder we just dropped onto (path resolved from the row element).
+    const firstFrom = dragged[0]?.url ?? "";
+    const sourceUrl = firstFrom.replace(/[^/]+\/?$/, "");
     layoutStore.showHover({
       prompt: "resolve-conflict",
       props: {
         conflict: conflict,
+        from: sourceUrl,
+        to: path,
       },
       confirm: (event: Event, result: Array<ConflictingResource>) => {
         event.preventDefault();
@@ -603,10 +919,36 @@ const cancelLongPress = () => {
 };
 
 const handleLongPress = () => {
-  if (singleClick.value) {
-    longPressTriggered.value = true;
-    click(new Event("longpress"));
+  // v1.3 S4-1: long-press always fires the context menu, regardless of
+  // singleClick mode. Previously this was a singleClick-only "toggle
+  // select" shortcut — that path was rarely used and is now
+  // superseded by the menu (Open / Tag / Move / etc. all reachable
+  // from one long-press). longPressTriggered keeps the synthetic
+  // contextmenu from also triggering the subsequent click handler.
+  longPressTriggered.value = true;
+
+  // Dispatch a synthetic contextmenu DOM event on the row root. The
+  // event bubbles up to #listing's @contextmenu handler which builds
+  // the row menu the same way a desktop right-click would (including
+  // the selection-adoption pass inside ListingItem.contextMenu()).
+  const rowEl = startPosition.value
+    ? (document.elementFromPoint(
+        startPosition.value.x,
+        startPosition.value.y
+      ) as HTMLElement | null)
+    : null;
+  const target = rowEl?.closest(".item") as HTMLElement | null;
+  if (target && startPosition.value) {
+    target.dispatchEvent(
+      new MouseEvent("contextmenu", {
+        bubbles: true,
+        cancelable: true,
+        clientX: startPosition.value.x,
+        clientY: startPosition.value.y,
+      })
+    );
   }
+
   cancelLongPress();
 };
 
@@ -619,8 +961,29 @@ const checkMovement = (clientX: number, clientY: number): boolean => {
   return deltaX > moveThreshold.value || deltaY > moveThreshold.value;
 };
 
+// ── Image hover preview (v1.3 S5-9) ────────────────────────────────
+// Hovering an image row for 500 ms pops a size-capped preview near the
+// cursor. Gated to image rows (and to thumbnail-enabled, non-readonly
+// contexts so the preview URL is valid). The composable owns the timer
+// + cursor tracking + scroll-dismiss; we just schedule / cancel.
+const hoverPreview = useImageHoverPreview();
+const canHoverPreview = computed(
+  () =>
+    props.type === "image" && !props.readOnly && enableThumbs && !!props.path
+);
+
+const handleMouseEnter = (event: MouseEvent) => {
+  if (!canHoverPreview.value) return;
+  hoverPreview.schedule(
+    { path: props.path!, modified: props.modified, name: props.name },
+    event
+  );
+};
+
 // Event handlers
 const handleMouseDown = (event: MouseEvent) => {
+  // Any press dismisses the hover preview (the user is interacting now).
+  hoverPreview.cancel();
   if (event.button === 0) {
     startLongPress(event.clientX, event.clientY);
   }
@@ -632,6 +995,7 @@ const handleMouseUp = () => {
 
 const handleMouseLeave = () => {
   cancelLongPress();
+  hoverPreview.cancel();
 };
 
 const handleTouchStart = (event: TouchEvent) => {

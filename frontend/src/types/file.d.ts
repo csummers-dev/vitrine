@@ -87,3 +87,51 @@ interface RecursiveEntry {
   modified: string;
   isDir: boolean;
 }
+
+/**
+ * One of the 8 named colors in the v1.3 tag palette. The values match
+ * the backend `tags.ValidColors` slice 1:1 — adding a color requires
+ * bumping both this union and the Go constant.
+ */
+type TagColor =
+  | "lilac"
+  | "blue"
+  | "green"
+  | "amber"
+  | "red"
+  | "pink"
+  | "slate"
+  | "teal";
+
+/**
+ * Per-user tag, as returned by /api/tags. IDs are per-user (issued by
+ * bbolt's NextSequence within the user's sub-bucket); never compare
+ * IDs across users.
+ */
+interface Tag {
+  id: number;
+  name: string;
+  color: TagColor;
+  createdAt: string;
+}
+
+/**
+ * Saved-search "smart folder" definition (v1.3 S2-6). Persisted in
+ * `user.preferences["smartFolders"]` as an array — order is the
+ * sidebar display order; clients should preserve insertion order on
+ * write.
+ *
+ * `query` is a free-text string in the same syntax as the command
+ * palette (`tag:work ext:pdf draft`). Parsed via parseQuery + dispatched
+ * against /api/search/recursive on view.
+ */
+interface SmartFolder {
+  /** Stable client-generated ID (UUID-ish; uses crypto.randomUUID).
+   *  Used as the URL segment `/smart/:id`. */
+  id: string;
+  name: string;
+  /** Optional chip color for the sidebar entry. Defaults to lilac. */
+  color: TagColor;
+  /** Free-text saved query, e.g. "tag:work ext:pdf". */
+  query: string;
+}

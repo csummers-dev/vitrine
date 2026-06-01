@@ -25,23 +25,28 @@ export function useDropTarget() {
 
   const performDrop = async (event: DragEvent, targetUrl: string) => {
     event.preventDefault();
-    if (fileStore.selectedCount === 0) return;
-    if (!fileStore.req) return;
+
+    // Read from the dragstart snapshot, not `selected`. Spring-load
+    // navigation between dragstart and drop may have cleared `selected`
+    // when the original items left the visible listing — the snapshot
+    // survives those navigations.
+    const dragged = fileStore.draggedItems;
+    if (dragged.length === 0) {
+      $showError(new Error("Nothing to drop — drag source was cleared"));
+      return;
+    }
 
     // Build the {from, to, ...} list the move/copy API expects.
-    const items = fileStore.selected
-      .map((i) => fileStore.req!.items[i])
-      .filter(Boolean)
-      .map((it) => ({
-        from: it.url,
-        to: targetUrl + encodeURIComponent(it.name),
-        name: it.name,
-        size: it.size,
-        modified: it.modified,
-        isDir: it.isDir,
-        overwrite: false,
-        rename: false,
-      }));
+    const items = dragged.map((it) => ({
+      from: it.url,
+      to: targetUrl + encodeURIComponent(it.name),
+      name: it.name,
+      size: it.size,
+      modified: it.modified,
+      isDir: it.isDir,
+      overwrite: false,
+      rename: false,
+    }));
 
     if (items.length === 0) return;
 
@@ -60,9 +65,15 @@ export function useDropTarget() {
     const conflict = await upload.checkConflict(items, targetUrl);
 
     if (conflict.length > 0) {
+      // Derive a single source folder from the first dragged item's url
+      // (parent dir). When the selection spans multiple source folders
+      // this is a best-effort hint — it still tells the user where the
+      // drag started from, even if not every item shares that origin.
+      const firstFrom = dragged[0]?.url ?? "";
+      const sourceUrl = firstFrom.replace(/[^/]+\/?$/, "");
       layoutStore.showHover({
         prompt: "resolve-conflict",
-        props: { conflict },
+        props: { conflict, from: sourceUrl, to: targetUrl },
         confirm: (e: Event, result: Array<ConflictingResource>) => {
           e.preventDefault();
           layoutStore.closeHovers();

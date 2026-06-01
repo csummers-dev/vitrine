@@ -10,6 +10,17 @@
         <div class="error-page__code">{{ info.code }}</div>
         <h1 class="error-page__title">{{ info.title }}</h1>
         <p class="error-page__message">{{ t(info.message) }}</p>
+        <!-- S6-5: for transient failures (offline / 500) offer an in-place
+             retry so the user doesn't have to navigate away and back. -->
+        <button
+          v-if="canRetry"
+          type="button"
+          class="error-page__btn error-page__btn--primary error-page__btn--retry"
+          @click="emit('retry')"
+        >
+          <Icon name="rotate-ccw" :size="13" />
+          Try again
+        </button>
         <div class="error-page__actions">
           <button
             type="button"
@@ -21,7 +32,10 @@
           </button>
           <router-link
             to="/files/"
-            class="error-page__btn error-page__btn--primary"
+            class="error-page__btn"
+            :class="
+              canRetry ? 'error-page__btn--ghost' : 'error-page__btn--primary'
+            "
           >
             <Icon name="folder" :size="13" />
             Go to files
@@ -85,14 +99,30 @@ const props = withDefaults(
   defineProps<{
     errorCode?: number;
     showHeader?: boolean;
+    /** S6-5: when a `retry` listener is attached, show a "Try again"
+     *  button — but only for transient codes (offline / 5xx); retrying a
+     *  403/404 won't help. Set `retryable` explicitly to override. */
+    retryable?: boolean;
   }>(),
   {
     errorCode: 500,
     showHeader: false,
+    retryable: undefined,
   }
 );
 
+const emit = defineEmits<{
+  (e: "retry"): void;
+}>();
+
 const info = computed<ErrorInfo>(() => errors[props.errorCode] ?? errors[500]);
+
+/** Transient codes worth retrying in place: offline (0) and server (5xx). */
+const isTransient = (code: number): boolean => code === 0 || code >= 500;
+
+const canRetry = computed<boolean>(() =>
+  props.retryable !== undefined ? props.retryable : isTransient(props.errorCode)
+);
 
 const goBack = () => {
   // Prefer browser history if there's somewhere to go; otherwise default
@@ -194,6 +224,12 @@ const goBack = () => {
   display: flex;
   gap: 8px;
   width: 100%;
+}
+
+/* S6-5: full-width retry sits above the Back / Go-to-files row. */
+.error-page__btn--retry {
+  width: 100%;
+  margin-bottom: 8px;
 }
 
 .error-page__btn {

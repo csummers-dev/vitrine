@@ -63,6 +63,11 @@ func previewHandler(imgSvc ImgService, fileCache FileCache, enableThumbnails, re
 		switch file.Type {
 		case "image":
 			return handleImagePreview(w, r, imgSvc, fileCache, file, previewSize, enableThumbnails, resizePreview)
+		case "video":
+			// S6-2: ffmpeg-generated poster frame, cached + served like an
+			// image thumbnail. Falls back to 501 (→ generic icon) when
+			// ffmpeg is absent or generation fails.
+			return handleVideoPreview(w, r, fileCache, file, previewSize, enableThumbnails)
 		default:
 			return http.StatusNotImplemented, fmt.Errorf("can't create preview for %s type", file.Type)
 		}

@@ -6,6 +6,13 @@ RUN apk update && \
     apk --no-cache add ca-certificates mailcap tini-static && \
     wget -O /JSON.sh https://raw.githubusercontent.com/dominictarr/JSON.sh/0d5e5c77365f63809bf6e77ef44a1f34b0e05840/JSON.sh
 
+## Static ffmpeg for server-side video thumbnails (v1.3 S6-2). A single
+## self-contained, multi-arch static binary — the cleanest way to add
+## ffmpeg to the BusyBox image (no package manager, no shared libs). The
+## app runtime-detects it and falls back to the generic video icon when
+## absent, so this stays a convenience, never a hard dependency.
+FROM mwader/static-ffmpeg:7.1 AS ffmpeg
+
 ## Second stage: Use lightweight BusyBox image for final runtime environment
 FROM busybox:1.38.0-musl
 
@@ -19,6 +26,9 @@ RUN addgroup -g $GID user && \
 
 # Copy binary, scripts, and configurations into image with proper ownership
 COPY --chown=user:user filebrowser /bin/filebrowser
+# S6-2: static ffmpeg → /usr/local/bin (on PATH for video-thumbnail
+# generation). If PATH ever misses it, detection just fails gracefully.
+COPY --from=ffmpeg /ffmpeg /usr/local/bin/ffmpeg
 COPY --chown=user:user docker/common/ /
 COPY --chown=user:user docker/alpine/ /
 COPY --chown=user:user --from=fetcher /sbin/tini-static /bin/tini
