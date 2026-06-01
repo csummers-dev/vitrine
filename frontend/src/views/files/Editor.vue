@@ -1,36 +1,82 @@
 <template>
   <div id="editor-container">
-    <header-bar>
-      <action icon="x" :label="t('buttons.close')" @action="close()" />
-      <title>{{ fileStore.req?.name ?? "" }}</title>
+    <!-- RC-36: purpose-built editor toolbar matching the app's design
+         system (replaces the legacy <header-bar>/<action> chrome + the
+         broken native <title> element that rendered the filename invisible). -->
+    <header class="editor-topbar">
+      <div class="editor-topbar__group editor-topbar__group--grow">
+        <button
+          type="button"
+          class="editor-iconbtn"
+          :title="t('buttons.close')"
+          :aria-label="t('buttons.close')"
+          @click="close()"
+        >
+          <Icon name="x" :size="16" />
+        </button>
+        <div class="editor-topbar__title">
+          <Icon
+            name="file-pen-line"
+            :size="14"
+            class="editor-topbar__title-icon"
+          />
+          <span class="editor-topbar__name">{{
+            fileStore.req?.name ?? ""
+          }}</span>
+        </div>
+      </div>
 
-      <action
-        icon="plus"
-        @action="increaseFontSize"
-        :label="t('buttons.increaseFontSize')"
-      />
-      <span class="editor-font-size">{{ fontSize }}px</span>
-      <action
-        icon="minus"
-        @action="decreaseFontSize"
-        :label="t('buttons.decreaseFontSize')"
-      />
+      <div class="editor-topbar__group">
+        <div class="editor-fontsize" role="group" aria-label="Font size">
+          <button
+            type="button"
+            class="editor-iconbtn editor-iconbtn--sm"
+            :title="t('buttons.decreaseFontSize')"
+            :aria-label="t('buttons.decreaseFontSize')"
+            @click="decreaseFontSize"
+          >
+            <Icon name="minus" :size="15" />
+          </button>
+          <span class="editor-fontsize__val">{{ fontSize }}px</span>
+          <button
+            type="button"
+            class="editor-iconbtn editor-iconbtn--sm"
+            :title="t('buttons.increaseFontSize')"
+            :aria-label="t('buttons.increaseFontSize')"
+            @click="increaseFontSize"
+          >
+            <Icon name="plus" :size="15" />
+          </button>
+        </div>
 
-      <action
-        v-if="authStore.user?.perm.modify"
-        id="save-button"
-        icon="save"
-        :label="t('buttons.save')"
-        @action="save()"
-      />
+        <button
+          v-show="isMarkdownFile"
+          type="button"
+          class="editor-iconbtn"
+          :class="{ 'editor-iconbtn--active': isPreview }"
+          :title="t('buttons.preview')"
+          :aria-label="t('buttons.preview')"
+          @click="preview()"
+        >
+          <Icon name="eye" :size="16" />
+        </button>
 
-      <action
-        icon="eye"
-        :label="t('buttons.preview')"
-        @action="preview()"
-        v-show="isMarkdownFile"
-      />
-    </header-bar>
+        <button
+          v-if="authStore.user?.perm.modify"
+          type="button"
+          class="editor-savebtn"
+          :disabled="saving"
+          @click="save()"
+        >
+          <Icon
+            :name="justSaved ? 'check' : saving ? 'loader-circle' : 'save'"
+            :size="14"
+            :class="{ 'editor-spin': saving }"
+          />
+          <span>{{ t("buttons.save") }}</span>
+        </button>
+      </div>
+    </header>
 
     <!-- preview container -->
     <div class="editor-loading delayed" v-if="layoutStore.loading">
@@ -98,7 +144,6 @@
 <script setup lang="ts">
 import Icon from "@/components/Icon.vue";
 import { files as api } from "@/api";
-import buttons from "@/utils/buttons";
 import url from "@/utils/url";
 import ace, { Ace, version as ace_version } from "ace-builds";
 import "ace-builds/src-noconflict/ext-language_tools";
@@ -106,8 +151,6 @@ import modelist from "ace-builds/src-noconflict/ext-modelist";
 import DOMPurify from "dompurify";
 
 import Breadcrumbs from "@/components/Breadcrumbs.vue";
-import Action from "@/components/header/Action.vue";
-import HeaderBar from "@/components/header/HeaderBar.vue";
 import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
@@ -145,6 +188,13 @@ const katexOptions = {
 marked.use(markedKatex(katexOptions));
 
 const isSelectionEmpty = ref(true);
+
+// Save feedback (RC-36): the legacy `buttons` util targeted a material-icon
+// `<i>` child that no longer exists, so the save spinner was a silent no-op.
+// Drive it locally instead — spinner while in flight, a brief check on success.
+const saving = ref(false);
+const justSaved = ref(false);
+let savedTimer: ReturnType<typeof setTimeout> | undefined;
 
 const executeEditorCommand = (name: string) => {
   if (name == "paste") {
@@ -214,6 +264,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener("keydown", keyEvent);
   window.removeEventListener("beforeunload", handlePageChange);
+  if (savedTimer) clearTimeout(savedTimer);
   editor.value?.destroy();
 });
 
@@ -294,17 +345,21 @@ const handlePageChange = (event: BeforeUnloadEvent) => {
 };
 
 const save = async (throwError?: boolean) => {
-  const button = "save";
-  buttons.loading("save");
+  if (saving.value) return; // guard against double-submit (Ctrl+S spam)
+  saving.value = true;
+  justSaved.value = false;
 
   try {
     await api.put(route.path, editor.value?.getValue());
     editor.value?.session.getUndoManager().markClean();
-    buttons.success(button);
+    justSaved.value = true;
+    if (savedTimer) clearTimeout(savedTimer);
+    savedTimer = setTimeout(() => (justSaved.value = false), 1400);
   } catch (e: any) {
-    buttons.done(button);
     $showError(e);
     if (throwError) throw e;
+  } finally {
+    saving.value = false;
   }
 };
 
@@ -373,13 +428,145 @@ const preview = () => {
   }
 }
 
-/* ── Font-size readout in the header bar ──────────────────────────── */
-.editor-font-size {
-  margin: 0 6px;
+/* ── Top toolbar (RC-36): app-consistent chrome ───────────────────── */
+.editor-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 48px;
+  padding: 0 12px;
+  background: var(--color-surface, #fff);
+  border-bottom: 1px solid var(--color-line, #ececec);
+  flex-shrink: 0;
+}
+
+.editor-topbar__group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.editor-topbar__group--grow {
+  flex: 1;
+}
+
+.editor-topbar__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  margin-left: 2px;
+}
+
+.editor-topbar__title-icon {
+  color: var(--color-ink-3, #a1a1aa);
+  flex-shrink: 0;
+}
+
+.editor-topbar__name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-ink-1, #18181b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.editor-iconbtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  background: transparent;
+  border: 0;
+  color: var(--color-ink-2, #52525b);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.editor-iconbtn--sm {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+}
+
+.editor-iconbtn:hover:not(:disabled) {
+  background: var(--color-elevated, #f4f4f5);
+  color: var(--color-ink-1, #18181b);
+}
+
+.editor-iconbtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.editor-iconbtn--active {
+  background: var(--color-selected, rgba(94, 106, 210, 0.12));
+  color: var(--color-accent, #5e6ad2);
+}
+
+.editor-iconbtn:focus-visible {
+  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline-offset: 1px;
+}
+
+/* Font-size stepper: a compact segmented pill (− 14px +). */
+.editor-fontsize {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 2px;
+  border-radius: 8px;
+  background: var(--color-canvas, #fafaf9);
+  border: 1px solid var(--color-line, #ececec);
+}
+
+.editor-fontsize__val {
+  min-width: 40px;
+  text-align: center;
   font-family: var(--font-mono, monospace);
   font-size: 11.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-2, #52525b);
   font-variant-numeric: tabular-nums;
+}
+
+/* Primary Save button. */
+.editor-savebtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 7px;
+  border: 0;
+  background: var(--color-accent, #5e6ad2);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    opacity 0.12s ease;
+}
+
+.editor-savebtn:hover:not(:disabled) {
+  background: var(--color-accent-strong, #4e5ac0);
+}
+
+.editor-savebtn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.editor-savebtn:focus-visible {
+  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline-offset: 1px;
 }
 
 /* ── Sub-toolbar: breadcrumbs left + clipboard tools right ────────── */

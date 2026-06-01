@@ -72,5 +72,17 @@ export function useFavorites() {
     void prefs.set(PREF_KEY, next);
   };
 
-  return { favorites, isFavorited, add, remove, toggle, reorder };
+  /** Insert a favorite at a specific position. Used to restore the exact
+   *  prior order after an undo (RC-34). No-op if already present; the index
+   *  is clamped to [0, length]. */
+  const insert = (path: string, index: number) => {
+    const current = prefs.get<string[]>(PREF_KEY, []);
+    if (current.includes(path)) return;
+    const next = [...current];
+    const i = Math.max(0, Math.min(index, next.length));
+    next.splice(i, 0, path);
+    void prefs.set(PREF_KEY, next);
+  };
+
+  return { favorites, isFavorited, add, remove, toggle, reorder, insert };
 }

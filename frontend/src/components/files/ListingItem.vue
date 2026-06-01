@@ -183,6 +183,7 @@ import { useTagsStore } from "@/stores/tags";
 import { usePreferences } from "@/composables/usePreferences";
 import { useFavorites } from "@/composables/useFavorites";
 import { useImageHoverPreview } from "@/composables/useImageHoverPreview";
+import { useTransferIndicator } from "@/composables/useTransferIndicator";
 
 import { enableThumbs, enableVideoThumbs } from "@/utils/constants";
 import { filesize } from "@/utils";
@@ -200,6 +201,7 @@ const touches = ref<number>(0);
 
 const $showError = inject<IToastError>("$showError")!;
 const router = useRouter();
+const { runTransfer } = useTransferIndicator();
 
 const props = defineProps<{
   name: string;
@@ -752,19 +754,17 @@ const drop = async (event: DragEvent) => {
   }
   const path = el.__vue__.url;
 
+  // DragEvent inherits ctrlKey/metaKey from MouseEvent — no cast needed.
+  const isCopy = event.ctrlKey || event.metaKey;
   const action = (overwrite?: boolean, rename?: boolean) => {
-    // DragEvent inherits ctrlKey/metaKey from MouseEvent — no cast needed
-    // (the legacy `KeyboardEvent` cast was a leftover from when this
-    // handler was typed as the generic `Event`).
-    const action = event.ctrlKey || event.metaKey ? api.copy : api.move;
-    action(items, overwrite, rename)
-      .then(() => {
-        fileStore.reload = true;
-      })
-      .catch($showError);
+    // runTransfer shows a delayed "Moving…/Copying…" toast, reloads the
+    // listing + confirms on success, and surfaces errors — so a slow
+    // drag-drop move isn't silent (RC).
+    const op = isCopy ? api.copy : api.move;
+    void runTransfer(() => op(items, overwrite, rename), isCopy, items);
   };
 
-  const conflict = await upload.checkConflict(items, path);
+  const conflict = await upload.checkMoveConflict(items, path);
 
   if (conflict.length > 0) {
     // Source folder = parent of the first dragged item; target = the

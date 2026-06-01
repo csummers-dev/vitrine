@@ -1702,7 +1702,7 @@ const paste = async (event: Event) => {
   }
 
   const path = route.path.endsWith("/") ? route.path : route.path + "/";
-  const conflict = await upload.checkConflict(items, path);
+  const conflict = await upload.checkMoveConflict(items, path);
 
   if (conflict.length > 0) {
     // Paste path: source is the clipboard's origin folder, target is

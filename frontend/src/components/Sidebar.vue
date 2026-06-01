@@ -80,7 +80,7 @@
 
         <button
           v-if="user.perm.admin"
-          @click="toGlobalSettings"
+          @click="toSettings"
           class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-hover text-ink-2 transition text-left max-md:w-10 max-md:h-10 max-md:p-0 max-md:justify-center max-md:gap-0"
           :title="$t('sidebar.settings')"
           :aria-label="$t('sidebar.settings')"
@@ -97,14 +97,30 @@
            with empty scaffolding. -->
       <nav
         v-if="isLoggedIn && favorites.length > 0"
+        ref="favListEl"
         class="px-2 pt-4 max-md:hidden"
       >
-        <div
-          class="px-2 pb-1.5 text-[10px] font-semibold text-ink-3 uppercase tracking-[0.06em]"
-        >
-          Favorites
+        <div class="px-2 pb-1.5">
+          <button
+            type="button"
+            class="flex items-center gap-1 text-[10px] font-semibold text-ink-3 uppercase tracking-[0.06em] hover:text-ink-2 transition"
+            :aria-expanded="!isSectionCollapsed('favorites')"
+            @click="toggleSection('favorites')"
+          >
+            <Icon
+              name="chevron-down"
+              :size="11"
+              :stroke-width="2.4"
+              class="transition-transform shrink-0"
+              :class="isSectionCollapsed('favorites') ? '-rotate-90' : ''"
+            />
+            <span>Favorites</span>
+          </button>
         </div>
-        <ul class="list-none m-0 p-0 space-y-0.5">
+        <ul
+          v-show="!isSectionCollapsed('favorites')"
+          class="list-none m-0 p-0 space-y-0.5"
+        >
           <li
             v-for="(path, index) in favorites"
             :key="path"
@@ -149,12 +165,26 @@
         v-if="isLoggedIn && recents.length > 0"
         class="px-2 pt-4 max-md:hidden"
       >
-        <div
-          class="px-2 pb-1.5 flex items-center justify-between gap-2 text-[10px] font-semibold text-ink-3 uppercase tracking-[0.06em]"
-        >
-          <span>Recent</span>
+        <div class="px-2 pb-1.5 flex items-center justify-between gap-2">
           <button
-            v-if="recents.length > RECENTS_INITIAL"
+            type="button"
+            class="flex items-center gap-1 text-[10px] font-semibold text-ink-3 uppercase tracking-[0.06em] hover:text-ink-2 transition"
+            :aria-expanded="!isSectionCollapsed('recent')"
+            @click="toggleSection('recent')"
+          >
+            <Icon
+              name="chevron-down"
+              :size="11"
+              :stroke-width="2.4"
+              class="transition-transform shrink-0"
+              :class="isSectionCollapsed('recent') ? '-rotate-90' : ''"
+            />
+            <span>Recent</span>
+          </button>
+          <button
+            v-if="
+              recents.length > RECENTS_INITIAL && !isSectionCollapsed('recent')
+            "
             type="button"
             class="text-[10px] font-medium text-ink-3 hover:text-accent transition"
             @click="recentsExpanded = !recentsExpanded"
@@ -162,7 +192,10 @@
             {{ recentsExpanded ? "Show less" : "View all" }}
           </button>
         </div>
-        <ul class="list-none m-0 p-0 space-y-0.5">
+        <ul
+          v-show="!isSectionCollapsed('recent')"
+          class="list-none m-0 p-0 space-y-0.5"
+        >
           <li v-for="r in visibleRecents" :key="r.path">
             <router-link
               :to="`/files${r.path}`"
@@ -175,55 +208,6 @@
           </li>
         </ul>
       </nav>
-
-      <!-- Smart folders (v1.3 S2-6). Section header + list + "+ New"
-           CTA. Hidden in icon-rail mode (the eyebrow + list don't
-           collapse gracefully to 40 px width). -->
-      <nav class="px-2 pt-4 max-md:hidden" v-if="isLoggedIn">
-        <div
-          class="px-2 pb-1.5 flex items-center justify-between gap-2 text-[10px] font-semibold text-ink-3 uppercase tracking-[0.06em]"
-        >
-          <span>Smart folders</span>
-          <button
-            type="button"
-            class="w-4 h-4 inline-flex items-center justify-center rounded text-ink-3 hover:text-accent hover:bg-hover transition"
-            title="New smart folder"
-            aria-label="New smart folder"
-            @click="openNewSmartFolder"
-          >
-            <Icon name="plus" :size="11" :stroke-width="2" />
-          </button>
-        </div>
-        <ul class="list-none m-0 p-0 space-y-0.5">
-          <li v-for="f in smartFolders" :key="f.id">
-            <router-link
-              :to="`/smart/${f.id}`"
-              class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] hover:bg-hover text-ink-2 transition"
-              :title="f.query || f.name"
-            >
-              <span
-                class="w-2 h-2 rounded-full shrink-0"
-                :class="`smart-folder-dot--${f.color}`"
-              />
-              <span class="truncate flex-1">{{ f.name }}</span>
-            </router-link>
-          </li>
-          <li
-            v-if="smartFolders.length === 0"
-            class="px-2 py-1 text-[11.5px] text-ink-3 italic"
-          >
-            None yet.
-          </li>
-        </ul>
-      </nav>
-
-      <SmartFolderSheet
-        :open="smartSheetOpen"
-        :folder="smartSheetTarget"
-        @cancel="closeSmartSheet"
-        @saved="closeSmartSheet"
-        @deleted="closeSmartSheet"
-      />
     </template>
 
     <template v-else>
@@ -320,11 +304,30 @@
         <Icon name="log-out" :size="14" />
       </button>
     </div>
+
+    <!-- RC-34: cursor-following hint shown while a favorite is dragged
+         OUTSIDE the favorites section. Releasing there unpins it (the
+         folder on disk is never touched). pointer-events:none so it never
+         becomes the drop target. Teleported to body to escape clipping. -->
+    <Teleport to="body">
+      <div
+        v-if="draggingFavIndex !== null && favWillRemove"
+        class="fixed z-[10000] pointer-events-none flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-rose-600 text-white text-[12px] font-medium shadow-lg"
+        :style="{
+          top: removeHintPos.y + 14 + 'px',
+          left: removeHintPos.x + 14 + 'px',
+        }"
+      >
+        <Icon name="star-off" :size="13" />
+        <span>Remove from favorites</span>
+      </div>
+    </Teleport>
   </aside>
 </template>
 
 <script>
 import { reactive, ref } from "vue";
+import { useToast } from "vue-toastification";
 import { mapActions, mapState } from "pinia";
 import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
@@ -344,7 +347,7 @@ import {
 import { files as api } from "@/api";
 import Icon from "@/components/Icon.vue";
 import BrandName from "@/components/BrandName.vue";
-import SmartFolderSheet from "@/components/SmartFolderSheet.vue";
+import UndoToast from "@/components/UndoToast.vue";
 import prettyBytes from "pretty-bytes";
 import { usePreferences } from "@/composables/usePreferences";
 import { useRecents } from "@/composables/useRecents";
@@ -361,16 +364,7 @@ export default {
   name: "sidebar",
   setup() {
     const usage = reactive(USAGE_DEFAULT);
-    // Smart folder sheet state (v1.3 S2-6). Lives in the Sidebar so
-    // the "+ New" affordance + the sheet share a parent. Refs so they
-    // unwrap correctly in the template and via `this.` access.
     const prefs = usePreferences();
-    const smartSheetOpen = ref(false);
-    // `smartSheetTarget` holds either a SmartFolder when editing or
-    // null when creating. No explicit annotation because this <script>
-    // block isn't lang=ts; the assignments at the call sites carry
-    // enough shape info for Vue's template type-check.
-    const smartSheetTarget = ref(null);
 
     // v1.3 S3-1 / S3-2: Recents + Favorites composables threaded into
     // the Options API via setup() so the computed below can read
@@ -379,18 +373,171 @@ export default {
     const recentsComposable = useRecents();
     const favoritesComposable = useFavorites();
     const recentsExpanded = ref(false);
-    // Favorites drag state (RC-25 reorder + RC-26 drop-file-in). The
-    // file-drop reuses the shared useDropTarget so move/conflict handling
-    // matches the rest of the app.
+    // ── Favorites drag (RC-25/26 + RC-32/33/34) ───────────────────────
+    // The file-into-favorite drop (RC-26) reuses the shared useDropTarget so
+    // move/conflict handling matches the rest of the app. The reorder (RC-32)
+    // and remove-on-drag-out (RC-34) gestures are handled here. RC-33: a
+    // favorite drag never carries file payload, so it can't move/copy the
+    // underlying folder — favorites act purely as links + reorder/remove.
     const { performDrop } = useDropTarget();
+    const toast = useToast();
     const draggingFavIndex = ref(null);
     const favDragOverIndex = ref(null);
+    const favWillRemove = ref(false);
+    const removeHintPos = ref({ x: 0, y: 0 });
+    const favListEl = ref(null);
+
+    /** basename of a favorited folder path, URL-decoded.
+     *  "/files/Documents/Letters/" → "Letters". */
+    const favoriteName = (path) => {
+      const trimmed = String(path).replace(/\/+$/, "");
+      const segments = trimmed.split("/").filter(Boolean);
+      const last = segments[segments.length - 1] ?? path;
+      try {
+        return decodeURIComponent(last);
+      } catch {
+        return last;
+      }
+    };
+
+    const isInsideFavList = (target) =>
+      !!favListEl.value &&
+      target instanceof Node &&
+      favListEl.value.contains(target);
+
+    const cleanupFavDrag = () => {
+      draggingFavIndex.value = null;
+      favDragOverIndex.value = null;
+      favWillRemove.value = false;
+      document.removeEventListener("dragover", onFavDocDragOver, true);
+      document.removeEventListener("drop", onFavDocDrop, true);
+    };
+
+    // Document-level (capture-phase) listeners, attached only while a
+    // favorite is being dragged, so we can detect a release OUTSIDE the
+    // favorites section (= remove). Capture phase lets us preventDefault the
+    // drop everywhere and, when outside, stop it before any listing/breadcrumb
+    // drop handler runs.
+    const onFavDocDragOver = (event) => {
+      if (draggingFavIndex.value === null) return;
+      // Allow the drop anywhere so the drop event actually fires even when
+      // released outside the list (otherwise the browser rejects it).
+      event.preventDefault();
+      const inside = isInsideFavList(event.target);
+      favWillRemove.value = !inside;
+      if (!inside) removeHintPos.value = { x: event.clientX, y: event.clientY };
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+    };
+    const onFavDocDrop = (event) => {
+      if (draggingFavIndex.value === null) return;
+      // Inside the section → let the <li> @drop run (reorder). Only act on a
+      // release OUTSIDE the favorites section.
+      if (isInsideFavList(event.target)) return;
+      // preventDefault stops the browser's default link-drop. We deliberately
+      // do NOT stopPropagation: the downstream drop handlers (listing row,
+      // breadcrumb, global upload) all no-op on a favorite drag (no file
+      // payload), and letting the event bubble lets FileListing's global drop
+      // handler reset the drag-dim opacity it applied on dragenter. Stopping
+      // propagation here left the listing stuck at 50% opacity after a remove.
+      event.preventDefault();
+      const list = favoritesComposable.favorites.value;
+      const removedIndex = draggingFavIndex.value;
+      const path = list[removedIndex];
+      const name = path ? favoriteName(path) : "";
+      // RC-34: unpin ONLY — the folder on disk is never touched.
+      if (path) favoritesComposable.remove(path);
+      cleanupFavDrag();
+      // Offer an undo (RC review #5) — re-insert at the exact prior position.
+      if (path) {
+        const id = toast(
+          {
+            component: UndoToast,
+            props: {
+              message: `Removed “${name}” from favorites`,
+              icon: "star-off",
+              onClick: () => {
+                favoritesComposable.insert(path, removedIndex);
+                toast.dismiss(id);
+              },
+            },
+          },
+          { timeout: 6000, closeOnClick: false, icon: false }
+        );
+      }
+    };
+
+    const onFavDragStart = (index, event) => {
+      draggingFavIndex.value = index;
+      favWillRemove.value = false;
+      if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = "move";
+        // Internal marker. A favorite drag never populates
+        // fileStore.draggedItems, so it can't trigger a move/copy (RC-33).
+        event.dataTransfer.setData("text/x-fb-favorite", String(index));
+      }
+      document.addEventListener("dragover", onFavDocDragOver, true);
+      document.addEventListener("drop", onFavDocDrop, true);
+    };
+    const onFavDragOver = (index, event) => {
+      // RC-32: a favorite reorder takes priority — branch on the favorite
+      // drag FIRST so a stale draggedItems snapshot (left over when
+      // spring-load unmounts a listing row before its dragend) can't
+      // mis-route the reorder into a file move.
+      if (draggingFavIndex.value !== null) {
+        event.preventDefault();
+        if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+        favDragOverIndex.value = index;
+        return;
+      }
+      // RC-26: a file/folder dragged from the listing drops INTO this favorite.
+      if (useFileStore().draggedItems.length > 0) {
+        event.preventDefault();
+        if (event.dataTransfer) {
+          event.dataTransfer.dropEffect =
+            event.ctrlKey || event.metaKey ? "copy" : "move";
+        }
+        favDragOverIndex.value = index;
+      }
+    };
+    const onFavDragLeave = (index) => {
+      if (favDragOverIndex.value === index) favDragOverIndex.value = null;
+    };
+    const onFavDrop = (index, path, event) => {
+      favDragOverIndex.value = null;
+      // RC-32/33: favorite reorder — never a filesystem move/copy.
+      if (draggingFavIndex.value !== null) {
+        event.preventDefault();
+        favoritesComposable.reorder(draggingFavIndex.value, index);
+        cleanupFavDrag();
+        return;
+      }
+      // RC-26: a file/folder dropped into this favorite folder.
+      if (useFileStore().draggedItems.length > 0) {
+        const targetUrl = path.endsWith("/") ? path : path + "/";
+        void performDrop(event, targetUrl);
+      }
+    };
+    const onFavDragEnd = () => {
+      cleanupFavDrag();
+    };
+
+    // ── Section collapse/expand (RC-35) ────────────────────────────────
+    // Persisted per-section under one prefs object so first-time users get
+    // everything expanded by default.
+    const isSectionCollapsed = (key) =>
+      !!prefs.get("sidebarCollapsedSections", {})[key];
+    const toggleSection = (key) => {
+      const cur = prefs.get("sidebarCollapsedSections", {});
+      void prefs.set("sidebarCollapsedSections", {
+        ...cur,
+        [key]: !cur[key],
+      });
+    };
+
     return {
       usage,
       usageAbortController: new AbortController(),
       prefs,
-      smartSheetOpen,
-      smartSheetTarget,
       recentsComposable,
       favoritesComposable,
       recentsExpanded,
@@ -398,14 +545,24 @@ export default {
       performDrop,
       draggingFavIndex,
       favDragOverIndex,
+      favWillRemove,
+      removeHintPos,
+      favListEl,
+      favoriteName,
+      onFavDragStart,
+      onFavDragOver,
+      onFavDragLeave,
+      onFavDrop,
+      onFavDragEnd,
+      cleanupFavDrag,
+      isSectionCollapsed,
+      toggleSection,
     };
   },
   components: {
     Icon,
     BrandName,
-    SmartFolderSheet,
   },
-  inject: ["$showError"],
   computed: {
     ...mapState(useAuthStore, ["user", "isLoggedIn"]),
     ...mapState(useFileStore, ["isFiles", "reload"]),
@@ -427,12 +584,6 @@ export default {
     filesCount() {
       const fileStore = useFileStore();
       return (fileStore.req?.numDirs ?? 0) + (fileStore.req?.numFiles ?? 0);
-    },
-    /** Smart-folder list straight from user prefs (S1-2 composable).
-     *  Reactive because usePreferences's get reads through the auth
-     *  store's user.preferences map, which Pinia tracks. */
-    smartFolders() {
-      return this.prefs.get("smartFolders", []);
     },
     /** Recents + Favorites (v1.3 S3-1 / S3-2). Reactive reads from
      *  the composables — the underlying prefs Pinia store handles
@@ -482,88 +633,16 @@ export default {
       this.$router.push({ path: "/files" });
       this.closeHovers();
     },
-    /** Display name for a favorited folder — basename of the path,
-     *  URL-decoded. "/files/Documents/Letters/" → "Letters". v1.3 S3-2. */
-    favoriteName(path) {
-      const trimmed = path.replace(/\/+$/, "");
-      const segments = trimmed.split("/").filter(Boolean);
-      const last = segments[segments.length - 1] ?? path;
-      try {
-        return decodeURIComponent(last);
-      } catch {
-        return last;
-      }
-    },
-    // ── Favorites drag handlers (RC-25 reorder + RC-26 drop file in) ──
-    onFavDragStart(index, event) {
-      this.draggingFavIndex = index;
-      if (event.dataTransfer) {
-        event.dataTransfer.effectAllowed = "move";
-        // Mark as an internal favorite-reorder drag (distinct from a
-        // listing file drag, which populates fileStore.draggedItems).
-        event.dataTransfer.setData("text/x-fb-favorite", String(index));
-      }
-    },
-    onFavDragOver(index, event) {
-      const fileStore = useFileStore();
-      const isFileDrag = fileStore.draggedItems.length > 0;
-      // Permit drop for both a file-into-favorite (RC-26) and a reorder
-      // (RC-25); ignore unrelated drags.
-      if (isFileDrag || this.draggingFavIndex !== null) {
-        event.preventDefault();
-        if (event.dataTransfer) {
-          event.dataTransfer.dropEffect = isFileDrag
-            ? event.ctrlKey || event.metaKey
-              ? "copy"
-              : "move"
-            : "move";
-        }
-        this.favDragOverIndex = index;
-      }
-    },
-    onFavDragLeave(index) {
-      if (this.favDragOverIndex === index) this.favDragOverIndex = null;
-    },
-    onFavDrop(index, path, event) {
-      const fileStore = useFileStore();
-      this.favDragOverIndex = null;
-      // RC-26: a file/folder dragged from the listing → move it into this
-      // favorite folder (reuses useDropTarget for move + conflict UI).
-      if (fileStore.draggedItems.length > 0) {
-        const targetUrl = path.endsWith("/") ? path : path + "/";
-        void this.performDrop(event, targetUrl);
-        this.draggingFavIndex = null;
-        return;
-      }
-      // RC-25: reorder the favorites list.
-      if (this.draggingFavIndex !== null) {
-        event.preventDefault();
-        this.favoritesComposable.reorder(this.draggingFavIndex, index);
-      }
-      this.draggingFavIndex = null;
-    },
-    onFavDragEnd() {
-      this.draggingFavIndex = null;
-      this.favDragOverIndex = null;
-    },
-    /** Open the SmartFolderSheet in create mode. Edit mode is reached
-     *  by clicking the pencil icon inside SmartFolderView, which has
-     *  its own sheet instance — we don't try to share state across
-     *  the two locations. */
-    openNewSmartFolder() {
-      this.smartSheetTarget = null;
-      this.smartSheetOpen = true;
-    },
-    closeSmartSheet() {
-      this.smartSheetOpen = false;
-      this.smartSheetTarget = null;
-    },
     toAccountSettings() {
       this.$router.push({ path: "/settings/profile" });
       this.closeHovers();
     },
-    toGlobalSettings() {
-      this.$router.push({ path: "/settings/global" });
+    toSettings() {
+      // Settings always opens on Profile (RC-31). Global settings remains
+      // one click away in the settings left rail. /settings already
+      // redirects to /settings/profile, but route it explicitly so intent
+      // is obvious at the call site.
+      this.$router.push({ path: "/settings/profile" });
       this.closeHovers();
     },
     logout: auth.logout,
@@ -580,6 +659,9 @@ export default {
   },
   unmounted() {
     this.abortOngoingFetchUsage();
+    // Safety: drop any favorite-drag document listeners if we unmount
+    // mid-drag (dragend normally handles this).
+    this.cleanupFavDrag();
   },
 };
 </script>

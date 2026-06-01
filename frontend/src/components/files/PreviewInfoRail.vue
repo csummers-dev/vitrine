@@ -306,16 +306,30 @@ html.dark .preview-info__icon.is-csv {
 }
 
 /* ── Action grids ────────────────────────────────────────────────────── */
-.preview-info__primary {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+/* RC-39: centered flex (not a fixed N-col grid) so a row with fewer than
+   its max actions centers its buttons instead of leaving empty trailing
+   columns. Each button caps at the N-up cell width, so 2 actions sit at
+   ~2/3 width centered rather than left-aligned with an empty 3rd slot
+   (repro: an image in preview where Open/Extract aren't shown). */
+.preview-info__primary,
+.preview-info__secondary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 6px;
+}
+.preview-info__primary {
   margin-bottom: 6px;
 }
-.preview-info__secondary {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+.preview-info__primary > .info-action {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: calc((100% - 18px) / 4);
+}
+.preview-info__secondary > .info-action {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: calc((100% - 12px) / 3);
 }
 
 /* `info-action` is the same class FileListing's InfoPane uses — kept

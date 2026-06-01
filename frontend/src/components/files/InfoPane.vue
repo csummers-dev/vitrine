@@ -31,6 +31,13 @@
             class="max-w-full max-h-full w-auto h-auto object-contain"
             :alt="item.name"
           />
+          <!-- RC-42: embedded album art for a selected music file. -->
+          <img
+            v-else-if="albumArtUrl"
+            :src="albumArtUrl"
+            class="max-w-full max-h-full w-auto h-auto object-contain rounded-md"
+            alt="Album artwork"
+          />
           <div
             v-else
             class="w-14 h-14 rounded-xl flex items-center justify-center backdrop-blur-sm border border-line/60 shadow-sm"
@@ -339,7 +346,7 @@ import { filesize } from "@/utils";
 import { enableThumbs, unzipEnabled } from "@/utils/constants";
 import { files as api } from "@/api";
 import dayjs from "dayjs";
-import { computed, inject, onMounted, onUnmounted, ref } from "vue";
+import { computed, inject, onMounted, onUnmounted, ref, watch } from "vue";
 import { useTagPicker } from "@/composables/useTagPicker";
 import { usePreferences } from "@/composables/usePreferences";
 
@@ -506,6 +513,77 @@ const thumbnailUrl = computed(() => {
   if (!item.value) return "";
   return api.getPreviewURL(item.value as Resource, "thumb");
 });
+
+// ── Album art for a selected music file (RC-42) ─────────────────────
+// Mirrors AudioViewer's approach (E2): range-fetch the file header
+// (ID3v2 + APIC live in the first few hundred KB) and parse it client-
+// side. `music-metadata` is dynamically imported so it never enters the
+// always-loaded listing bundle — only when an audio file is selected.
+const albumArtUrl = ref<string>("");
+let albumArtRevocable: string | null = null;
+let albumArtToken = 0;
+let albumArtAbort: AbortController | null = null;
+const AUDIO_META_RANGE = 512 * 1024; // 512 KB — comfortable for ID3v2 + APIC
+
+const isAudio = computed(
+  () => !!item.value && !item.value.isDir && item.value.type === "audio"
+);
+
+const clearAlbumArt = () => {
+  // Cancel any in-flight range fetch so a rapid selection sweep doesn't leave
+  // a stack of pending 512 KB requests (RC review #4).
+  if (albumArtAbort) {
+    albumArtAbort.abort();
+    albumArtAbort = null;
+  }
+  if (albumArtRevocable) {
+    URL.revokeObjectURL(albumArtRevocable);
+    albumArtRevocable = null;
+  }
+  albumArtUrl.value = "";
+};
+
+const loadAlbumArt = async (resource: ResourceItem) => {
+  const token = ++albumArtToken;
+  clearAlbumArt(); // also aborts any previous in-flight fetch
+  const ctrl = new AbortController();
+  albumArtAbort = ctrl;
+  try {
+    const url = api.getDownloadURL(resource, true);
+    const res = await fetch(url, {
+      headers: { Range: `bytes=0-${AUDIO_META_RANGE - 1}` },
+      signal: ctrl.signal,
+    });
+    if (token !== albumArtToken) return; // selection moved on
+    if (!res.ok && res.status !== 206) return;
+    const blob = await res.blob();
+    if (token !== albumArtToken) return;
+    const { parseBlob } = await import("music-metadata");
+    const parsed = await parseBlob(blob);
+    if (token !== albumArtToken) return;
+    const pic = parsed.common.picture?.[0];
+    if (!pic) return; // no embedded art → keep the generic music icon
+    const artBlob = new Blob([new Uint8Array(pic.data)], { type: pic.format });
+    const objUrl = URL.createObjectURL(artBlob);
+    albumArtRevocable = objUrl;
+    albumArtUrl.value = objUrl;
+  } catch {
+    /* parse failure / aborted — fall back to the generic icon */
+  }
+};
+
+// Re-extract whenever the selected audio file changes; clear for anything
+// that isn't a single audio file.
+watch(
+  () => (isAudio.value ? (item.value?.url ?? null) : null),
+  (url) => {
+    if (url) void loadAlbumArt(item.value as ResourceItem);
+    else clearAlbumArt();
+  },
+  { immediate: true }
+);
+
+onUnmounted(clearAlbumArt);
 
 const typeLabel = computed(() => {
   if (!item.value) return "";

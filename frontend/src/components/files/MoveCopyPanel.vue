@@ -23,17 +23,11 @@
       >.
     </p>
 
-    <FolderPicker
-      ref="pickerRef"
-      :initial-path="initialPath"
-      :exclude="excluded"
-      @update:path="onPathChange"
-    />
-
     <!-- RC-16: persisted "open destination" toggle (backed by the user's
          redirectAfterCopyMove field — cross-device, default off). Bound
          via explicit handler so only real toggles persist, not the
-         on-open seeding. -->
+         on-open seeding. RC-45: kept at the TOP (above the folder picker)
+         so it's visible without scrolling past a long folder list. -->
     <label class="mcp-option">
       <Toggle
         :model-value="openDest"
@@ -49,6 +43,13 @@
         </span>
       </span>
     </label>
+
+    <FolderPicker
+      ref="pickerRef"
+      :initial-path="initialPath"
+      :exclude="excluded"
+      @update:path="onPathChange"
+    />
 
     <template #footer>
       <button
@@ -92,7 +93,7 @@ import { useLayoutStore } from "@/stores/layout";
 import { files as api, users } from "@/api";
 import { removePrefix } from "@/api/utils";
 import * as upload from "@/utils/upload";
-import { inject } from "vue";
+import { useTransferIndicator } from "@/composables/useTransferIndicator";
 import SlideOver from "@/components/SlideOver.vue";
 import FolderPicker from "@/components/files/FolderPicker.vue";
 import Toggle from "@/components/settings/Toggle.vue";
@@ -108,14 +109,13 @@ const emit = defineEmits<{
   (e: "done"): void;
 }>();
 
-const $showError = inject<IToastError>("$showError")!;
-const $showSuccess = inject<(message: string) => void>("$showSuccess")!;
-
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const fileStore = useFileStore();
 const layoutStore = useLayoutStore();
+// Shared floating transfer indicator (same one drag-drop moves use).
+const { runTransfer } = useTransferIndicator();
 
 const pickerRef = ref<InstanceType<typeof FolderPicker> | null>(null);
 const destPath = ref<string>("");
@@ -236,52 +236,58 @@ const onSubmit = async () => {
 
   // The legacy flows show a conflict-resolution prompt when names already
   // exist. We delegate to the same util so behavior stays identical.
-  const conflict = await upload.checkConflict(items, dest);
+  const conflict = await upload.checkMoveConflict(items, dest);
 
-  const performAction = async () => {
+  // RC-46: run the transfer in the BACKGROUND. Close the tool immediately
+  // and hand off to the shared floating transfer indicator (the same one
+  // drag-drop moves use) so the user can keep working while it runs —
+  // instead of holding the panel open with a spinning button. Per-item
+  // overwrite/rename flags (set during conflict resolution) are read by
+  // the move/copy API; the (false, false) args are just the defaults.
+  const runInBackground = () => {
+    if (busy.value) return;
     busy.value = true;
-    try {
-      if (props.mode === "move") {
-        await api.move(items, false, false);
-      } else {
-        await api.copy(items, false, false);
-      }
-      // Re-select EVERY moved/copied item in the destination so the
-      // user's multi-selection survives the action. Decode each path
-      // (items[].to was built with encodeURIComponent on the name).
-      fileStore.setPreselect(
-        items.map((i) => decodeURIComponent(removePrefix(i.to)))
-      );
+    const isCopy = props.mode === "copy";
+    const op = isCopy ? api.copy : api.move;
+    // Snapshot the source route NOW. The op runs in the background, so by the
+    // time it finishes the user may have navigated elsewhere — we must not
+    // yank their current view (RC review #1).
+    const sourceRoute = route.path;
+    const goToDest =
+      openDest.value && dest !== sourceRoute && dest !== sourceRoute + "/";
 
-      // RC-16: explicit success feedback (the action used to complete
-      // silently, so a large move looked frozen until the view jumped).
-      const verb = props.mode === "move" ? "Moved" : "Copied";
-      const what =
-        items.length === 1 ? `“${items[0].name}”` : `${items.length} items`;
-      const destName =
-        decodeURIComponent(removePrefix(dest)).replace(/\/$/, "") || "/";
-      $showSuccess(`${verb} ${what} to ${destName}`);
+    // Close the panel now — the operation continues independently.
+    emit("done");
 
-      // RC-16: only jump to the destination when the toggle is on;
-      // otherwise stay put and refresh.
-      if (openDest.value && dest !== route.path && dest !== route.path + "/") {
-        router.push({ path: dest });
-      } else {
-        fileStore.reload = true;
-      }
-      emit("done");
-    } catch (e) {
-      if (e instanceof Error) $showError(e);
-    } finally {
-      busy.value = false;
-    }
+    void runTransfer(() => op(items, false, false), isCopy, items, {
+      // Route-aware refresh handled in onSuccess instead.
+      reloadOnSuccess: false,
+      onSuccess: () => {
+        // Only touch the listing if the user is STILL on the source folder.
+        // If they navigated away mid-transfer, leave their view alone — the
+        // result shows on next visit to the source/destination.
+        const stillOnSource =
+          route.path === sourceRoute || route.path === sourceRoute + "/";
+        if (!stillOnSource) return;
+        // Re-select the moved/copied items in the destination so the
+        // selection survives (decode — items[].to is URL-encoded).
+        fileStore.setPreselect(
+          items.map((i) => decodeURIComponent(removePrefix(i.to)))
+        );
+        if (goToDest) {
+          router.push({ path: dest });
+        } else {
+          fileStore.reload = true;
+        }
+      },
+    });
   };
 
   if (conflict.length > 0) {
     // Hand off to the existing conflict-resolution prompt; on confirm, apply
-    // the rename/overwrite/skip choices and re-run the action. Source for
-    // the header line = parent dir of the first selected item; dest = the
-    // folder the picker resolved to.
+    // the rename/overwrite/skip choices and then run in the background.
+    // Source for the header line = parent dir of the first selected item;
+    // dest = the folder the picker resolved to.
     const firstFrom = items[0]?.from ?? "";
     const sourceUrl = firstFrom.replace(/[^/]+\/?$/, "");
     layoutStore.showHover({
@@ -300,13 +306,13 @@ const onSubmit = async () => {
             items.splice(r.index, 1);
           }
         }
-        if (items.length > 0) void performAction();
+        if (items.length > 0) runInBackground();
       },
     });
     return;
   }
 
-  void performAction();
+  runInBackground();
 };
 
 // Snapshot selection when the panel opens. Closing the panel doesn't clear
@@ -361,12 +367,13 @@ watch(
   font-weight: 600;
 }
 
-/* RC-16: open-destination toggle row */
+/* RC-16: open-destination toggle row. RC-45: sits above the folder picker,
+   so the spacing is below it (not above). */
 .mcp-option {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  margin-top: 14px;
+  margin-bottom: 14px;
   padding: 8px 10px;
   border-radius: 8px;
   border: 1px solid var(--color-line, #ececec);

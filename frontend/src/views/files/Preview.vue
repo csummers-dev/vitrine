@@ -629,7 +629,6 @@ import SubtitleUpload from "@/components/files/SubtitleUpload.vue";
 import { useLayoutStore } from "@/stores/layout";
 
 import { files as api } from "@/api";
-import { createURL } from "@/api/utils";
 import { resizePreview, unzipEnabled } from "@/utils/constants";
 import url from "@/utils/url";
 import { throttle } from "lodash-es";
@@ -1012,10 +1011,17 @@ const siblingNames = computed<string[]>(
 );
 const onImageSaved = (newName: string) => {
   imageEditorOpen.value = false;
-  // Mark the listing stale so the new file appears when the user
-  // returns to the folder.
-  fileStore.reload = true;
   $showSuccess(`Saved “${newName}”`);
+  // RC-37: show the result on creation instead of waiting for a reload.
+  const target = previewDir.value + encodeURIComponent(newName);
+  if (target === route.path) {
+    // Overwrote the file currently open → re-fetch so the edited bytes
+    // (and a fresh preview cache key) load without a manual reload.
+    fileStore.reload = true;
+  } else {
+    // A brand-new file was created → open its preview directly.
+    router.push({ path: target });
+  }
 };
 
 const previewUrl = computed(() => {
@@ -1023,9 +1029,11 @@ const previewUrl = computed(() => {
   if (fileStore.req.type === "image" && !fullSize.value) {
     return api.getPreviewURL(fileStore.req, "big");
   }
-  if (isEpub.value) {
-    return createURL("api/raw" + fileStore.req.path, {});
-  }
+  // RC-44: EPUBs must carry the auth token like every other media URL.
+  // The old `createURL("api/raw"+path, {})` sent NO ?auth param, so when
+  // the cookie session drifted (same root cause as the RC-18 thumbnail
+  // 401s) epub.js's fetch got a 401 and the book never opened. Route it
+  // through getDownloadURL, which appends authParam().
   return api.getDownloadURL(fileStore.req, true);
 });
 

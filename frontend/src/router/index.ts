@@ -3,7 +3,6 @@ import { createRouter, createWebHistory } from "vue-router";
 import Login from "@/views/Login.vue";
 import Layout from "@/views/Layout.vue";
 import Files from "@/views/Files.vue";
-import SmartFolderView from "@/views/SmartFolderView.vue";
 import Share from "@/views/Share.vue";
 import Users from "@/views/settings/Users.vue";
 import User from "@/views/settings/User.vue";
@@ -26,7 +25,6 @@ const titles = {
   Login: "sidebar.login",
   Share: "buttons.share",
   Files: "files.files",
-  SmartFolder: "files.smartFolder",
   Settings: "sidebar.settings",
   ProfileSettings: "settings.profileSettings",
   Shares: "settings.shareManagement",
@@ -69,23 +67,6 @@ const routes = [
         path: ":path*",
         name: "Files",
         component: Files,
-      },
-    ],
-  },
-  // Smart folders (v1.3 S2-6). Synthetic route — there's no folder
-  // on disk; the view evaluates a saved query and renders matching
-  // files. Reuses the same Layout chrome (sidebar + topbar) as Files.
-  {
-    path: "/smart/:id",
-    component: Layout,
-    meta: {
-      requiresAuth: true,
-    },
-    children: [
-      {
-        path: "",
-        name: "SmartFolder",
-        component: SmartFolderView,
       },
     ],
   },

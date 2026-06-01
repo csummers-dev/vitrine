@@ -168,7 +168,13 @@
               <button
                 type="button"
                 class="img-editor__btn img-editor__btn--primary"
-                :disabled="busy || loading || !!loadError || !outName"
+                :disabled="
+                  busy ||
+                  loading ||
+                  !!loadError ||
+                  !outName ||
+                  confirmingOverwrite
+                "
                 @click="onSave"
               >
                 <Icon
@@ -179,6 +185,37 @@
                 />
                 <span>{{ busy ? "Saving…" : "Save copy" }}</span>
               </button>
+            </div>
+
+            <!-- RC-38: name collision → confirm overwrite (full-width row). -->
+            <div v-if="confirmingOverwrite" class="img-editor__confirm">
+              <span class="img-editor__confirm-msg">
+                “{{ outName }}” already exists. Overwrite it?
+              </span>
+              <div class="img-editor__confirm-actions">
+                <button
+                  type="button"
+                  class="img-editor__btn img-editor__btn--ghost"
+                  :disabled="busy"
+                  @click="confirmingOverwrite = false"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  class="img-editor__btn img-editor__btn--danger"
+                  :disabled="busy"
+                  @click="performSave(true)"
+                >
+                  <Icon
+                    v-if="busy"
+                    name="loader-circle"
+                    :size="14"
+                    class="img-editor__spin"
+                  />
+                  <span>{{ busy ? "Overwriting…" : "Overwrite" }}</span>
+                </button>
+              </div>
             </div>
           </footer>
         </div>
@@ -245,6 +282,15 @@ const loadError = ref<string>("");
 const busy = ref<boolean>(false);
 const saveError = ref<string>("");
 const outName = ref<string>("");
+// RC-38: a name collision now prompts for overwrite instead of hard-
+// blocking. This is true while the inline "overwrite?" confirm is shown.
+const confirmingOverwrite = ref<boolean>(false);
+
+// Changing the target name dismisses a stale overwrite prompt — the new
+// name may not collide at all.
+watch(outName, () => {
+  confirmingOverwrite.value = false;
+});
 
 const stageEl = ref<HTMLElement | null>(null);
 const canvasEl = ref<HTMLCanvasElement | null>(null);
@@ -296,6 +342,7 @@ const resetState = () => {
   cropBox.value = null;
   saveError.value = "";
   loadError.value = "";
+  confirmingOverwrite.value = false;
 };
 
 const loadImage = async () => {
@@ -433,8 +480,8 @@ const startCropDrag = (mode: Handle | "move", e: PointerEvent) => {
 };
 
 // ── Save ────────────────────────────────────────────────────────────
-const onSave = async () => {
-  if (!bitmap || busy.value) return;
+const onSave = () => {
+  if (busy.value) return;
   saveError.value = "";
   const fileName = outName.value.trim();
   if (!fileName) return;
@@ -442,10 +489,19 @@ const onSave = async () => {
     saveError.value = "Name can't contain a slash.";
     return;
   }
+  // RC-38: don't hard-block on a collision — surface the inline overwrite
+  // confirm and let the user decide (Overwrite button calls performSave).
   if (props.existingNames.includes(fileName)) {
-    saveError.value = "A file with that name already exists.";
+    confirmingOverwrite.value = true;
     return;
   }
+  void performSave(false);
+};
+
+const performSave = async (overwrite: boolean) => {
+  if (!bitmap || busy.value) return;
+  const fileName = outName.value.trim();
+  if (!fileName) return;
 
   // Map the display-space crop box to oriented natural pixels.
   let crop: CropRect | null = null;
@@ -472,9 +528,7 @@ const onSave = async () => {
     const destPath =
       (props.dir.endsWith("/") ? props.dir : props.dir + "/") +
       encodeURIComponent(fileName);
-    // overwrite=false — we already checked for conflicts; the backend
-    // is the final guard.
-    await api.post(destPath, blob, false);
+    await api.post(destPath, blob, overwrite);
     emit("saved", fileName);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Save failed.";
@@ -482,6 +536,7 @@ const onSave = async () => {
     $showError(new Error(msg));
   } finally {
     busy.value = false;
+    confirmingOverwrite.value = false;
   }
 };
 
@@ -842,9 +897,39 @@ html.dark .img-editor__save-error {
 .img-editor__btn--primary:hover:not(:disabled) {
   background: var(--color-accent-strong, #4f59c4);
 }
+.img-editor__btn--danger {
+  background: #dc2626;
+  color: white;
+}
+.img-editor__btn--danger:hover:not(:disabled) {
+  background: #b91c1c;
+}
 .img-editor__btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* RC-38: inline overwrite-confirm bar (full-width row in the footer). */
+.img-editor__confirm {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px 8px 12px;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+.img-editor__confirm-msg {
+  font-size: 12.5px;
+  color: var(--color-ink-1, #18181b);
+  min-width: 0;
+}
+.img-editor__confirm-actions {
+  display: inline-flex;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 /* ── Transition ────────────────────────────────────────────────────── */

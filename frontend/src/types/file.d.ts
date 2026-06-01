@@ -114,24 +114,3 @@ interface Tag {
   color: TagColor;
   createdAt: string;
 }
-
-/**
- * Saved-search "smart folder" definition (v1.3 S2-6). Persisted in
- * `user.preferences["smartFolders"]` as an array — order is the
- * sidebar display order; clients should preserve insertion order on
- * write.
- *
- * `query` is a free-text string in the same syntax as the command
- * palette (`tag:work ext:pdf draft`). Parsed via parseQuery + dispatched
- * against /api/search/recursive on view.
- */
-interface SmartFolder {
-  /** Stable client-generated ID (UUID-ish; uses crypto.randomUUID).
-   *  Used as the URL segment `/smart/:id`. */
-  id: string;
-  name: string;
-  /** Optional chip color for the sidebar entry. Defaults to lilac. */
-  color: TagColor;
-  /** Free-text saved query, e.g. "tag:work ext:pdf". */
-  query: string;
-}

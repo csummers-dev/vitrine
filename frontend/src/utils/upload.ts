@@ -155,6 +155,75 @@ export async function checkConflict(
   return conflicts;
 }
 
+/**
+ * Conflict check for a FileBrowser→FileBrowser move/copy (drag-drop, the
+ * move-tool, clipboard paste). Here `items` is always a FLAT list of the
+ * top-level entries the user picked — there is no nested upload tree.
+ *
+ * The upload-oriented `checkConflict()` doesn't fit this shape and silently
+ * misses real collisions:
+ *   • It keys each node by the URL-ENCODED `to` path (`flatToForest` uses
+ *     `item.to.replace(basePath, "")` = `encodeURIComponent(name)`), but the
+ *     server map is keyed by DECODED names — so any name with a space or
+ *     Unicode char never matches and the conflict is missed.
+ *   • A dragged FOLDER only triggers recursion into its (empty) children, so a
+ *     folder-vs-folder collision is never reported at all.
+ * In both cases it returned `[]`, the move proceeded, and the backend rejected
+ * it — the user saw an outright failure instead of the resolve-conflict prompt.
+ *
+ * This compares each item's DECODED `name` against the destination folder's
+ * immediate listing (one non-recursive fetch — a move only collides at the top
+ * level), covering files AND folders, and returns the same
+ * `ConflictingResource[]` the resolve-conflict prompt consumes. `index` is the
+ * item's position in `items` so callers can map a resolution back by index.
+ */
+export async function checkMoveConflict(
+  items: Array<{
+    name: string;
+    isDir?: boolean;
+    size?: number;
+    modified?: string;
+  }>,
+  dest: string
+): Promise<ConflictingResource[]> {
+  if (items.length === 0) return [];
+
+  let destItems: Array<{
+    name: string;
+    size: number;
+    modified: string;
+    isDir: boolean;
+  }> = [];
+  try {
+    const res = await api.fetch(dest);
+    destItems = (res.items ?? []) as typeof destItems;
+  } catch {
+    // Destination unreadable (just-created, permissions, gone) — let the move
+    // proceed; the backend stays the source of truth for real failures.
+    return [];
+  }
+
+  // Server listing names are already decoded — key by name for O(1) lookup.
+  const destMap = new Map<string, (typeof destItems)[number]>();
+  for (const entry of destItems) destMap.set(entry.name, entry);
+
+  const conflicts: ConflictingResource[] = [];
+  items.forEach((item, index) => {
+    const hit = destMap.get(item.name);
+    if (!hit) return;
+    conflicts.push({
+      index,
+      name: item.name,
+      origin: { lastModified: item.modified, size: item.size },
+      dest: { lastModified: hit.modified, size: hit.size },
+      checked: ["origin"],
+      isSmallerOnServer: item.size !== undefined ? item.size > hit.size : false,
+    });
+  });
+
+  return conflicts;
+}
+
 export function scanFiles(dt: DataTransfer): Promise<UploadList | FileList> {
   return new Promise((resolve) => {
     let reading = 0;

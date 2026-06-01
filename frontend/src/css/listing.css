@@ -119,35 +119,6 @@
   cursor: help;
 }
 
-/* Smart-folder color dots (v1.3 S2-6). Sidebar.vue uses these in its
-   smart folder list; SmartFolderView has its own scoped version. Kept
-   in the global stylesheet so the sidebar (which has no <style scoped>
-   block) can reach them. */
-.smart-folder-dot--lilac {
-  background: var(--tag-color-lilac-fg);
-}
-.smart-folder-dot--blue {
-  background: var(--tag-color-blue-fg);
-}
-.smart-folder-dot--green {
-  background: var(--tag-color-green-fg);
-}
-.smart-folder-dot--amber {
-  background: var(--tag-color-amber-fg);
-}
-.smart-folder-dot--red {
-  background: var(--tag-color-red-fg);
-}
-.smart-folder-dot--pink {
-  background: var(--tag-color-pink-fg);
-}
-.smart-folder-dot--slate {
-  background: var(--tag-color-slate-fg);
-}
-.smart-folder-dot--teal {
-  background: var(--tag-color-teal-fg);
-}
-
 /* Inline rename input — sits in place of `.item__name-text` (Stage 8). */
 #listing .item__rename-input {
   width: 100%;

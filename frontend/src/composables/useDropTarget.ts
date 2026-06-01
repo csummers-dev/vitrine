@@ -1,8 +1,8 @@
-import { inject } from "vue";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 import { files as api } from "@/api";
 import * as upload from "@/utils/upload";
+import { useTransferIndicator } from "@/composables/useTransferIndicator";
 
 /**
  * Drop-handler shared by anything in the file UI that can receive a
@@ -21,7 +21,7 @@ import * as upload from "@/utils/upload";
 export function useDropTarget() {
   const fileStore = useFileStore();
   const layoutStore = useLayoutStore();
-  const $showError = inject<IToastError>("$showError")!;
+  const { runTransfer } = useTransferIndicator();
 
   const performDrop = async (event: DragEvent, targetUrl: string) => {
     event.preventDefault();
@@ -57,16 +57,16 @@ export function useDropTarget() {
     // Same source folder + same target = no-op.
     if (items.every((it) => it.from === it.to)) return;
 
+    const isCopy = event.ctrlKey || event.metaKey;
     const action = (overwrite?: boolean, rename?: boolean) => {
-      const op = event.ctrlKey || event.metaKey ? api.copy : api.move;
-      op(items, overwrite, rename)
-        .then(() => {
-          fileStore.reload = true;
-        })
-        .catch($showError);
+      // runTransfer shows a delayed "Moving…/Copying…" toast, reloads the
+      // listing + confirms on success, and surfaces errors (RC: drag-drop
+      // moves used to give no in-progress indication).
+      const op = isCopy ? api.copy : api.move;
+      void runTransfer(() => op(items, overwrite, rename), isCopy, items);
     };
 
-    const conflict = await upload.checkConflict(items, targetUrl);
+    const conflict = await upload.checkMoveConflict(items, targetUrl);
 
     if (conflict.length > 0) {
       // Derive a single source folder from the first dragged item's url

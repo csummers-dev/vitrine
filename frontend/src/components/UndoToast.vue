@@ -1,6 +1,6 @@
 <template>
   <div class="undo-toast">
-    <Icon name="trash-2" :size="14" :stroke-width="1.6" />
+    <Icon :name="icon ?? 'trash-2'" :size="14" :stroke-width="1.6" />
     <span class="undo-toast__message">{{ message }}</span>
     <button type="button" class="undo-toast__action" @click.stop="onClick">
       Undo
@@ -14,6 +14,8 @@ import Icon from "@/components/Icon.vue";
 defineProps<{
   message: string;
   onClick: () => void;
+  /** lucide icon name; defaults to trash-2 (delete). */
+  icon?: string;
 }>();
 </script>
 
