@@ -18,7 +18,7 @@
       @mouseenter="onRootHoverEnter($event)"
       @mouseleave="onCrumbHoverLeave"
     >
-      <Icon name="house" :size="14" />
+      <Icon name="house" :size="14" class="text-[var(--c-blue)]" />
     </component>
 
     <!-- Compact ellipsis shown only at narrow widths when there are intermediate

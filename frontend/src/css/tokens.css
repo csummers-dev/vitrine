@@ -87,6 +87,20 @@
   );
 }
 
+/* ── Colorful UI palette ──────────────────────────────────────────────────
+   The six accent hues used across the app (sidebar nav icons, storage bar,
+   avatar, etc.). Lilac is the brand primary and reads on both themes, so it
+   keeps #5e6ad2 in dark too; the other five lift to lighter tones for
+   contrast on the dark canvas (overridden in html.dark below). */
+:root {
+  --c-lilac: #5e6ad2;
+  --c-blue: #3b82f6;
+  --c-teal: #0d9488;
+  --c-green: #16a34a;
+  --c-amber: #d97706;
+  --c-rose: #e11d48;
+}
+
 /* ── Dark mode tokens (Stage 11b) ────────────────────────────────────────
    Activated by `html.dark`. The plumbing in `utils/theme.ts` toggles the
    class based on user preference or system setting. Token names are
@@ -103,6 +117,16 @@
 html.dark {
   --color-accent-soft: rgba(94, 106, 210, 0.16);
   --color-accent-ring: rgba(94, 106, 210, 0.45);
+
+  /* Colorful UI palette — lilac primary stays #5e6ad2; the rest lift for the
+     dark canvas. (Per the design rule: lilac is the only hue that keeps its
+     base value in both themes.) */
+  --c-lilac: #5e6ad2;
+  --c-blue: #93c5fd;
+  --c-teal: #2dd4bf;
+  --c-green: #4ade80;
+  --c-amber: #fbbf24;
+  --c-rose: #fb7185;
 
   --color-canvas: #0e0e10;
   --color-surface: #18181b;

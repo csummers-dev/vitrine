@@ -732,12 +732,16 @@ const onItemClick = (_event: MouseEvent) => {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  /* Accent gradient — matches the brand mark + the inline-sidebar avatar.
-     Tracks the accent picker (RC-5); falls back to lilac when unset. */
-  background: linear-gradient(
-    135deg,
-    var(--color-accent, #5e6ad2) 0%,
-    var(--color-accent-strong, #4f5ac4) 100%
+  /* Rainbow conic — matches the inline-sidebar avatar in the Colorful UI. */
+  background: conic-gradient(
+    from 210deg,
+    var(--c-lilac),
+    var(--c-blue),
+    var(--c-teal),
+    var(--c-green),
+    var(--c-amber),
+    var(--c-rose),
+    var(--c-lilac)
   );
   color: white;
   display: inline-flex;

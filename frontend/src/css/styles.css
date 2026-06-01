@@ -733,12 +733,16 @@ html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .slideover {
   -webkit-backdrop-filter: blur(9px);
 }
 
-/* Sub-bars riding on an already-frosted panel: drop their opaque canvas fill
-   so the panel reads as one glass sheet (no second backdrop blur needed). */
+/* Sub-bars riding on an already-frosted panel (slide-over header/footer,
+   settings card footer): go fully TRANSPARENT so the panel's own glass shows
+   straight through and the whole panel reads as one continuous sheet. They sit
+   outside the scroll area, so nothing bleeds under them; their borders still
+   delineate. (Previously these had a canvas fill, which left a visible opaque
+   band — the reported "header/footer missing the gradient".) */
 html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .slideover__header,
 html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .slideover__footer,
 html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .settings-section__footer {
-  background-color: color-mix(in srgb, var(--color-canvas) 55%, transparent);
+  background-color: transparent;
 }
 
 /* Preview shell backdrop. */
@@ -783,4 +787,51 @@ html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) #file-select
   background-color: color-mix(in srgb, var(--color-surface) 82%, transparent);
   backdrop-filter: blur(9px);
   -webkit-backdrop-filter: blur(9px);
+}
+
+/* List-view column header (Name / Modified / Size). It's a sticky bar with an
+   opaque canvas fill that covered the mesh at the top of the listing — frost
+   it like the other chrome bars (it needs a backing since rows scroll under). */
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) #listing.list .item.header {
+  background-color: color-mix(in srgb, var(--color-canvas) 70%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* Detail-panel action buttons (Download / Share / Rename / Delete / More) —
+   shared `.info-action` class in BOTH the listing details pane (InfoPane) and
+   the preview details sidebar (PreviewInfoRail). Thin their solid surface fill
+   so the panel's glass + mesh show through; keep the border for affordance. No
+   per-button backdrop-filter (there are several; the panel behind them already
+   frosts the mesh). Hover/active states keep their own fills. */
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .info-action {
+  background-color: color-mix(in srgb, var(--color-surface) 55%, transparent);
+}
+
+/* ── Colorful UI accents ──────────────────────────────────────────────────
+   Shared helpers for the multi-color UI. They key off the palette tokens
+   (--c-lilac … --c-rose) so they adapt to light/dark automatically. */
+.avatar-rainbow {
+  background: conic-gradient(
+    from 210deg,
+    var(--c-lilac),
+    var(--c-blue),
+    var(--c-teal),
+    var(--c-green),
+    var(--c-amber),
+    var(--c-rose),
+    var(--c-lilac)
+  );
+}
+
+.storage-fill {
+  background: linear-gradient(90deg, var(--c-teal), var(--c-green));
+}
+
+/* Gradient section headline (folder title). lilac→rose, theme-aware. */
+.headline-gradient {
+  background: linear-gradient(90deg, var(--c-lilac), var(--c-rose));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }

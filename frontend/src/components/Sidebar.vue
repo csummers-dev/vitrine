@@ -68,7 +68,11 @@
           :title="$t('sidebar.myFiles')"
           :aria-label="$t('sidebar.myFiles')"
         >
-          <Icon name="folder" :size="14" />
+          <Icon
+            name="folder"
+            :size="14"
+            class="text-[var(--c-lilac)] shrink-0"
+          />
           <span class="flex-1 max-md:hidden">{{ $t("sidebar.myFiles") }}</span>
           <span
             v-if="filesCount > 0"
@@ -221,7 +225,11 @@
               class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] hover:bg-hover text-ink-2 transition"
               :title="r.path"
             >
-              <Icon name="file" :size="12" class="text-ink-3 shrink-0" />
+              <Icon
+                name="file"
+                :size="12"
+                class="text-[var(--c-blue)] shrink-0"
+              />
               <span class="truncate flex-1">{{ r.name }}</span>
             </router-link>
           </li>
@@ -276,7 +284,7 @@
         </div>
         <div class="h-1.5 rounded-full bg-elevated overflow-hidden">
           <div
-            class="h-full rounded-full bg-gradient-to-r from-accent to-[var(--color-accent-grad)] transition-all"
+            class="h-full rounded-full storage-fill transition-all"
             :style="{ width: usage.usedPercentage + '%' }"
           ></div>
         </div>
@@ -298,7 +306,7 @@
         :title="user.username"
       >
         <div
-          class="w-7 h-7 max-md:w-9 max-md:h-9 rounded-full bg-gradient-to-br from-accent to-accent-strong flex items-center justify-center text-white text-[11px] font-semibold shadow-sm shrink-0"
+          class="w-7 h-7 max-md:w-9 max-md:h-9 rounded-full avatar-rainbow flex items-center justify-center text-white text-[11px] font-semibold shadow-sm shrink-0"
         >
           {{ userInitials }}
         </div>

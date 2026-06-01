@@ -49,7 +49,7 @@ const apply = (intensity: BgIntensity, translucent: boolean) => {
 };
 
 // Singletons so the Profile controls + the bootstrap share one source of
-// truth without a Pinia store (mirrors useAccentColor / useThemePreference).
+// truth without a Pinia store (mirrors useThemePreference).
 const intensity: Ref<BgIntensity> = ref<BgIntensity>(DEFAULT_INTENSITY);
 const translucent: Ref<boolean> = ref<boolean>(DEFAULT_TRANSLUCENT);
 let inited = false;
@@ -107,7 +107,7 @@ export function useBackgroundGradient() {
   };
 }
 
-/** Mount-time bootstrap for App.vue (mirrors useAccentBootstrap). */
+/** Mount-time bootstrap for App.vue (mirrors useThemeBootstrap). */
 export function useBackgroundGradientBootstrap() {
   const { init } = useBackgroundGradient();
   onMounted(init);

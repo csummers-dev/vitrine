@@ -20,7 +20,6 @@ import { useCommandPalette } from "@/composables/useCommandPalette";
 import { useShortcutsOverlay } from "@/composables/useShortcutsOverlay";
 import { installShortcuts, useShortcuts } from "@/composables/useShortcuts";
 import { useThemeBootstrap } from "@/composables/useThemePreference";
-import { useAccentBootstrap } from "@/composables/useAccentColor";
 import { useBackgroundGradientBootstrap } from "@/composables/useBackgroundGradient";
 import CommandPalette from "@/components/CommandPalette.vue";
 import ShortcutsOverlay from "@/components/ShortcutsOverlay.vue";
@@ -38,9 +37,6 @@ const { register } = useShortcuts();
 // preference, applies it, and starts watching the OS color-scheme setting
 // so "System" updates live without a refresh.
 useThemeBootstrap();
-
-// S8-4: apply the user's saved accent-color preset (per-user, prefs bag).
-useAccentBootstrap();
 
 // Apply the user's saved ambient accent-mesh background prefs (intensity +
 // translucent sidebar). Sets data-attributes on <html>; styles.css does the

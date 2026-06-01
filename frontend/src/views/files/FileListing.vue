@@ -18,7 +18,7 @@
             :class="[
               'h-6 w-7 rounded flex items-center justify-center transition',
               viewMode === 'list'
-                ? 'bg-elevated text-ink-1 shadow-sm'
+                ? 'bg-elevated text-[var(--c-blue)] shadow-sm'
                 : 'text-ink-3 hover:text-ink-1',
             ]"
             title="List"
@@ -31,7 +31,7 @@
             :class="[
               'h-6 w-7 rounded flex items-center justify-center transition',
               viewMode === 'mosaic'
-                ? 'bg-elevated text-ink-1 shadow-sm'
+                ? 'bg-elevated text-[var(--c-blue)] shadow-sm'
                 : 'text-ink-3 hover:text-ink-1',
             ]"
             title="Grid"
@@ -44,7 +44,7 @@
             :class="[
               'h-6 w-7 rounded flex items-center justify-center transition',
               viewMode === 'mosaic gallery'
-                ? 'bg-elevated text-ink-1 shadow-sm'
+                ? 'bg-elevated text-[var(--c-blue)] shadow-sm'
                 : 'text-ink-3 hover:text-ink-1',
             ]"
             title="Gallery"
@@ -65,7 +65,11 @@
           :title="`Sort: ${sortLabel}`"
           :aria-label="`Sort: ${sortLabel}`"
         >
-          <Icon name="arrow-down-narrow-wide" :size="14" />
+          <Icon
+            name="arrow-down-narrow-wide"
+            :size="14"
+            class="text-[var(--c-green)]"
+          />
           <span class="max-md:hidden">{{ sortLabel }}</span>
         </button>
         <context-menu
@@ -274,7 +278,7 @@
             />
             <h1
               v-else
-              class="text-[22px] font-semibold text-ink-1 leading-tight truncate max-md:text-[18px]"
+              class="headline-gradient text-[22px] font-semibold leading-tight truncate max-md:text-[18px]"
             >
               {{ folderTitle }}
             </h1>
@@ -994,6 +998,57 @@ const photoInput = ref<HTMLInputElement | null>(null);
 // non-virtual `revealPreviousItem` querySelector + scrollIntoView).
 const listScroller = ref<{ scrollToItem: (index: number) => void } | null>(
   null
+);
+
+// ── Preserve scroll position across same-directory reloads ──────────────
+// When an action completes (e.g. an upload into the current folder), the store
+// flips `reload` → Files.vue re-fetches → `layoutStore.loading` swaps the rows
+// for the skeleton, which shrinks the scroll container so the browser zeroes
+// scrollTop. We snapshot the position just before that swap (the loading
+// watcher runs pre-render, while the rows are still mounted) and restore it
+// once the rows are back — but ONLY when the directory is unchanged. On a real
+// navigation to a different folder the paths differ, so we (correctly) leave
+// the user at the top.
+let savedScrollTop = 0;
+let savedScrollPath: string | null = null;
+
+// The scrolling element differs by view: the list view uses RecycleScroller's
+// own scroller; grid/gallery scroll `scrollSection`. Capture/restore both —
+// writing scrollTop to the non-scrolling one is a harmless no-op.
+const scrollEls = (): HTMLElement[] => {
+  const els: HTMLElement[] = [];
+  if (scrollSection.value) els.push(scrollSection.value);
+  const rec = (listScroller.value as { $el?: HTMLElement } | null)?.$el;
+  if (rec && rec !== scrollSection.value) els.push(rec);
+  return els;
+};
+
+watch(
+  () => layoutStore.loading,
+  (loading) => {
+    if (loading) {
+      // Pre-render: rows still mounted, scrollTop still valid.
+      savedScrollPath = fileStore.req?.path ?? null;
+      savedScrollTop = Math.max(0, ...scrollEls().map((e) => e.scrollTop));
+    } else if (
+      savedScrollTop > 0 &&
+      fileStore.req?.path != null &&
+      fileStore.req.path === savedScrollPath
+    ) {
+      // Same directory came back (a refresh, not a navigation) — restore.
+      const top = savedScrollTop;
+      void nextTick(() => {
+        requestAnimationFrame(() => {
+          for (const el of scrollEls()) el.scrollTop = top;
+        });
+      });
+      savedScrollTop = 0;
+      savedScrollPath = null;
+    } else {
+      savedScrollTop = 0;
+      savedScrollPath = null;
+    }
+  }
 );
 
 // ── Grid/gallery virtualization (CH-1) ──────────────────────────────

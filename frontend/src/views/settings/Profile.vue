@@ -78,39 +78,6 @@
           aria-label="Theme"
         />
       </SettingsRow>
-      <!-- S8-4: accent color picker. Per-user (prefs bag, cross-device);
-           overrides the --color-accent token + derivatives at runtime. -->
-      <SettingsRow
-        label="Accent color"
-        description="Used across buttons, links, and highlights. Syncs to your account."
-      >
-        <div
-          class="accent-swatches"
-          role="radiogroup"
-          aria-label="Accent color"
-        >
-          <button
-            v-for="preset in accentPresets"
-            :key="preset.key"
-            type="button"
-            class="accent-swatch"
-            :class="{ 'accent-swatch--active': accentKey === preset.key }"
-            :style="{ '--swatch': preset.base }"
-            :title="preset.label"
-            :aria-label="preset.label"
-            role="radio"
-            :aria-checked="accentKey === preset.key"
-            @click="setAccent(preset.key)"
-          >
-            <Icon
-              v-if="accentKey === preset.key"
-              name="check"
-              :size="13"
-              :stroke-width="3"
-            />
-          </button>
-        </div>
-      </SettingsRow>
 
       <!-- Ambient accent-mesh background (mirrors the login screen). Per-user,
            syncs to the account; "Off" disables it entirely. -->
@@ -230,7 +197,6 @@ import {
   type ThemePreference,
 } from "@/composables/useThemePreference";
 import { usePreferences } from "@/composables/usePreferences";
-import { useAccentColor } from "@/composables/useAccentColor";
 import {
   useBackgroundGradient,
   type BgIntensity,
@@ -259,12 +225,6 @@ const showTagsOnRows = ref<boolean>(
   prefs.get<boolean>("tags.showOnRows", true)
 );
 
-// S8-4: accent color picker. Singleton composable shared with the
-// app-wide bootstrap; `set` persists to the prefs bag + applies live.
-const accentColor = useAccentColor();
-const accentPresets = accentColor.presets;
-const accentKey = accentColor.accent;
-const setAccent = (key: string) => accentColor.set(key);
 const onShowTagsChange = (val: boolean) => {
   void prefs.set("tags.showOnRows", val);
 };
@@ -559,57 +519,5 @@ const updatePassword = async () => {
 .savestate-leave-to {
   opacity: 0;
   transform: translateY(6px);
-}
-
-/* ── S8-4: accent swatch picker ─────────────────────────────────────── */
-.accent-swatches {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.accent-swatch {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-full, 9999px);
-  background: var(--swatch);
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
-  transition:
-    transform 0.12s ease,
-    box-shadow 0.12s ease;
-}
-
-.accent-swatch:hover {
-  transform: scale(1.08);
-}
-
-.accent-swatch:focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 2px var(--color-surface, #fff),
-    0 0 0 4px var(--swatch);
-}
-
-/* Selected: a ringed halo using the swatch's own color. */
-.accent-swatch--active {
-  box-shadow:
-    0 0 0 2px var(--color-surface, #fff),
-    0 0 0 4px var(--swatch);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .accent-swatch {
-    transition: none;
-  }
-  .accent-swatch:hover {
-    transform: none;
-  }
 }
 </style>
