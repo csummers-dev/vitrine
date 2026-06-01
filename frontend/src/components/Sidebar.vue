@@ -264,7 +264,7 @@
       v-if="isLoggedIn && isFiles && !disableUsedPercentage"
       class="px-3 pb-3 max-md:hidden"
     >
-      <div class="p-3 rounded-lg border border-line bg-surface">
+      <div class="sidebar-storage p-3 rounded-lg border border-line bg-surface">
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-1.5">
             <Icon name="hard-drive" :size="14" class="text-ink-2" />

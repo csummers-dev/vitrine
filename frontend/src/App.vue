@@ -21,6 +21,7 @@ import { useShortcutsOverlay } from "@/composables/useShortcutsOverlay";
 import { installShortcuts, useShortcuts } from "@/composables/useShortcuts";
 import { useThemeBootstrap } from "@/composables/useThemePreference";
 import { useAccentBootstrap } from "@/composables/useAccentColor";
+import { useBackgroundGradientBootstrap } from "@/composables/useBackgroundGradient";
 import CommandPalette from "@/components/CommandPalette.vue";
 import ShortcutsOverlay from "@/components/ShortcutsOverlay.vue";
 
@@ -40,6 +41,12 @@ useThemeBootstrap();
 
 // S8-4: apply the user's saved accent-color preset (per-user, prefs bag).
 useAccentBootstrap();
+
+// Apply the user's saved ambient accent-mesh background prefs (intensity +
+// translucent sidebar). Sets data-attributes on <html>; styles.css does the
+// rest. Per-user, prefs bag — defaults match the CSS defaults (subtle +
+// translucent) so the common case has no flash before this runs.
+useBackgroundGradientBootstrap();
 
 // Install the global shortcut dispatcher (window-level listener). Idempotent.
 installShortcuts();

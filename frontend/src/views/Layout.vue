@@ -1,5 +1,10 @@
 <template>
-  <div class="flex h-screen overflow-hidden bg-canvas text-ink-1">
+  <div class="app-shell flex h-screen overflow-hidden bg-canvas text-ink-1">
+    <!-- Ambient accent-mesh background (per-user; mirrors the login screen).
+         Sits on the canvas behind all in-flow content; visibility + intensity
+         are driven by data-attributes on <html> (useBackgroundGradient). -->
+    <div class="app-mesh" aria-hidden="true"></div>
+
     <!-- Skip-to-content link: invisible until focused via Tab. Must be the
          first focusable element so a keyboard user reaches it before the
          sidebar's full nav tree. -->

@@ -1316,11 +1316,16 @@ watch(route, () => {
 
 onMounted(async () => {
   window.addEventListener("keydown", key);
+  // Capture phase — see navKey's doc comment (beats video.js slider keys).
+  window.addEventListener("keydown", navKey, true);
   listing.value = fileStore.oldReq?.items ?? null;
   updatePreview();
 });
 
-onBeforeUnmount(() => window.removeEventListener("keydown", key));
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", key);
+  window.removeEventListener("keydown", navKey, true);
+});
 
 // ── Actions ──────────────────────────────────────────────────────────
 const deleteFile = () => {
@@ -1364,6 +1369,53 @@ const next = () => {
   router.replace({ path: nextLink.value });
 };
 
+/** True only for genuine text-entry targets, where ←/→ should move the
+ *  caret rather than navigate files. Range / checkbox / slider inputs and
+ *  the video-player controls are intentionally NOT text-entry, so arrows
+ *  over them still navigate between files. */
+const isTextEntry = (el: HTMLElement | null): boolean => {
+  if (!el) return false;
+  if (el.isContentEditable) return true;
+  const tag = el.tagName?.toLowerCase();
+  if (tag === "textarea") return true;
+  if (tag === "input") {
+    const type = (el.getAttribute("type") || "text").toLowerCase();
+    return !["range", "checkbox", "radio", "button", "submit", "reset", "file", "color"].includes(type); // prettier-ignore
+  }
+  return false;
+};
+
+/**
+ * ←/→ neighbor-file navigation, bound in the CAPTURE phase on window.
+ *
+ * Capture runs before the focused element's own bubble-phase handlers, so
+ * we beat controls that would otherwise swallow the arrows — notably
+ * video.js's seek / volume sliders, which stopPropagation on arrow keys
+ * when focused (the "arrows occasionally dead in video" bug). We
+ * stopPropagation after navigating so the underlying control doesn't ALSO
+ * act on the key.
+ *
+ * EPUB is handled separately: its book lives in an iframe whose keydowns
+ * never reach this window, so EpubViewer forwards them via
+ * @navigate-prev / @navigate-next instead.
+ */
+const navKey = (event: KeyboardEvent) => {
+  if (layoutStore.currentPrompt !== null) return;
+  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+  if (event.defaultPrevented) return;
+  if (isTextEntry(event.target as HTMLElement | null)) return;
+
+  if (event.key === "ArrowRight" && hasNext.value) {
+    event.preventDefault();
+    event.stopPropagation();
+    next();
+  } else if (event.key === "ArrowLeft" && hasPrevious.value) {
+    event.preventDefault();
+    event.stopPropagation();
+    prev();
+  }
+};
+
 const key = (event: KeyboardEvent) => {
   if (layoutStore.currentPrompt !== null) return;
   // Don't hijack arrows when the user is typing into a form field
@@ -1382,21 +1434,11 @@ const key = (event: KeyboardEvent) => {
   // container (not the close button), so Enter does nothing at all rather
   // than unexpectedly closing the preview.
   //
-  // ←/→ navigate to the neighbor preview item for EVERY type, video
-  // included — video.js's own arrow-seek is disabled in VideoPlayer so the
-  // keys are free for file navigation (per request). ↑/↓ stay page-nav for
-  // paginated docs and volume for video (handled by video.js).
-  if (k === "ArrowRight") {
-    if (hasNext.value) {
-      event.preventDefault();
-      next();
-    }
-  } else if (k === "ArrowLeft") {
-    if (hasPrevious.value) {
-      event.preventDefault();
-      prev();
-    }
-  } else if (k === "ArrowDown") {
+  // ←/→ neighbor-file navigation lives in navKey (capture phase) so it can
+  // beat child handlers that swallow the arrows (notably video.js's slider
+  // controls). ↑/↓ stay page-nav for paginated docs here, and volume for
+  // video (handled by video.js).
+  if (k === "ArrowDown") {
     // ↓ = next PAGE in paginated docs (←/→ stay file nav). For EPUB the
     // book is usually focused in its iframe, where EpubViewer handles the
     // key directly; this covers the case where focus is outside the iframe.

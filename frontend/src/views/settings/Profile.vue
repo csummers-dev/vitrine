@@ -111,6 +111,25 @@
           </button>
         </div>
       </SettingsRow>
+
+      <!-- Ambient accent-mesh background (mirrors the login screen). Per-user,
+           syncs to the account; "Off" disables it entirely. -->
+      <SettingsRow
+        label="Background gradient"
+        description="A soft wash of all six accent colors behind the app, like the login screen. Syncs to your account."
+      >
+        <SegmentedControl
+          v-model="bgIntensity"
+          :options="bgIntensityOptions"
+          aria-label="Background gradient intensity"
+        />
+      </SettingsRow>
+      <SettingsRow
+        label="Translucent surfaces"
+        description="Let the background gradient glow through panels, toolbars, and the sidebar."
+      >
+        <Toggle v-model="bgTranslucent" />
+      </SettingsRow>
     </SettingsSection>
 
     <!-- ── Password (explicit save) ─────────────────────────────────── -->
@@ -212,6 +231,10 @@ import {
 } from "@/composables/useThemePreference";
 import { usePreferences } from "@/composables/usePreferences";
 import { useAccentColor } from "@/composables/useAccentColor";
+import {
+  useBackgroundGradient,
+  type BgIntensity,
+} from "@/composables/useBackgroundGradient";
 
 const { t } = useI18n();
 const authStore = useAuthStore();
@@ -258,6 +281,20 @@ const themeOptions: { value: ThemePreference; label: string; icon: string }[] =
     { value: "dark", label: "Dark", icon: "moon" },
     { value: "system", label: "System", icon: "monitor" },
   ];
+
+// Ambient accent-mesh app background (per-user; same gradient as the login
+// screen). Singleton composable shared with the app-wide bootstrap; the
+// computed setters persist to the prefs bag + apply live.
+const bg = useBackgroundGradient();
+const bgIntensityOptions = bg.intensities;
+const bgIntensity = computed<BgIntensity>({
+  get: () => bg.intensity.value,
+  set: (v) => bg.setIntensity(v),
+});
+const bgTranslucent = computed<boolean>({
+  get: () => bg.translucent.value,
+  set: (v) => bg.setTranslucent(v),
+});
 
 // ── Password (explicit save) ─────────────────────────────────────────
 const password = ref<string>("");

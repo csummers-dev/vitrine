@@ -643,3 +643,144 @@ html.dark .confirm-prompt__icon.is-warn {
     padding-right: 12px !important;
   }
 }
+
+/* ───────────────────────────────────────────────────────────────────────
+   Ambient accent-mesh app background (per-user — useBackgroundGradient).
+   Mirrors the login screen's six-color radial mesh, applied subtly behind the
+   whole app shell. The layer lives in Layout.vue (.app-mesh) and is driven by
+   data-attributes on <html>:
+     data-bg-intensity = off | whisper | subtle | bold   (layer opacity)
+     data-bg-surfaces  = translucent | solid             (glassy chrome)
+   Defaults (subtle + translucent) match the composable defaults, so the
+   common case paints correctly before init() runs. No blur() filter on the
+   mesh itself — soft radial edges only — to keep paint cheap. */
+
+/* .app-shell forms a stacking context (isolate) so the z-index:-1 mesh paints
+   ABOVE the canvas background but BEHIND every in-flow surface. */
+.app-shell {
+  position: relative;
+  isolation: isolate;
+}
+
+.app-mesh {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.72; /* = "subtle" (default before data-bg-intensity is set) */
+  background:
+    radial-gradient(ellipse 62% 58% at 14% 16%, rgba(94, 106, 210, 0.2) 0%, transparent 62%),
+    radial-gradient(ellipse 62% 58% at 86% 14%, rgba(59, 130, 246, 0.18) 0%, transparent 62%),
+    radial-gradient(ellipse 62% 58% at 92% 56%, rgba(13, 148, 136, 0.16) 0%, transparent 62%),
+    radial-gradient(ellipse 62% 58% at 72% 88%, rgba(22, 163, 74, 0.16) 0%, transparent 62%),
+    radial-gradient(ellipse 62% 58% at 22% 86%, rgba(217, 119, 6, 0.16) 0%, transparent 62%),
+    radial-gradient(ellipse 62% 58% at 8% 52%, rgba(225, 29, 72, 0.16) 0%, transparent 62%);
+}
+
+html.dark .app-mesh {
+  background:
+    radial-gradient(ellipse 62% 58% at 14% 16%, rgba(124, 135, 229, 0.34) 0%, transparent 64%),
+    radial-gradient(ellipse 62% 58% at 86% 14%, rgba(96, 165, 250, 0.28) 0%, transparent 64%),
+    radial-gradient(ellipse 62% 58% at 92% 56%, rgba(45, 212, 191, 0.24) 0%, transparent 64%),
+    radial-gradient(ellipse 62% 58% at 72% 88%, rgba(74, 222, 128, 0.22) 0%, transparent 64%),
+    radial-gradient(ellipse 62% 58% at 22% 86%, rgba(251, 191, 36, 0.22) 0%, transparent 64%),
+    radial-gradient(ellipse 62% 58% at 8% 52%, rgba(251, 113, 133, 0.24) 0%, transparent 64%);
+}
+
+/* Intensity knob (layer opacity); "off" removes the layer entirely. */
+html[data-bg-intensity="off"] .app-mesh {
+  display: none;
+}
+html[data-bg-intensity="whisper"] .app-mesh {
+  opacity: 0.4;
+}
+html[data-bg-intensity="subtle"] .app-mesh {
+  opacity: 0.72;
+}
+html[data-bg-intensity="bold"] .app-mesh {
+  opacity: 1;
+}
+
+/* ── Translucent ("glass") chrome surfaces ──────────────────────────────
+   When the mesh is on AND "Translucent surfaces" is left enabled (the
+   default), the app's opaque chrome goes semi-transparent + frosted so the
+   single accent mesh glows THROUGH it — instead of every panel covering it
+   with a flat block (the reported "surfaces missing the gradient" issue).
+
+   The `:not([data-bg-surfaces="solid"])` gate means the default (attribute
+   absent, i.e. pre-JS) already renders glassy → no first-paint flash — while
+   clearing the toggle (…="solid") or turning the mesh off reverts every
+   surface to solid. These selectors outweigh the bg-canvas / bg-surface
+   utilities, so they win the cascade. Backed by data-attributes that
+   useBackgroundGradient writes on <html>. */
+
+/* Chrome bars (sidebar / files toolbar / preview toolbar) — airier frost. */
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .sidebar-root,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .header-bar,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .preview-toolbar {
+  background-color: color-mix(in srgb, var(--color-canvas) 64%, transparent);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+
+/* Content panels (details / settings / slide-overs) — more opaque so text
+   and form fields stay crisp, with a touch more blur. */
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .info-pane,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .settings-section,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .slideover {
+  background-color: color-mix(in srgb, var(--color-surface) 82%, transparent);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+}
+
+/* Sub-bars riding on an already-frosted panel: drop their opaque canvas fill
+   so the panel reads as one glass sheet (no second backdrop blur needed). */
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .slideover__header,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .slideover__footer,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .settings-section__footer {
+  background-color: color-mix(in srgb, var(--color-canvas) 55%, transparent);
+}
+
+/* Preview shell backdrop. */
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .preview-shell {
+  background-color: color-mix(in srgb, var(--color-canvas) 70%, transparent);
+}
+
+/* Grid / gallery tiles — lightly translucent, NO backdrop-filter (there can
+   be many on screen at once; the mesh is soft enough to read unblurred). */
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) #listing.mosaic .item {
+  background-color: color-mix(in srgb, var(--color-surface) 88%, transparent);
+}
+
+/* Sidebar storage card sits INSIDE the already-frosted sidebar — just thin
+   its fill (no second blur) so that glass shows through. */
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .sidebar-storage {
+  background-color: color-mix(in srgb, var(--color-surface) 45%, transparent);
+}
+
+/* Review pass — more chrome bars: text-editor toolbar + settings sub-nav rail. */
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .editor-topbar,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .settings-rail {
+  background-color: color-mix(in srgb, var(--color-canvas) 64%, transparent);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+
+/* Review pass — floating menus, popovers + dialogs (command palette, right-
+   click context menu, header/sort dropdowns, the shortcut cheat-sheet, confirm
+   prompts, the upload dock, and the mobile selection bar). Same frosted-panel
+   treatment as the side panels so nothing that floats over the mesh reads as a
+   flat block. (The mobile nav drawer + the code-editing surface are left solid
+   on purpose: a drawer rides a dark scrim, and code needs maximum contrast.) */
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .cmd-palette,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .context-menu,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .dropdown-modal-list,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .shortcuts,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .confirm-prompt,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .confirm-dialog,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .upload-dock,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) #file-selection {
+  background-color: color-mix(in srgb, var(--color-surface) 82%, transparent);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+}

@@ -183,45 +183,51 @@ const applyTheme = () => {
  * bundle), so the parent window never sees the keydown and file-to-file
  * arrow nav silently dies as soon as the user clicks into the book.
  */
+// A single physical arrow press delivers BOTH keydown and keyup, and may
+// arrive via both epubjs's rendition hook and our direct document listener.
+// We always suppress the in-iframe default (so the book doesn't page-turn on
+// top of us), but only ACT once per press via a short dedupe window. epubjs
+// forwards keyUP most reliably (the documented page-turn hook); keydown is
+// less consistent across versions — so we navigate on whichever lands first.
+let lastArrowTs = 0;
+const ARROW_DEDUPE_MS = 350;
+
 const handleIframeKey = (event: KeyboardEvent) => {
-  if (event.key === "ArrowLeft") {
+  const k = event.key;
+  const isArrow =
+    k === "ArrowLeft" ||
+    k === "ArrowRight" ||
+    k === "ArrowUp" ||
+    k === "ArrowDown";
+
+  if (isArrow) {
+    // Always stop epubjs / vue-reader's own page-turn (it fires on keydown
+    // AND keyup) so the book doesn't move in addition to our action.
     event.preventDefault();
     event.stopImmediatePropagation();
-    emit("navigatePrev");
-  } else if (event.key === "ArrowRight") {
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    emit("navigateNext");
-  } else if (event.key === "ArrowDown") {
-    // ↓ turns to the next page WITHIN the book (←/→ change files).
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    nextPage();
-  } else if (event.key === "ArrowUp") {
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    prevPage();
-  } else if (event.key === "Escape") {
+    const now = Date.now();
+    if (now - lastArrowTs < ARROW_DEDUPE_MS) return; // already acted this press
+    lastArrowTs = now;
+    // ←/→ change files (emit up to Preview); ↑/↓ turn pages within the book.
+    if (k === "ArrowLeft") emit("navigatePrev");
+    else if (k === "ArrowRight") emit("navigateNext");
+    else if (k === "ArrowDown") nextPage();
+    else if (k === "ArrowUp") prevPage();
+    return;
+  }
+
+  if (k === "Escape") {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
   }
 };
 
 const installIframeKeyHandler = (r: Rendition) => {
-  // Route 1: epubjs's DOM event forwarding (best-effort).
+  // epubjs forwards the iframe's keyboard events to the rendition emitter.
+  // Route BOTH keydown and keyup through handleIframeKey — keyup is the
+  // reliable one across epubjs versions, keydown the snappier one; the
+  // dedupe window means a keydown+keyup pair still navigates only once.
   r.on("keydown", (event: KeyboardEvent) => handleIframeKey(event));
-  r.on("keyup", (event: KeyboardEvent) => {
-    // vue-reader's in-book page-turn fires on keyup for arrows; if we
-    // already handled the keydown for file nav, swallow the keyup too
-    // so we don't simultaneously flip a page inside the book.
-    if (
-      event.key === "ArrowLeft" ||
-      event.key === "ArrowRight" ||
-      event.key === "ArrowUp" ||
-      event.key === "ArrowDown"
-    ) {
-      event.stopImmediatePropagation();
-    }
-  });
+  r.on("keyup", (event: KeyboardEvent) => handleIframeKey(event));
 };
 
 /**
@@ -233,6 +239,7 @@ const attachIframeKey = (view: { iframe?: HTMLIFrameElement } | null) => {
   const doc = view?.iframe?.contentDocument;
   if (!doc) return;
   doc.addEventListener("keydown", handleIframeKey as EventListener, true);
+  doc.addEventListener("keyup", handleIframeKey as EventListener, true);
 };
 
 /**
@@ -258,6 +265,7 @@ const wireIframeDoc = (ifr: HTMLIFrameElement) => {
   }
   if (!doc || wiredDocs.has(doc)) return;
   doc.addEventListener("keydown", handleIframeKey as EventListener, true);
+  doc.addEventListener("keyup", handleIframeKey as EventListener, true);
   wiredDocs.add(doc);
 };
 
