@@ -2,6 +2,7 @@ import {
   computed,
   onBeforeUnmount,
   ref,
+  toRaw,
   type ComputedRef,
   type Ref,
 } from "vue";
@@ -91,6 +92,19 @@ const isTypingTarget = (el: EventTarget | null): boolean => {
  * do block on prompts, palette, and explicit slide-overs.
  */
 const isOverlayBlocking = (): boolean => {
+  try {
+    return computeOverlayBlocking();
+  } catch (err) {
+    // This runs on EVERY keydown. If a store/composable access here ever
+    // throws, an un-caught error would abort the dispatcher for that key —
+    // and because it'd throw deterministically, it would silently disable
+    // *every* shortcut. Fail open (treat as not-blocking) and log instead.
+    console.error("[shortcuts] overlay-blocking check failed:", err);
+    return false;
+  }
+};
+
+const computeOverlayBlocking = (): boolean => {
   const layoutStore = useLayoutStore();
   const palette = useCommandPalette();
   const mobileNav = useMobileNav();
@@ -156,6 +170,16 @@ const findChordMatch = (
   return null;
 };
 
+/** Invoke a shortcut handler, isolating any error so a single broken handler
+ *  can't surface as an uncaught exception out of the global keydown listener. */
+const runHandler = (def: ShortcutDefinition, event: KeyboardEvent) => {
+  try {
+    def.handler(event);
+  } catch (err) {
+    console.error(`[shortcuts] handler "${def.id}" failed:`, err);
+  }
+};
+
 const dispatch = (event: KeyboardEvent) => {
   // Always allow modifier-driven combos to pass through; those have their
   // own dedicated handlers elsewhere (Ctrl+S, Cmd+K, etc.).
@@ -173,7 +197,7 @@ const dispatch = (event: KeyboardEvent) => {
     clearChord();
     if (match && !typing && !blocked) {
       event.preventDefault();
-      match.handler(event);
+      runHandler(match, event);
       return;
     }
     // Fall through — the second key wasn't part of a chord; treat it as
@@ -186,7 +210,7 @@ const dispatch = (event: KeyboardEvent) => {
     if (typing && !single.allowInInput) return;
     if (blocked) return;
     event.preventDefault();
-    single.handler(event);
+    runHandler(single, event);
     return;
   }
 
@@ -229,8 +253,12 @@ export function useShortcuts() {
   const register = (def: ShortcutDefinition) => {
     registry.value.set(def.id, def);
     const unregister = () => {
-      // Guard against re-registering a stale id during HMR.
-      if (registry.value.get(def.id) === def) {
+      // Only delete if THIS registration still owns the id (guards against an
+      // unmount clobbering a newer registration that reused the id, e.g. HMR).
+      // `registry` is a reactive ref(Map), so `.get()` hands back a reactive
+      // PROXY of the stored def — compare against the raw object or `=== def`
+      // is always false and the entry would never actually be removed.
+      if (toRaw(registry.value.get(def.id)) === def) {
         registry.value.delete(def.id);
       }
     };

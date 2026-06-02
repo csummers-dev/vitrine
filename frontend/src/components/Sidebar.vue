@@ -162,11 +162,17 @@
             @dragend="onFavDragEnd"
             @contextmenu="onFavoriteContextMenu(path, $event)"
           >
-            <router-link
-              :to="path"
-              draggable="false"
-              class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] hover:bg-hover text-ink-2 transition"
+            <!-- Plain div (not a router-link): a real <a> has special
+                 browser drag handling that fights the parent <li>'s HTML5
+                 drag (reorder/remove never starts). Navigate on click
+                 instead — mirrors the listing rows, which drag reliably. -->
+            <div
+              class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] hover:bg-hover text-ink-2 transition cursor-pointer"
+              role="link"
+              tabindex="0"
               :title="path"
+              @click="navigateFavorite(path)"
+              @keydown.enter="navigateFavorite(path)"
             >
               <Icon
                 name="star"
@@ -176,7 +182,7 @@
                 class="text-amber-500 shrink-0"
               />
               <span class="truncate flex-1">{{ favoriteName(path) }}</span>
-            </router-link>
+            </div>
           </li>
         </ul>
       </nav>
@@ -621,6 +627,12 @@ export default {
       }
     };
 
+    // Navigate to a favorited folder on click (the row is a plain div, not a
+    // router-link — see the template comment for why).
+    const navigateFavorite = (path) => {
+      if (router.currentRoute.value.fullPath !== path) router.push(path);
+    };
+
     const onFavDragStart = (index, event) => {
       draggingFavIndex.value = index;
       favWillRemove.value = false;
@@ -723,6 +735,7 @@ export default {
       removeHintPos,
       favListEl,
       favoriteName,
+      navigateFavorite,
       onFavDragStart,
       onFavDragOver,
       onFavDragLeave,

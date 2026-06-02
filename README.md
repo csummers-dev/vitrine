@@ -4,7 +4,7 @@
 
 # filebrowser pretty
 
-[![Version](https://img.shields.io/badge/version-1.3.1-5e6ad2?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-1.3.2-5e6ad2?style=flat-square)](#)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
 [![Vue](https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js&logoColor=white)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
@@ -185,6 +185,21 @@ Or skip Docker entirely and run the binary directly: `./filebrowser` — opens o
 | EXIF | **exifr 7** |
 
 ---
+
+### v1.3.2 — Preview, drag & drop, and notification fixes
+
+- **PDF previews fixed for large documents** — pages now render lazily (only what's near the viewport, released as you scroll away) with a per-page resolution cap, so long or high-resolution PDFs no longer go blank partway through
+- **Cover thumbnails made reliable** — fixed PDF / audio / EPUB cover generation (`pdftoppm` renders to a temp file instead of an unreliable stdout mode that failed on many files)
+- **Multi-file zip download** — selecting several files and downloading them as a zip no longer returns a 401
+- **Favorites drag fixed** — reordering pinned folders, and dragging a pin out of the section to remove it, work again (the row was a link that hijacked the drag)
+- **Video preview** — the transcode wait now reads "Converting video for playback…" with a live elapsed timer instead of an open-ended spinner; Picture-in-Picture was removed
+- **EPUB preview** — fixed chapter-list (TOC) overlap and added a dark-mode toggle that's independent of the app theme
+- **Notifications** — every toast now appears bottom-center, newest stacked on top, with semantic colors (green = success, red = failure, amber = attention) and a separating border
+- **Details panel** — the action buttons (Share / Download / Rename / Delete / …) are color-coded for faster scanning
+- **Drag & drop** — the drop-target folder shows a clear accent ring + tint; the marquee/lasso no longer selects page text, and Ctrl-drag no longer opens a context menu
+- **Folder header** — removed the misleading folder "size" (it showed the directory's own bytes, not the size of its contents)
+- **Reliability** — keyboard shortcuts now unregister correctly when leaving a view, and the dispatcher is hardened so one bad handler can't disable every shortcut; creating a folder over a misconfigured mount returns a clear 409 instead of a 500; fixed a stray missing-import console warning
+- **Tests & CI** — +37 frontend unit tests (113 total) covering sort, palette, favorites, recents, MRU, and keyboard logic; CI now runs lint + type-check + tests on every push
 
 ### v1.3.1 — Cover thumbnails, favorites polish, and fixes
 

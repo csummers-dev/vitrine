@@ -2180,6 +2180,9 @@ const resetOpacity = () => {
 
   Array.from(items).forEach((file: Element) => {
     (file as HTMLElement).style.opacity = "1";
+    // Clear any lingering drop-into highlight (covers Esc-cancel while the
+    // cursor was still inside a folder's into-zone).
+    file.classList.remove("item--drop-into");
   });
 };
 

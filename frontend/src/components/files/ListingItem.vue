@@ -371,6 +371,10 @@ const enterIntoZone = (rowEl: HTMLElement) => {
   if (inIntoZone) return;
   inIntoZone = true;
   rowEl.style.opacity = "1";
+  // Strong accent ring + tint so "this folder will receive the drop" reads at
+  // a glance (the old opacity-only cue was too subtle). Cleared in
+  // leaveIntoZone / drop, and swept by FileListing.resetOpacity on drag end.
+  rowEl.classList.add("item--drop-into");
   startSpringLoad();
   emit("rowIntoZone", true);
 };
@@ -382,6 +386,7 @@ const leaveIntoZone = (rowEl: HTMLElement) => {
   // sets all .item to 0.5 opacity; we just undo our override so it
   // re-asserts naturally if a drag is still in flight.
   rowEl.style.opacity = "0.5";
+  rowEl.classList.remove("item--drop-into");
   cancelSpringLoad();
   emit("rowIntoZone", false);
 };
@@ -755,6 +760,7 @@ const drop = async (event: DragEvent) => {
   if (inIntoZone) {
     inIntoZone = false;
     rowEl.style.opacity = "0.5";
+    rowEl.classList.remove("item--drop-into");
     emit("rowIntoZone", false);
   }
 

@@ -155,10 +155,6 @@ const effectiveSource = computed(() =>
 
 const emit = defineEmits<{
   (e: "metadata", meta: VideoMeta): void;
-  /** Picture-in-Picture availability + state (v1.3 S5-8). Emitted on
-   *  attach and whenever PiP enters/leaves so the toolbar button can
-   *  show/hide + reflect the active state. */
-  (e: "pip", state: { supported: boolean; active: boolean }): void;
 }>();
 
 const player = ref<InstanceType<typeof VideoPlayer> | null>(null);
@@ -205,56 +201,17 @@ const onVideoError = () => {
   }
 };
 
-// ── Picture-in-Picture (v1.3 S5-8) ─────────────────────────────────
-/** Report PiP support + current active state to the parent toolbar. */
-const emitPipState = () => {
-  const supported =
-    !!document.pictureInPictureEnabled && !video?.disablePictureInPicture;
-  emit("pip", {
-    supported,
-    active: !!video && document.pictureInPictureElement === video,
-  });
-};
-
-/** Toggle PiP for the current <video>. Exposed for the toolbar button.
- *  Wrapped in try/catch: requestPictureInPicture rejects if the frame
- *  isn't ready or the gesture isn't trusted — a no-op is the right
- *  fallback (the button just does nothing rather than throwing). */
-const togglePip = async () => {
-  if (!video) return;
-  try {
-    if (document.pictureInPictureElement === video) {
-      await document.exitPictureInPicture();
-    } else {
-      await video.requestPictureInPicture();
-    }
-  } catch {
-    /* not ready / not permitted — ignore */
-  }
-};
-
-defineExpose({ player, togglePip });
-
 let video: HTMLVideoElement | null = null;
 const detach = () => {
   video?.removeEventListener("loadedmetadata", onLoadedMetadata);
   video?.removeEventListener("error", onVideoError);
-  video?.removeEventListener("enterpictureinpicture", emitPipState);
-  video?.removeEventListener("leavepictureinpicture", emitPipState);
 };
 const attach = () => {
   detach();
   video = findVideoEl();
-  if (!video) {
-    // No element yet — report PiP unsupported so the button hides.
-    emit("pip", { supported: false, active: false });
-    return;
-  }
+  if (!video) return;
   video.addEventListener("loadedmetadata", onLoadedMetadata);
   video.addEventListener("error", onVideoError);
-  video.addEventListener("enterpictureinpicture", emitPipState);
-  video.addEventListener("leavepictureinpicture", emitPipState);
-  emitPipState();
   // Already errored before we attached (fast failure) — escalate now.
   if (video.error) {
     onVideoError();

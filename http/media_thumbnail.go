@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"os/exec"
 	"path"
 	"strings"
@@ -373,8 +374,8 @@ func handlePdfPreview(w http.ResponseWriter, r *http.Request, imgSvc ImgService,
 	return 0, nil
 }
 
-// renderPdfFirstPage rasterizes page 1 of a PDF to a PNG (on stdout) via
-// pdftoppm. Concurrency-bounded + time-bounded, like the ffmpeg path.
+// renderPdfFirstPage rasterizes page 1 of a PDF to a PNG via pdftoppm.
+// Concurrency-bounded + time-bounded, like the ffmpeg path.
 func renderPdfFirstPage(inputPath, label string) ([]byte, error) {
 	bin := pdftoppmPath()
 	if bin == "" {
@@ -387,24 +388,39 @@ func renderPdfFirstPage(inputPath, label string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), pdfThumbTimeout)
 	defer cancel()
 
+	// pdftoppm's "-" (stdout) output is unreliable across poppler builds: with
+	// -singlefile it treats "-" as a filename ROOT and tries to write a literal
+	// "-.png" into the working directory (which fails when the cwd isn't
+	// writable — exactly what we saw in the wild). Render to a unique temp file
+	// and read it back instead, which is portable and avoids the cwd entirely.
+	tmpDir, err := os.MkdirTemp("", "pdfthumb")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(tmpDir)
+	outRoot := path.Join(tmpDir, "page") // pdftoppm appends ".png"
+
 	// -singlefile renders only the first page; -scale-to caps the long edge
-	// at 512 px (plenty for a 256² thumb); root "-" writes PNG to stdout.
+	// at 512 px (plenty for a 256² thumb).
 	cmd := exec.CommandContext(ctx, bin,
 		"-png",
 		"-singlefile",
 		"-scale-to", "512",
 		inputPath,
-		"-",
+		outRoot,
 	)
 
-	var out, stderr bytes.Buffer
-	cmd.Stdout = &out
+	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("pdftoppm %q: %w (%s)", label, err, strings.TrimSpace(stderr.String()))
 	}
-	if out.Len() == 0 {
+	data, err := os.ReadFile(outRoot + ".png")
+	if err != nil {
+		return nil, fmt.Errorf("pdftoppm %q produced no image: %w", label, err)
+	}
+	if len(data) == 0 {
 		return nil, fmt.Errorf("pdftoppm %q produced no image", label)
 	}
-	return out.Bytes(), nil
+	return data, nil
 }

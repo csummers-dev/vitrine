@@ -73,7 +73,7 @@
         <button
           v-if="canShare"
           @click="action('share')"
-          class="info-action"
+          class="info-action info-action--share"
           title="Share"
         >
           <Icon name="share" :size="14" />
@@ -82,7 +82,7 @@
         <button
           v-if="canDownload"
           @click="download"
-          class="info-action"
+          class="info-action info-action--download"
           title="Download"
         >
           <Icon name="download" :size="14" />
@@ -91,7 +91,7 @@
         <button
           v-if="canRename"
           @click="action('rename')"
-          class="info-action"
+          class="info-action info-action--rename"
           title="Rename"
         >
           <Icon name="pencil" :size="14" />
@@ -123,7 +123,7 @@
         <button
           v-if="canMove"
           @click="action('move')"
-          class="info-action"
+          class="info-action info-action--move"
           title="Move"
         >
           <Icon name="forward" :size="14" />
@@ -132,7 +132,7 @@
         <button
           v-if="canCopy"
           @click="action('copy')"
-          class="info-action"
+          class="info-action info-action--copy"
           title="Copy"
         >
           <Icon name="copy" :size="14" />
@@ -141,7 +141,7 @@
         <button
           v-if="!item.isDir && canExtract"
           @click="action('extract')"
-          class="info-action"
+          class="info-action info-action--extract"
           title="Extract"
         >
           <Icon name="package-open" :size="14" />
@@ -150,7 +150,7 @@
         <button
           v-else-if="!item.isDir"
           @click="open"
-          class="info-action"
+          class="info-action info-action--preview"
           title="Preview"
         >
           <Icon name="eye" :size="14" />
@@ -871,6 +871,7 @@ html.dark .preview-mesh {
 }
 
 .info-action {
+  --action-hue: var(--c-blue);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -897,24 +898,48 @@ html.dark .preview-mesh {
   gap: 6px;
 }
 
+/* Per-action accent hue (matches the command-palette icon colors) so each
+   action is recognizable at a glance. */
+.info-action--share {
+  --action-hue: var(--c-teal);
+}
+.info-action--download {
+  --action-hue: var(--c-blue);
+}
+.info-action--rename {
+  --action-hue: var(--c-amber);
+}
+.info-action--move {
+  --action-hue: var(--c-blue);
+}
+.info-action--copy {
+  --action-hue: var(--c-teal);
+}
+.info-action--extract {
+  --action-hue: var(--c-green);
+}
+.info-action--preview {
+  --action-hue: var(--c-lilac);
+}
+.info-action--danger {
+  --action-hue: var(--c-rose);
+}
+
+/* Always-on colored icon (Lucide svg draws with currentColor). */
+.info-action :deep(svg) {
+  color: var(--action-hue);
+}
+
+/* Hover tints the tile with the action's own hue. color-mix degrades
+   gracefully (the icon color still applies) on engines that lack it. */
 .info-action:hover {
-  background: var(--color-elevated, #f4f4f5);
+  background: color-mix(in srgb, var(--action-hue) 12%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--action-hue) 40%, var(--color-line));
   color: var(--color-ink-1, #18181b);
 }
-
+/* Delete: turn the label red on hover too, for an unmistakable danger cue. */
 .info-action--danger:hover {
-  color: #dc2626;
-  border-color: #fecaca;
-  background: #fef2f2;
-}
-
-/* RC-21: the light-red hover above reads as a bright block on the dark
-   panel. Use deep, low-alpha red tones in dark mode (matches the
-   destructive treatment used elsewhere, e.g. the extract error banner). */
-html.dark .info-action--danger:hover {
-  color: #fca5a5;
-  border-color: rgba(248, 113, 113, 0.4);
-  background: rgba(127, 29, 29, 0.22);
+  color: var(--c-rose);
 }
 
 /* ── Copy-path button (G6) ────────────────────────────────────────

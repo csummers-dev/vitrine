@@ -283,10 +283,16 @@ html[dir="rtl"] .card.floating .card-content .file-list {
   font-family: var(--font-sans, system-ui) !important;
   font-size: 13px !important;
   line-height: 1.4 !important;
-  box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.22) !important;
+  box-shadow: 0 14px 30px -8px rgba(0, 0, 0, 0.3) !important;
   margin-bottom: 10px !important;
+  /* Hairline edge so a toast reads as a distinct surface even when it sits
+     over an element of the same color. */
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
 }
 
+/* Semantic colors — the feeling matches the color: green = success,
+   red = failure, amber = needs-attention, accent = informational, and a
+   neutral zinc for bare/generic toasts. */
 .Vue-Toastification__toast--success {
   background: #047857 !important;
 }
@@ -301,6 +307,10 @@ html[dir="rtl"] .card.floating .card-content .file-list {
 
 .Vue-Toastification__toast--warning {
   background: #b45309 !important;
+}
+
+.Vue-Toastification__toast--default {
+  background: #3f3f46 !important;
 }
 
 .Vue-Toastification__toast-body {

@@ -34,7 +34,24 @@ app.use(VueLazyload);
 app.use(Toast, {
   transition: "Vue-Toastification__bounce",
   maxToasts: 10,
+  // Newest stacks on top, oldest below (bottom-center container grows upward).
   newestOnTop: true,
+  // One consistent placement for EVERY toast. Previously `position` was
+  // omitted here, so toasts raised via the bare `toast()` API fell back to
+  // vue-toastification's top-right default while the $showError/$showSuccess
+  // helpers used bottom-center — that mismatch is what produced toasts in
+  // three different corners.
+  position: POSITION.BOTTOM_CENTER,
+  timeout: 4000,
+  closeOnClick: true,
+  pauseOnFocusLoss: true,
+  pauseOnHover: true,
+  draggable: true,
+  draggablePercent: 0.6,
+  showCloseButtonOnHover: false,
+  hideProgressBar: false,
+  closeButton: "button",
+  icon: true,
 } satisfies PluginOptions);
 
 app.use(i18n);

@@ -100,6 +100,13 @@ export function download(format: any, ...files: string[]) {
     url += `algo=${format}&`;
   }
 
+  // window.open() navigates the browser, which can't send the X-Auth header,
+  // so the JWT has to ride along as ?auth= (same as the media URLs — see
+  // authParam / RC-18). Without it the raw endpoint 401s — most visibly on the
+  // multi-file zip path, where there's no per-file cookie scope to fall back on.
+  const jwt = useAuthStore().jwt;
+  if (jwt) url += `auth=${jwt}`;
+
   window.open(url);
 }
 
