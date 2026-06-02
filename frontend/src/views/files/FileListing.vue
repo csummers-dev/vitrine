@@ -790,11 +790,6 @@
          by the useImageHoverPreview singleton; rows schedule/cancel it.
          Self-teleports to body + size-caps the image. -->
     <ImageHoverPreview />
-
-    <!-- Favorites display-title editor. Opened from the row right-click
-         menu and the section ⋯ menu via the useFavoriteTitleDialog
-         singleton; self-mounts its own modal scrim when open. -->
-    <FavoriteTitleDialog />
   </div>
 </template>
 
@@ -836,7 +831,6 @@ import Action from "@/components/header/Action.vue";
 import Search from "@/components/Search.vue";
 import Item from "@/components/files/ListingItem.vue";
 import InfoPane from "@/components/files/InfoPane.vue";
-import FavoriteTitleDialog from "@/components/files/FavoriteTitleDialog.vue";
 import ImageHoverPreview from "@/components/files/ImageHoverPreview.vue";
 import InlineNewItem from "@/components/files/InlineNewItem.vue";
 import ListingSkeleton from "@/components/files/ListingSkeleton.vue";
@@ -1513,6 +1507,9 @@ const submitFolderRename = async () => {
   const newUrl = url.removeLastDir(trimmed) + "/" + encodeURIComponent(next);
   try {
     await api.move([{ from: oldUrl, to: newUrl }]);
+    // Keep Favorites pointing at this folder (or descendants) pinned —
+    // follow the rename so the sidebar link doesn't break.
+    favoritesComposable.renamePath(oldUrl, newUrl);
     // The route URL still points at the old name — navigate to the new
     // path so the listing reloads against the renamed folder.
     router.push({ path: newUrl });

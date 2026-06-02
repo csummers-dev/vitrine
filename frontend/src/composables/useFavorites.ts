@@ -133,6 +133,58 @@ export function useFavorites() {
     void prefs.set(PREF_KEY, next);
   };
 
+  /** Rewrite favorites (and their custom titles) when a folder is renamed or
+   *  moved, so the pin follows the folder instead of breaking. Updates the
+   *  exact match AND any descendants (a renamed parent shifts every child's
+   *  path). `from`/`to` are the `/files/...`-prefixed, URL-encoded forms — the
+   *  same strings the listing builds for `item.url`, so an exact-match holds.
+   *  No-op when nothing references the moved path. */
+  const renamePath = (from: string, to: string) => {
+    if (!from || !to || from === to) return;
+    // Compare on a trailing-slash-insensitive base: a current-folder url often
+    // carries a trailing "/" while child `item.url`s don't, so without this a
+    // favorited SUBFOLDER wouldn't be recognised as a descendant of a renamed
+    // parent. Exact matches keep the caller's `to` (the precise new url); the
+    // descendant suffix is appended to the slash-stripped `to`.
+    const stripTrail = (s: string): string =>
+      s.length > 1 && s.endsWith("/") ? s.slice(0, -1) : s;
+    const fromBase = stripTrail(from);
+    const toBase = stripTrail(to);
+    const remap = (p: string): string | null => {
+      const pb = stripTrail(p);
+      if (pb === fromBase) return to;
+      if (pb.startsWith(fromBase + "/"))
+        return toBase + pb.slice(fromBase.length);
+      return null;
+    };
+
+    const currentFavs = prefs.get<string[]>(PREF_KEY, []);
+    let favsChanged = false;
+    const nextFavs = currentFavs.map((p) => {
+      const r = remap(p);
+      if (r !== null) {
+        favsChanged = true;
+        return r;
+      }
+      return p;
+    });
+    if (favsChanged) void prefs.set(PREF_KEY, nextFavs);
+
+    const currentTitles = prefs.get<Record<string, string>>(TITLES_KEY, {});
+    let titlesChanged = false;
+    const nextTitles: Record<string, string> = {};
+    for (const [k, v] of Object.entries(currentTitles)) {
+      const r = remap(k);
+      if (r !== null) {
+        titlesChanged = true;
+        nextTitles[r] = v;
+      } else {
+        nextTitles[k] = v;
+      }
+    }
+    if (titlesChanged) void prefs.set(TITLES_KEY, nextTitles);
+  };
+
   /** Insert a favorite at a specific position. Used to restore the exact
    *  prior order after an undo (RC-34). No-op if already present; the index
    *  is clamped to [0, length]. */
@@ -157,5 +209,6 @@ export function useFavorites() {
     toggle,
     reorder,
     insert,
+    renamePath,
   };
 }

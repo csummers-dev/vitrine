@@ -4,16 +4,27 @@
 
     <div class="error-page__body">
       <div class="error-page__card">
-        <div class="error-page__icon" :class="info.tone">
-          <Icon :name="info.icon" :size="22" :stroke-width="1.6" />
+        <div class="error-page__icon" :class="displayInfo.tone">
+          <Icon :name="displayInfo.icon" :size="22" :stroke-width="1.6" />
         </div>
-        <div class="error-page__code">{{ info.code }}</div>
-        <h1 class="error-page__title">{{ info.title }}</h1>
-        <p class="error-page__message">{{ t(info.message) }}</p>
+        <div class="error-page__code">{{ displayInfo.code }}</div>
+        <h1 class="error-page__title">{{ displayInfo.title }}</h1>
+        <p class="error-page__message">{{ resolvedMessage }}</p>
+        <!-- A favorite that points at a folder which was renamed, moved, or
+             deleted: offer to clear the dead pin instead of a bare 404. -->
+        <button
+          v-if="isBrokenFavorite"
+          type="button"
+          class="error-page__btn error-page__btn--primary error-page__btn--retry"
+          @click="emit('removeFavorite')"
+        >
+          <Icon name="star-off" :size="13" />
+          Remove from Favorites
+        </button>
         <!-- S6-5: for transient failures (offline / 500) offer an in-place
              retry so the user doesn't have to navigate away and back. -->
         <button
-          v-if="canRetry"
+          v-else-if="canRetry"
           type="button"
           class="error-page__btn error-page__btn--primary error-page__btn--retry"
           @click="emit('retry')"
@@ -103,19 +114,48 @@ const props = withDefaults(
      *  button — but only for transient codes (offline / 5xx); retrying a
      *  403/404 won't help. Set `retryable` explicitly to override. */
     retryable?: boolean;
+    /** When this 404/403 was reached by opening a sidebar Favorite whose
+     *  folder no longer exists, the parent passes the favorite's name here so
+     *  we show a tailored "dead pin" card with a Remove-from-Favorites CTA
+     *  instead of a bare 404. */
+    brokenFavoriteName?: string;
   }>(),
   {
     errorCode: 500,
     showHeader: false,
     retryable: undefined,
+    brokenFavoriteName: undefined,
   }
 );
 
 const emit = defineEmits<{
   (e: "retry"): void;
+  (e: "removeFavorite"): void;
 }>();
 
 const info = computed<ErrorInfo>(() => errors[props.errorCode] ?? errors[500]);
+
+const isBrokenFavorite = computed<boolean>(() => !!props.brokenFavoriteName);
+
+/** Card content swaps to a favorites-specific message when the failure is a
+ *  dead pin; otherwise it's the normal status-code card. */
+const displayInfo = computed<ErrorInfo>(() =>
+  isBrokenFavorite.value
+    ? {
+        icon: "star-off",
+        message: "",
+        title: "Favorite unavailable",
+        code: "Favorite",
+        tone: "warn",
+      }
+    : info.value
+);
+
+const resolvedMessage = computed<string>(() =>
+  isBrokenFavorite.value
+    ? `“${props.brokenFavoriteName}” isn't available anymore — it may have been renamed, moved, deleted, or you no longer have access.`
+    : t(info.value.message)
+);
 
 /** Transient codes worth retrying in place: offline (0) and server (5xx). */
 const isTransient = (code: number): boolean => code === 0 || code >= 500;

@@ -50,6 +50,10 @@ func handleWithStaticData(w http.ResponseWriter, _ *http.Request, d *data, fSys 
 		// setting is on AND ffmpeg is actually available, so the frontend
 		// requests them only when they can be served.
 		"EnableVideoThumbnails": d.server.EnableThumbnails && videoThumbnailsEnabled(),
+		// Cover-art thumbnails: audio (album art) + epub (OPF cover) need no
+		// external binary, so they ride EnableThumbs directly. PDF needs
+		// pdftoppm (poppler) — advertise only when it's actually present.
+		"EnablePdfThumbnails": d.server.EnableThumbnails && pdfThumbnailsEnabled(),
 		"ResizePreview":         d.server.ResizePreview,
 		// #3: advertise on-demand transcoding only when ffmpeg is available,
 		// so the player attempts the transcode fallback only when it can be

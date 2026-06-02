@@ -4,7 +4,7 @@
 
 # filebrowser pretty
 
-[![Version](https://img.shields.io/badge/version-1.3.0--rc.1-5e6ad2?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-1.3.1-5e6ad2?style=flat-square)](#)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
 [![Vue](https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js&logoColor=white)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
@@ -94,27 +94,9 @@
 
 ---
 
-## Screenshots
-
-<!--
-  Capture guide — drop PNGs into docs/screenshots/ (filenames below). Several
-  are placeholders for shots not yet taken.
-
-  • Default theme on (subtle gradient + translucent surfaces) so the signature
-    look shows; include the dark shots in the Light & dark table.
-  • Consistent 1440×900 desktop window; real device frame for the mobile trio.
-  • Seed a demo account with real photos, a video, an audio file with embedded
-    art, an EPUB with a cover, and a few tagged + favorited folders.
-  • Capture at 2× so images stay crisp when scaled.
-  • Must-haves if trimming: hero, the Light & dark table, gallery, command
-    palette, the preview grid, bulk-select, and settings-profile.
--->
-
-### Browse
-
 <p align="center">
   <img src="docs/screenshots/listing-list.png" width="80%" alt="List view with the colorful file-type icon system, tags, and inline meta" />
-  <br/><em>List view — colorful file-type tiles, inline tags, and the green sort indicator</em>
+  <br/><em>List view — colorful file-type tiles, inline tags</em>
 </p>
 
 <p align="center">
@@ -125,10 +107,8 @@
 
 <p align="center">
   <img src="docs/screenshots/app-gradient.png" width="80%" alt="The subtle accent-gradient application background" />
-  <br/><em>The signature accent-gradient background — configurable off / whisper / subtle / bold</em>
+  <br/><em>Signature accent-gradient background — configurable / whisper / subtle / bold</em>
 </p>
-
-### Light &amp; dark
 
 <table>
   <tr>
@@ -145,8 +125,6 @@
   </tr>
 </table>
 
-### Search &amp; navigate
-
 <p align="center">
   <img src="docs/screenshots/command-palette.png" width="70%" alt="Command palette with colorful icons and instant file search" />
   <br/><em>⌘K command palette — instant file search, quick actions, color-coded icons</em>
@@ -156,8 +134,6 @@
   <img src="docs/screenshots/breadcrumb-siblings.png" width="70%" alt="Breadcrumb navigation with a sibling-folder jump dropdown open" />
   <br/><em>Breadcrumbs with depth ellipsis and a sibling-folder jump dropdown</em>
 </p>
-
-### Previews
 
 <p align="center">
   <img src="docs/screenshots/preview-image.png" width="80%" alt="Image preview with film strip and EXIF info" />
@@ -178,10 +154,8 @@
 
 <p align="center">
   <img src="docs/screenshots/preview-markdown.png" width="80%" alt="Rendered Markdown preview and the themed code editor" />
-  <br/><em>Rendered Markdown (toggle to raw) and the themed in-browser editor</em>
+  <br/><em>Rendered Markdown and the themed in-browser editor</em>
 </p>
-
-### Power features
 
 <p align="center">
   <img src="docs/screenshots/bulk-select.png" width="49%" alt="Multi-select with the floating bulk action bar" />
@@ -206,8 +180,6 @@
   <br/><em>Floating upload dock — per-file progress, cancel, and queueing</em>
 </p>
 
-### Personalization &amp; admin
-
 <p align="center">
   <img src="docs/screenshots/settings-profile.png" width="80%" alt="Per-user profile settings — theme, background gradient, translucent surfaces" />
   <br/><em>Per-user settings — theme, background gradient, and translucent surfaces</em>
@@ -221,10 +193,8 @@
 
 <p align="center">
   <img src="docs/screenshots/login.png" width="70%" alt="Login page with the full six-color gradient backdrop" />
-  <br/><em>Login — the full six-color gradient backdrop</em>
+  <br/><em>Login — with a pretty six-color gradient backdrop</em>
 </p>
-
-### Mobile
 
 <p align="center">
   <img src="docs/screenshots/mobile-drawer.png" width="32%" alt="Mobile sidebar drawer" />
@@ -330,6 +300,15 @@ Go backend  —  Gorilla mux · JWT auth · afero filesystem
 | EXIF | **exifr 7** |
 
 ---
+
+### v1.3.1 — Cover thumbnails, favorites polish, and fixes
+
+- **Cover-art thumbnails in the listing** — rows now show real artwork instead of a generic icon for three more formats: embedded **album art** for audio, **EPUB covers** (pulled from the book's OPF), and **PDF first pages**. They ride the same server-side thumbnail pipeline + disk cache as image and video thumbnails, generate once, and fall back to the colored icon when there's no cover. PDF rendering uses poppler's `pdftoppm` (bundled in the Docker image); absent → generic icon, like ffmpeg for video
+- **Favorites — custom display titles** — give a pinned folder a friendlier sidebar name from its right-click menu, the section ⋯ menu, or the sidebar itself. Purely a display alias; the folder is never renamed
+- **Favorites — pins survive a rename** — renaming a favorited folder (or any of its parents) now rewrites the pin so the link keeps working, instead of silently breaking
+- **Favorites — dead-pin handling** — opening a favorite whose folder was renamed, moved, or deleted shows a tailored "Favorite unavailable" card with a one-click **Remove from Favorites**, instead of a bare 404
+- **Sidebar right-click menus** — context menus on Favorites (open / set display title / remove) and Recent (open / copy path / remove from recent)
+- **Colorful UI polish** — color-coded command-palette icons, a blue parent-folder nav arrow next to the FOLDER eyebrow, and a transparent list-view column header that blends into the background
 
 ### v1.3.0 — Tags, scale, and admin tooling
 

@@ -4,7 +4,7 @@
     :class="{ 'item--spring-loaded': springProgress > 0 }"
     role="button"
     tabindex="0"
-    :draggable="isDraggable"
+    :draggable="isDraggable && !isRenaming"
     @dragstart="dragStart($event)"
     @dragend="dragEnd"
     @dragenter="onDragEnter"
@@ -41,7 +41,12 @@
     <!-- Name cell: icon squircle + name (inline) -->
     <div class="item__name">
       <div class="item__icon" :class="iconColorClass">
-        <img v-if="showThumbnail" v-lazy="thumbnailUrl" class="item__thumb" />
+        <img
+          v-if="showThumbnail"
+          v-lazy="thumbnailUrl"
+          class="item__thumb"
+          @error="onThumbError"
+        />
         <!-- Inner wrapper: display:contents in list/grid (layout-transparent),
              becomes a visible squircle in gallery for non-folder/non-image files -->
         <div v-else class="item__icon-inner">
@@ -163,14 +168,6 @@
           :fill="isFavorited ? 'currentColor' : 'none'"
         />
       </button>
-      <button
-        class="item__actions-btn"
-        @click.stop="onActionsClick"
-        :title="'More'"
-        :aria-label="'More'"
-      >
-        <Icon name="ellipsis" :size="14" />
-      </button>
     </div>
   </div>
 </template>
@@ -187,7 +184,11 @@ import { useFavorites } from "@/composables/useFavorites";
 import { useImageHoverPreview } from "@/composables/useImageHoverPreview";
 import { useTransferIndicator } from "@/composables/useTransferIndicator";
 
-import { enableThumbs, enableVideoThumbs } from "@/utils/constants";
+import {
+  enableThumbs,
+  enableVideoThumbs,
+  enablePdfThumbs,
+} from "@/utils/constants";
 import { filesize } from "@/utils";
 import { isSelfOrDescendantTarget } from "@/utils/dragdrop";
 import { fileIcon, fileIconColor } from "@/utils/fileIcon";
@@ -394,14 +395,33 @@ const thumbnailUrl = computed(() => {
   return api.getPreviewURL(file as Resource, "thumb");
 });
 
-// S6-2: render the thumbnail <img> (vs. the generic icon) for images
-// whenever thumbs are on, and for videos only when the server can produce
-// poster frames (ffmpeg present). The same /api/preview/thumb endpoint
-// serves both — for videos it returns an ffmpeg-extracted JPEG.
+// Cover-art thumbnails. The same /api/preview/thumb endpoint serves every
+// kind — image resize, ffmpeg video frame, embedded audio art, epub OPF
+// cover, or pdftoppm-rendered PDF first page. Audio + EPUB need no server
+// binary (ride enableThumbs); video + PDF are gated on a server capability
+// flag (ffmpeg / poppler present). A file with no extractable cover returns
+// 501 → `thumbError` flips us back to the colored icon (see onThumbError).
+const thumbError = ref(false);
+// Reset the error flag when the row is reused for a different file (the
+// RecycleScroller swaps props in place rather than remounting).
+watch(
+  () => props.url,
+  () => {
+    thumbError.value = false;
+  }
+);
+const onThumbError = () => {
+  thumbError.value = true;
+};
+
 const showThumbnail = computed(() => {
-  if (props.readOnly || !props.path) return false;
+  if (props.readOnly || !props.path || thumbError.value) return false;
+  const ext = getExtension(props.name).toLowerCase();
   if (props.type === "image") return enableThumbs;
   if (props.type === "video") return enableThumbs && enableVideoThumbs;
+  if (props.type === "audio") return enableThumbs;
+  if (props.type === "pdf") return enableThumbs && enablePdfThumbs;
+  if (ext === ".epub") return enableThumbs;
   return false;
 });
 
@@ -512,9 +532,16 @@ const onRenameBlur = () => {
   }
   // Genuine click-away / Tab-out — cancel after a small delay so a
   // sibling click handler (e.g. on a future Save button) can register
-  // before we tear down.
+  // before we tear down. Guard on the PROMPT being open rather than
+  // `isRenaming.value`: a click-away that clears or moves the selection
+  // (empty space, or another row) drops `isRenaming` to false while the
+  // prompt is still open, which previously left it orphaned — so the
+  // rename "stuck." `currentPromptName === "rename"` stays true until we
+  // actually close it, and won't pop an unrelated prompt opened since.
   setTimeout(() => {
-    if (!renameSubmitting && isRenaming.value) cancelRename();
+    if (!renameSubmitting && layoutStore.currentPromptName === "rename") {
+      cancelRename();
+    }
   }, 120);
 };
 
@@ -531,6 +558,9 @@ const submitRename = async () => {
     urlUtil.removeLastDir(oldLink) + "/" + encodeURIComponent(next);
   try {
     await api.move([{ from: oldLink, to: newLink }]);
+    // Keep any Favorites pointing at this folder (or its descendants)
+    // pinned — follow the rename instead of letting the link break.
+    if (props.isDir) favorites.renamePath(oldLink, newLink);
     // Decode the path before queueing it — removePrefix(newLink) is
     // URL-encoded (we built newLink with encodeURIComponent), but
     // item.path in the next listing is decoded. Without this decode
@@ -571,14 +601,6 @@ const humanTime = () => {
 
   // Older → "MMM D, YYYY" (e.g. "May 24, 2025")
   return m.format("MMM D, YYYY");
-};
-
-const onActionsClick = (event: MouseEvent) => {
-  // Treat the actions button as a right-click on this item
-  if (!isSelected.value) {
-    fileStore.selected = [props.index];
-  }
-  contextMenu(event);
 };
 
 const dragStart = (event: DragEvent) => {
@@ -839,6 +861,18 @@ const itemClick = (event: Event | KeyboardEvent) => {
   // suppress window is set by the listing-level touch-drag onEnd (shared
   // via the file store) so every recycled row honors it.
   if (Date.now() < fileStore.suppressClicksUntil) return;
+
+  // Clicking a DIFFERENT row while an inline rename is open cancels it.
+  // The rename prompt targets the single selected item, so without this the
+  // click's selection change would silently *re-target* the rename onto the
+  // newly-clicked row instead of dismissing it (the reported bug). Closing
+  // the prompt first leaves the click to select/open the row as normal.
+  if (
+    layoutStore.currentPromptName === "rename" &&
+    fileStore.selected[0] !== props.index
+  ) {
+    layoutStore.closeHovers();
+  }
   if (
     singleClick.value &&
     !(event as KeyboardEvent).ctrlKey &&

@@ -13,15 +13,21 @@ RUN apk update && \
 ## absent, so this stays a convenience, never a hard dependency.
 FROM mwader/static-ffmpeg:7.1 AS ffmpeg
 
-## Second stage: Use lightweight BusyBox image for final runtime environment
-FROM busybox:1.38.0-musl
+## Second stage: lightweight Alpine runtime. Alpine (musl, like the previous
+## BusyBox base) ships a package manager + busybox applets, so the existing
+## init/healthcheck scripts keep working AND we can install poppler-utils for
+## PDF cover thumbnails. pdftoppm is runtime-detected; absent → PDF rows fall
+## back to the generic icon, so this stays a convenience, never a hard dep.
+FROM alpine:3.23
 
 # Define non-root user UID and GID
 ENV UID=1000
 ENV GID=1000
 
-# Create user group and user
-RUN addgroup -g $GID user && \
+# poppler-utils → pdftoppm (PDF first-page rasterizer for row thumbnails);
+# ttf-dejavu so text-heavy first pages render legibly. Then the non-root user.
+RUN apk --no-cache add poppler-utils ttf-dejavu && \
+    addgroup -g $GID user && \
     adduser -D -u $UID -G user user
 
 # Copy binary, scripts, and configurations into image with proper ownership

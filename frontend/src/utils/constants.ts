@@ -26,6 +26,12 @@ const enableThumbs: boolean = window.FileBrowser.EnableThumbs;
 // `?? false` keeps older bootstraps (no field) safely off.
 const enableVideoThumbs: boolean =
   window.FileBrowser.EnableVideoThumbnails ?? false;
+// Cover-art thumbnails. Audio (album art) + EPUB (OPF cover) need no server
+// binary, so they ride `enableThumbs` directly. PDF needs poppler's pdftoppm
+// on the server, so it gets its own capability flag (false on older
+// bootstraps / installs without poppler → PDF rows keep the generic icon).
+const enablePdfThumbs: boolean =
+  window.FileBrowser.EnablePdfThumbnails ?? false;
 const resizePreview: boolean = window.FileBrowser.ResizePreview;
 const enableExec: boolean = window.FileBrowser.EnableExec;
 const tusSettings = window.FileBrowser.TusSettings;
@@ -60,6 +66,7 @@ export {
   theme,
   enableThumbs,
   enableVideoThumbs,
+  enablePdfThumbs,
   resizePreview,
   enableExec,
   tusSettings,

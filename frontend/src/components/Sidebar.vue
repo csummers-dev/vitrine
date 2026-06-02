@@ -160,6 +160,7 @@
             @dragleave="onFavDragLeave(index)"
             @drop="onFavDrop(index, path, $event)"
             @dragend="onFavDragEnd"
+            @contextmenu="onFavoriteContextMenu(path, $event)"
           >
             <router-link
               :to="path"
@@ -219,7 +220,11 @@
           v-show="!isSectionCollapsed('recent')"
           class="list-none m-0 p-0 space-y-0.5"
         >
-          <li v-for="(r, ri) in visibleRecents" :key="r.path">
+          <li
+            v-for="(r, ri) in visibleRecents"
+            :key="r.path"
+            @contextmenu="onRecentContextMenu(r, $event)"
+          >
             <router-link
               :to="`/files${r.path}`"
               class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] hover:bg-hover text-ink-2 transition"
@@ -350,11 +355,21 @@
         <span>Remove from favorites</span>
       </div>
     </Teleport>
+
+    <!-- Shared right-click menu for Favorites + Recent rows. Teleports to
+         <body> (inside ContextMenu) so it's never clipped by the sidebar. -->
+    <context-menu
+      :show="sidebarMenuShow"
+      :pos="sidebarMenuPos"
+      :items="sidebarMenuItems"
+      @hide="hideSidebarMenu"
+    />
   </aside>
 </template>
 
 <script>
 import { reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
 import { mapActions, mapState } from "pinia";
 import { useAuthStore } from "@/stores/auth";
@@ -377,10 +392,12 @@ import { files as api } from "@/api";
 import Icon from "@/components/Icon.vue";
 import BrandName from "@/components/BrandName.vue";
 import UndoToast from "@/components/UndoToast.vue";
+import ContextMenu from "@/components/ContextMenu.vue";
 import prettyBytes from "pretty-bytes";
 import { usePreferences } from "@/composables/usePreferences";
 import { useRecents } from "@/composables/useRecents";
 import { useFavorites } from "@/composables/useFavorites";
+import { useFavoriteTitleDialog } from "@/composables/useFavoriteTitleDialog";
 import { useDropTarget } from "@/composables/useDropTarget";
 
 // How many recents to show before the "View all" disclosure kicks in.
@@ -401,7 +418,118 @@ export default {
     // the "View all" disclosure conditionally.
     const recentsComposable = useRecents();
     const favoritesComposable = useFavorites();
+    const favTitleDialog = useFavoriteTitleDialog();
+    const router = useRouter();
+    const toast = useToast();
     const recentsExpanded = ref(false);
+
+    // ── Right-click context menus for the sidebar lists ───────────────
+    // Favorites + Recent rows had no context menu. Wire a shared
+    // ContextMenu (teleported to body, so it isn't clipped by the
+    // sidebar's overflow) with per-list item sets.
+    const sidebarMenuShow = ref(false);
+    const sidebarMenuPos = ref({ x: 0, y: 0 });
+    const sidebarMenuItems = ref([]);
+    const hideSidebarMenu = () => {
+      sidebarMenuShow.value = false;
+    };
+    const openSidebarMenu = (event, items) => {
+      event.preventDefault();
+      event.stopPropagation();
+      sidebarMenuItems.value = items;
+      sidebarMenuPos.value = { x: event.clientX, y: event.clientY };
+      sidebarMenuShow.value = true;
+    };
+    const copyToClipboard = async (text) => {
+      // Modern path first; on failure (insecure HTTP context / denied
+      // permission) fall back to a hidden-textarea execCommand copy so
+      // LAN/HTTP homelab deployments still work. Confirm with a toast either
+      // way — the OS clipboard is invisible, so the user needs feedback.
+      try {
+        await navigator.clipboard.writeText(text);
+        toast.success(`Path copied: ${text}`);
+        return;
+      } catch {
+        /* fall through to the legacy path */
+      }
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        toast.success(`Path copied: ${text}`);
+      } catch {
+        /* both methods failed — silently no-op */
+      }
+    };
+    // Favorites: Open · display title · remove. The title editor opens the
+    // global FavoriteTitleDialog (mounted in App.vue).
+    const onFavoriteContextMenu = (path, event) => {
+      openSidebarMenu(event, [
+        {
+          label: "Open",
+          icon: "external-link",
+          action: () => {
+            hideSidebarMenu();
+            void router.push(path);
+          },
+        },
+        {
+          label: "Favorites display title…",
+          icon: "star",
+          action: () => {
+            hideSidebarMenu();
+            favTitleDialog.open(path);
+          },
+        },
+        { type: "separator" },
+        {
+          label: "Remove from Favorites",
+          icon: "star-off",
+          destructive: true,
+          action: () => {
+            hideSidebarMenu();
+            favoritesComposable.remove(path);
+          },
+        },
+      ]);
+    };
+    // Recent: Open · copy path · remove from the recents log.
+    const onRecentContextMenu = (recent, event) => {
+      openSidebarMenu(event, [
+        {
+          label: "Open",
+          icon: "external-link",
+          action: () => {
+            hideSidebarMenu();
+            void router.push(`/files${recent.path}`);
+          },
+        },
+        {
+          label: "Copy path",
+          icon: "link",
+          action: () => {
+            hideSidebarMenu();
+            void copyToClipboard(recent.path);
+          },
+        },
+        { type: "separator" },
+        {
+          label: "Remove from Recent",
+          icon: "x",
+          destructive: true,
+          action: () => {
+            hideSidebarMenu();
+            recentsComposable.remove(recent.path);
+          },
+        },
+      ]);
+    };
     // ── Favorites drag (RC-25/26 + RC-32/33/34) ───────────────────────
     // The file-into-favorite drop (RC-26) reuses the shared useDropTarget so
     // move/conflict handling matches the rest of the app. The reorder (RC-32)
@@ -409,7 +537,6 @@ export default {
     // favorite drag never carries file payload, so it can't move/copy the
     // underlying folder — favorites act purely as links + reorder/remove.
     const { performDrop } = useDropTarget();
-    const toast = useToast();
     const draggingFavIndex = ref(null);
     const favDragOverIndex = ref(null);
     // Whether the insertion point is AFTER the hovered row (cursor in its
@@ -604,11 +731,18 @@ export default {
       cleanupFavDrag,
       isSectionCollapsed,
       toggleSection,
+      sidebarMenuShow,
+      sidebarMenuPos,
+      sidebarMenuItems,
+      hideSidebarMenu,
+      onFavoriteContextMenu,
+      onRecentContextMenu,
     };
   },
   components: {
     Icon,
     BrandName,
+    ContextMenu,
   },
   computed: {
     ...mapState(useAuthStore, ["user", "isLoggedIn"]),

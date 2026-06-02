@@ -7,8 +7,15 @@
       <breadcrumbs base="/files" />
     </header-bar>
 
-    <!-- S6-5: offer an in-place retry on transient listing failures. -->
-    <errors v-if="error" :errorCode="error.status" @retry="fetchData" />
+    <!-- S6-5: offer an in-place retry on transient listing failures; a dead
+         favorite gets a tailored "remove pin" card instead. -->
+    <errors
+      v-if="error"
+      :errorCode="error.status"
+      :brokenFavoriteName="brokenFavorite ? brokenFavoriteName : undefined"
+      @retry="fetchData"
+      @removeFavorite="removeBrokenFavorite"
+    />
     <component v-else-if="currentView" :is="currentView"></component>
     <!-- Boot-time loading (no view component yet): use the same listing
          skeleton FileListing shows so the layout stays consistent. -->
@@ -36,11 +43,12 @@ import Breadcrumbs from "@/components/Breadcrumbs.vue";
 import Errors from "@/views/Errors.vue";
 import ListingSkeleton from "@/components/files/ListingSkeleton.vue";
 import { useI18n } from "vue-i18n";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import FileListing from "@/views/files/FileListing.vue";
 import { StatusError } from "@/api/utils";
 import { name } from "../utils/constants";
 import { useShortcutsOverlay } from "@/composables/useShortcutsOverlay";
+import { useFavorites } from "@/composables/useFavorites";
 
 const Editor = defineAsyncComponent(() => import("@/views/files/Editor.vue"));
 const Preview = defineAsyncComponent(() => import("@/views/files/Preview.vue"));
@@ -52,12 +60,46 @@ const shortcutsOverlay = useShortcutsOverlay();
 const { reload } = storeToRefs(fileStore);
 
 const route = useRoute();
+const router = useRouter();
+const favorites = useFavorites();
 
 const { t } = useI18n({});
 
 let fetchDataController = new AbortController();
 
 const error = ref<StatusError | null>(null);
+
+// When a listing fetch fails because a sidebar Favorite points at a folder
+// that no longer exists (renamed externally / deleted), we surface a tailored
+// "dead pin" card (Errors.vue) offering to remove it — instead of a bare 404.
+const brokenFavorite = ref<string | null>(null);
+const brokenFavoriteName = computed<string>(() =>
+  brokenFavorite.value ? favorites.displayName(brokenFavorite.value) : ""
+);
+
+/** Normalize a `/files/...` path for comparison: URL-decode + drop a trailing
+ *  slash. Favorites are stored encoded; route.path arrives decoded. */
+const normPath = (p: string): string => {
+  let s = p;
+  try {
+    s = decodeURIComponent(p);
+  } catch {
+    /* malformed escape — compare the raw string */
+  }
+  if (s.length > 1 && s.endsWith("/")) s = s.slice(0, -1);
+  return s;
+};
+
+const findBrokenFavorite = (): string | null => {
+  const target = normPath(route.path);
+  return favorites.favorites.value.find((f) => normPath(f) === target) ?? null;
+};
+
+const removeBrokenFavorite = () => {
+  if (brokenFavorite.value) favorites.remove(brokenFavorite.value);
+  brokenFavorite.value = null;
+  void router.push("/files/");
+};
 
 const currentView = computed(() => {
   if (fileStore.req?.type === undefined) {
@@ -156,6 +198,7 @@ const fetchData = async () => {
   // Set loading to true and reset the error.
   layoutStore.loading = true;
   error.value = null;
+  brokenFavorite.value = null;
 
   let url = route.path;
   if (url === "") url = "/";
@@ -177,6 +220,14 @@ const fetchData = async () => {
     }
     if (err instanceof Error) {
       error.value = err;
+    }
+    // A 404 (deleted/renamed) or 403 (now inaccessible) on a path that's still
+    // pinned → flag it so the error card offers to clear the dead favorite.
+    if (
+      err instanceof StatusError &&
+      (err.status === 404 || err.status === 403)
+    ) {
+      brokenFavorite.value = findBrokenFavorite();
     }
     layoutStore.loading = false;
   }
