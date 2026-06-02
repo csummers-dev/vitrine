@@ -20,6 +20,21 @@ FROM mwader/static-ffmpeg:7.1 AS ffmpeg
 ## back to the generic icon, so this stays a convenience, never a hard dep.
 FROM alpine:3.23
 
+# OCI provenance labels. VERSION / REVISION / CREATED are passed at build time
+# (CI fills them from the git tag, commit sha, and build timestamp; a plain
+# `docker build` gets the defaults below). In CI, docker/metadata-action also
+# injects its own labels, which take precedence over these.
+ARG VERSION=dev
+ARG REVISION=unknown
+ARG CREATED=""
+LABEL org.opencontainers.image.title="filebrowser-pretty" \
+      org.opencontainers.image.description="A modern, polished File Browser fork" \
+      org.opencontainers.image.source="https://github.com/csummers-dev/filebrowser-pretty" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${REVISION}" \
+      org.opencontainers.image.created="${CREATED}"
+
 # Define non-root user UID and GID
 ENV UID=1000
 ENV GID=1000
