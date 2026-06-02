@@ -1,6 +1,6 @@
 <template>
   <SettingsPage
-    title="Audit log"
+    title="Audit Log"
     icon="scroll-text"
     accent="var(--c-rose)"
     description="A chronological record of file operations, shares, sign-ins, and settings changes across the server. Newest first."

@@ -292,11 +292,18 @@ const overflowTagNames = computed<string>(() =>
 
 const isTouchDevice = useTouchDevice();
 
-// A plain row tap OPENS the item when the user prefers single-click OR is on a
-// touch device. On touch this is the standard file-manager gesture (tap to
-// open); selecting for bulk actions is done via the checkbox cell instead.
+// A plain row tap OPENS the item when the user prefers single-click OR — on
+// touch — when the item is a FOLDER. On touch, opening a folder on a single
+// tap is the expected file-manager gesture, but opening a FILE on a single tap
+// yanked the user out of the directory into a full-screen preview, which they
+// found jarring. So on touch a file tap now just SELECTS it (the mobile
+// selection bar then offers Details / actions, and a double-tap still opens the
+// preview for users who want it). Desktop's single-click preference is
+// unchanged and still applies to both files and folders.
 const openOnSingleClick = computed(
-  () => !props.readOnly && (authStore.user?.singleClick || isTouchDevice.value)
+  () =>
+    !props.readOnly &&
+    (authStore.user?.singleClick || (isTouchDevice.value && props.isDir))
 );
 
 const singleClick = computed(

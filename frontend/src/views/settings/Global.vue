@@ -9,7 +9,7 @@
       <!-- ── General ────────────────────────────────────────────────── -->
       <SettingsSection
         title="General"
-        description="Signup, login, and password defaults."
+        description="Sign-up, login, and password defaults."
       >
         <SettingsRow
           :label="t('settings.allowSignup')"
@@ -19,7 +19,7 @@
         </SettingsRow>
         <SettingsRow
           :label="t('settings.hideLoginButton')"
-          description="Hide the login button on the public share page."
+          description="Hide the sign-in button on the public share page."
         >
           <Toggle v-model="settings.hideLoginButton" />
         </SettingsRow>

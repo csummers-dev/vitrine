@@ -64,6 +64,7 @@
           id="login-username"
           ref="usernameInput"
           v-model="username"
+          name="username"
           type="text"
           autocomplete="username"
           autocapitalize="off"
@@ -82,6 +83,7 @@
           <input
             id="login-password"
             v-model="password"
+            name="password"
             :type="showPassword ? 'text' : 'password'"
             :autocomplete="createMode ? 'new-password' : 'current-password'"
             class="login-input login-input--has-toggle"
@@ -111,6 +113,7 @@
           <input
             id="login-password-confirm"
             v-model="passwordConfirm"
+            name="password-confirm"
             :type="showPassword ? 'text' : 'password'"
             autocomplete="new-password"
             class="login-input login-input--has-toggle"

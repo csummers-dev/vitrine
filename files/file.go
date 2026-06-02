@@ -20,6 +20,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/spf13/afero"
@@ -233,13 +234,26 @@ func (i *FileInfo) detectType(modify, saveContent, readHeader bool, calcImgRes b
 	extMime := mime.TypeByExtension(i.Extension)
 	mimetype := extMime
 
+	// The header buffer is read LAZILY — only when a classification branch
+	// actually needs it. For files whose extension already yields a definitive
+	// type (image / video / audio / pdf / text-*), we never open the file at
+	// all. That's the difference between a fast listing and one that opens
+	// every single file in the directory just to sniff its type — painfully
+	// slow on network/NAS mounts, where each open is a round-trip. Behavior is
+	// unchanged: the buffer is still only consulted in the exact same spots,
+	// and still only when `readHeader` is set.
 	var buffer []byte
-	if readHeader {
-		buffer = i.readFirstBytes()
-
-		if mimetype == "" {
-			mimetype = http.DetectContentType(buffer)
+	var bufferRead bool
+	header := func() []byte {
+		if !bufferRead && readHeader {
+			buffer = i.readFirstBytes()
+			bufferRead = true
 		}
+		return buffer
+	}
+
+	if readHeader && mimetype == "" {
+		mimetype = http.DetectContentType(header())
 	}
 
 	switch {
@@ -419,6 +433,13 @@ func (i *FileInfo) readListing(checker rules.Checker, readHeader bool, calcImgRe
 		NumFiles: 0,
 	}
 
+	// Phase 1 — build the FileInfo entries (cheap: ReadDir already stat'd
+	// them; this loop does no per-file I/O beyond resolving symlinks).
+	type entry struct {
+		file          *FileInfo
+		isInvalidLink bool
+	}
+	entries := make([]entry, 0, len(dir))
 	for _, f := range dir {
 		name := f.Name()
 		fPath := path.Join(i.Path, name)
@@ -462,25 +483,63 @@ func (i *FileInfo) readListing(checker rules.Checker, readHeader bool, calcImgRe
 			}
 		}
 
-		if file.IsDir {
-			listing.NumDirs++
-		} else {
-			if isInvalidLink {
-				file.Type = "invalid_link"
-			} else if err := file.detectType(true, false, readHeader, calcImgRes); err != nil {
+		entries = append(entries, entry{file: file, isInvalidLink: isInvalidLink})
+	}
+
+	// Phase 2 — detect file types CONCURRENTLY. Per-file detection is
+	// dominated by readFirstBytes() opening the file to sniff its header,
+	// which is a network round-trip on remote/NAS mounts — so a directory
+	// with thousands of files used to be thousands of *sequential* opens
+	// (15 s+ for ~2k files). A bounded worker pool turns that into N/workers
+	// of wall-clock time. Each goroutine mutates only its own FileInfo and
+	// its own slot in `dropped`, so there's no shared mutable state and no
+	// lock is needed; the listing is assembled in deterministic order below.
+	dropped := make([]bool, len(entries))
+	const maxWorkers = 16
+	sem := make(chan struct{}, maxWorkers)
+	var wg sync.WaitGroup
+	for idx := range entries {
+		e := entries[idx]
+		if e.file.IsDir {
+			continue
+		}
+		if e.isInvalidLink {
+			e.file.Type = "invalid_link"
+			continue
+		}
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(idx int, file *FileInfo) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			if err := file.detectType(true, false, readHeader, calcImgRes); err != nil {
 				// RC-17: a single file failing type detection must NOT 500
 				// the whole listing. The common trigger is the file being
 				// moved/deleted between readdir and now (detectType opens
 				// it to sniff the MIME type). Drop a vanished file; keep
 				// any other failure in the listing with no detected type.
 				if errors.Is(err, fs.ErrNotExist) {
-					continue
+					dropped[idx] = true
+					return
 				}
 				log.Printf("Skipping type detection for %s: %v", file.Path, err)
 			}
+		}(idx, e.file)
+	}
+	wg.Wait()
+
+	// Phase 3 — assemble the listing in the original (deterministic) order;
+	// ApplySort orders it afterward.
+	for idx := range entries {
+		if dropped[idx] {
+			continue
+		}
+		file := entries[idx].file
+		if file.IsDir {
+			listing.NumDirs++
+		} else {
 			listing.NumFiles++
 		}
-
 		listing.Items = append(listing.Items, file)
 	}
 

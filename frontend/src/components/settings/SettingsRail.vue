@@ -146,7 +146,7 @@ const userSections = computed<NavSection[]>(() => {
   }
   list.push({
     to: "/settings/sessions",
-    label: "Sessions",
+    label: t("settings.sessions"),
     icon: "monitor-smartphone",
     hue: "var(--c-green)",
   });
@@ -169,13 +169,13 @@ const adminSections = computed<NavSection[]>(() => [
   },
   {
     to: "/settings/audit",
-    label: "Audit log",
+    label: t("settings.audit"),
     icon: "scroll-text",
     hue: "var(--c-rose)",
   },
   {
     to: "/settings/webhooks",
-    label: "Webhooks",
+    label: t("settings.webhooks"),
     icon: "webhook",
     hue: "var(--c-teal)",
   },

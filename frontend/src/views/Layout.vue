@@ -61,6 +61,8 @@ import Shell from "@/components/Shell.vue";
 import UploadFiles from "@/components/prompts/UploadFiles.vue";
 import Drawer from "@/components/Drawer.vue";
 import { useMobileNav } from "@/composables/useMobileNav";
+import { useEdgeSwipe } from "@/composables/useEdgeSwipe";
+import { useTouchDevice } from "@/composables/useTouchDevice";
 import { enableExec } from "@/utils/constants";
 import { watch } from "vue";
 import { useRoute } from "vue-router";
@@ -71,6 +73,21 @@ const fileStore = useFileStore();
 const uploadStore = useUploadStore();
 const route = useRoute();
 const mobileNav = useMobileNav();
+const isTouch = useTouchDevice();
+
+// Swipe in from the left edge to open the mobile nav drawer (and swipe the
+// open drawer back to the left to close it — handled inside Drawer.vue). Only
+// active on touch + narrow viewports where the inline sidebar is hidden, so it
+// never interferes with desktop or the always-visible sidebar.
+useEdgeSwipe({
+  onOpen: () => mobileNav.open(),
+  enabled: () =>
+    isTouch.value &&
+    !mobileNav.isOpen.value &&
+    authStore.isLoggedIn &&
+    typeof window !== "undefined" &&
+    window.matchMedia("(max-width: 639px)").matches,
+});
 
 // Auto-close the mobile drawer when the user clicks a nav item inside it
 // (sidebar links push routes; the route watcher below also closes, but

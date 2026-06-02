@@ -61,19 +61,9 @@
           </span>
         </button>
 
-        <!-- Profile lives on the user row at the bottom (avatar → profile) and
-           inside Settings, so a separate "Profile" nav item here was a
-           duplicate link to the same page. -->
-        <button
-          v-if="user?.perm.admin"
-          type="button"
-          class="sd__navrow"
-          :class="{ 'is-active': isAdmin }"
-          @click="goAdmin"
-        >
-          <Icon name="settings-2" :size="15" />
-          <span class="sd__navrow-label">{{ t("sidebar.settings") }}</span>
-        </button>
+        <!-- Settings + Profile both live on the user row at the bottom (the
+           avatar routes into Settings), so a separate nav item here was a
+           duplicate destination — removed to match the desktop sidebar. -->
       </nav>
 
       <!-- Logged-out navigation -->
@@ -90,13 +80,33 @@
       </nav>
 
       <!-- ── Favorites (mobile parity with the desktop sidebar) ───────────
-         Long-press a row to reorder (touch DnD); tap to open. -->
+         Long-press a row to reorder (touch DnD); tap to open. Collapsible —
+         the collapsed state is shared with the desktop sidebar (same prefs
+         key) so it syncs across devices. -->
       <nav
         v-if="isLoggedIn && favorites.length > 0"
         class="sd__section sd__favs"
       >
-        <div class="sd__section-label">Favorites</div>
-        <ul ref="favListEl" class="sd__fav-list">
+        <button
+          type="button"
+          class="sd__section-toggle"
+          :aria-expanded="!isCollapsed('favorites')"
+          @click.stop="toggleSection('favorites')"
+        >
+          <Icon
+            name="chevron-down"
+            :size="12"
+            :stroke-width="2.4"
+            class="sd__chevron"
+            :class="{ 'sd__chevron--collapsed': isCollapsed('favorites') }"
+          />
+          <span>Favorites</span>
+        </button>
+        <ul
+          v-show="!isCollapsed('favorites')"
+          ref="favListEl"
+          class="sd__fav-list"
+        >
           <li
             v-for="(path, index) in favorites"
             :key="path"
@@ -130,6 +140,57 @@
               />
               <span class="sd__fav-name">{{ favoriteName(path) }}</span>
             </button>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- ── Recent (mobile parity with the desktop sidebar) ──────────────
+         MRU log of recently-previewed files. Capped at 5 with a "View all"
+         disclosure; collapsible (state shared cross-device with desktop). -->
+      <nav
+        v-if="isLoggedIn && recents.length > 0"
+        class="sd__section sd__recents"
+      >
+        <div class="sd__section-head">
+          <button
+            type="button"
+            class="sd__section-toggle"
+            :aria-expanded="!isCollapsed('recent')"
+            @click.stop="toggleSection('recent')"
+          >
+            <Icon
+              name="chevron-down"
+              :size="12"
+              :stroke-width="2.4"
+              class="sd__chevron"
+              :class="{ 'sd__chevron--collapsed': isCollapsed('recent') }"
+            />
+            <span>Recent</span>
+          </button>
+          <button
+            v-if="recents.length > RECENTS_INITIAL && !isCollapsed('recent')"
+            type="button"
+            class="sd__viewall"
+            @click.stop="recentsExpanded = !recentsExpanded"
+          >
+            {{ recentsExpanded ? "Show less" : "View all" }}
+          </button>
+        </div>
+        <ul v-show="!isCollapsed('recent')" class="sd__recent-list">
+          <li v-for="(r, ri) in visibleRecents" :key="r.path">
+            <router-link
+              :to="`/files${r.path}`"
+              class="sd__recent-btn"
+              :title="r.path"
+            >
+              <Icon
+                name="file"
+                :size="13"
+                :style="{ color: recentHue(ri) }"
+                class="sd__recent-icon"
+              />
+              <span class="sd__recent-name">{{ r.name }}</span>
+            </router-link>
           </li>
         </ul>
       </nav>
@@ -213,6 +274,8 @@ import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 import { useFavorites } from "@/composables/useFavorites";
+import { useRecents } from "@/composables/useRecents";
+import { usePreferences } from "@/composables/usePreferences";
 import { useRootLabel } from "@/composables/useRootLabel";
 import { useTouchDrag } from "@/composables/useTouchDrag";
 import * as auth from "@/utils/auth";
@@ -242,7 +305,6 @@ const layoutStore = useLayoutStore();
 const user = computed(() => authStore.user);
 const isLoggedIn = computed(() => authStore.isLoggedIn);
 const isFiles = computed(() => fileStore.isFiles);
-const isAdmin = computed(() => route.path.startsWith("/settings/global"));
 
 const filesCount = computed(
   () => (fileStore.req?.numDirs ?? 0) + (fileStore.req?.numFiles ?? 0)
@@ -303,6 +365,42 @@ const favorites = computed(() => favoritesComposable.favorites.value);
 
 // Custom "My files" label (set via the desktop sidebar's right-click rename).
 const { rootLabel } = useRootLabel();
+
+// ── Recents (mobile parity with the desktop sidebar) ───────────────────
+const RECENTS_INITIAL = 5;
+const recentsComposable = useRecents();
+const recents = computed(() => recentsComposable.recents.value);
+const recentsExpanded = ref(false);
+const visibleRecents = computed(() =>
+  recentsExpanded.value
+    ? recents.value
+    : recents.value.slice(0, RECENTS_INITIAL)
+);
+// Cycle the recent-file icons through the six accent hues so the section
+// reads colorful — matches the desktop sidebar.
+const RECENT_HUES = [
+  "var(--c-lilac)",
+  "var(--c-blue)",
+  "var(--c-teal)",
+  "var(--c-green)",
+  "var(--c-amber)",
+  "var(--c-rose)",
+];
+const recentHue = (i: number): string => RECENT_HUES[i % RECENT_HUES.length];
+
+// ── Section collapse/expand ────────────────────────────────────────────
+// Shared with the desktop Sidebar via the SAME prefs key, so a collapsed
+// Favorites / Recent stays collapsed when you switch devices.
+const prefs = usePreferences();
+const isCollapsed = (key: string): boolean =>
+  !!prefs.get<Record<string, boolean>>("sidebarCollapsedSections", {})[key];
+const toggleSection = (key: string) => {
+  const cur = prefs.get<Record<string, boolean>>(
+    "sidebarCollapsedSections",
+    {}
+  );
+  void prefs.set("sidebarCollapsedSections", { ...cur, [key]: !cur[key] });
+};
 
 const favListEl = ref<HTMLElement | null>(null);
 const favDragIndex = ref<number | null>(null);
@@ -371,7 +469,6 @@ const newDir = () => layoutStore.showHover("newDir");
 const newFile = () => layoutStore.showHover("newFile");
 const goFiles = () => router.push("/files/");
 const goProfile = () => router.push("/settings/profile");
-const goAdmin = () => router.push("/settings/global");
 const logout = () => auth.logout();
 
 /**
@@ -672,6 +769,117 @@ const onItemClick = (_event: MouseEvent) => {
 }
 .sd__fav--drop-after::after {
   bottom: -1px;
+}
+
+/* ── Collapsible section headers (Favorites / Recent) ────────────────────
+   A chevron toggle replaces the static section label, matching the desktop
+   sidebar. The collapsed state persists (and syncs across devices). */
+.sd__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+}
+
+.sd__section-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  padding: 6px 8px;
+  margin: 0;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-ink-3, #a1a1aa);
+  cursor: pointer;
+  transition: color var(--dur-base) ease;
+}
+.sd__section-toggle:hover {
+  color: var(--color-ink-2, #52525b);
+}
+/* Inside Recent's head (which also holds "View all"), the head owns the
+   padding so the toggle drops its own to keep the chevrons aligned. */
+.sd__section-head .sd__section-toggle {
+  padding: 0;
+}
+
+.sd__chevron {
+  flex-shrink: 0;
+  transition: transform var(--dur-base) ease;
+}
+.sd__chevron--collapsed {
+  transform: rotate(-90deg);
+}
+
+.sd__viewall {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--color-ink-3, #a1a1aa);
+  cursor: pointer;
+  transition: color var(--dur-base) ease;
+}
+.sd__viewall:hover {
+  color: var(--color-accent, #5e6ad2);
+}
+
+/* ── Recent list ─────────────────────────────────────────────────────── */
+.sd__recents {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.sd__recent-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 4px 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  max-height: 240px;
+}
+
+.sd__recent-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 40px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: var(--color-ink-2, #52525b);
+  font-size: 13.5px;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease;
+}
+.sd__recent-btn:hover {
+  background: var(--color-hover, var(--color-elevated, #f4f4f5));
+  color: var(--color-ink-1, #18181b);
+}
+
+.sd__recent-icon {
+  flex-shrink: 0;
+}
+
+.sd__recent-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ── Storage card ────────────────────────────────────────────────────── */

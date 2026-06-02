@@ -4,7 +4,7 @@
 
 # filebrowser pretty
 
-[![Version](https://img.shields.io/badge/version-1.4.0-5e6ad2?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-1.5.0-5e6ad2?style=flat-square)](#)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
 [![Vue](https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js&logoColor=white)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
@@ -185,6 +185,19 @@ Or skip Docker entirely and run the binary directly: `./filebrowser` — opens o
 | EXIF | **exifr 7** |
 
 ---
+
+### v1.5.0 — Mobile gestures, faster folders, and a grid redesign
+
+- **Faster large folders** — a directory listing no longer opens and reads every file just to detect its type. The type is taken from the file extension whenever that's definitive (images, video, audio, PDFs, text…), and the few remaining header reads now run in parallel. A ~2,000-file folder on a NAS that took ~15 s now loads in a second or two. (Prefer extension-only typing? `--disable-type-detection-by-header` skips header reads entirely.)
+- **Grid view redesign** — grid tiles are now proper "media cards": a full-width thumbnail (or a large tinted file icon) on top with a name + meta footer below, so images actually preview at a glance. On mobile the selection checkbox now sits on the thumbnail instead of nearly overlapping it
+- **Mobile — swipe the sidebar** — swipe in from the left edge to open the navigation drawer, and swipe it left to close
+- **Mobile drawer parity** — the drawer now has the **Recent** files section, and **Favorites / Recent are collapsible** (the collapsed state syncs with the desktop sidebar). Removed the redundant Settings link (it's reachable from your account row)
+- **Mobile — tap a file to select** — a single tap on a file now selects it (and offers a **Details** toggle) instead of yanking you into a full-screen preview; folders still open on a tap, and a double-tap opens a file
+- **Login lands at the top** — signing in no longer inherits the login screen's scroll position, so you arrive at the top of your files instead of part-way down the page
+- **Password managers detect the login form** — the username / password fields now carry proper `name` attributes, so mobile and third-party managers (Bitwarden, 1Password, iOS Keychain) recognize and fill them
+- **Breadcrumb path scrolls** — a long path scrolls horizontally instead of being clipped behind the search box on narrow / mobile windows; removed the hover-to-list-sibling-folders dropdown
+- **Consistent branding** — the app is now uniformly **filebrowser pretty** (lowercase) everywhere it's printed, in every language, and the wordmark renders bold
+- **Copy & i18n cleanup** — standardized settings wording (Sign In / Sign Up / Sign Out, sentence-case field labels, several grammar/typo fixes) and removed 76 dead / unreferenced translation keys
 
 ### v1.4.0 — Color, mobile, and naming polish
 

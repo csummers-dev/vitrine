@@ -1,6 +1,6 @@
 <template>
   <nav
-    class="flex items-center gap-0.5 text-[13px] min-w-0 text-ink-2"
+    class="breadcrumbs-nav flex items-center gap-0.5 text-[13px] min-w-0 text-ink-2"
     :aria-label="t('files.home')"
   >
     <component
@@ -15,8 +15,6 @@
       @dragover="onDragOver($event)"
       @dragleave="onDragLeave('root')"
       @drop="onDrop(rootUrl, 'root', $event)"
-      @mouseenter="onRootHoverEnter($event)"
-      @mouseleave="onCrumbHoverLeave"
     >
       <Icon name="house" :size="14" class="text-[var(--c-blue)]" />
     </component>
@@ -84,8 +82,6 @@
         @dragover="onDragOver($event)"
         @dragleave="onDragLeave(entry.link.url)"
         @drop="onDrop(entry.link.url, entry.link.url, $event)"
-        @mouseenter="onCrumbHoverEnter(entry.link, $event)"
-        @mouseleave="onCrumbHoverLeave"
       >
         {{ entry.link.name }}
       </component>
@@ -99,31 +95,17 @@
       :items="ellipsisMenuItems"
       @hide="ellipsisMenuShow = false"
     />
-
-    <!-- Sibling-folder hover dropdown (v1.3 S3-7). Triggered by
-         hovering any crumb (root or named) for 400 ms. Lists peer
-         folders at that path depth for one-click lateral nav.
-         Shares ContextMenu styling/keynav with the ellipsis menu. -->
-    <context-menu
-      :show="siblingsMenuShow"
-      :pos="siblingsMenuPos"
-      :items="siblingsMenuItems"
-      @hide="siblingsMenuShow = false"
-      @mouseenter="cancelCloseTimer"
-      @mouseleave="scheduleClose"
-    />
   </nav>
 </template>
 
 <script setup lang="ts">
 import Icon from "@/components/Icon.vue";
 import ContextMenu, { type MenuItem } from "@/components/ContextMenu.vue";
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { useFileStore } from "@/stores/file";
 import { useDropTarget } from "@/composables/useDropTarget";
-import { files as api } from "@/api";
 
 const { t } = useI18n();
 
@@ -321,172 +303,31 @@ const cancelSpringLoad = (key: string) => {
 onBeforeUnmount(() => {
   for (const t of springTimers.values()) window.clearTimeout(t);
   springTimers.clear();
-  cancelHoverTimer();
-  cancelCloseTimer();
 });
-
-// ── Sibling-folder hover dropdown (v1.3 S3-7) ────────────────────────
-// Hovering any crumb (root or named) for 400 ms opens a ContextMenu
-// listing peer folders at that depth. Lets the user jump laterally —
-// "Documents → Photos at the same level" — without first navigating
-// to the parent. Results are cached in-memory for 30 s per parent
-// URL so repeated traversals are instant and don't hammer the API.
-//
-// Why module-level cache (instead of in-component): the same parent
-// directory is often re-hovered as the user moves through subtrees
-// (e.g. /A/B/C → /A/B/D shares /A/B/'s sibling list). Module scope
-// means the cache survives crumb re-renders and short navigations.
-// RC-20: a deliberate dwell, not a quick aim-and-click. At 400 ms the menu
-// popped up right as the user clicked a crumb to navigate, so it felt like
-// clicking opened it; 1000 ms means only an intentional hover does.
-const HOVER_DELAY_MS = 1000;
-// Grace period before closing on mouse-away — long enough to move from the
-// crumb down into the menu without it vanishing.
-const CLOSE_DELAY_MS = 250;
-const SIBLINGS_TTL_MS = 30000;
-const siblingsCache = new Map<
-  string,
-  { items: BreadCrumb[]; expires: number }
->();
-
-let hoverTimer: number | null = null;
-let closeTimer: number | null = null;
-const siblingsMenuShow = ref(false);
-const siblingsMenuPos = ref<{ x: number; y: number }>({ x: 0, y: 0 });
-const siblingsMenuItems = ref<MenuItem[]>([]);
-
-/** Derive the parent URL of a crumb URL.
- *  "/files/Docs/Letters/" → "/files/Docs/", "/files/Docs/" → "/files/" */
-const parentUrlOf = (crumbUrl: string): string => {
-  const trimmed = crumbUrl.endsWith("/") ? crumbUrl.slice(0, -1) : crumbUrl;
-  const parent = trimmed.replace(/[^/]+$/, "");
-  return parent || rootUrl.value;
-};
-
-const cancelHoverTimer = () => {
-  if (hoverTimer !== null) {
-    window.clearTimeout(hoverTimer);
-    hoverTimer = null;
-  }
-};
-
-const cancelCloseTimer = () => {
-  if (closeTimer !== null) {
-    window.clearTimeout(closeTimer);
-    closeTimer = null;
-  }
-};
-
-// RC-20: close the sibling menu shortly after the cursor leaves both the
-// crumb and the menu. The delay lets the user travel from the crumb into
-// the menu (whose mouseenter cancels this) without it disappearing.
-const scheduleClose = () => {
-  cancelCloseTimer();
-  closeTimer = window.setTimeout(() => {
-    closeTimer = null;
-    siblingsMenuShow.value = false;
-  }, CLOSE_DELAY_MS);
-};
-
-// Leaving a crumb: cancel a not-yet-fired open, and begin closing any
-// menu that's already showing.
-const onCrumbHoverLeave = () => {
-  cancelHoverTimer();
-  scheduleClose();
-};
-
-/** Fetch (with 30 s in-memory cache) the folder children of a path.
- *  Returns an empty array on any error — UI silently skips opening
- *  the menu in that case, which is the right "do no harm" behavior. */
-const fetchSiblings = async (parentUrl: string): Promise<BreadCrumb[]> => {
-  const now = Date.now();
-  const cached = siblingsCache.get(parentUrl);
-  if (cached && cached.expires > now) return cached.items;
-  try {
-    const res = await api.fetch(parentUrl);
-    if (!res.isDir || !Array.isArray(res.items)) return [];
-    const siblings: BreadCrumb[] = res.items
-      .filter((it: any) => it.isDir)
-      .map((it: any) => ({ name: it.name, url: it.url }));
-    siblingsCache.set(parentUrl, {
-      items: siblings,
-      expires: now + SIBLINGS_TTL_MS,
-    });
-    return siblings;
-  } catch {
-    return [];
-  }
-};
-
-/** Open the sibling-folder menu anchored to `anchor`, listing
- *  folders under `parentUrl` excluding `excludeName` (so a crumb's
- *  own name isn't shown as a "sibling" of itself). Bails silently
- *  during an active drag — the spring-load + drop machinery owns
- *  hover then, and we don't want a menu popping up under the cursor. */
-const openSiblingsForParent = async (
-  parentUrl: string,
-  anchor: HTMLElement,
-  excludeName?: string
-) => {
-  if (fileStore.draggedItems.length > 0) return;
-  const siblings = await fetchSiblings(parentUrl);
-  const filtered = excludeName
-    ? siblings.filter((s) => s.name !== excludeName)
-    : siblings;
-  if (filtered.length === 0) return;
-  const rect = anchor.getBoundingClientRect();
-  // Anchor under the crumb. ContextMenu clamps to viewport so
-  // right-edge overflow self-corrects.
-  siblingsMenuPos.value = { x: rect.left, y: rect.bottom + 4 };
-  siblingsMenuItems.value = filtered.map((s) => ({
-    label: s.name,
-    icon: "folder",
-    action: () => {
-      siblingsMenuShow.value = false;
-      router.push({ path: s.url });
-    },
-  }));
-  siblingsMenuShow.value = true;
-};
-
-const onCrumbHoverEnter = (crumb: BreadCrumb, event: MouseEvent) => {
-  cancelHoverTimer();
-  cancelCloseTimer();
-  const anchor = event.currentTarget as HTMLElement;
-  const parent = parentUrlOf(crumb.url);
-  hoverTimer = window.setTimeout(() => {
-    hoverTimer = null;
-    void openSiblingsForParent(parent, anchor, crumb.name);
-  }, HOVER_DELAY_MS);
-};
-
-const onRootHoverEnter = (event: MouseEvent) => {
-  cancelHoverTimer();
-  cancelCloseTimer();
-  const anchor = event.currentTarget as HTMLElement;
-  hoverTimer = window.setTimeout(() => {
-    hoverTimer = null;
-    // Root's "siblings" = top-level folders. No name to exclude.
-    void openSiblingsForParent(rootUrl.value, anchor);
-  }, HOVER_DELAY_MS);
-};
-
-// Close the sibling menu the moment a drag begins — a drag operation
-// implies a different interaction model (move/copy targets, spring-load)
-// and a dangling hover-menu would be confusing.
-watch(
-  () => fileStore.draggedItems.length,
-  (n) => {
-    if (n > 0) {
-      siblingsMenuShow.value = false;
-      cancelHoverTimer();
-      cancelCloseTimer();
-    }
-  }
-);
 </script>
 
 <style scoped>
+/* The breadcrumb strip scrolls horizontally instead of overflowing under the
+   search box / header actions when the path is too long for the available
+   width (the reported "covered up" bug, most visible on mobile / narrow
+   windows). The scrollbar is hidden so it stays clean; children don't shrink
+   so the full path can be revealed by scrolling. */
+.breadcrumbs-nav {
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: nowrap;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  /* Smooth momentum scrolling on iOS. */
+  -webkit-overflow-scrolling: touch;
+}
+.breadcrumbs-nav::-webkit-scrollbar {
+  display: none;
+}
+.breadcrumbs-nav > * {
+  flex-shrink: 0;
+}
+
 .breadcrumb-link {
   padding: 4px 6px;
   border-radius: 4px;
