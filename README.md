@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="branding/banner.svg" width="120" alt="filebrowser pretty" />
+<img src="branding/banner.svg" width="900" alt="filebrowser pretty" />
 
 # filebrowser pretty
 
@@ -13,101 +13,39 @@
 </div>
 
 <p align="center">
-  <img src="docs/screenshots/hero.png" width="92%" alt="filebrowser pretty — list view with the details panel open" />
-</p>
-
----
-
-## Features
-
-**Browsing & navigation**
-
-- List, grid, and gallery views — remembered per folder
-- Command palette (⌘K) with instant file search and quick actions
-- Search-as-you-type, including tag and file-type filters
-- Recents and favorites in the sidebar
-- Multi-column sort — name, size, modified, or extension
-- Breadcrumb navigation with depth ellipsis and sibling-folder jump
-- Smooth scrolling in folders with tens of thousands of files
-
-**Files**
-
-- Create, rename, move, copy, and delete inline — delete is undoable
-- Right-click context menus on files and empty space
-- Bulk rename with pattern or find-and-replace and a live preview
-- Drag and drop — into folders, up via breadcrumbs, and rubber-band select
-- Spring-loaded folders that open on hover while dragging
-- Extract zip archives, optionally removing the original
-- Copy a file's path to the clipboard
-
-**Tags & smart folders**
-
-- Color-coded tags with inline chips and a picker
-- Smart folders — saved searches over tags, type, and name
-- Tags follow files through renames and moves
-
-**Uploads**
-
-- Drag-and-drop, file, and folder uploads
-- Resumable — uploads survive a dropped connection
-- Floating dock with per-file progress, cancel, and queueing
-- Photo and camera-roll upload on mobile
-
-**Previews**
-
-- Images — zoom, fit, film strip, EXIF, and rotate / flip / crop editing
-- Video — playback, thumbnails, subtitle upload, picture-in-picture, track info
-- Audio — playback with album art, ID3 tags, and previous/next track
-- PDF — rendered pages, navigation, zoom, and text search
-- EPUB — reader with chapter list and remembered position
-- Text and Markdown — rendered or raw, with an inline editor
-- CSV tables
-
-**Sharing**
-
-- Public links with optional password and expiration periods
-- Share management page
-
-**Mobile**
-
-- Responsive on every screen, with a slide-out sidebar
-- Pull-to-refresh, and swipe between files in the preview
-
-**Appearance**
-
-- Light, dark, and system themes, per user
-- Six-preset accent color
-- Per-account language and code-editor theme
-
-**Admin & integrations**
-
-- User management and global settings
-- Audit log — every file op, share, sign-in, and setting change, filterable
-- Webhooks — POST to your services on file changes, with test and retry
-- Sign out of every other session at once
-
-**Reliability**
-
-- Loads and runs offline, with a clear offline indicator
-- Named error states with one-click retry
-- Full keyboard shortcuts with a built-in cheat sheet (press `?`)
-
----
-
-<p align="center">
-  <img src="docs/screenshots/listing-list.png" width="80%" alt="List view with the colorful file-type icon system, tags, and inline meta" />
-  <br/><em>List view — colorful file-type tiles, inline tags</em>
+  <img src="docs/screenshots/listing-list.png" width="80%" alt="List view with file-icon system and inline meta" />
+  <br/><em>List view with file-icon system and inline meta</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/listing-grid.png" width="49%" alt="Grid view with vivid file-type tiles" />
-  <img src="docs/screenshots/listing-gallery.png" width="49%" alt="Gallery view with edge-to-edge image thumbnails" />
-  <br/><em>Grid and gallery views</em>
+  <img src="docs/screenshots/listing-grid.png" width="49%" alt="Grid view" />
+  <img src="docs/screenshots/listing-gallery.png" width="49%" alt="Gallery view with image thumbnails" />
+  <br/><em>Grid and gallery views with file-icon system and inline meta</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/app-gradient.png" width="80%" alt="The subtle accent-gradient application background" />
-  <br/><em>Signature accent-gradient background — configurable / whisper / subtle / bold</em>
+  <img src="docs/screenshots/preview-image.png" width="80%" alt="Image preview with EXIF info" />
+  <br/><em>Image preview with EXIF info</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/preview-video.png" width="80%" alt="Video preview and playback with media info" />
+  <br/><em>Video preview and playback with media info</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/preview-audio.png" width="80%" alt="Audio preview and playback with album art and custom transport" />
+  <br/><em>Audio preview and playback with album art and custom transport</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/preview-pdf.png" width="80%" alt="PDF preview with thumbnail" />
+  <br/><em>PDF preview with thumbnail</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/preview-epub.png" width="80%" alt="EPUB preview" />
+  <br/><em>EPUB preview</em>
 </p>
 
 <table>
@@ -126,82 +64,20 @@
 </table>
 
 <p align="center">
-  <img src="docs/screenshots/command-palette.png" width="70%" alt="Command palette with colorful icons and instant file search" />
-  <br/><em>⌘K command palette — instant file search, quick actions, color-coded icons</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/breadcrumb-siblings.png" width="70%" alt="Breadcrumb navigation with a sibling-folder jump dropdown open" />
-  <br/><em>Breadcrumbs with depth ellipsis and a sibling-folder jump dropdown</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/preview-image.png" width="80%" alt="Image preview with film strip and EXIF info" />
-  <br/><em>Image preview — film strip, fit / zoom, and EXIF camera data</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/preview-video.png" width="49%" alt="Video preview and playback with media info" />
-  <img src="docs/screenshots/preview-audio.png" width="49%" alt="Audio preview with album art and custom transport" />
-  <br/><em>Video playback with track info · audio with album art and ID3 tags</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/preview-pdf.png" width="49%" alt="PDF preview with page navigation" />
-  <img src="docs/screenshots/preview-epub.png" width="49%" alt="EPUB reader with chapter list and cover" />
-  <br/><em>PDF reader · EPUB reader with chapter list and remembered position</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/preview-markdown.png" width="80%" alt="Rendered Markdown preview and the themed code editor" />
-  <br/><em>Rendered Markdown and the themed in-browser editor</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/bulk-select.png" width="33%" alt="Multi-select with the floating bulk action bar" />
-  <img src="docs/screenshots/context-menu.png" width="33%" alt="Right-click context menu on a file row" />
-  <img src="docs/screenshots/lasso-bulk-select.png" width="33%" alt="Multi-select with lasso select" />
-  <br/><em>Multi-select bulk actions · right-click context menus · lasso select</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/drag-drop.png" width="49%" alt="Drag and drop with a drag ghost and highlighted drop target" />
-  <img src="docs/screenshots/tags.png" width="49%" alt="Color-coded tags with the tag picker open" />
-  <br/><em>Drag and drop with spring-loaded folders · color-coded tags</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/move-copy.png" width="49%" alt="Move / copy slide-over folder picker" />
-  <img src="docs/screenshots/extract.png" width="49%" alt="Archive extract slide-over" />
-  <br/><em>Move / copy folder picker · archive extraction</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/upload-dock.png" width="70%" alt="Floating upload dock with per-file progress and cancel" />
-  <br/><em>Floating upload dock — per-file progress, cancel, and queueing</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/settings-profile.png" width="80%" alt="Per-user profile settings — theme, background gradient, translucent surfaces" />
-  <br/><em>Per-user settings — theme, background gradient, and translucent surfaces</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/favorites-titles.png" width="49%" alt="Sidebar favorites with custom display titles and the edit dialog" />
-  <img src="docs/screenshots/users.png" width="49%" alt="Admin user management with colorful avatars and permission chips" />
-  <br/><em>Favorites with custom display titles · admin user management</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/login.png" width="70%" alt="Login page with the full six-color gradient backdrop" />
-  <br/><em>Login — with a pretty six-color gradient backdrop</em>
+  <img src="docs/screenshots/command-palette.png" width="70%" alt="⌘K command palette with file search" />
+  <br/><em>⌘K command palette with file search</em>
 </p>
 
 <p align="center">
   <img src="docs/screenshots/mobile-drawer.png" width="32%" alt="Mobile sidebar drawer" />
   <img src="docs/screenshots/mobile-listing.png" width="32%" alt="Mobile file listing" />
   <img src="docs/screenshots/mobile-preview.png" width="32%" alt="Mobile preview" />
-  <br/><em>Responsive on every screen — slide-out sidebar, pull-to-refresh, swipe between files</em>
+  <br/><em>Mobile-friendly design principles</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/settings-profile.png" width="80%" alt="Global and per-user pofile settings" />
+  <br/><em>Global and per-user pofile settings</em>
 </p>
 
 ---
@@ -263,19 +139,27 @@ Or skip Docker entirely and run the binary directly: `./filebrowser` — opens o
 ## Architecture
 
 ```
-Browser  —  Vue 3 · TypeScript · Pinia · Tailwind v4
-  • Composition API + composables (shortcuts, drag, focus, theme)
-  • Format viewers — pdf.js · video.js · epub.js · Ace · music-metadata · exifr
-  • Virtual scrolling · service-worker offline shell
-
-        │  HTTP / WebSocket
-        ▼
-
-Go backend  —  Gorilla mux · JWT auth · afero filesystem
-  • Storm/BoltDB — users · shares · settings
-  • In-process event bus → audit log + webhooks (BoltDB siblings)
-  • Tags · disk cache · resumable uploads (TUS) · ffmpeg thumbnails
-  • Frontend assets embedded — deploys as a single binary
+┌──────────────────────────────────────────────────────────────┐
+│  Browser                                                     │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │  Vue 3 + TypeScript + Pinia                            │  │
+│  │  • Composition API, <script setup>                     │  │
+│  │  • Tailwind v4 design tokens                           │  │
+│  │  • Composables for shortcuts, drag, focus, theme       │  │
+│  │  • Format-specific viewers: pdfjs / videojs /          │  │
+│  │    vue-reader (EPUB) / Ace / music-metadata / exifr    │  │
+│  └────────────────────────────────────────────────────────┘  │
+│                            │ HTTP / WebSocket                │
+│                            ▼                                 │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │  Go backend                                            │  │
+│  │  • Gorilla mux router                                  │  │
+│  │  • Storm/BoltDB for users + shares + settings          │  │
+│  │  • afero filesystem abstraction                        │  │
+│  │  • JWT auth (or proxy / noauth / hooks)                │  │
+│  │  • Embedded frontend assets (one binary deploys)       │  │
+│  └────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ### Tech stack
