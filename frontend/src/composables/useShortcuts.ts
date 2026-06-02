@@ -2,6 +2,7 @@ import {
   computed,
   onBeforeUnmount,
   ref,
+  toRaw,
   type ComputedRef,
   type Ref,
 } from "vue";
@@ -252,8 +253,12 @@ export function useShortcuts() {
   const register = (def: ShortcutDefinition) => {
     registry.value.set(def.id, def);
     const unregister = () => {
-      // Guard against re-registering a stale id during HMR.
-      if (registry.value.get(def.id) === def) {
+      // Only delete if THIS registration still owns the id (guards against an
+      // unmount clobbering a newer registration that reused the id, e.g. HMR).
+      // `registry` is a reactive ref(Map), so `.get()` hands back a reactive
+      // PROXY of the stored def — compare against the raw object or `=== def`
+      // is always false and the entry would never actually be removed.
+      if (toRaw(registry.value.get(def.id)) === def) {
         registry.value.delete(def.id);
       }
     };
