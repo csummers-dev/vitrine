@@ -17,7 +17,7 @@
       <div class="preview-info__primary">
         <button
           v-if="canShare"
-          class="info-action"
+          class="info-action info-action--share"
           title="Share"
           @click="$emit('share')"
         >
@@ -26,7 +26,7 @@
         </button>
         <button
           v-if="canDownload"
-          class="info-action"
+          class="info-action info-action--download"
           title="Download"
           @click="$emit('download')"
         >
@@ -35,7 +35,7 @@
         </button>
         <button
           v-if="canRename"
-          class="info-action"
+          class="info-action info-action--rename"
           title="Rename"
           @click="$emit('rename')"
         >
@@ -61,7 +61,7 @@
       <div class="preview-info__secondary">
         <button
           v-if="canMove"
-          class="info-action"
+          class="info-action info-action--move"
           title="Move"
           @click="$emit('move')"
         >
@@ -70,7 +70,7 @@
         </button>
         <button
           v-if="canCopy"
-          class="info-action"
+          class="info-action info-action--copy"
           title="Copy"
           @click="$emit('copy')"
         >
@@ -79,7 +79,7 @@
         </button>
         <button
           v-if="canExtract"
-          class="info-action"
+          class="info-action info-action--extract"
           title="Extract"
           @click="$emit('extract')"
         >
@@ -88,7 +88,7 @@
         </button>
         <button
           v-if="canOpenDirect"
-          class="info-action"
+          class="info-action info-action--open"
           title="Open in new tab"
           @click="$emit('openDirect')"
         >
@@ -333,11 +333,15 @@ html.dark .preview-info__icon.is-csv {
   max-width: calc((100% - 12px) / 3);
 }
 
-/* `info-action` is the same class FileListing's InfoPane uses — kept
-   un-scoped so we share the chrome tokens. Style is defined in the
-   InfoPane and inherited here via the global stylesheet load order. */
+/* `info-action` is the same class FileListing's InfoPane uses, but Vue's
+   scoped CSS does NOT leak across components — InfoPane's per-action hue
+   rules are tagged with InfoPane's scope id and never reach these buttons.
+   So we replicate the chrome AND the color system here, mirroring
+   InfoPane.vue exactly, to keep the two rails consistent. (If you change a
+   hue, change it in both places.) */
 .preview-info :deep(.info-action),
 .preview-info .info-action {
+  --action-hue: var(--c-blue);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -356,8 +360,45 @@ html.dark .preview-info__icon.is-csv {
     border-color 120ms ease;
   min-width: 0;
 }
+
+/* Per-action accent hue — identical mapping to InfoPane.vue so an action
+   reads the same color in the listing details pane and the preview rail. */
+.preview-info .info-action--share {
+  --action-hue: var(--c-teal);
+}
+.preview-info .info-action--download {
+  --action-hue: var(--c-blue);
+}
+.preview-info .info-action--rename {
+  --action-hue: var(--c-amber);
+}
+.preview-info .info-action--move {
+  --action-hue: var(--c-blue);
+}
+.preview-info .info-action--copy {
+  --action-hue: var(--c-teal);
+}
+.preview-info .info-action--extract {
+  --action-hue: var(--c-green);
+}
+.preview-info .info-action--open {
+  --action-hue: var(--c-lilac);
+}
+.preview-info .info-action--danger {
+  --action-hue: var(--c-rose);
+}
+
+/* Always-on colored glyph (Lucide svg paints with currentColor). The svg
+   lives inside the Icon child component, so it needs :deep() to pierce the
+   scope; the --action-hue custom property inherits into it from the button. */
+.preview-info .info-action :deep(svg) {
+  color: var(--action-hue);
+}
+
+/* Hover tints the tile with the action's own hue (matches InfoPane). */
 .preview-info .info-action:hover {
-  background: var(--color-elevated, #f4f4f5);
+  background: color-mix(in srgb, var(--action-hue) 12%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--action-hue) 40%, var(--color-line));
   color: var(--color-ink-1, #18181b);
 }
 .preview-info .info-action--danger:hover {
