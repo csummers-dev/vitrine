@@ -1,7 +1,7 @@
 import { useAuthStore } from "@/stores/auth";
 import { useLayoutStore } from "@/stores/layout";
 import { baseURL } from "@/utils/constants";
-import { upload as postTus, useTus } from "./tus";
+import { upload as postTus, useTus, abortUpload as abortTus } from "./tus";
 import { createURL, fetchURL, removePrefix, StatusError } from "./utils";
 import { isEncodableResponse, makeRawResource } from "@/utils/encodings";
 
@@ -123,6 +123,12 @@ export async function post(
     : postTus(url, content, overwrite, onupload);
 }
 
+// v1.3 H13: registry of in-flight non-TUS (XHR) uploads, keyed by the
+// prefix-stripped path, so a single upload can be aborted by path
+// (the dock's per-row cancel). TUS uploads have their own registry in
+// tus.ts; `cancelUpload` below tries both.
+const CURRENT_XHR_LIST: Record<string, XMLHttpRequest> = {};
+
 async function postResources(
   url: string,
   content: ApiContent = "",
@@ -153,7 +159,10 @@ async function postResources(
       request.upload.onprogress = onupload;
     }
 
+    CURRENT_XHR_LIST[url] = request;
+
     request.onload = () => {
+      delete CURRENT_XHR_LIST[url];
       if (request.status === 200) {
         resolve(request.responseText);
       } else if (request.status === 409) {
@@ -164,11 +173,32 @@ async function postResources(
     };
 
     request.onerror = () => {
+      delete CURRENT_XHR_LIST[url];
       reject(new Error("001 Connection aborted"));
+    };
+
+    // request.abort() fires `onabort` (NOT `onerror`), so we reject
+    // here with the same sentinel the store + tus path use so callers
+    // can swallow user-initiated cancels uniformly.
+    request.onabort = () => {
+      delete CURRENT_XHR_LIST[url];
+      reject(new Error("Upload aborted"));
     };
 
     request.send(bufferContent || content);
   });
+}
+
+/**
+ * Cancel a single in-flight upload by path (v1.3 H13). Tries the TUS
+ * registry first (the primary upload path on http/https), then the
+ * XHR fallback. No-op if neither has a matching in-flight upload.
+ */
+export function cancelUpload(path: string) {
+  if (abortTus(path)) return;
+  const key = removePrefix(path);
+  const req = CURRENT_XHR_LIST[key];
+  if (req) req.abort();
 }
 
 function moveCopy(
@@ -236,18 +266,39 @@ export async function checksum(url: string, algo: ChecksumAlg) {
   return (await data.json()).checksums[algo];
 }
 
+// RC-18: <img>/<video>/<audio>/<track> tags can't send the X-Auth header,
+// so these media URLs carry the live JWT as an `auth` query param. The
+// backend extractor accepts ?auth on GET. This replaces sole reliance on
+// the `auth` cookie, which could drift out of sync with the renewed token
+// and then expire — 401-ing every thumbnail while the API kept working.
+// Guarded on jwt presence so logged-out public-share viewers are
+// unaffected (public shares use the pub.ts builders anyway).
+function authParam(): { auth: string } | Record<string, never> {
+  const jwt = useAuthStore().jwt;
+  return jwt ? { auth: jwt } : {};
+}
+
 export function getDownloadURL(file: ResourceItem, inline: any) {
   const params = {
     ...(inline && { inline: "true" }),
+    ...authParam(),
   };
 
   return createURL("api/raw" + file.path, params);
+}
+
+// #3: on-demand transcode endpoint. The <video> tag loads this (carrying
+// ?auth like other media URLs) when native playback fails; the server
+// remuxes/transcodes to a cached, seekable MP4.
+export function getTranscodeURL(file: ResourceItem) {
+  return createURL("api/transcode" + file.path, authParam());
 }
 
 export function getPreviewURL(file: ResourceItem, size: string) {
   const params = {
     inline: "true",
     key: Date.parse(file.modified),
+    ...authParam(),
   };
 
   return createURL("api/preview/" + size + file.path, params);
@@ -256,6 +307,7 @@ export function getPreviewURL(file: ResourceItem, size: string) {
 export function getSubtitlesURL(file: ResourceItem) {
   const params = {
     inline: "true",
+    ...authParam(),
   };
 
   return file.subtitles?.map((d) => createURL("api/subtitle" + d, params));

@@ -9,6 +9,12 @@ type Upload = {
   rawProgress: {
     sentBytes: number;
   };
+  /**
+   * Set when the user cancels this upload from the dock (v1.3 H13).
+   * `finishUpload()` reads it to reverse the file's byte accounting
+   * instead of counting it as completed.
+   */
+  canceled?: boolean;
 };
 
 interface UploadEntry {

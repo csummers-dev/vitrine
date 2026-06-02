@@ -18,8 +18,16 @@ import type { useLayoutStore } from "@/stores/layout";
 import { users } from "@/api";
 import * as auth from "@/utils/auth";
 import { unzipEnabled } from "@/utils/constants";
+import { isExtractable } from "@/utils/archive";
+import { useBulkRename } from "@/composables/useBulkRename";
 
-export type CommandGroup = "files" | "actions" | "view" | "navigation";
+export type CommandGroup =
+  | "quickActions"
+  | "recent"
+  | "files"
+  | "actions"
+  | "view"
+  | "navigation";
 
 export interface Command {
   id: string;
@@ -42,13 +50,28 @@ export interface CommandContext {
 }
 
 const GROUP_LABEL: Record<CommandGroup, string> = {
+  quickActions: "Quick actions",
+  recent: "Recent",
   files: "Files",
   actions: "Actions",
   view: "View",
   navigation: "Go to",
 };
 
-const GROUP_ORDER: CommandGroup[] = ["files", "actions", "view", "navigation"];
+// "quickActions" sits at the very top (S3-8): the user's most-used
+// commands (or starter set for first-time users) are the highest-value
+// rows when the palette opens empty. "recent" (recently-opened files)
+// follows. "files" (search hits) only appears with an active query but
+// is listed above static commands so search results take precedence
+// when the user has typed something.
+const GROUP_ORDER: CommandGroup[] = [
+  "quickActions",
+  "recent",
+  "files",
+  "actions",
+  "view",
+  "navigation",
+];
 
 export function groupLabel(group: CommandGroup): string {
   return GROUP_LABEL[group];
@@ -189,6 +212,20 @@ export function buildStaticCommands(ctx: CommandContext): Command[] {
         run: () => layoutStore.showHover("rename"),
       });
     }
+    // v1.3 S4-2: bulk rename. Distinct from the single-item Rename
+    // above — opens the SlideOver pipeline (pattern/find-replace +
+    // preview) instead of the inline rename input. Multi-selection
+    // only; single-selection users want the inline rename UX.
+    if (canRename && selCount > 1) {
+      cmds.push({
+        id: "action.bulkRename",
+        group: "actions",
+        label: `Bulk rename ${selCount} items…`,
+        icon: "pencil",
+        keywords: ["batch", "pattern", "find", "replace"],
+        run: () => useBulkRename().open(),
+      });
+    }
     // Move requires perm.rename (same backend op as rename). Available for
     // any selection size — the slide-over picker handles both single and
     // multi item flows uniformly.
@@ -224,19 +261,28 @@ export function buildStaticCommands(ctx: CommandContext): Command[] {
         run: () => layoutStore.showHover("delete"),
       });
     }
-    // Extract zip (PR #5746) — single .zip + perm.create + feature on.
-    // Conditional inside the same selection-count guard so the entry
-    // only renders when the action is genuinely available.
+    // Extract archive (PR #5746, generalized) — single supported archive
+    // (zip / 7z / rar / tar family) + perm.create + feature on. Conditional
+    // inside the same selection-count guard so the entry only renders when
+    // the action is genuinely available.
     if (selCount === 1 && canCreate && unzipEnabled) {
       const item = fileStore.req?.items[fileStore.selected[0]];
-      if (item && (item.extension ?? "").toLowerCase() === ".zip") {
+      if (item && isExtractable(item.name)) {
         cmds.push({
           id: "action.extractZip",
           group: "actions",
-          label: "Extract zip…",
+          label: "Extract…",
           hint: "E",
           icon: "package-open",
-          keywords: ["unzip", "decompress", "archive", "open"],
+          keywords: [
+            "unzip",
+            "decompress",
+            "archive",
+            "open",
+            "7z",
+            "rar",
+            "tar",
+          ],
           run: () => layoutStore.showHover("extract"),
         });
       }

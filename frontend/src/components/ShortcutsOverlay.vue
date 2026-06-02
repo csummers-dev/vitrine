@@ -151,7 +151,10 @@ const prettify = (key: string): string => {
   position: fixed;
   inset: 0;
   z-index: 1003; /* above drawer (1002), slide-over (1001), palette (1000) */
-  background: color-mix(in srgb, var(--color-ink-1, #18181b) 55%, transparent);
+  /* RC-1: a modal scrim must DARKEN the page in both themes. Using
+     --color-ink-1 (the text color) made the scrim near-white in dark mode
+     — a bright wash over the dark UI. Fixed dark wash instead. */
+  background: rgba(0, 0, 0, 0.55);
   -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
   display: flex;
@@ -330,7 +333,7 @@ const prettify = (key: string): string => {
   height: 30px;
   padding: 0 14px;
   border-radius: 6px;
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   border: 1px solid var(--color-accent, #5e6ad2);
   color: white;
   font: inherit;
@@ -343,7 +346,7 @@ const prettify = (key: string): string => {
 }
 
 .shortcuts__ok:hover {
-  background: var(--color-accent-strong, #4f5ac4);
+  background: var(--accent-gradient-strong);
   border-color: var(--color-accent-strong, #4f5ac4);
 }
 

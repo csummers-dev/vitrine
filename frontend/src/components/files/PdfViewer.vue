@@ -4,12 +4,15 @@
          of every page so the user can jump anywhere. -->
     <aside
       v-if="totalPages > 0"
+      ref="railEl"
       class="pdf-viewer__rail"
       aria-label="PDF page thumbnails"
     >
       <button
         v-for="n in totalPages"
         :key="n"
+        :ref="(el) => bindThumbWrap(n, el as Element | null)"
+        :data-page="n"
         type="button"
         class="pdf-viewer__thumb"
         :class="{ 'is-active': n === currentPage }"
@@ -54,8 +57,14 @@
         <div
           v-for="n in totalPages"
           :key="n"
+          :ref="(el) => bindPageWrap(n, el as Element | null)"
           :data-page="n"
           class="pdf-viewer__page-wrap"
+          :style="
+            pageHeightEstimate
+              ? { minHeight: pageHeightEstimate + 'px' }
+              : undefined
+          "
         >
           <canvas
             :ref="(el) => bindPageCanvas(n, el as HTMLCanvasElement | null)"
@@ -74,12 +83,15 @@
  * zoom / find can actually drive the rendering.
  *
  * Architecture:
- *   - Each page is its own `<canvas>` rendered by pdf.js. We render
- *     all pages on load (one-shot) because the typical document size
- *     fits comfortably; for huge files we'd switch to lazy/virtualized
- *     rendering, but that's a separate enhancement.
- *   - The thumbnail rail renders the same pages at thumbnail scale on
- *     a separate set of canvases.
+ *   - Each page is its own `<canvas>` rendered by pdf.js, but rendering is
+ *     LAZY: IntersectionObservers paint only the pages near the viewport and
+ *     release the canvas backing store for pages that scroll far away. A long
+ *     PDF would otherwise allocate one full-resolution canvas per page at once
+ *     and blow past the browser's canvas-memory budget — later pages then
+ *     silently fail to paint (blank). Each page-wrap reserves an estimated
+ *     height up front so the observers can place pages before they're painted.
+ *   - The thumbnail rail renders the same pages at thumbnail scale on a
+ *     separate set of canvases, also lazily.
  *   - Page-jump scrolls the active page into view; scroll position
  *     drives the `currentPage` reactive state back to the parent so
  *     the toolbar's page-number input stays in sync.
@@ -93,7 +105,7 @@ import type {
   PDFDocumentProxy,
   PDFPageProxy,
 } from "pdfjs-dist/types/src/display/api";
-import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import Icon from "@/components/Icon.vue";
 
 // Wire up the worker once at module scope. pdfjsLib.GlobalWorkerOptions
@@ -122,6 +134,13 @@ const emit = defineEmits<{
 }>();
 
 const stageEl = ref<HTMLElement | null>(null);
+const railEl = ref<HTMLElement | null>(null);
+// Estimated page height (px) at the current fit-width, taken from page 1.
+// Reserved as a min-height on every page-wrap so off-screen pages keep their
+// layout box even before their canvas is painted (or after it's released) —
+// this is what lets the IntersectionObserver lazy-render without the scroll
+// position jumping around.
+const pageHeightEstimate = ref<number>(0);
 const totalPages = ref<number>(0);
 const currentPage = ref<number>(props.page);
 const loading = ref<boolean>(true);
@@ -134,30 +153,32 @@ const thumbCanvases = new Map<number, HTMLCanvasElement>();
 const renderedPages = new Set<number>();
 const renderedThumbs = new Set<number>();
 
+// Canvas binds only register the element now — the IntersectionObservers
+// below decide when to actually paint (and when to release) so we never hold
+// more than a small window of full-resolution canvases at once.
 const bindPageCanvas = (n: number, el: HTMLCanvasElement | null) => {
-  if (el) {
-    pageCanvases.set(n, el);
-    void renderPageIfReady(n);
-  } else {
-    pageCanvases.delete(n);
-  }
+  if (el) pageCanvases.set(n, el);
+  else pageCanvases.delete(n);
 };
 const bindThumbCanvas = (n: number, el: HTMLCanvasElement | null) => {
-  if (el) {
-    thumbCanvases.set(n, el);
-    void renderThumbIfReady(n);
-  } else {
-    thumbCanvases.delete(n);
-  }
+  if (el) thumbCanvases.set(n, el);
+  else thumbCanvases.delete(n);
 };
 
 let pdf: PDFDocumentProxy | null = null;
 
 const reset = async () => {
+  pageObserver?.disconnect();
+  pageObserver = null;
+  thumbObserver?.disconnect();
+  thumbObserver = null;
+  pageWraps.clear();
+  thumbWraps.clear();
   pageCanvases.clear();
   thumbCanvases.clear();
   renderedPages.clear();
   renderedThumbs.clear();
+  pageHeightEstimate.value = 0;
   totalPages.value = 0;
   currentPage.value = 1;
   errorMessage.value = "";
@@ -185,11 +206,14 @@ const load = async (src: string) => {
       withCredentials: true,
     });
     pdf = await task.promise;
+    // Reserve a layout box for every page BEFORE the v-for mounts them, so the
+    // IntersectionObservers can tell which pages are actually near the
+    // viewport (otherwise zero-height wraps all stack at the top and every
+    // page reports "visible"). Rendering itself is driven lazily by the
+    // observers once the wraps mount + are observed.
+    await measurePageHeight();
     totalPages.value = pdf.numPages;
     emit("update:totalPages", pdf.numPages);
-    // Render existing canvases (template refs that have already bound).
-    for (const n of pageCanvases.keys()) void renderPageIfReady(n);
-    for (const n of thumbCanvases.keys()) void renderThumbIfReady(n);
     emit("loaded");
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Couldn't load this PDF.";
@@ -221,14 +245,32 @@ const renderPageIfReady = async (n: number) => {
     const viewport = page.getViewport({ scale });
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    // High-DPI: render at devicePixelRatio for crisp output.
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.floor(viewport.width * dpr);
-    canvas.height = Math.floor(viewport.height * dpr);
-    canvas.style.width = `${viewport.width}px`;
-    canvas.style.height = `${viewport.height}px`;
-    const transform: [number, number, number, number, number, number] =
-      dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : [1, 0, 0, 1, 0, 0];
+    // High-DPI: render at devicePixelRatio for crisp output — but clamp the
+    // backing-store scale so it never exceeds the browser's max-canvas limits
+    // (≈4096 px/side and ≈16.7M px area on the strictest engines). A page big
+    // enough to blow past those would otherwise produce a canvas the browser
+    // silently refuses to paint (blank page). Huge pages downscale (blurry but
+    // visible) rather than vanish.
+    const wCss = viewport.width;
+    const hCss = viewport.height;
+    const MAX_DIM = 4096;
+    const MAX_AREA = 16_777_216; // 4096²
+    let dpr = window.devicePixelRatio || 1;
+    dpr = Math.min(dpr, MAX_DIM / wCss, MAX_DIM / hCss);
+    dpr = Math.min(dpr, Math.sqrt(MAX_AREA / (wCss * hCss)));
+    if (dpr < 0.1) dpr = 0.1;
+    canvas.width = Math.max(1, Math.floor(wCss * dpr));
+    canvas.height = Math.max(1, Math.floor(hCss * dpr));
+    canvas.style.width = `${wCss}px`;
+    canvas.style.height = `${hCss}px`;
+    const transform: [number, number, number, number, number, number] = [
+      dpr,
+      0,
+      0,
+      dpr,
+      0,
+      0,
+    ];
     await page.render({ canvasContext: ctx, viewport, transform, canvas })
       .promise;
   } catch {
@@ -254,6 +296,132 @@ const renderThumbIfReady = async (n: number) => {
     await page.render({ canvasContext: ctx, viewport, canvas }).promise;
   } catch {
     /* swallow */
+  }
+};
+
+// ── Lazy rendering (IntersectionObserver) ──────────────────────────────
+// A long PDF used to allocate one full-resolution canvas PER PAGE at once,
+// which blows past the browser's canvas-memory budget — later pages then
+// silently fail to paint (the reported "blank pages on big PDFs" bug). We now
+// paint only the pages near the viewport and release the canvas backing store
+// for pages that scroll far away.
+const pageWraps = new Map<number, Element>();
+const thumbWraps = new Map<number, Element>();
+let pageObserver: IntersectionObserver | null = null;
+let thumbObserver: IntersectionObserver | null = null;
+
+/** Free a page's canvas bitmap while keeping its CSS box (so the scroll
+ *  layout is preserved). Marks it un-rendered so it repaints on return. */
+const releasePageCanvas = (n: number) => {
+  const canvas = pageCanvases.get(n);
+  if (canvas) {
+    canvas.width = 0;
+    canvas.height = 0;
+  }
+  renderedPages.delete(n);
+};
+const releaseThumbCanvas = (n: number) => {
+  const canvas = thumbCanvases.get(n);
+  if (canvas) {
+    canvas.width = 0;
+    canvas.height = 0;
+  }
+  renderedThumbs.delete(n);
+};
+
+const onPageIntersect: IntersectionObserverCallback = (entries) => {
+  for (const e of entries) {
+    const n = Number((e.target as HTMLElement).dataset.page);
+    if (!n) continue;
+    if (e.isIntersecting) void renderPageIfReady(n);
+    else releasePageCanvas(n);
+  }
+};
+const onThumbIntersect: IntersectionObserverCallback = (entries) => {
+  for (const e of entries) {
+    const n = Number((e.target as HTMLElement).dataset.page);
+    if (!n) continue;
+    if (e.isIntersecting) void renderThumbIfReady(n);
+    else releaseThumbCanvas(n);
+  }
+};
+
+// (Re)create both observers once the stage + rail are actually in the DOM and
+// observe every wrap registered so far. This is driven from a `totalPages`
+// watcher after `nextTick` — NOT from the ref-callbacks — because Vue fires a
+// parent's ref AFTER its children's, so the rail's children (thumb wraps) bind
+// before `railEl` is set; creating the observer eagerly in a bind-callback
+// would give it a null root and silently drop those early thumbnails.
+const setupObservers = () => {
+  pageObserver?.disconnect();
+  thumbObserver?.disconnect();
+  // ±1.5 viewports of look-ahead so a scroll reveals already-painted pages.
+  pageObserver = stageEl.value
+    ? new IntersectionObserver(onPageIntersect, {
+        root: stageEl.value,
+        rootMargin: "150% 0px",
+      })
+    : null;
+  thumbObserver = railEl.value
+    ? new IntersectionObserver(onThumbIntersect, {
+        root: railEl.value,
+        rootMargin: "200% 0px",
+      })
+    : null;
+  for (const el of pageWraps.values()) pageObserver?.observe(el);
+  for (const el of thumbWraps.values()) thumbObserver?.observe(el);
+};
+
+// Bind-callbacks only maintain the wrap maps + observe against an
+// already-created observer (for wraps that mount on a later re-render). Initial
+// observation is done in bulk by `setupObservers`.
+const bindPageWrap = (n: number, el: Element | null) => {
+  const prev = pageWraps.get(n);
+  if (prev) pageObserver?.unobserve(prev);
+  if (el) {
+    pageWraps.set(n, el);
+    pageObserver?.observe(el);
+  } else {
+    pageWraps.delete(n);
+  }
+};
+const bindThumbWrap = (n: number, el: Element | null) => {
+  const prev = thumbWraps.get(n);
+  if (prev) thumbObserver?.unobserve(prev);
+  if (el) {
+    thumbWraps.set(n, el);
+    thumbObserver?.observe(el);
+  } else {
+    thumbWraps.delete(n);
+  }
+};
+
+// Once the document loads and `totalPages` flips positive, the v-for mounts the
+// page-wraps + thumbnail rail on the next tick; wire the observers up then.
+watch(
+  () => totalPages.value,
+  async (n) => {
+    if (n <= 0) return;
+    await nextTick();
+    setupObservers();
+  }
+);
+
+/** Estimate the fit-width page height from page 1 so every page-wrap can
+ *  reserve a sensible box before it's painted. */
+const measurePageHeight = async () => {
+  if (!pdf) return;
+  try {
+    const page = await pdf.getPage(1);
+    const base = page.getViewport({ scale: 1 });
+    const stage = stageEl.value;
+    const containerWidth = stage ? stage.clientWidth - 32 : base.width;
+    const fitScale = containerWidth / base.width;
+    pageHeightEstimate.value = Math.round(
+      base.height * fitScale * (props.zoomPercent / 100)
+    );
+  } catch {
+    /* leave estimate at 0 — wraps fall back to their min CSS height */
   }
 };
 
@@ -297,7 +465,11 @@ const onStageScroll = () => {
 watch(
   () => props.zoomPercent,
   () => {
-    for (const n of pageCanvases.keys()) void renderPageIfReady(n);
+    // Update the reserved page-box height, then repaint only the pages that
+    // are currently live (near the viewport) — the rest repaint lazily as the
+    // observer reveals them.
+    void measurePageHeight();
+    for (const n of [...renderedPages]) void renderPageIfReady(n);
   }
 );
 
@@ -372,6 +544,7 @@ onBeforeUnmount(() => {
   height: 100%;
   display: flex;
   min-height: 0;
+  position: relative;
 }
 
 /* ── Thumbnail rail ─────────────────────────────────────────────── */
@@ -514,7 +687,7 @@ html.dark .pdf-viewer__stage {
   height: 32px;
   padding: 0 14px;
   border-radius: 8px;
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   color: white;
   font-size: 13px;
   font-weight: 500;
@@ -522,6 +695,6 @@ html.dark .pdf-viewer__stage {
   transition: background-color 120ms ease;
 }
 .pdf-viewer__fallback-btn:hover {
-  background: var(--color-accent-strong, #4f5ac4);
+  background: var(--accent-gradient-strong);
 }
 </style>

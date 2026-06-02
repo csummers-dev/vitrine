@@ -1,4 +1,5 @@
 import { StatusError } from "@/api/utils";
+import { archiveBaseName } from "@/utils/archive";
 
 /**
  * Map a zip-extraction failure into a single line of user-facing copy.
@@ -19,7 +20,7 @@ export function mapUnzipError(err: unknown): string {
   if (err instanceof StatusError) {
     const msg = (err.message ?? "").toLowerCase();
 
-    if (msg.includes("the zip file is too large")) {
+    if (msg.includes("the archive is too large")) {
       return "Archive is too large to extract (server limit reached).";
     }
     if (msg.includes("too high a decompression rate")) {
@@ -31,8 +32,17 @@ export function mapUnzipError(err: unknown): string {
     if (msg.includes("too high a decompression size")) {
       return "Archive contents would exceed the server's size limit.";
     }
-    if (msg.includes("some files are invalid in zip archive")) {
+    if (msg.includes("some files are invalid in the archive")) {
       return "Archive is corrupt or malformed.";
+    }
+    if (msg.includes("this archive format isn't supported")) {
+      return "This archive format can't be extracted.";
+    }
+    if (msg.includes("split or multi-volume archives")) {
+      return "Split / multi-volume archives of this format aren't supported.";
+    }
+    if (msg.includes("password-protected archives")) {
+      return "Password-protected archives aren't supported.";
     }
 
     // Status-based fallbacks for non-text payloads.
@@ -59,15 +69,11 @@ export function mapUnzipError(err: unknown): string {
 }
 
 /**
- * Strip a single trailing `.zip` (case-insensitive) from a filename to
- * derive the auto-named subfolder. Matches the "extract into a new
- * folder" default behavior every native file manager uses.
- *
- * `photos-2024.zip` → `photos-2024`
- * `Backup.ZIP`     → `Backup`
- * `weird.tar.zip`  → `weird.tar`  (strip only the outermost .zip)
- * `noext`          → `noext`      (unchanged)
+ * Derive the auto-named subfolder for "extract into a new folder" by
+ * stripping the archive suffix. Delegates to the shared `archiveBaseName`
+ * helper, which understands every supported format (zip / 7z / rar incl.
+ * multi-volume parts / tar family), e.g. `backup.tar.gz` → `backup`.
  */
 export function deriveSubfolderName(filename: string): string {
-  return filename.replace(/\.zip$/i, "");
+  return archiveBaseName(filename);
 }

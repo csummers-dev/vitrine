@@ -11,9 +11,11 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/golang-jwt/jwt/v5/request"
+	"github.com/tomasen/realip"
 
 	fbAuth "github.com/filebrowser/filebrowser/v2/auth"
 	fberrors "github.com/filebrowser/filebrowser/v2/errors"
+	"github.com/filebrowser/filebrowser/v2/events"
 	"github.com/filebrowser/filebrowser/v2/settings"
 	"github.com/filebrowser/filebrowser/v2/users"
 )
@@ -23,18 +25,18 @@ const (
 )
 
 type userInfo struct {
-	ID                    uint              `json:"id"`
-	Locale                string            `json:"locale"`
-	ViewMode              users.ViewMode    `json:"viewMode"`
-	SingleClick           bool              `json:"singleClick"`
-	RedirectAfterCopyMove bool              `json:"redirectAfterCopyMove"`
-	Perm                  users.Permissions `json:"perm"`
-	Commands              []string          `json:"commands"`
-	LockPassword          bool              `json:"lockPassword"`
-	HideDotfiles          bool              `json:"hideDotfiles"`
-	DateFormat            bool              `json:"dateFormat"`
-	Username              string            `json:"username"`
-	AceEditorTheme        string            `json:"aceEditorTheme"`
+	ID                    uint                       `json:"id"`
+	Locale                string                     `json:"locale"`
+	ViewMode              users.ViewMode             `json:"viewMode"`
+	SingleClick           bool                       `json:"singleClick"`
+	RedirectAfterCopyMove bool                       `json:"redirectAfterCopyMove"`
+	Perm                  users.Permissions          `json:"perm"`
+	Commands              []string                   `json:"commands"`
+	LockPassword          bool                       `json:"lockPassword"`
+	HideDotfiles          bool                       `json:"hideDotfiles"`
+	DateFormat            bool                       `json:"dateFormat"`
+	Username              string                     `json:"username"`
+	Preferences           map[string]json.RawMessage `json:"preferences"`
 }
 
 type authToken struct {
@@ -55,6 +57,16 @@ func (e extractor) ExtractToken(r *http.Request) (string, error) {
 	}
 
 	if r.Method == http.MethodGet {
+		// Images / media load via <img>/<video>/<audio> tags that can't
+		// send the X-Auth header, so they pass the token as a query param.
+		// Checked before the cookie: the cookie can drift out of sync with
+		// the app's live (renewed) token and then expire, which 401'd every
+		// thumbnail/preview while header-authed API calls kept working
+		// (RC-18).
+		if q := r.URL.Query().Get("auth"); strings.Count(q, ".") == 2 {
+			return q, nil
+		}
+
 		cookie, _ := r.Cookie("auth")
 		if cookie != nil && strings.Count(cookie.Value, ".") == 2 {
 			return cookie.Value, nil
@@ -104,6 +116,15 @@ func withUser(fn handleFunc) handleFunc {
 		if err != nil {
 			return http.StatusInternalServerError, err
 		}
+
+		// S8-3 "sign out everywhere": reject any token issued before the
+		// user's session epoch. The freshly re-issued token (IssuedAt ==
+		// epoch) survives because the comparison is strictly-less-than.
+		if d.user.SessionsRevokedAt > 0 && tk.IssuedAt != nil &&
+			tk.IssuedAt.Unix() < d.user.SessionsRevokedAt {
+			return http.StatusUnauthorized, nil
+		}
+
 		return fn(w, r, d)
 	}
 }
@@ -132,6 +153,15 @@ func loginHandler(tokenExpireTime time.Duration) handleFunc {
 		case err != nil:
 			return http.StatusInternalServerError, err
 		}
+
+		// Audit the successful login. We can't use eventBase() here
+		// because d.user isn't populated on the login path (withUser
+		// hasn't run); construct Base from the freshly-authenticated
+		// user instead.
+		events.Publish(events.UserLoggedIn{
+			Base:     events.NewBase(user.ID, realip.FromRequest(r)),
+			Username: user.Username,
+		})
 
 		return printToken(w, r, d, user, tokenExpireTime)
 	}
@@ -226,7 +256,7 @@ func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.Use
 			HideDotfiles:          user.HideDotfiles,
 			DateFormat:            user.DateFormat,
 			Username:              user.Username,
-			AceEditorTheme:        user.AceEditorTheme,
+			Preferences:           user.Preferences,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

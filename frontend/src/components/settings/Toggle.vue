@@ -51,7 +51,7 @@ const onClick = () => {
 }
 
 .toggle.is-on {
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
 }
 
 .toggle:disabled {

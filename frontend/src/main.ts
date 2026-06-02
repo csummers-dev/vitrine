@@ -1,4 +1,4 @@
-import { disableExternal } from "@/utils/constants";
+import { disableExternal, baseURL } from "@/utils/constants";
 import { createApp } from "vue";
 import VueNumberInput from "@chenfengyuan/vue-number-input";
 import VueLazyload from "vue-lazyload";
@@ -9,7 +9,7 @@ import type {
 } from "vue-toastification/dist/types/types";
 import createPinia from "@/stores";
 import router from "@/router";
-import i18n, { isRtl } from "@/i18n";
+import i18n, { isRtl, ensureInitialLocale } from "@/i18n";
 import App from "@/App.vue";
 import CustomToast from "@/components/CustomToast.vue";
 
@@ -107,4 +107,23 @@ app.provide("$showError", (error: Error | string, displayReport = true) => {
   );
 });
 
-router.isReady().then(() => app.mount("#app"));
+// Locale messages are now lazy-loaded per language. Preload the fallback
+// ("en") + the active locale before mounting so the first paint is fully
+// translated; only then wait for the router and mount.
+ensureInitialLocale()
+  .then(() => router.isReady())
+  .then(() => app.mount("#app"));
+
+// v1.3 S6-4: register the offline-shell service worker. Production only —
+// in dev the Vite HMR client must own the page, and a worker caching the
+// shell would fight it. Served from the app root (BaseURL) so its scope
+// covers navigations + /static. Registration failure is non-fatal: the
+// app works exactly as before, just without offline boot.
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    const base = baseURL.endsWith("/") ? baseURL : `${baseURL}/`;
+    navigator.serviceWorker
+      .register(`${base}service-worker.js`)
+      .catch((err) => console.warn("Service worker registration failed:", err));
+  });
+}

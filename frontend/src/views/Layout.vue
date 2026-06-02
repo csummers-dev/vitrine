@@ -1,12 +1,20 @@
 <template>
-  <div class="flex h-screen overflow-hidden bg-canvas text-ink-1">
+  <div class="app-shell flex h-screen overflow-hidden bg-canvas text-ink-1">
+    <!-- Ambient accent-mesh background (per-user; mirrors the login screen).
+         Sits on the canvas behind all in-flow content; visibility + intensity
+         are driven by data-attributes on <html> (useBackgroundGradient). -->
+    <div class="app-mesh" aria-hidden="true"></div>
+
     <!-- Skip-to-content link: invisible until focused via Tab. Must be the
          first focusable element so a keyboard user reaches it before the
          sidebar's full nav tree. -->
     <a href="#main" class="skip-link">Skip to content</a>
 
     <div v-if="uploadStore.totalBytes" class="progress">
-      <div :style="{ width: sentPercent + '%' }"></div>
+      <!-- Width drives off the store's displayedPercent (v1.3 H10) —
+           a phantom-counter-backed value that doesn't regress when
+           files are added to an in-progress queue. -->
+      <div :style="{ width: uploadStore.displayedPercent + '%' }"></div>
     </div>
 
     <!-- Inline sidebar — visible at sm+ (640px). Hidden below sm; the
@@ -54,7 +62,7 @@ import UploadFiles from "@/components/prompts/UploadFiles.vue";
 import Drawer from "@/components/Drawer.vue";
 import { useMobileNav } from "@/composables/useMobileNav";
 import { enableExec } from "@/utils/constants";
-import { computed, watch } from "vue";
+import { watch } from "vue";
 import { useRoute } from "vue-router";
 
 const layoutStore = useLayoutStore();
@@ -77,9 +85,10 @@ const onDrawerNavClick = (event: MouseEvent) => {
   }
 };
 
-const sentPercent = computed(() =>
-  ((uploadStore.sentBytes / uploadStore.totalBytes) * 100).toFixed(2)
-);
+// Top progress-bar % now reads through uploadStore.displayedPercent
+// (v1.3 H10) so the bar doesn't visually regress when more files
+// are queued mid-upload. The inline computed that previously lived
+// here was removed — the store owns the calculation now.
 
 watch(route, () => {
   fileStore.selected = [];

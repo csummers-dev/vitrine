@@ -22,20 +22,34 @@
       />
     </div>
 
-    <!-- ── Film strip (image only, hidden at < md) ───────────────── -->
-    <div v-if="strip.length > 1" class="image-viewer__strip">
+    <!-- ── Film strip (shown only on image previews, hidden at < md) ──
+         Lists ALL previewable siblings: images as thumbnails, everything
+         else as a type-icon tile, so the user sees the whole nav set. -->
+    <div v-if="strip.length > 1" ref="stripEl" class="image-viewer__strip">
       <button
         v-for="item in strip"
         :key="item.url"
         type="button"
         class="image-viewer__thumb"
-        :class="{ 'is-active': item.url === currentUrl }"
-        :style="thumbStyle(item)"
+        :class="{
+          'is-active': item.url === currentUrl,
+          'image-viewer__thumb--doc': !item.isImage,
+        }"
+        :style="item.isImage ? thumbStyle(item) : undefined"
         :title="item.name"
         :aria-label="item.name"
         :aria-current="item.url === currentUrl ? 'true' : undefined"
         @click="$emit('navigate', item.url)"
-      ></button>
+      >
+        <Icon
+          v-if="!item.isImage"
+          :name="
+            fileIcon({ isDir: false, type: item.type ?? '', name: item.name })
+          "
+          :size="20"
+          :stroke-width="1.6"
+        />
+      </button>
       <div class="image-viewer__strip-count">
         {{ currentIndex + 1 }} of {{ strip.length }}
       </div>
@@ -44,13 +58,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { files as api } from "@/api";
+import Icon from "@/components/Icon.vue";
+import { fileIcon } from "@/utils/fileIcon";
 
 interface StripItem {
   name: string;
   url: string;
   path: string;
+  /** Backend file type (image/video/audio/pdf/text/blob…). */
+  type?: string;
+  /** True for image siblings (thumbnail tile); false → type-icon tile. */
+  isImage?: boolean;
 }
 
 const props = withDefaults(
@@ -74,8 +94,34 @@ defineEmits<{
 }>();
 
 const imgEl = ref<HTMLImageElement | null>(null);
+const stripEl = ref<HTMLElement | null>(null);
 const naturalWidth = ref<number>(0);
 const naturalHeight = ref<number>(0);
+
+// v1.3 S5-3: keep the active thumbnail centered in the horizontal
+// strip as the user navigates (arrow keys or clicking a far-off thumb).
+// Without this the active thumb can sit off-screen in a long strip.
+// Scoped to the strip element's own scrollLeft — no `scrollIntoView`,
+// which would also scroll ancestor containers. Respects reduced-motion.
+const centerActiveThumb = () => {
+  const parent = stripEl.value;
+  if (!parent) return;
+  const active = parent.querySelector<HTMLElement>(".is-active");
+  if (!active) return;
+  const target =
+    active.offsetLeft - parent.clientWidth / 2 + active.clientWidth / 2;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  parent.scrollTo({
+    left: Math.max(0, target),
+    behavior: reduce ? "auto" : "smooth",
+  });
+};
+
+watch(
+  () => props.currentUrl,
+  () => nextTick(centerActiveThumb)
+);
+onMounted(() => nextTick(centerActiveThumb));
 
 const onLoad = () => {
   if (!imgEl.value) return;
@@ -229,6 +275,16 @@ html.dark .image-viewer__img {
 .image-viewer__thumb:hover {
   border-color: var(--color-line-strong, #d4d4d8);
   transform: translateY(-2px);
+}
+/* Non-image sibling: a neutral tile with the file's type icon centered. */
+.image-viewer__thumb--doc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-ink-3, #a1a1aa);
+}
+.image-viewer__thumb--doc:hover {
+  color: var(--color-ink-1, #18181b);
 }
 .image-viewer__thumb.is-active {
   border-color: var(--color-accent, #5e6ad2);

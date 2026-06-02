@@ -1,10 +1,21 @@
 <template>
-  <div class="flex-1 flex flex-col min-h-0 min-w-0">
+  <!-- `relative` makes this content column the containing block for the
+       preview shell (which is position:absolute), so the preview fills the
+       area beside the sidebar instead of covering the whole viewport. -->
+  <div class="relative flex-1 flex flex-col min-h-0 min-w-0">
     <header-bar v-if="error || fileStore.req?.type === undefined">
       <breadcrumbs base="/files" />
     </header-bar>
 
-    <errors v-if="error" :errorCode="error.status" />
+    <!-- S6-5: offer an in-place retry on transient listing failures; a dead
+         favorite gets a tailored "remove pin" card instead. -->
+    <errors
+      v-if="error"
+      :errorCode="error.status"
+      :brokenFavoriteName="brokenFavorite ? brokenFavoriteName : undefined"
+      @retry="fetchData"
+      @removeFavorite="removeBrokenFavorite"
+    />
     <component v-else-if="currentView" :is="currentView"></component>
     <!-- Boot-time loading (no view component yet): use the same listing
          skeleton FileListing shows so the layout stays consistent. -->
@@ -32,11 +43,12 @@ import Breadcrumbs from "@/components/Breadcrumbs.vue";
 import Errors from "@/views/Errors.vue";
 import ListingSkeleton from "@/components/files/ListingSkeleton.vue";
 import { useI18n } from "vue-i18n";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import FileListing from "@/views/files/FileListing.vue";
 import { StatusError } from "@/api/utils";
 import { name } from "../utils/constants";
 import { useShortcutsOverlay } from "@/composables/useShortcutsOverlay";
+import { useFavorites } from "@/composables/useFavorites";
 
 const Editor = defineAsyncComponent(() => import("@/views/files/Editor.vue"));
 const Preview = defineAsyncComponent(() => import("@/views/files/Preview.vue"));
@@ -48,12 +60,46 @@ const shortcutsOverlay = useShortcutsOverlay();
 const { reload } = storeToRefs(fileStore);
 
 const route = useRoute();
+const router = useRouter();
+const favorites = useFavorites();
 
 const { t } = useI18n({});
 
 let fetchDataController = new AbortController();
 
 const error = ref<StatusError | null>(null);
+
+// When a listing fetch fails because a sidebar Favorite points at a folder
+// that no longer exists (renamed externally / deleted), we surface a tailored
+// "dead pin" card (Errors.vue) offering to remove it — instead of a bare 404.
+const brokenFavorite = ref<string | null>(null);
+const brokenFavoriteName = computed<string>(() =>
+  brokenFavorite.value ? favorites.displayName(brokenFavorite.value) : ""
+);
+
+/** Normalize a `/files/...` path for comparison: URL-decode + drop a trailing
+ *  slash. Favorites are stored encoded; route.path arrives decoded. */
+const normPath = (p: string): string => {
+  let s = p;
+  try {
+    s = decodeURIComponent(p);
+  } catch {
+    /* malformed escape — compare the raw string */
+  }
+  if (s.length > 1 && s.endsWith("/")) s = s.slice(0, -1);
+  return s;
+};
+
+const findBrokenFavorite = (): string | null => {
+  const target = normPath(route.path);
+  return favorites.favorites.value.find((f) => normPath(f) === target) ?? null;
+};
+
+const removeBrokenFavorite = () => {
+  if (brokenFavorite.value) favorites.remove(brokenFavorite.value);
+  brokenFavorite.value = null;
+  void router.push("/files/");
+};
 
 const currentView = computed(() => {
   if (fileStore.req?.type === undefined) {
@@ -107,29 +153,39 @@ watch(reload, (newValue) => {
 // Define functions
 
 const applyPreSelection = () => {
+  // Drain the queue immediately so a re-entrant fetch doesn't double-
+  // apply. Snapshot first, then clear.
   const preselect = fileStore.preselect;
-  fileStore.preselect = null;
+  fileStore.preselect = [];
 
   if (!fileStore.req?.isDir || fileStore.oldReq === null) return;
 
-  let index = -1;
-  if (preselect) {
-    // Find item with the specified path
-    index = fileStore.req.items.findIndex((item) => item.path === preselect);
-  } else if (fileStore.oldReq.path.startsWith(fileStore.req.path)) {
-    // Get immediate child folder of the previous path
+  if (preselect.length > 0) {
+    // Re-select every queued path that exists in the new listing.
+    // Preselect paths are decoded (per setPreselect's contract);
+    // item.path is also decoded — direct equality is correct.
+    // Missing paths are silently skipped (e.g., a moved-then-deleted
+    // file should just drop out of the selection).
+    for (const path of preselect) {
+      const idx = fileStore.req.items.findIndex((item) => item.path === path);
+      if (idx !== -1) fileStore.selected.push(idx);
+    }
+    return;
+  }
+
+  // Fallback: navigating UP a level (parent breadcrumb, browser back)
+  // selects the child folder we just came from. Only fires when no
+  // explicit preselect was queued.
+  if (fileStore.oldReq.path.startsWith(fileStore.req.path)) {
     const name = fileStore.oldReq.path
       .substring(fileStore.req.path.length)
       .split("/")
       .shift();
-
-    index = fileStore.req.items.findIndex(
+    const index = fileStore.req.items.findIndex(
       (val) => val.path == fileStore.req!.path + name
     );
+    if (index !== -1) fileStore.selected.push(index);
   }
-
-  if (index === -1) return;
-  fileStore.selected.push(index);
 };
 
 const fetchData = async () => {
@@ -142,6 +198,7 @@ const fetchData = async () => {
   // Set loading to true and reset the error.
   layoutStore.loading = true;
   error.value = null;
+  brokenFavorite.value = null;
 
   let url = route.path;
   if (url === "") url = "/";
@@ -163,6 +220,14 @@ const fetchData = async () => {
     }
     if (err instanceof Error) {
       error.value = err;
+    }
+    // A 404 (deleted/renamed) or 403 (now inaccessible) on a path that's still
+    // pinned → flag it so the error card offers to clear the dead favorite.
+    if (
+      err instanceof StatusError &&
+      (err.status === 404 || err.status === 403)
+    ) {
+      brokenFavorite.value = findBrokenFavorite();
     }
     layoutStore.loading = false;
   }

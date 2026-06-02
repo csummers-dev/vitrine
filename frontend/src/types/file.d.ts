@@ -87,3 +87,30 @@ interface RecursiveEntry {
   modified: string;
   isDir: boolean;
 }
+
+/**
+ * One of the 8 named colors in the v1.3 tag palette. The values match
+ * the backend `tags.ValidColors` slice 1:1 — adding a color requires
+ * bumping both this union and the Go constant.
+ */
+type TagColor =
+  | "lilac"
+  | "blue"
+  | "green"
+  | "amber"
+  | "red"
+  | "pink"
+  | "slate"
+  | "teal";
+
+/**
+ * Per-user tag, as returned by /api/tags. IDs are per-user (issued by
+ * bbolt's NextSequence within the user's sub-bucket); never compare
+ * IDs across users.
+ */
+interface Tag {
+  id: number;
+  name: string;
+  color: TagColor;
+  createdAt: string;
+}

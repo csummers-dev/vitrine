@@ -1,10 +1,25 @@
 <template>
-  <div class="epub-viewer">
+  <div
+    ref="rootEl"
+    class="epub-viewer"
+    :class="{ 'epub-viewer--dark': dark }"
+    tabindex="-1"
+  >
+    <!--
+      openAs: 'epub' is REQUIRED, do not remove. The `src` carries a
+      `?auth=<JWT>` query (RC-44, so the request authenticates). epub.js
+      sniffs the file type from the URL extension, but it re-appends the
+      query string before parsing — and a JWT's dots (header.payload.sig)
+      make it read the "extension" as the JWT's last segment instead of
+      "epub". It then misclassifies the book as an unpacked directory and
+      fails with "Error loading book". Forcing openAs:'epub' skips the
+      sniff and loads the authenticated URL as a packaged epub.
+    -->
     <vue-reader
       :location="location"
       :url="src"
       :get-rendition="captureRendition"
-      :epubInitOptions="{ requestCredentials: true }"
+      :epubInitOptions="{ requestCredentials: true, openAs: 'epub' }"
       :epubOptions="{ allowPopups: true }"
       @update:location="$emit('update:location', $event)"
     />
@@ -57,6 +72,10 @@ const props = defineProps<{
   src: string;
   location: number | string;
   size: number;
+  /** Effective book theme, resolved by the parent (app theme + the reader's
+   *  per-book override). Drives both the in-iframe text colors and the
+   *  surrounding reader chrome. */
+  dark: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -67,14 +86,62 @@ const emit = defineEmits<{
    *  swallows keydowns, blocking the global preview nav). */
   (e: "navigatePrev"): void;
   (e: "navigateNext"): void;
+  /** Book table-of-contents, flattened with depth (v1.3 S5-5). Emitted
+   *  once the navigation document loads so the info-rail can render a
+   *  clickable chapter list. */
+  (e: "toc", entries: EpubTocEntry[]): void;
+  /** Current chapter href on each relocate, for active-row highlight. */
+  (e: "chapter", href: string): void;
+  /** Cover-image blob URL once the book metadata resolves, so the
+   *  info-rail can show the book's cover art (empty if the epub has none). */
+  (e: "cover", url: string): void;
 }>();
 
-const rendition = ref<Rendition | null>(null);
+/** One flattened TOC row. `depth` drives indentation (subchapters). */
+export interface EpubTocEntry {
+  label: string;
+  href: string;
+  depth: number;
+}
 
-const isDarkNow = () => document.documentElement.classList.contains("dark");
+const rendition = ref<Rendition | null>(null);
+const rootEl = ref<HTMLElement | null>(null);
+
+/** Flatten epubjs's nested toc (items + subitems) into a depth-tagged
+ *  list the info-rail can render without recursion. */
+const flattenToc = (
+  items: { label?: string; href?: string; subitems?: unknown[] }[],
+  depth = 0,
+  out: EpubTocEntry[] = []
+): EpubTocEntry[] => {
+  for (const it of items) {
+    if (it.href) {
+      out.push({ label: (it.label || "").trim(), href: it.href, depth });
+    }
+    if (Array.isArray(it.subitems) && it.subitems.length) {
+      flattenToc(it.subitems as typeof items, depth + 1, out);
+    }
+  }
+  return out;
+};
+
+/** Jump to a TOC entry's href. Exposed for the info-rail click handler. */
+const goTo = (href: string) => {
+  rendition.value?.display(href);
+};
+// Page-turn within the book — driven by ↑/↓ from the parent (←/→ stay
+// reserved for file-to-file navigation). epubjs prev()/next() flip one
+// rendered page (or spread) in the current flow.
+const nextPage = () => {
+  rendition.value?.next();
+};
+const prevPage = () => {
+  rendition.value?.prev();
+};
+defineExpose({ goTo, nextPage, prevPage });
 
 /**
- * Apply the active app theme to the epubjs rendition via `themes.override`.
+ * Apply the active book theme to the epubjs rendition via `themes.override`.
  *
  * Why override (not register + select): epubjs's `themes.register` +
  * `themes.select` writes a CSS rule into the iframe's <head>, but the
@@ -87,7 +154,7 @@ const isDarkNow = () => document.documentElement.classList.contains("dark");
 const applyTheme = () => {
   const r = rendition.value;
   if (!r) return;
-  if (isDarkNow()) {
+  if (props.dark) {
     // Warmer near-black instead of pitch #18181b — easier on the eyes
     // for long reading sessions and matches the app's elevated dark
     // surface. Ink at zinc-200 (#e4e4e7) reads as cleanly off-white
@@ -123,36 +190,51 @@ const applyTheme = () => {
  * bundle), so the parent window never sees the keydown and file-to-file
  * arrow nav silently dies as soon as the user clicks into the book.
  */
+// A single physical arrow press delivers BOTH keydown and keyup, and may
+// arrive via both epubjs's rendition hook and our direct document listener.
+// We always suppress the in-iframe default (so the book doesn't page-turn on
+// top of us), but only ACT once per press via a short dedupe window. epubjs
+// forwards keyUP most reliably (the documented page-turn hook); keydown is
+// less consistent across versions — so we navigate on whichever lands first.
+let lastArrowTs = 0;
+const ARROW_DEDUPE_MS = 350;
+
 const handleIframeKey = (event: KeyboardEvent) => {
-  if (event.key === "ArrowLeft") {
+  const k = event.key;
+  const isArrow =
+    k === "ArrowLeft" ||
+    k === "ArrowRight" ||
+    k === "ArrowUp" ||
+    k === "ArrowDown";
+
+  if (isArrow) {
+    // Always stop epubjs / vue-reader's own page-turn (it fires on keydown
+    // AND keyup) so the book doesn't move in addition to our action.
     event.preventDefault();
     event.stopImmediatePropagation();
-    emit("navigatePrev");
-  } else if (event.key === "ArrowRight") {
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    emit("navigateNext");
-  } else if (event.key === "Escape") {
+    const now = Date.now();
+    if (now - lastArrowTs < ARROW_DEDUPE_MS) return; // already acted this press
+    lastArrowTs = now;
+    // ←/→ change files (emit up to Preview); ↑/↓ turn pages within the book.
+    if (k === "ArrowLeft") emit("navigatePrev");
+    else if (k === "ArrowRight") emit("navigateNext");
+    else if (k === "ArrowDown") nextPage();
+    else if (k === "ArrowUp") prevPage();
+    return;
+  }
+
+  if (k === "Escape") {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
   }
 };
 
 const installIframeKeyHandler = (r: Rendition) => {
-  // Route 1: epubjs's DOM event forwarding (best-effort).
+  // epubjs forwards the iframe's keyboard events to the rendition emitter.
+  // Route BOTH keydown and keyup through handleIframeKey — keyup is the
+  // reliable one across epubjs versions, keydown the snappier one; the
+  // dedupe window means a keydown+keyup pair still navigates only once.
   r.on("keydown", (event: KeyboardEvent) => handleIframeKey(event));
-  r.on("keyup", (event: KeyboardEvent) => {
-    // vue-reader's in-book page-turn fires on keyup for arrows; if we
-    // already handled the keydown for file nav, swallow the keyup too
-    // so we don't simultaneously flip a page inside the book.
-    if (
-      event.key === "ArrowLeft" ||
-      event.key === "ArrowRight" ||
-      event.key === "ArrowUp" ||
-      event.key === "ArrowDown"
-    ) {
-      event.stopImmediatePropagation();
-    }
-  });
+  r.on("keyup", (event: KeyboardEvent) => handleIframeKey(event));
 };
 
 /**
@@ -164,11 +246,89 @@ const attachIframeKey = (view: { iframe?: HTMLIFrameElement } | null) => {
   const doc = view?.iframe?.contentDocument;
   if (!doc) return;
   doc.addEventListener("keydown", handleIframeKey as EventListener, true);
+  doc.addEventListener("keyup", handleIframeKey as EventListener, true);
 };
+
+/**
+ * Route 3 — the reliable one. Rather than depend on epubjs's `rendered`
+ * event exposing a usable `view.iframe.contentDocument` (which proved
+ * flaky — when it doesn't, focus stays trapped in the book iframe and ALL
+ * arrows die), we watch the viewer subtree for iframes and attach the
+ * capture-phase keydown listener directly to each iframe's document. We
+ * dedupe per-document (epubjs swaps the doc when turning chapters) and per-
+ * iframe (so the `load` re-hook is registered once). A handful of timed
+ * retries cover the async gap between the iframe appearing and its document
+ * being navigable.
+ */
+const wiredDocs = new WeakSet<Document>();
+const hookedIframes = new WeakSet<HTMLIFrameElement>();
+
+const wireIframeDoc = (ifr: HTMLIFrameElement) => {
+  let doc: Document | null = null;
+  try {
+    doc = ifr.contentDocument;
+  } catch {
+    return; // cross-origin (shouldn't happen for our same-origin iframes)
+  }
+  if (!doc || wiredDocs.has(doc)) return;
+  doc.addEventListener("keydown", handleIframeKey as EventListener, true);
+  doc.addEventListener("keyup", handleIframeKey as EventListener, true);
+  wiredDocs.add(doc);
+};
+
+const wireIframes = () => {
+  const root = rootEl.value;
+  if (!root) return;
+  root.querySelectorAll("iframe").forEach((ifr) => {
+    wireIframeDoc(ifr);
+    if (!hookedIframes.has(ifr)) {
+      // epubjs reloads the iframe's document per chapter — re-wire the
+      // fresh document each time it loads.
+      ifr.addEventListener("load", () => wireIframeDoc(ifr));
+      hookedIframes.add(ifr);
+    }
+  });
+};
+
+let iframeObserver: MutationObserver | null = null;
 
 const captureRendition = (r: Rendition) => {
   rendition.value = r;
   applyTheme();
+
+  // S5-5: surface the book's TOC to the parent once the navigation
+  // document resolves, and report the current chapter on each relocate
+  // so the info-rail can highlight the active row.
+  r.book.loaded.navigation
+    .then((nav: { toc?: unknown[] }) => {
+      emit(
+        "toc",
+        flattenToc((nav.toc as Parameters<typeof flattenToc>[0]) ?? [])
+      );
+    })
+    .catch(() => {
+      /* no navigation doc — leave the TOC empty */
+    });
+
+  // Cover art for the info-rail. `coverUrl()` resolves the packaged cover
+  // image to a blob URL (or null when the epub declares no cover).
+  try {
+    void r.book
+      .coverUrl()
+      .then((url: string | null) => {
+        if (url) emit("cover", url);
+      })
+      .catch(() => {
+        /* no cover — info-rail falls back to the generic book glyph */
+      });
+  } catch {
+    /* older epubjs without coverUrl — ignore */
+  }
+
+  r.on("relocated", (loc: { start?: { href?: string } }) => {
+    const href = loc?.start?.href;
+    if (href) emit("chapter", href);
+  });
   // Re-apply theme each time a new chapter renders — `override` rules
   // need to be present BEFORE the iframe paints, but a brand-new view
   // can be created when the user turns pages. Also re-attach our
@@ -178,6 +338,13 @@ const captureRendition = (r: Rendition) => {
     (_section: unknown, view: { iframe?: HTMLIFrameElement }) => {
       applyTheme();
       attachIframeKey(view);
+      // Keep focus on the reader SHELL, not the book iframe. epubjs/vue-reader
+      // call `iframe.contentWindow.focus()` on every render, which steals focus
+      // into the iframe and kills the parent's arrow handlers — that's the
+      // "arrows only work for a second" bug. Re-claiming focus here (after
+      // their focus call, via rAF) keeps ←/→ (file nav) and ↑/↓ (page nav)
+      // working through Preview's window-level key handlers.
+      requestAnimationFrame(() => rootEl.value?.focus({ preventScroll: true }));
     }
   );
   installIframeKeyHandler(r);
@@ -189,22 +356,39 @@ watch(
   (next) => rendition.value?.themes.fontSize(`${next}%`)
 );
 
-// Watch the <html> classList for `.dark` toggles. setTheme in
-// useThemePreference REPLACES className (sets to "dark" or "light"), so
-// every flip triggers an `attributes` mutation we can react to.
-let themeObserver: MutationObserver | null = null;
+// Re-apply the book theme whenever the parent flips `dark` — either the app
+// theme changed (and no per-book override is set) or the reader's dark-mode
+// toggle was used. `themes.override` is idempotent, so this is safe to run on
+// every change. The parent (Preview.vue) owns the app-theme observation now.
+watch(
+  () => props.dark,
+  () => applyTheme()
+);
 
 onMounted(() => {
-  themeObserver = new MutationObserver(() => applyTheme());
-  themeObserver.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ["class"],
-  });
+  // Wire arrow-key handling into the book iframe(s). Watch the viewer
+  // subtree so we catch the iframe whenever vue-reader (re)creates it, and
+  // run a few timed passes for the async window between the iframe
+  // appearing and its document becoming navigable.
+  if (rootEl.value) {
+    iframeObserver = new MutationObserver(() => wireIframes());
+    iframeObserver.observe(rootEl.value, { childList: true, subtree: true });
+  }
+  wireIframes();
+  [100, 300, 600, 1200].forEach((ms) => window.setTimeout(wireIframes, ms));
+
+  // Claim focus for the reader shell up front (and again after epubjs has had
+  // a chance to grab it) so the parent window's arrow handlers are live from
+  // the moment the book opens — without requiring a click outside the book.
+  rootEl.value?.focus({ preventScroll: true });
+  [150, 400, 800].forEach((ms) =>
+    window.setTimeout(() => rootEl.value?.focus({ preventScroll: true }), ms)
+  );
 });
 
 onBeforeUnmount(() => {
-  themeObserver?.disconnect();
-  themeObserver = null;
+  iframeObserver?.disconnect();
+  iframeObserver = null;
 });
 </script>
 
@@ -214,6 +398,13 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   display: flex;
+}
+
+/* The shell is programmatically focused (tabindex="-1") to keep arrow-key
+   navigation alive; don't paint a focus ring around the whole reader. */
+.epub-viewer:focus,
+.epub-viewer:focus-visible {
+  outline: none;
 }
 
 .epub-viewer :deep(> div) {
@@ -317,11 +508,14 @@ onBeforeUnmount(() => {
   background: var(--color-elevated, #f4f4f5) !important;
 }
 
-/* Dark-mode overrides win because of source order — keep these last. */
-html.dark .epub-viewer :deep(.readerArea) {
+/* Dark-mode chrome keys off the effective book theme (the `--dark` modifier
+   the parent sets), NOT the app's `html.dark` — so a per-book override themes
+   the reader gutter + TOC area to match the book content. Source order keeps
+   these last so they win over the light defaults above. */
+.epub-viewer--dark :deep(.readerArea) {
   background-color: #1f1f23 !important;
 }
-html.dark .epub-viewer :deep(.tocArea) {
+.epub-viewer--dark :deep(.tocArea) {
   background: #18181b !important;
 }
 </style>

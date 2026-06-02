@@ -135,6 +135,11 @@ const userSections = computed<NavSection[]>(() => {
       icon: "share-2",
     });
   }
+  list.push({
+    to: "/settings/sessions",
+    label: "Sessions",
+    icon: "monitor-smartphone",
+  });
   return list;
 });
 
@@ -149,6 +154,16 @@ const adminSections = computed<NavSection[]>(() => [
     label: t("settings.userManagement"),
     icon: "users",
     matchPrefix: "/settings/users",
+  },
+  {
+    to: "/settings/audit",
+    label: "Audit log",
+    icon: "scroll-text",
+  },
+  {
+    to: "/settings/webhooks",
+    label: "Webhooks",
+    icon: "webhook",
   },
 ]);
 

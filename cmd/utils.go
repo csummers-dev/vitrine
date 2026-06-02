@@ -135,6 +135,10 @@ func initViper(cmd *cobra.Command) (*viper.Viper, error) {
 type store struct {
 	*storage.Storage
 	databaseExisted bool
+	// path is the absolute filesystem path to the main bolt DB. Exposed
+	// so the long-running server can derive sibling DB paths (audit log,
+	// future cache index) from the same location the operator configured.
+	path string
 }
 
 type storeOptions struct {
@@ -187,6 +191,7 @@ func withViperAndStore(fn func(cmd *cobra.Command, args []string, v *viper.Viper
 		store := &store{
 			Storage:         storage,
 			databaseExisted: exists,
+			path:            path,
 		}
 
 		return fn(cmd, args, v, store)

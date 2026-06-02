@@ -13,6 +13,7 @@ import (
 
 	"github.com/spf13/afero"
 
+	"github.com/filebrowser/filebrowser/v2/events"
 	"github.com/filebrowser/filebrowser/v2/files"
 )
 
@@ -232,6 +233,11 @@ func tusPatchHandler(cache UploadCache) handleFunc {
 		if newOffset >= uploadLength {
 			cache.Complete(file.RealPath())
 			_ = d.RunHook(func() error { return nil }, "upload", r.URL.Path, "", d.user)
+			events.Publish(events.FileUploaded{
+				Base: eventBase(r, d),
+				Path: r.URL.Path,
+				Size: uploadLength,
+			})
 		}
 
 		return http.StatusNoContent, nil

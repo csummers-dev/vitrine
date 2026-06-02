@@ -68,6 +68,16 @@
         </div>
       </header>
 
+      <!-- Don't-close-this-tab hint (H8). Proactive messaging because
+           the browser-native beforeunload dialog has hardcoded text we
+           can't customize — this is the only way to tell the user
+           ahead of time what's at stake if they refresh. Only shown
+           while uploads are still pending. -->
+      <div v-if="!isComplete" class="upload-dock__hint" role="note">
+        <Icon name="info" :size="11" :stroke-width="2" />
+        <span>Keep this tab open until uploads finish.</span>
+      </div>
+
       <!-- Aggregate progress bar — always visible across the bottom of
            the header even when collapsed, so the user always sees motion
            and can gauge progress at a glance. -->
@@ -87,11 +97,13 @@
 
       <!-- Per-file list — only rendered when expanded. Each file gets its
            own row with a name, percentage, and slim individual progress
-           bar tinted to the file-type accent. -->
+           bar tinted to the file-type accent.
+           Iterates `visibleUploads` (H7): active + queued, not just the
+           5 in-flight. Scrolling kicks in once the list exceeds 280px. -->
       <Transition name="upload-dock__list">
         <ul v-if="open" class="upload-dock__list" role="list">
           <li
-            v-for="upload in uploadStore.activeUploads"
+            v-for="upload in uploadStore.visibleUploads"
             :key="upload.path"
             class="upload-dock__file"
             :data-type="upload.type"
@@ -108,6 +120,24 @@
               <span class="upload-dock__file-pct tabular">
                 {{ filePercent(upload) }}%
               </span>
+              <!-- Per-row cancel / remove (v1.3 H13). Hover- (and
+                   focus-) visible. Active uploads → cancel the transfer;
+                   queued uploads → drop from the queue. The store
+                   handles reversing an active upload's progress + filling
+                   the freed concurrency slot from the queue. -->
+              <button
+                type="button"
+                class="upload-dock__file-remove"
+                :title="
+                  isActive(upload) ? 'Cancel upload' : 'Remove from queue'
+                "
+                :aria-label="
+                  isActive(upload) ? 'Cancel upload' : 'Remove from queue'
+                "
+                @click.stop="removeUpload(upload)"
+              >
+                <Icon name="x" :size="12" :stroke-width="2" />
+              </button>
             </div>
             <div class="upload-dock__file-bar">
               <div
@@ -167,10 +197,11 @@ const { sentBytes, totalBytes } = storeToRefs(uploadStore);
 const byteToMbyte = partial({ exponent: 2 });
 const byteToKbyte = partial({ exponent: 1 });
 
-const sentPercentNum = computed(() => {
-  if (!uploadStore.totalBytes) return 0;
-  return (uploadStore.sentBytes / uploadStore.totalBytes) * 100;
-});
+// v1.3 H10: read displayedPercent from the store rather than
+// recomputing locally. The store value is phantom-counter-backed
+// so the % doesn't slide backward when files are added to an
+// in-progress queue.
+const sentPercentNum = computed(() => uploadStore.displayedPercent);
 const sentPercent = computed(() => sentPercentNum.value.toFixed(1));
 
 const isComplete = computed(
@@ -196,6 +227,12 @@ const filePercent = (upload: { sentBytes: number; totalBytes: number }) => {
   if (!upload.totalBytes) return 0;
   return Math.min(100, (upload.sentBytes / upload.totalBytes) * 100).toFixed(0);
 };
+
+// v1.3 H13: per-row cancel / remove. `isActive` distinguishes an
+// in-flight upload (cancel) from a still-queued one (remove) for the
+// button's label; the store action handles both cases.
+const isActive = (upload: Upload) => uploadStore.activeUploads.has(upload);
+const removeUpload = (upload: Upload) => uploadStore.removeUpload(upload);
 
 let lastSpeedUpdate: number = 0;
 let recentSpeeds: number[] = [];
@@ -432,7 +469,7 @@ html.dark .upload-dock__btn--danger:hover {
 }
 .upload-dock__bar-fill {
   height: 100%;
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   transition:
     width 200ms ease,
     background-color 200ms ease;
@@ -442,12 +479,37 @@ html.dark .upload-dock__btn--danger:hover {
   background: #10b981;
 }
 
+/* Don't-close-this-tab hint (H8). Sits between the head and the
+   aggregate bar; subtle but legible. Amber tinted because it's
+   advisory, not destructive — the user CAN navigate, they should
+   just know what happens if they do. */
+.upload-dock__hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px 8px;
+  font-size: 11px;
+  color: var(--tag-color-amber-fg, #b45309);
+  background: var(--tag-color-amber-bg, rgba(217, 119, 6, 0.08));
+  border-top: 1px solid var(--color-line, #ececec);
+  border-bottom: 1px solid var(--color-line, #ececec);
+}
+
+.upload-dock__hint :deep(svg) {
+  flex-shrink: 0;
+}
+
 /* ── Per-file list ───────────────────────────────────────────────── */
 .upload-dock__list {
   list-style: none;
   margin: 0;
   padding: 8px 0;
-  max-height: 280px;
+  /* Cap height so the dock stays a "card" rather than dominating the
+     viewport, but give plenty of room for a long queue before
+     scrolling kicks in. Was 280px (≈5 rows) — too cramped for the
+     "queued 30 uploads" case the H7 fix surfaces. min() lets small
+     viewports shrink gracefully without forcing a fixed pixel cap. */
+  max-height: min(60vh, 480px);
   overflow-y: auto;
   border-top: 1px solid var(--color-line, #ececec);
   background: var(--color-canvas, #fafaf9);
@@ -502,6 +564,53 @@ html.dark .upload-dock__btn--danger:hover {
   text-align: right;
 }
 
+/* Per-row cancel / remove (v1.3 H13). Hidden until the row is hovered
+   (or the button itself is keyboard-focused), so the list stays clean
+   at rest but the affordance is one hover away. */
+.upload-dock__file-remove {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-left: 2px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--color-ink-3, #a1a1aa);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease;
+}
+.upload-dock__file:hover .upload-dock__file-remove,
+.upload-dock__file-remove:focus-visible {
+  opacity: 1;
+}
+.upload-dock__file-remove:hover {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+html.dark .upload-dock__file-remove:hover {
+  background: rgba(127, 29, 29, 0.25);
+  color: #fca5a5;
+}
+.upload-dock__file-remove:focus-visible {
+  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline-offset: 1px;
+}
+
+/* Touch devices have no hover — keep the control always visible so it's
+   reachable. */
+@media (hover: none) {
+  .upload-dock__file-remove {
+    opacity: 1;
+  }
+}
+
 .upload-dock__file-bar {
   height: 2px;
   width: 100%;
@@ -511,7 +620,7 @@ html.dark .upload-dock__btn--danger:hover {
 }
 .upload-dock__file-bar-fill {
   height: 100%;
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   transition: width 200ms ease;
   border-radius: 999px;
 }
@@ -555,7 +664,10 @@ html.dark .upload-dock__btn--danger:hover {
 }
 .upload-dock__list-enter-to,
 .upload-dock__list-leave-from {
-  max-height: 280px;
+  /* Must match the base .upload-dock__list max-height so the
+     expand/collapse animation doesn't clip the final state when the
+     list is long. */
+  max-height: min(60vh, 480px);
   opacity: 1;
 }
 

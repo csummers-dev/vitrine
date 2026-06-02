@@ -5,6 +5,10 @@
   --color-accent-strong: #4f5ac4;
   --color-accent-soft: rgba(94, 106, 210, 0.1);
   --color-accent-ring: rgba(94, 106, 210, 0.3);
+  /* Gradient end-stop for accent gradients (e.g. the sidebar storage
+     bar). Default = lighter lilac; the accent picker overrides per
+     preset with a hand-picked secondary (RC-7). */
+  --color-accent-grad: #7c87e5;
 
   --color-canvas: #fafaf9;
   --color-surface: #ffffff;
@@ -34,6 +38,67 @@
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-full: 9999px;
+
+  /* ── Tag color palette (v1.3 S2) ──────────────────────────────────────
+     8 named colors backing TagChip. Each color is a pair: a `-bg` for
+     the chip background (low alpha) and an `-fg` for the label + icon
+     (the brand-saturated tone). Picked to read clearly against both
+     surface and elevated backgrounds in light mode; dark variants below.
+
+     Names map 1:1 with the backend `tags.ValidColors` palette — adding
+     a color requires bumping both. */
+  --tag-color-lilac-bg: rgba(94, 106, 210, 0.12);
+  --tag-color-lilac-fg: #4f5ac4;
+  --tag-color-blue-bg: rgba(59, 130, 246, 0.12);
+  --tag-color-blue-fg: #2563eb;
+  --tag-color-green-bg: rgba(34, 197, 94, 0.14);
+  --tag-color-green-fg: #15803d;
+  --tag-color-amber-bg: rgba(217, 119, 6, 0.14);
+  --tag-color-amber-fg: #b45309;
+  --tag-color-red-bg: rgba(239, 68, 68, 0.12);
+  --tag-color-red-fg: #b91c1c;
+  --tag-color-pink-bg: rgba(236, 72, 153, 0.12);
+  --tag-color-pink-fg: #be185d;
+  --tag-color-slate-bg: rgba(100, 116, 139, 0.14);
+  --tag-color-slate-fg: #475569;
+  --tag-color-teal-bg: rgba(20, 184, 166, 0.14);
+  --tag-color-teal-fg: #0f766e;
+}
+
+/* ── Accent gradients ────────────────────────────────────────────────────
+   A gentle primary → hand-picked-secondary sheen (same pairing the sidebar
+   storage bar uses). Reused by accent-filled surfaces — primary buttons, the
+   audio play control, the avatar / brand glyph, toggles, etc. — so the accent
+   reads as a soft gradient rather than a flat block. Defined in :root (not
+   @theme) so it stays a plain custom property; because it references the live
+   --color-accent / --color-accent-grad vars, it re-resolves automatically when
+   the accent-color picker swaps presets. `-strong` is the slightly deeper
+   hover variant. */
+:root {
+  --accent-gradient: linear-gradient(
+    135deg,
+    var(--color-accent) 0%,
+    var(--color-accent-grad) 100%
+  );
+  --accent-gradient-strong: linear-gradient(
+    135deg,
+    var(--color-accent-strong) 0%,
+    var(--color-accent) 100%
+  );
+}
+
+/* ── Colorful UI palette ──────────────────────────────────────────────────
+   The six accent hues used across the app (sidebar nav icons, storage bar,
+   avatar, etc.). Lilac is the brand primary and reads on both themes, so it
+   keeps #5e6ad2 in dark too; the other five lift to lighter tones for
+   contrast on the dark canvas (overridden in html.dark below). */
+:root {
+  --c-lilac: #5e6ad2;
+  --c-blue: #3b82f6;
+  --c-teal: #0d9488;
+  --c-green: #16a34a;
+  --c-amber: #d97706;
+  --c-rose: #e11d48;
 }
 
 /* ── Dark mode tokens (Stage 11b) ────────────────────────────────────────
@@ -53,6 +118,16 @@ html.dark {
   --color-accent-soft: rgba(94, 106, 210, 0.16);
   --color-accent-ring: rgba(94, 106, 210, 0.45);
 
+  /* Colorful UI palette — lilac primary stays #5e6ad2; the rest lift for the
+     dark canvas. (Per the design rule: lilac is the only hue that keeps its
+     base value in both themes.) */
+  --c-lilac: #5e6ad2;
+  --c-blue: #93c5fd;
+  --c-teal: #2dd4bf;
+  --c-green: #4ade80;
+  --c-amber: #fbbf24;
+  --c-rose: #fb7185;
+
   --color-canvas: #0e0e10;
   --color-surface: #18181b;
   --color-elevated: #27272a;
@@ -71,6 +146,26 @@ html.dark {
   /* In dark mode the pill should be a touch lighter than canvas (#0e0e10)
      so it reads as a floating element, not a flat patch. */
   --color-inverse-surface: #27272a;
+
+  /* Tag color palette — dark variants. Backgrounds bumped to higher
+     alpha so they still read against the darker surface; foregrounds
+     lifted to lighter tints so the labels stay legible. */
+  --tag-color-lilac-bg: rgba(94, 106, 210, 0.22);
+  --tag-color-lilac-fg: #a5b4fc;
+  --tag-color-blue-bg: rgba(59, 130, 246, 0.22);
+  --tag-color-blue-fg: #93c5fd;
+  --tag-color-green-bg: rgba(34, 197, 94, 0.22);
+  --tag-color-green-fg: #86efac;
+  --tag-color-amber-bg: rgba(217, 119, 6, 0.24);
+  --tag-color-amber-fg: #fcd34d;
+  --tag-color-red-bg: rgba(239, 68, 68, 0.22);
+  --tag-color-red-fg: #fca5a5;
+  --tag-color-pink-bg: rgba(236, 72, 153, 0.22);
+  --tag-color-pink-fg: #f9a8d4;
+  --tag-color-slate-bg: rgba(148, 163, 184, 0.20);
+  --tag-color-slate-fg: #cbd5e1;
+  --tag-color-teal-bg: rgba(20, 184, 166, 0.22);
+  --tag-color-teal-fg: #5eead4;
 
   /* Native form control hint — picks dark scrollbars, date pickers, etc. */
   color-scheme: dark;

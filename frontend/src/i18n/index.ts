@@ -34,9 +34,41 @@ import("dayjs/locale/vi");
 import("dayjs/locale/zh-cn");
 import("dayjs/locale/zh-tw");
 
-// All i18n resources specified in the plugin `include` option can be loaded
-// at once using the import syntax
-import messages from "@intlify/unplugin-vue-i18n/messages";
+// Per-locale lazy loading. Previously every locale was bundled eagerly via
+// `@intlify/unplugin-vue-i18n/messages`, producing a single ~840 kB chunk
+// loaded on every cold start regardless of which language the user actually
+// reads. Instead we map each `./<locale>.json` to its own async chunk (Vite
+// code-splits one per file) and only fetch the locales we need: the fallback
+// ("en") plus the active locale at boot, and any other locale the moment the
+// user switches to it. The `@intlify/unplugin-vue-i18n` plugin still
+// pre-compiles each JSON because the files match its `include` glob.
+const localeLoaders = import.meta.glob<{ default: Record<string, unknown> }>(
+  "./*.json"
+);
+
+/**
+ * Fetch + register a locale's messages if not already loaded. Idempotent and
+ * safe to call with an unknown locale (no matching file → no-op, vue-i18n's
+ * `fallbackLocale` covers the gap).
+ */
+export async function loadLocaleMessages(locale: string): Promise<void> {
+  if (i18n.global.availableLocales.includes(locale)) return;
+  const loader = localeLoaders[`./${locale}.json`];
+  if (!loader) return;
+  const mod = await loader();
+  i18n.global.setLocaleMessage(locale, mod.default);
+}
+
+/**
+ * Boot-time preload: the fallback locale ("en") plus the active locale, so the
+ * very first paint is fully translated. Awaited in main.ts before mount.
+ */
+export async function ensureInitialLocale(): Promise<void> {
+  await Promise.all([
+    loadLocaleMessages("en"),
+    loadLocaleMessages(detectLocale()),
+  ]);
+}
 
 export function detectLocale() {
   // locale is an RFC 5646 language tag
@@ -166,7 +198,10 @@ export const rtlLanguages = ["he", "ar"];
 export const i18n = createI18n({
   locale: detectLocale(),
   fallbackLocale: "en",
-  messages,
+  // Messages start empty and are filled on demand by loadLocaleMessages();
+  // ensureInitialLocale() (called from main.ts) loads "en" + the active locale
+  // before the app mounts.
+  messages: {},
   // expose i18n.global for outside components
   legacy: true,
 });
@@ -177,7 +212,11 @@ export const isRtl = (locale?: string) => {
   return rtlLanguages.includes(locale || i18n.global.locale.value);
 };
 
-export function setLocale(locale: string) {
+export async function setLocale(locale: string) {
+  // Load the target locale's messages BEFORE switching, so the UI never flips
+  // to raw keys mid-render. Callers may fire-and-forget; the active locale
+  // simply changes once messages have arrived (a few ms for a local chunk).
+  await loadLocaleMessages(locale);
   dayjs.locale(locale);
   // according to doc u only need .value if legacy: false but they lied
   // https://vue-i18n.intlify.dev/guide/essentials/scope.html#local-scope-1

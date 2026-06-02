@@ -230,7 +230,8 @@ func (i *FileInfo) detectType(modify, saveContent, readHeader bool, calcImgRes b
 	// of files couldn't be opened: we'd have immediately
 	// a 500 even though it doesn't matter. So we just log it.
 
-	mimetype := mime.TypeByExtension(i.Extension)
+	extMime := mime.TypeByExtension(i.Extension)
+	mimetype := extMime
 
 	var buffer []byte
 	if readHeader {
@@ -263,7 +264,22 @@ func (i *FileInfo) detectType(modify, saveContent, readHeader bool, calcImgRes b
 	case strings.HasSuffix(mimetype, "pdf"):
 		i.Type = "pdf"
 		return nil
-	case (strings.HasPrefix(mimetype, "text") || !isBinary(buffer)) && i.Size <= 10*1024*1024: // 10 MB
+	// Text classification. The `!isBinary(buffer)` clause is a fallback that
+	// rescues text files whose MIME isn't `text/*` (e.g. application/json).
+	// But when the content sniff returned "application/octet-stream" — Go's
+	// explicit "this is unknown/binary" verdict — trust it and fall through
+	// to the blob (download) card instead of letting the heuristic force a
+	// text preview on an unknown file. `text/*` MIMEs (incl. extensionless
+	// files DetectContentType reads as text/plain) still preview as text.
+	// An empty file with an UNKNOWN extension otherwise sniffs as text/plain
+	// (Go's DetectContentType verdict for empty input) and wrongly opens the
+	// text editor — `file.nothing` / `file.fjksf` are blobs, not text. Empty
+	// files with a known text extension (e.g. a fresh `.txt`) stay editable.
+	case extMime == "" && i.Size == 0:
+		i.Type = "blob"
+	case mimetype != "application/octet-stream" &&
+		(strings.HasPrefix(mimetype, "text") || !isBinary(buffer)) &&
+		i.Size <= 10*1024*1024: // 10 MB
 		i.Type = "text"
 
 		if !modify {
@@ -449,16 +465,20 @@ func (i *FileInfo) readListing(checker rules.Checker, readHeader bool, calcImgRe
 		if file.IsDir {
 			listing.NumDirs++
 		} else {
-			listing.NumFiles++
-
 			if isInvalidLink {
 				file.Type = "invalid_link"
-			} else {
-				err := file.detectType(true, false, readHeader, calcImgRes)
-				if err != nil {
-					return err
+			} else if err := file.detectType(true, false, readHeader, calcImgRes); err != nil {
+				// RC-17: a single file failing type detection must NOT 500
+				// the whole listing. The common trigger is the file being
+				// moved/deleted between readdir and now (detectType opens
+				// it to sniff the MIME type). Drop a vanished file; keep
+				// any other failure in the listing with no detected type.
+				if errors.Is(err, fs.ErrNotExist) {
+					continue
 				}
+				log.Printf("Skipping type detection for %s: %v", file.Path, err)
 			}
+			listing.NumFiles++
 		}
 
 		listing.Items = append(listing.Items, file)

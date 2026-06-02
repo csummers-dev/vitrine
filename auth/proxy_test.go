@@ -22,14 +22,14 @@ func (m *mockUserStore) Get(_ string, id interface{}) (*users.User, error) {
 	return nil, fberrors.ErrNotExist
 }
 
-func (m *mockUserStore) Gets(_ string) ([]*users.User, error) { return nil, nil }
+func (m *mockUserStore) Gets(_ string) ([]*users.User, error)    { return nil, nil }
 func (m *mockUserStore) Update(_ *users.User, _ ...string) error { return nil }
 func (m *mockUserStore) Save(user *users.User) error {
 	m.users[user.Username] = user
 	return nil
 }
 func (m *mockUserStore) Delete(_ interface{}) error { return nil }
-func (m *mockUserStore) LastUpdate(_ uint) int64     { return 0 }
+func (m *mockUserStore) LastUpdate(_ uint) int64    { return 0 }
 
 func TestProxyAuthCreateUserRestrictsDefaults(t *testing.T) {
 	t.Parallel()

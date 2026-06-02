@@ -109,6 +109,19 @@
     </template>
 
     <template #footer>
+      <!-- Copy the item's in-app path to the clipboard. Pushed to the far
+           left (margin-right:auto) so it reads as a utility, separate from
+           the Close / Create flow on the right. -->
+      <button
+        type="button"
+        class="share-btn share-btn--ghost share-btn--copy-path"
+        :disabled="!targetPath"
+        :title="copiedPath ? 'Copied!' : 'Copy the file path to the clipboard'"
+        @click="copyPath"
+      >
+        <Icon :name="copiedPath ? 'check' : 'copy'" :size="13" />
+        {{ copiedPath ? "Copied" : "Copy path" }}
+      </button>
       <button
         type="button"
         class="share-btn share-btn--ghost"
@@ -181,6 +194,17 @@ const targetName = computed<string>(() => {
   return fileStore.req?.items[fileStore.selected[0]]?.name ?? "";
 });
 
+// The item's decoded in-app path (e.g. "/Documents/foo.txt"), matching the
+// "Copy path" affordance in the details pane (InfoPane). Falls back to the
+// resource url when no decoded path is available.
+const targetPath = computed<string>(() => {
+  if (!fileStore.isListing)
+    return fileStore.req?.path ?? fileStore.req?.url ?? route.path;
+  if (fileStore.selectedCount !== 1) return "";
+  const item = fileStore.req?.items[fileStore.selected[0]];
+  return item?.path ?? item?.url ?? "";
+});
+
 const title = computed(() =>
   targetName.value ? `Share “${targetName.value}”` : "Share"
 );
@@ -251,6 +275,37 @@ const copyToClipboard = async (text: string) => {
     try {
       await copyToClip({ text }, { permission: true });
       $showSuccess("Link copied to clipboard");
+    } catch (e) {
+      if (e instanceof Error) $showError(e);
+    }
+  }
+};
+
+// Copy the item's path. Inline "Copied" label (1.5s) + durable toast, mirroring
+// the details-pane copy-path UX. Reuses the clipboard util, which falls back to
+// execCommand on insecure (HTTP) contexts — important for LAN homelab setups.
+const copiedPath = ref<boolean>(false);
+let copiedPathTimer: number | null = null;
+
+const copyPath = async () => {
+  const path = targetPath.value;
+  if (!path) return;
+  const flash = () => {
+    copiedPath.value = true;
+    if (copiedPathTimer !== null) window.clearTimeout(copiedPathTimer);
+    copiedPathTimer = window.setTimeout(() => {
+      copiedPath.value = false;
+      copiedPathTimer = null;
+    }, 1500);
+    $showSuccess(`Path copied: ${path}`);
+  };
+  try {
+    await copyToClip({ text: path });
+    flash();
+  } catch {
+    try {
+      await copyToClip({ text: path }, { permission: true });
+      flash();
     } catch (e) {
       if (e instanceof Error) $showError(e);
     }
@@ -521,18 +576,23 @@ watch(
 }
 
 .share-btn--primary {
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   border-color: var(--color-accent, #5e6ad2);
   color: white;
 }
 
 .share-btn--primary:hover:not(:disabled) {
-  background: var(--color-accent-strong, #4f5ac4);
+  background: var(--accent-gradient-strong);
   border-color: var(--color-accent-strong, #4f5ac4);
 }
 
 .share-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* Copy-path utility sits at the far left, away from the Close/Create flow. */
+.share-btn--copy-path {
+  margin-right: auto;
 }
 </style>

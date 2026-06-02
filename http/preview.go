@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 
@@ -63,7 +64,25 @@ func previewHandler(imgSvc ImgService, fileCache FileCache, enableThumbnails, re
 		switch file.Type {
 		case "image":
 			return handleImagePreview(w, r, imgSvc, fileCache, file, previewSize, enableThumbnails, resizePreview)
+		case "video":
+			// S6-2: ffmpeg-generated poster frame, cached + served like an
+			// image thumbnail. Falls back to 501 (→ generic icon) when
+			// ffmpeg is absent or generation fails.
+			return handleVideoPreview(w, r, fileCache, file, previewSize, enableThumbnails)
+		case "audio":
+			// Embedded album art (APIC / FLAC / MP4). 501 → generic icon
+			// when the track has no cover.
+			return handleAudioPreview(w, r, imgSvc, fileCache, file, previewSize, enableThumbnails)
+		case "pdf":
+			// First page rendered by pdftoppm (poppler). 501 → generic icon
+			// when poppler is absent or rendering fails.
+			return handlePdfPreview(w, r, imgSvc, fileCache, file, previewSize, enableThumbnails)
 		default:
+			// EPUB is detected as "blob" (its mime isn't media), so gate it
+			// by extension — cover image pulled from the book's OPF.
+			if strings.EqualFold(file.Extension, ".epub") {
+				return handleEpubPreview(w, r, imgSvc, fileCache, file, previewSize, enableThumbnails)
+			}
 			return http.StatusNotImplemented, fmt.Errorf("can't create preview for %s type", file.Type)
 		}
 	})

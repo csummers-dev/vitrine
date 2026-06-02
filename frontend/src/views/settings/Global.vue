@@ -57,38 +57,15 @@
         </SettingsRow>
       </SettingsSection>
 
-      <!-- ── Branding ───────────────────────────────────────────────── -->
+      <!-- ── Interface ──────────────────────────────────────────────────
+           Branding identity (instance name, theme, branding asset path) is
+           intentionally NOT editable — the app ships a fixed "filebrowser
+           pretty" wordmark. Only the optional UI-hiding toggles remain. The
+           per-user theme switcher lives in Profile settings (unaffected). -->
       <SettingsSection
-        :title="t('settings.branding')"
-        description="Theme, name, and external integrations."
+        title="Interface"
+        description="Hide optional UI elements."
       >
-        <SettingsRow stacked :label="t('settings.instanceName')">
-          <input
-            v-model="settings.branding.name"
-            type="text"
-            class="settings-input"
-            id="branding-name"
-          />
-        </SettingsRow>
-        <SettingsRow stacked :label="t('settings.themes.title')">
-          <Themes
-            id="theme"
-            class="settings-select"
-            v-model:theme="settings.branding.theme"
-          />
-        </SettingsRow>
-        <SettingsRow
-          stacked
-          :label="t('settings.brandingDirectoryPath')"
-          description="Filesystem path with custom branding assets (logos, stylesheets)."
-        >
-          <input
-            v-model="settings.branding.files"
-            type="text"
-            class="settings-input"
-            id="branding-files"
-          />
-        </SettingsRow>
         <SettingsRow
           :label="t('settings.disableExternalLinks')"
           description="Suppress links pointing off-site (help, GitHub, etc.)."
@@ -259,14 +236,12 @@ import { useI18n } from "vue-i18n";
 import { settings as api } from "@/api";
 import { useLayoutStore } from "@/stores/layout";
 import { enableExec } from "@/utils/constants";
-import { getTheme, setTheme } from "@/utils/theme";
 
 import SettingsPage from "@/components/settings/SettingsPage.vue";
 import SettingsSection from "@/components/settings/SettingsSection.vue";
 import SettingsRow from "@/components/settings/SettingsRow.vue";
 import Toggle from "@/components/settings/Toggle.vue";
 import Rules from "@/components/settings/Rules.vue";
-import Themes from "@/components/settings/Themes.vue";
 import UserForm from "@/components/settings/UserForm.vue";
 import Icon from "@/components/Icon.vue";
 
@@ -339,10 +314,6 @@ const save = async () => {
     .trim()
     .split(" ")
     .filter((s) => s !== "");
-
-  if (newSettings.branding.theme !== getTheme()) {
-    setTheme(newSettings.branding.theme);
-  }
 
   try {
     await api.update(newSettings);
@@ -589,13 +560,13 @@ onBeforeUnmount(() => {
 }
 
 .global-actions__btn--primary {
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   border-color: var(--color-accent, #5e6ad2);
   color: white;
 }
 
 .global-actions__btn--primary:hover {
-  background: var(--color-accent-strong, #4f5ac4);
+  background: var(--accent-gradient-strong);
   border-color: var(--color-accent-strong, #4f5ac4);
 }
 

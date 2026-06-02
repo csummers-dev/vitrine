@@ -92,6 +92,33 @@
   overflow: hidden;
 }
 
+/* Inline tag chips strip (v1.3 S2-5). Sits below the filename on a
+   new line. flex-wrap kept off so they don't push other rows; overflow
+   shows ellipsis. The cap-at-2 + "+N" chip lives in ListingItem's
+   template — this just lays the strip out. */
+#listing .item__tags {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+#listing .item__tags-overflow {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 9999px;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--color-ink-3, #a1a1aa);
+  background: var(--color-elevated, #f4f4f5);
+  white-space: nowrap;
+  cursor: help;
+}
+
 /* Inline rename input — sits in place of `.item__name-text` (Stage 8). */
 #listing .item__rename-input {
   width: 100%;
@@ -229,6 +256,16 @@
   overflow: hidden;
   flex-shrink: 0;
   position: relative;
+  /* Vivid tiles: the per-type Tailwind class paints a saturated background-
+     color; this white→transparent sheen overlays it for a gradient "app
+     icon" depth (works for any hue), plus a soft lift. Hidden behind image
+     thumbnails (the <img> paints over it). */
+  background-image: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.3),
+    rgba(255, 255, 255, 0) 60%
+  );
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
 }
 
 /* Spring-load progress ring (F6) — overlays the folder icon during a
@@ -278,9 +315,11 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 2px;
 }
 
-.item__actions-btn {
+.item__actions-btn,
+.item__fav-btn {
   width: 24px;
   height: 24px;
   border-radius: var(--radius-sm, 6px);
@@ -292,24 +331,49 @@
   justify-content: center;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.12s ease, background-color 0.12s ease, color 0.12s ease;
+  transition:
+    opacity 0.12s ease,
+    background-color 0.12s ease,
+    color 0.12s ease;
 }
 
 #listing.list .item:hover .item__actions-btn,
-#listing.mosaic .item:hover .item__actions-btn {
+#listing.list .item:hover .item__fav-btn,
+#listing.mosaic .item:hover .item__actions-btn,
+#listing.mosaic .item:hover .item__fav-btn {
   opacity: 1;
 }
 
-.item__actions-btn:hover {
+.item__actions-btn:hover,
+.item__fav-btn:hover {
   background: var(--color-elevated, var(--surfaceSecondary));
   color: var(--color-ink-1, var(--textSecondary));
 }
 
+/* Active (favorited) state: persistent visibility + amber tint so
+   pinned folders stand out at a glance, even without hover.
+   v1.3 S3-2 — folders only. */
+.item__fav-btn--active {
+  opacity: 1 !important;
+  /* Warm favorite gold — matches the sidebar/drawer favorite stars and reads
+     on both themes. (Was the amber tag token, which is a dark brown in light
+     mode.) */
+  color: #f59e0b;
+}
+
+.item__fav-btn--active:hover {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+}
+
 /* Touch-target sweep (Stage 11f): bump the row action button to 32px
-   on mobile so it's comfortably tappable. */
+   on mobile so it's comfortably tappable. v1.3 S3-2 — same treatment
+   for the favorites star. */
 @media (max-width: 640px) {
   .item__actions-btn,
-  #listing.mosaic .item__actions-btn {
+  .item__fav-btn,
+  #listing.mosaic .item__actions-btn,
+  #listing.mosaic .item__fav-btn {
     width: 32px;
     height: 32px;
   }
@@ -362,12 +426,15 @@
   background: var(--color-hover, var(--hover));
 }
 
-/* Column header — same 5-col grid as rows */
+/* Column header — same 5-col grid as rows. Transparent so it blends into the
+   page background; only the two divider rules above/below frame the column
+   labels. (Safe to be fill-free: in the virtualized list the header renders
+   ABOVE the RecycleScroller, so no rows ever scroll behind it.) */
 #listing.list .item.header {
   display: grid !important;
   grid-template-columns: 28px minmax(0, 1fr) 120px 80px 32px;
   gap: 12px;
-  background: var(--color-canvas, var(--background));
+  background: transparent;
   height: 32px;
   padding: 0 6px;
   margin: 0 0 2px;
@@ -443,10 +510,20 @@
 }
 
 /* ── A. Grid container ───────────────────────────────────── */
-#listing.mosaic > div {
+/* CH-1: the grid lives on `.listing-section` (a windowed slice of tiles),
+   which is now nested inside a plain block wrapper alongside top/bottom
+   spacer pads — so target the section class directly rather than the
+   former direct-child `> div`. */
+#listing.mosaic .listing-section {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 12px;
+}
+
+/* Windowing spacers: plain full-width blocks that reserve the height of the
+   rows scrolled out of view. Never grid cells, never interactive. */
+#listing.mosaic .grid-pad {
+  width: 100%;
 }
 
 /* ── B. Tile ─────────────────────────────────────────────── */
@@ -462,13 +539,22 @@
   cursor: pointer;
   transition:
     border-color 0.12s ease,
-    box-shadow 0.15s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s cubic-bezier(0.34, 1.2, 0.64, 1),
     background-color 0.12s ease;
 }
 
 #listing.mosaic .item:hover {
   border-color: var(--color-line-strong, var(--borderSecondary));
-  box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.06));
+  /* Subtle lift: the tile rises a touch with a slightly deeper shadow so the
+     grid/gallery feels tactile on hover. (prefers-reduced-motion makes this
+     instant via the global transition-duration override.) */
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -8px rgba(0, 0, 0, 0.16);
+}
+
+html.dark #listing.mosaic .item:hover {
+  box-shadow: 0 10px 22px -8px rgba(0, 0, 0, 0.5);
 }
 
 #listing.mosaic .item.header {
@@ -497,7 +583,11 @@
 #listing.mosaic .item__actions-btn {
   width: 24px;
   height: 24px;
-  background: rgba(255, 255, 255, 0.8);
+  /* RC-3: theme-aware frosted chip over the thumbnail. The hardcoded
+     white (rgba(255,255,255,0.8)) read as a bright button on dark tiles
+     and didn't match the app's surface styling. color-mix with the
+     surface token frosts white in light mode and near-black in dark. */
+  background: color-mix(in srgb, var(--color-surface, #fff) 82%, transparent);
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   border: 1px solid var(--color-line, var(--borderPrimary));
@@ -599,7 +689,7 @@
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 /* ── A. Grid container: wider tracks than grid view ──────── */
-#listing.mosaic.gallery > div {
+#listing.mosaic.gallery .listing-section {
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }
 
@@ -643,6 +733,14 @@
 #listing.mosaic.gallery .item[data-dir="true"] .item__icon svg {
   width: 64px;
   height: 64px;
+  /* Colorful UI: amber GLYPH on a soft tint (below). The vivid saturated tile
+     used in list/grid is too loud at this large full-cell gallery size. */
+  color: var(--c-amber);
+}
+#listing.mosaic.gallery .item[data-dir="true"] .item__icon {
+  background-color: color-mix(in srgb, var(--c-amber) 16%, var(--color-surface));
+  background-image: none;
+  box-shadow: none;
 }
 
 /* Non-image, non-video, non-folder files in gallery:

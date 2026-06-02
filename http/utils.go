@@ -3,9 +3,9 @@ package fbhttp
 import (
 	"encoding/json"
 	"errors"
+	"io/fs"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 
 	libErrors "github.com/filebrowser/filebrowser/v2/errors"
@@ -31,15 +31,22 @@ func errToStatus(err error) int {
 	switch {
 	case err == nil:
 		return http.StatusOK
-	case os.IsPermission(err):
+	// errors.Is (not os.IsPermission/IsNotExist/IsExist) so wrapped errors
+	// classify correctly — fileutils now wraps copy/move failures with
+	// context (RC-15), and os.Is* don't traverse %w chains.
+	case errors.Is(err, fs.ErrPermission):
 		return http.StatusForbidden
-	case os.IsNotExist(err), errors.Is(err, libErrors.ErrNotExist):
+	case errors.Is(err, fs.ErrNotExist), errors.Is(err, libErrors.ErrNotExist):
 		return http.StatusNotFound
-	case os.IsExist(err), errors.Is(err, libErrors.ErrExist):
+	case errors.Is(err, fs.ErrExist), errors.Is(err, libErrors.ErrExist):
 		return http.StatusConflict
 	case errors.Is(err, libErrors.ErrPermissionDenied):
 		return http.StatusForbidden
 	case errors.Is(err, libErrors.ErrInvalidRequestParams):
+		return http.StatusBadRequest
+	case errors.Is(err, libErrors.ErrUnsupportedArchive),
+		errors.Is(err, libErrors.ErrMultiVolumeUnsupported),
+		errors.Is(err, libErrors.ErrEncryptedArchiveUnsupported):
 		return http.StatusBadRequest
 	case errors.Is(err, libErrors.ErrRootUserDeletion):
 		return http.StatusForbidden

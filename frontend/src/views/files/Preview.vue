@@ -27,7 +27,23 @@
           fileStore.req?.type === 'textImmutable'
         "
       >
+        <!-- Markdown: Rendered / Raw toggle (S5-2). Only for .md files. -->
         <button
+          v-if="isMarkdownFile"
+          type="button"
+          class="preview-fit__btn"
+          :class="{ 'is-active': textRenderMarkdown }"
+          :title="textRenderMarkdown ? 'Show raw source' : 'Show rendered'"
+          :aria-label="textRenderMarkdown ? 'Show raw source' : 'Show rendered'"
+          :aria-pressed="textRenderMarkdown"
+          @click="textRenderMarkdown = !textRenderMarkdown"
+        >
+          <Icon :name="textRenderMarkdown ? 'code' : 'book-open'" :size="14" />
+        </button>
+        <!-- Soft-wrap toggle — irrelevant in rendered markdown (which
+             wraps naturally), so hide it there. -->
+        <button
+          v-if="!(isMarkdownFile && textRenderMarkdown)"
           type="button"
           class="preview-fit__btn"
           :class="{ 'is-active': textSoftWrap }"
@@ -91,6 +107,26 @@
         </div>
       </template>
 
+      <!-- EPUB: book dark-mode toggle. Independent of the app theme and
+           remembered — follows the app theme until the reader flips it. -->
+      <template v-if="isEpub">
+        <button
+          type="button"
+          class="preview-fit__btn"
+          :class="{ 'is-active': epubDark }"
+          :title="epubDark ? 'Light book theme' : 'Dark book theme'"
+          :aria-label="
+            epubDark
+              ? 'Switch book to light theme'
+              : 'Switch book to dark theme'
+          "
+          :aria-pressed="epubDark"
+          @click="toggleEpubDark"
+        >
+          <Icon :name="epubDark ? 'sun' : 'moon'" :size="14" />
+        </button>
+      </template>
+
       <!-- Image: zoom + fit toggle -->
       <template v-if="fileStore.req?.type === 'image'">
         <div class="preview-zoom">
@@ -129,12 +165,46 @@
         >
           <Icon :name="fitToScreen ? 'maximize-2' : 'maximize'" :size="14" />
         </button>
+        <!-- Edit (S5-4) — opens the canvas image editor. Needs create
+             permission since saving writes a new file. -->
+        <button
+          v-if="!!authStore.user?.perm.create"
+          type="button"
+          class="preview-toolbar-format__btn"
+          title="Edit image"
+          aria-label="Edit image"
+          @click="imageEditorOpen = true"
+        >
+          <Icon name="pencil-ruler" :size="14" />
+          <span class="max-md:hidden">Edit</span>
+        </button>
+      </template>
+
+      <!-- Video: Picture-in-Picture (S5-8). Shown only when the browser
+           supports PiP for the current <video>. Active state highlights
+           while the floating window is open. -->
+      <template v-if="fileStore.req?.type === 'video' && videoPip.supported">
+        <button
+          type="button"
+          class="preview-fit__btn"
+          :class="{ 'is-active': videoPip.active }"
+          :title="
+            videoPip.active ? 'Exit picture-in-picture' : 'Picture-in-picture'
+          "
+          :aria-label="
+            videoPip.active ? 'Exit picture-in-picture' : 'Picture-in-picture'
+          "
+          :aria-pressed="videoPip.active"
+          @click="videoViewer?.togglePip()"
+        >
+          <Icon name="picture-in-picture-2" :size="14" />
+        </button>
       </template>
     </template>
 
     <!-- ── Stage: format-specific viewer ──────────────────────────── -->
     <template #stage>
-      <div class="preview-stage__inner">
+      <div ref="stageEl" class="preview-stage__inner">
         <!-- Loading state — replaces the legacy .preview-loading delayed
              chrome with a calm centered spinner that matches the rest of
              the design system (settings, editor, etc.). -->
@@ -155,13 +225,18 @@
                nav still works while reading.) -->
           <EpubViewer
             v-if="isEpub"
+            ref="epubViewer"
             :src="previewUrl"
             :location="location"
             :size="size"
+            :dark="epubDark"
             @update:location="locationChange"
             @update:size="changeSize"
             @navigate-prev="prev"
             @navigate-next="next"
+            @toc="onEpubToc"
+            @chapter="onEpubChapter"
+            @cover="onEpubCover"
           />
 
           <!-- CSV -->
@@ -178,7 +253,7 @@
             :alt="name"
             :zoom-percent="zoomPercent"
             :fit-to-screen="fitToScreen"
-            :strip="imageStrip"
+            :strip="previewStrip"
             :current-url="currentItemUrl"
             @navigate="(u: string) => router.replace({ path: u })"
           />
@@ -201,11 +276,18 @@
           <!-- Video (P3: VideoViewer = framed card + themed video.js skin) -->
           <VideoViewer
             v-else-if="fileStore.req?.type == 'video'"
+            :key="videoKey"
             ref="videoViewer"
             :source="previewUrl"
             :subtitles="subtitles"
             :options="videoOptions"
+            :default-subtitle="defaultSubtitle"
+            :transcode-source="transcodeUrl"
+            :prefer-transcode="preferTranscode"
+            :download-url="downloadUrl"
+            :direct-url="directUrl"
             @metadata="onVideoMetadata"
+            @pip="onVideoPip"
           />
 
           <!-- PDF (E4: PdfViewer = PDF.js-rendered pages with
@@ -233,6 +315,8 @@
             "
             :content="textContent"
             :soft-wrap="textSoftWrap"
+            :is-markdown="isMarkdownFile"
+            :rendered="textRenderMarkdown"
           />
 
           <!-- Blob (no-preview) — already on-brand from Stage 11d.
@@ -242,29 +326,29 @@
           <div v-else-if="fileStore.req?.type == 'blob'" class="preview-blob">
             <div
               class="preview-blob__icon"
-              :class="isZip ? 'preview-blob__icon--zip' : ''"
+              :class="isArchive ? 'preview-blob__icon--zip' : ''"
             >
               <Icon
-                :name="isZip ? 'package' : 'file-search'"
+                :name="isArchive ? 'package' : 'file-search'"
                 :size="28"
                 :stroke-width="1.4"
               />
             </div>
             <div class="preview-blob__title">
-              {{ isZip ? "Zip archive" : $t("files.noPreview") }}
+              {{ isArchive ? "Archive" : $t("files.noPreview") }}
             </div>
             <div class="preview-blob__hint">
               {{
-                isZip
+                isArchive
                   ? "This is a compressed archive. Extract to view the contents."
                   : "This file type can't be previewed in the browser."
               }}
             </div>
-            <!-- Zip: no inline actions — the Extract button lives in the
-                 details sidebar next to Move/Copy. Non-zip blobs still
+            <!-- Archive: no inline actions — the Extract button lives in the
+                 details sidebar next to Move/Copy. Non-archive blobs still
                  get Download/Open since there's no equivalent surface
                  for them. -->
-            <div v-if="!isZip" class="preview-blob__actions">
+            <div v-if="!isArchive" class="preview-blob__actions">
               <a
                 :href="downloadUrl"
                 target="_blank"
@@ -326,32 +410,52 @@
       >
         <!-- Format-specific section. Each format may emit metadata
              from its viewer; we surface whatever's available here. -->
-        <template v-if="videoMeta || audioMeta || imageExif" #format-section>
-          <!-- Video tracks (E1) -->
-          <template v-if="videoMeta">
-            <div class="preview-info__label">Tracks</div>
-            <dl class="preview-info__dl">
-              <div class="preview-info__row">
-                <dt>Resolution</dt>
-                <dd class="tabular">
-                  {{ videoMeta.width }} × {{ videoMeta.height }}
-                </dd>
-              </div>
-              <div class="preview-info__row">
-                <dt>Duration</dt>
-                <dd class="tabular">
-                  {{ formatDuration(videoMeta.duration) }}
-                </dd>
-              </div>
-              <div class="preview-info__row">
-                <dt>Subtitles</dt>
-                <dd>
-                  {{
-                    videoMeta.textTracks === 0 ? "None" : videoMeta.textTracks
-                  }}
-                </dd>
-              </div>
-            </dl>
+        <template
+          v-if="
+            fileStore.req?.type === 'video' ||
+            videoMeta ||
+            audioMeta ||
+            imageExif ||
+            (isEpub && (epubToc.length > 0 || !!epubCoverUrl))
+          "
+          #format-section
+        >
+          <!-- Video tracks (E1) + subtitle upload (S5-7) -->
+          <template v-if="fileStore.req?.type === 'video'">
+            <template v-if="videoMeta">
+              <div class="preview-info__label">Tracks</div>
+              <dl class="preview-info__dl">
+                <div class="preview-info__row">
+                  <dt>Resolution</dt>
+                  <dd class="tabular">
+                    {{ videoMeta.width }} × {{ videoMeta.height }}
+                  </dd>
+                </div>
+                <div class="preview-info__row">
+                  <dt>Duration</dt>
+                  <dd class="tabular">
+                    {{ formatDuration(videoMeta.duration) }}
+                  </dd>
+                </div>
+                <div class="preview-info__row">
+                  <dt>Subtitles</dt>
+                  <dd>
+                    {{
+                      videoMeta.textTracks === 0 ? "None" : videoMeta.textTracks
+                    }}
+                  </dd>
+                </div>
+              </dl>
+            </template>
+
+            <!-- Drop zone to add a subtitle for this video (S5-7).
+                 Needs create permission (writes a sibling file). -->
+            <SubtitleUpload
+              v-if="!!authStore.user?.perm.create && name"
+              :video-name="name"
+              :dir="previewDir"
+              @uploaded="onSubtitleUploaded"
+            />
           </template>
 
           <!-- Camera EXIF (E3) — image only. -->
@@ -484,6 +588,40 @@
               </div>
             </dl>
           </template>
+
+          <!-- EPUB cover art — shown in the details rail when the book
+               declares a cover image (emitted by EpubViewer once metadata
+               resolves). -->
+          <div v-if="isEpub && epubCoverUrl" class="preview-epub-cover-wrap">
+            <img
+              :src="epubCoverUrl"
+              alt="Book cover"
+              class="preview-epub-cover"
+            />
+          </div>
+
+          <!-- EPUB chapter list / TOC (S5-5). Clickable; the active
+               chapter is highlighted. Scrolls within the rail for long
+               books. Indentation reflects sub-chapter depth. -->
+          <template v-if="isEpub && epubToc.length > 0">
+            <div class="preview-info__label">Chapters</div>
+            <nav class="preview-epub-toc" aria-label="Table of contents">
+              <button
+                v-for="(entry, i) in epubToc"
+                :key="`${entry.href}-${i}`"
+                type="button"
+                class="preview-epub-toc__item"
+                :class="{
+                  'is-active': isActiveChapter(entry),
+                }"
+                :style="{ paddingLeft: 8 + entry.depth * 14 + 'px' }"
+                :title="entry.label"
+                @click="goToChapter(entry.href)"
+              >
+                {{ entry.label || "Untitled" }}
+              </button>
+            </nav>
+          </template>
         </template>
 
         <template #keyboard-hints>
@@ -500,18 +638,41 @@
       </PreviewInfoRail>
     </template>
   </PreviewShell>
+
+  <!-- Image editor (S5-4). Canvas-based rotate / flip / crop; saves a
+       copy via the upload API. Mounted alongside the shell; self-
+       teleports to body. -->
+  <ImageEditor
+    :open="imageEditorOpen"
+    :src="directUrl"
+    :name="name"
+    :dir="previewDir"
+    :existing-names="siblingNames"
+    @cancel="imageEditorOpen = false"
+    @saved="onImageSaved"
+  />
 </template>
 
 <script setup lang="ts">
 import Icon from "@/components/Icon.vue";
-import { useStorage } from "@vueuse/core";
+import { useStorage, useSwipe } from "@vueuse/core";
+import { useTouchDevice } from "@/composables/useTouchDevice";
 import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
+import { useRecents } from "@/composables/useRecents";
+import { useEpubProgress } from "@/composables/useEpubProgress";
+import { usePreferences } from "@/composables/usePreferences";
+import ImageEditor from "@/components/files/ImageEditor.vue";
+import SubtitleUpload from "@/components/files/SubtitleUpload.vue";
 import { useLayoutStore } from "@/stores/layout";
 
 import { files as api } from "@/api";
-import { createURL } from "@/api/utils";
-import { resizePreview, unzipEnabled } from "@/utils/constants";
+import {
+  resizePreview,
+  unzipEnabled,
+  transcodeEnabled,
+} from "@/utils/constants";
+import { isExtractable } from "@/utils/archive";
 import url from "@/utils/url";
 import { throttle } from "lodash-es";
 import { filesize } from "@/utils";
@@ -528,11 +689,13 @@ import ImageViewer from "@/components/files/ImageViewer.vue";
 // TypeScript erases them at compile time, so they don't pull the
 // component into the main bundle.
 import type { VideoMeta } from "@/components/files/VideoViewer.vue";
+import type { EpubTocEntry } from "@/components/files/EpubViewer.vue";
 import type { AudioMeta } from "@/components/files/AudioViewer.vue";
 import {
   computed,
   defineAsyncComponent,
   inject,
+  nextTick,
   onBeforeUnmount,
   onMounted,
   ref,
@@ -541,7 +704,7 @@ import {
 
 /**
  * Lazy-loaded format viewers. Each viewer pulls in a heavyweight
- * dependency (pdfjs-dist, video.js, vue-reader + epub.js, ace-builds,
+ * dependency (pdfjs-dist, video.js, vue-reader + epub.js,
  * music-metadata, etc.) that's only useful when the user is actively
  * previewing that file type. By splitting them via defineAsyncComponent,
  * Vite emits each viewer + its deps as its own chunk that's only fetched
@@ -578,12 +741,18 @@ import { useI18n } from "vue-i18n";
 // Prevents browser memory issues with large files.
 const CSV_MAX_SIZE = 5 * 1024 * 1024;
 
-const location = useStorage("book-progress", 0, undefined, {
-  serializer: {
-    read: (v) => JSON.parse(v),
-    write: (v) => JSON.stringify(v),
-  },
-});
+// EPUB reading position (S5-6). PER-BOOK now: a plain ref holding the
+// CFI for the *currently-open* book, loaded from useEpubProgress (which
+// persists a path→CFI map in user.Preferences, syncing across devices).
+// Was a single global "book-progress" localStorage key, which made
+// every book resume at the last-read spot of whatever book you opened
+// most recently. updatePreview() sets this to the saved CFI when an
+// EPUB opens.
+const location = ref<string | number>(0);
+const epubProgress = useEpubProgress();
+
+// Font size stays a single global preference (not per-book) — kept on
+// localStorage as before.
 const size = useStorage("book-size", 120, undefined, {
   serializer: {
     read: (v) => JSON.parse(v),
@@ -593,13 +762,89 @@ const size = useStorage("book-size", 120, undefined, {
 
 // EPUB location + font-size lifting. The full rendition control
 // (theme registration, MutationObserver on .dark, font-size hot-swap)
-// now lives inside EpubViewer.vue — Preview.vue just persists the
-// user's last reading position + font choice via useStorage.
-const locationChange = (epubcifi: number) => {
+// now lives inside EpubViewer.vue — Preview.vue persists the user's
+// last reading position (per book) + font choice.
+const locationChange = (epubcifi: string | number) => {
   location.value = epubcifi;
+  // Persist against the current book's path so reopening resumes here.
+  if (isEpub.value && fileStore.req?.path) {
+    epubProgress.set(fileStore.req.path, epubcifi);
+  }
 };
 const changeSize = (val: number) => {
   size.value = val;
+};
+
+// ── EPUB table of contents (S5-5) ──────────────────────────────────
+// The TOC + current chapter come from EpubViewer via @toc / @chapter.
+// The info-rail renders the clickable chapter list; clicks call back
+// into the viewer's exposed goTo(href).
+const epubViewer = ref<{
+  goTo: (href: string) => void;
+  nextPage: () => void;
+  prevPage: () => void;
+} | null>(null);
+const epubToc = ref<EpubTocEntry[]>([]);
+const epubChapter = ref<string>("");
+// Cover-art blob URL emitted by EpubViewer once the book metadata resolves
+// (empty when the epub has no cover). Shown in the info-rail.
+const epubCoverUrl = ref<string>("");
+
+const onEpubToc = (entries: EpubTocEntry[]) => {
+  epubToc.value = entries;
+};
+const onEpubChapter = (href: string) => {
+  epubChapter.value = href;
+};
+const onEpubCover = (url: string) => {
+  epubCoverUrl.value = url;
+};
+const goToChapter = (href: string) => {
+  epubViewer.value?.goTo(href);
+};
+
+// ── EPUB dark mode (independent of the app theme, remembered) ──────────
+// The book's light/dark is its own setting: by default it follows the app
+// theme, but the reader's toolbar toggle pins it light or dark regardless of
+// the app theme and persists that choice (prefs key `epub.dark`). Stored as
+// "light" | "dark" | null, where null = "follow the app theme".
+const prefs = usePreferences();
+const epubThemeOverride = computed<"light" | "dark" | null>(() =>
+  prefs.get<"light" | "dark" | null>("epub.dark", null)
+);
+
+// Reactive mirror of the app's resolved theme (the `.dark` class on <html>,
+// which useThemePreference toggles). A MutationObserver keeps it live so the
+// book follows app-theme changes while no override is set.
+const appIsDark = ref(
+  typeof document !== "undefined" &&
+    document.documentElement.classList.contains("dark")
+);
+let appThemeObserver: MutationObserver | null = null;
+
+/** Effective book theme: the override when set, else the app theme. */
+const epubDark = computed<boolean>(() => {
+  const o = epubThemeOverride.value;
+  if (o === "dark") return true;
+  if (o === "light") return false;
+  return appIsDark.value;
+});
+
+const toggleEpubDark = () => {
+  // Pin the book to the opposite of whatever it's showing now, and remember.
+  void prefs.set("epub.dark", epubDark.value ? "light" : "dark");
+};
+
+/** Active-row match. TOC hrefs + the relocated href may differ in
+ *  anchor (#frag) or path prefix, so compare on the anchor-stripped
+ *  basename with a two-way endsWith fallback. */
+const isActiveChapter = (entry: EpubTocEntry): boolean => {
+  if (!epubChapter.value) return false;
+  const base = (h: string) => h.split("#")[0];
+  const a = base(entry.href);
+  const b = base(epubChapter.value);
+  if (!a || !b) return false;
+  return a === b || a.endsWith(b) || b.endsWith(a);
 };
 
 /**
@@ -664,9 +909,21 @@ const toggleFit = () => {
 // ── Text preview state. content is loaded from fileStore.req.content
 // (the backend already returns the body when type is "text" or
 // "textImmutable" — same path Editor.vue used). Soft-wrap preference
-// persists across previews. ----------------------------------------
+// persists across previews and defaults ON (matches the Editor, which
+// uses "editor-soft-wrap" defaulting true) so long lines wrap instead of
+// scrolling sideways out of view. ----------------------------------
 const textContent = ref<string>("");
-const textSoftWrap = useStorage("preview-text-soft-wrap", false);
+const textSoftWrap = useStorage("preview-text-soft-wrap", true);
+
+// ── Markdown rendered preview (S5-2) ───────────────────────────────
+// `.md` / `.markdown` files get a Rendered / Raw toggle in the text
+// toolbar. The preference persists across previews (default: rendered,
+// since that's what a user opening a markdown file usually wants).
+const isMarkdownFile = computed<boolean>(() => {
+  const n = fileStore.req?.name?.toLowerCase() ?? "";
+  return n.endsWith(".md") || n.endsWith(".markdown");
+});
+const textRenderMarkdown = useStorage("preview-text-render-markdown", true);
 
 // ── Video metadata (E1). Captured from VideoViewer's @metadata event
 // once the underlying <video> reports loadedmetadata. Cleared on
@@ -675,6 +932,20 @@ const textSoftWrap = useStorage("preview-text-soft-wrap", false);
 const videoMeta = ref<VideoMeta | null>(null);
 const onVideoMetadata = (m: VideoMeta) => {
   videoMeta.value = m;
+};
+
+// ── Picture-in-Picture (S5-8) ──────────────────────────────────────
+// Template ref to the VideoViewer so the toolbar PiP button can call
+// its exposed togglePip(). `videoPip` mirrors the viewer's @pip event
+// (browser support + active state) to drive the button's visibility +
+// highlight.
+const videoViewer = ref<{ togglePip: () => void } | null>(null);
+const videoPip = ref<{ supported: boolean; active: boolean }>({
+  supported: false,
+  active: false,
+});
+const onVideoPip = (state: { supported: boolean; active: boolean }) => {
+  videoPip.value = state;
 };
 
 // Audio metadata (E2) — parsed client-side from ID3v2 by AudioViewer.
@@ -788,9 +1059,11 @@ const editAsText = () => {
 };
 
 const $showError = inject<IToastError>("$showError")!;
+const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
 
 const authStore = useAuthStore();
 const fileStore = useFileStore();
+const recents = useRecents();
 const layoutStore = useLayoutStore();
 
 const { t } = useI18n();
@@ -812,15 +1085,81 @@ const downloadUrl = computed(() =>
 const directUrl = computed(() =>
   fileStore.req ? api.getDownloadURL(fileStore.req, true) : ""
 );
+// #3: on-demand transcode URL for videos. Empty when the server lacks
+// ffmpeg, so VideoViewer skips the fallback attempt and shows the download
+// card straight away.
+const transcodeUrl = computed(() =>
+  fileStore.req && transcodeEnabled ? api.getTranscodeURL(fileStore.req) : ""
+);
+
+// Containers no browser can decode natively. For these we hand VideoViewer
+// the transcode stream up front (when ffmpeg is available) instead of
+// waiting for a <video> error that Safari often never fires for e.g. .avi.
+// mp4 / webm / ogg / mov are left to native playback with the error-driven
+// transcode fallback as a safety net.
+const UNPLAYABLE_VIDEO_EXT = new Set([
+  "avi",
+  "mkv",
+  "wmv",
+  "flv",
+  "ts",
+  "m2ts",
+  "mts",
+  "mpg",
+  "mpeg",
+  "vob",
+  "divx",
+  "ogm",
+  "rm",
+  "rmvb",
+  "asf",
+  "m2v",
+  "3gp",
+  "f4v",
+]);
+const preferTranscode = computed<boolean>(() => {
+  if (!transcodeUrl.value) return false;
+  const n = fileStore.req?.name ?? "";
+  const dot = n.lastIndexOf(".");
+  const ext = dot >= 0 ? n.slice(dot + 1).toLowerCase() : "";
+  return UNPLAYABLE_VIDEO_EXT.has(ext);
+});
+
+// ── Image editor (S5-4) ─────────────────────────────────────────────
+const imageEditorOpen = ref<boolean>(false);
+/** Parent directory route of the current preview — where the edited
+ *  copy is written. */
+const previewDir = computed(() => url.removeLastDir(route.path) + "/");
+/** Sibling filenames in the current folder — for the editor's unique
+ *  default name + client-side conflict check. */
+const siblingNames = computed<string[]>(
+  () => listing.value?.map((it) => it.name) ?? []
+);
+const onImageSaved = (newName: string) => {
+  imageEditorOpen.value = false;
+  $showSuccess(`Saved “${newName}”`);
+  // RC-37: show the result on creation instead of waiting for a reload.
+  const target = previewDir.value + encodeURIComponent(newName);
+  if (target === route.path) {
+    // Overwrote the file currently open → re-fetch so the edited bytes
+    // (and a fresh preview cache key) load without a manual reload.
+    fileStore.reload = true;
+  } else {
+    // A brand-new file was created → open its preview directly.
+    router.push({ path: target });
+  }
+};
 
 const previewUrl = computed(() => {
   if (!fileStore.req) return "";
   if (fileStore.req.type === "image" && !fullSize.value) {
     return api.getPreviewURL(fileStore.req, "big");
   }
-  if (isEpub.value) {
-    return createURL("api/raw" + fileStore.req.path, {});
-  }
+  // RC-44: EPUBs must carry the auth token like every other media URL.
+  // The old `createURL("api/raw"+path, {})` sent NO ?auth param, so when
+  // the cookie session drifted (same root cause as the RC-18 thumbnail
+  // 401s) epub.js's fetch got a 401 and the book never opened. Route it
+  // through getDownloadURL, which appends authParam().
   return api.getDownloadURL(fileStore.req, true);
 });
 
@@ -834,12 +1173,12 @@ const isCsv = computed(
     fileStore.req.size <= CSV_MAX_SIZE
 );
 
-// .zip in the blob (no-preview) state lights up the Extract CTA (F4).
-// canExtractZip mirrors the headerButtons.extract gate from FileListing
-// so the action only shows when it would actually succeed.
-const isZip = computed(() => fileStore.req?.extension.toLowerCase() === ".zip");
+// A supported archive in the blob (no-preview) state lights up the Extract
+// CTA (F4). canExtractZip mirrors the headerButtons.extract gate from
+// FileListing so the action only shows when it would actually succeed.
+const isArchive = computed(() => isExtractable(fileStore.req?.name ?? ""));
 const canExtractZip = computed(
-  () => unzipEnabled && !!authStore.user?.perm.create && isZip.value
+  () => unzipEnabled && !!authStore.user?.perm.create && isArchive.value
 );
 const openExtract = () => layoutStore.showHover("extract");
 
@@ -847,6 +1186,48 @@ const subtitles = computed(() => {
   if (fileStore.req?.subtitles) return api.getSubtitlesURL(fileStore.req);
   return [];
 });
+
+// ── Subtitle upload (S5-7) ─────────────────────────────────────────
+// `videoReloadKey` forces VideoViewer to re-init video.js after a new
+// subtitle is uploaded (video.js doesn't pick up <track> elements
+// added post-init). `defaultSubtitle` auto-shows the just-uploaded
+// track once the player re-initializes.
+const videoReloadKey = ref<number>(0);
+const defaultSubtitle = ref<string>("");
+// Key includes the path so navigating between videos always re-mounts
+// the player (video.js can't swap source/tracks in place), and bumps
+// on subtitle upload to rebuild the track list.
+const videoKey = computed(() => `${route.path}#${videoReloadKey.value}`);
+
+const onSubtitleUploaded = async (savedName: string) => {
+  try {
+    // Re-fetch the video resource so its `subtitles` list now includes
+    // the new file (backend re-runs detectSubtitles on read).
+    const fresh = await api.fetch(route.path);
+    fileStore.updateRequest(fresh);
+    // Find the new track's URL among the refreshed subtitle URLs so it
+    // can be auto-enabled — match on the decoded basename.
+    await nextTick();
+    const match = (subtitles.value as string[]).find((u) => {
+      try {
+        const base = decodeURIComponent(
+          new URL(u, window.location.origin).pathname.split("/").pop() ?? ""
+        );
+        return base === savedName;
+      } catch {
+        return false;
+      }
+    });
+    defaultSubtitle.value = match ?? "";
+    // Re-mount the player so it builds tracks (incl. the new default).
+    videoReloadKey.value++;
+    $showSuccess(`Subtitle added: ${savedName}`);
+  } catch (e) {
+    $showError(
+      e instanceof Error ? e : new Error("Couldn't refresh subtitles")
+    );
+  }
+};
 
 // Autoplay defaults off (browsers block it anyway); VideoViewer's
 // internal video.js instance manages playback once the user hits play.
@@ -945,13 +1326,22 @@ const canOpenDirect = computed(
     !!authStore.user?.perm.download
 );
 
-// ── Image film-strip: sibling images in the same directory, in source
-// order. Used only by the ImageViewer; other formats don't get a strip. -
-const imageStrip = computed(() => {
+// ── Film strip: EVERY previewable sibling (in source order), matching the
+// ←/→ navigation set — images render as thumbnails, everything else as a
+// type-icon tile. The strip only ever renders inside ImageViewer, so it's
+// shown only on image previews while still listing the whole set (e.g.
+// photo → text → photo shows three tiles, with the text one as an icon).
+const previewStrip = computed(() => {
   if (!listing.value) return [];
   return listing.value
-    .filter((it) => it.type === "image")
-    .map((it) => ({ name: it.name, url: it.url, path: it.path }));
+    .filter((it) => !it.isDir)
+    .map((it) => ({
+      name: it.name,
+      url: it.url,
+      path: it.path,
+      type: it.type,
+      isImage: it.type === "image",
+    }));
 });
 
 const currentItemUrl = computed(() => {
@@ -965,8 +1355,13 @@ watch(route, () => {
   // Reset per-format metadata so the previous file's stats don't show
   // against the new file during the brief load window.
   videoMeta.value = null;
+  videoPip.value = { supported: false, active: false };
+  defaultSubtitle.value = "";
   audioMeta.value = null;
   imageExif.value = null;
+  epubToc.value = [];
+  epubChapter.value = "";
+  epubCoverUrl.value = "";
   pdfPage.value = 1;
   pdfTotalPages.value = 0;
   updatePreview();
@@ -975,11 +1370,29 @@ watch(route, () => {
 
 onMounted(async () => {
   window.addEventListener("keydown", key);
+  // Capture phase — see navKey's doc comment (beats video.js slider keys).
+  window.addEventListener("keydown", navKey, true);
   listing.value = fileStore.oldReq?.items ?? null;
   updatePreview();
+
+  // Track the app's resolved theme so the EPUB reader follows it while no
+  // per-book override is set. setTheme() rewrites <html class>, so a class
+  // observer is the reliable signal (covers light / dark / system).
+  appThemeObserver = new MutationObserver(() => {
+    appIsDark.value = document.documentElement.classList.contains("dark");
+  });
+  appThemeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
 });
 
-onBeforeUnmount(() => window.removeEventListener("keydown", key));
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", key);
+  window.removeEventListener("keydown", navKey, true);
+  appThemeObserver?.disconnect();
+  appThemeObserver = null;
+});
 
 // ── Actions ──────────────────────────────────────────────────────────
 const deleteFile = () => {
@@ -992,8 +1405,13 @@ const deleteFile = () => {
       if (hasNext.value) {
         next();
       } else if (!hasPrevious.value && !hasNext.value) {
+        // After deleting the last item, fall back to selecting the
+        // previous neighbor so the user lands somewhere sensible in
+        // the listing instead of with an empty selection.
         const nearbyItem = listing.value[Math.max(0, index - 1)];
-        fileStore.preselect = nearbyItem?.path;
+        if (nearbyItem?.path) {
+          fileStore.setPreselect(nearbyItem.path);
+        }
         close();
       } else {
         prev();
@@ -1018,6 +1436,53 @@ const next = () => {
   router.replace({ path: nextLink.value });
 };
 
+/** True only for genuine text-entry targets, where ←/→ should move the
+ *  caret rather than navigate files. Range / checkbox / slider inputs and
+ *  the video-player controls are intentionally NOT text-entry, so arrows
+ *  over them still navigate between files. */
+const isTextEntry = (el: HTMLElement | null): boolean => {
+  if (!el) return false;
+  if (el.isContentEditable) return true;
+  const tag = el.tagName?.toLowerCase();
+  if (tag === "textarea") return true;
+  if (tag === "input") {
+    const type = (el.getAttribute("type") || "text").toLowerCase();
+    return !["range", "checkbox", "radio", "button", "submit", "reset", "file", "color"].includes(type); // prettier-ignore
+  }
+  return false;
+};
+
+/**
+ * ←/→ neighbor-file navigation, bound in the CAPTURE phase on window.
+ *
+ * Capture runs before the focused element's own bubble-phase handlers, so
+ * we beat controls that would otherwise swallow the arrows — notably
+ * video.js's seek / volume sliders, which stopPropagation on arrow keys
+ * when focused (the "arrows occasionally dead in video" bug). We
+ * stopPropagation after navigating so the underlying control doesn't ALSO
+ * act on the key.
+ *
+ * EPUB is handled separately: its book lives in an iframe whose keydowns
+ * never reach this window, so EpubViewer forwards them via
+ * @navigate-prev / @navigate-next instead.
+ */
+const navKey = (event: KeyboardEvent) => {
+  if (layoutStore.currentPrompt !== null) return;
+  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+  if (event.defaultPrevented) return;
+  if (isTextEntry(event.target as HTMLElement | null)) return;
+
+  if (event.key === "ArrowRight" && hasNext.value) {
+    event.preventDefault();
+    event.stopPropagation();
+    next();
+  } else if (event.key === "ArrowLeft" && hasPrevious.value) {
+    event.preventDefault();
+    event.stopPropagation();
+    prev();
+  }
+};
+
 const key = (event: KeyboardEvent) => {
   if (layoutStore.currentPrompt !== null) return;
   // Don't hijack arrows when the user is typing into a form field
@@ -1029,22 +1494,35 @@ const key = (event: KeyboardEvent) => {
     tag === "input" || tag === "textarea" || target?.isContentEditable;
   if (typing) return;
 
-  const isVideo = fileStore.req?.type === "video";
   const k = event.key;
 
-  if (k === "Enter") {
-    if (hasNext.value) next();
-  } else if (k === "ArrowRight") {
-    if (isVideo) return;
-    if (hasNext.value) {
+  // Enter is intentionally a no-op in preview (RC-11): it used to jump to
+  // the next file, but the focus trap now lands focus on the dialog
+  // container (not the close button), so Enter does nothing at all rather
+  // than unexpectedly closing the preview.
+  //
+  // ←/→ neighbor-file navigation lives in navKey (capture phase) so it can
+  // beat child handlers that swallow the arrows (notably video.js's slider
+  // controls). ↑/↓ stay page-nav for paginated docs here, and volume for
+  // video (handled by video.js).
+  if (k === "ArrowDown") {
+    // ↓ = next PAGE in paginated docs (←/→ stay file nav). For EPUB the
+    // book is usually focused in its iframe, where EpubViewer handles the
+    // key directly; this covers the case where focus is outside the iframe.
+    if (isPdf.value) {
       event.preventDefault();
-      next();
+      if (pdfPage.value < pdfTotalPages.value) pdfPage.value++;
+    } else if (isEpub.value) {
+      event.preventDefault();
+      epubViewer.value?.nextPage();
     }
-  } else if (k === "ArrowLeft") {
-    if (isVideo) return;
-    if (hasPrevious.value) {
+  } else if (k === "ArrowUp") {
+    if (isPdf.value) {
       event.preventDefault();
-      prev();
+      if (pdfPage.value > 1) pdfPage.value--;
+    } else if (isEpub.value) {
+      event.preventDefault();
+      epubViewer.value?.prevPage();
     }
   } else if (k === "Escape") {
     close();
@@ -1057,6 +1535,19 @@ const updatePreview = async () => {
   // and VideoViewer manage their own playback state now.
   const dirs = route.fullPath.split("/");
   name.value = decodeURIComponent(dirs[dirs.length - 1]);
+
+  // ── Recents tracking (v1.3 S3-1) ──────────────────────────────────
+  // Every preview open promotes the file to the front of the recents
+  // list. Folder navigation is intentionally NOT tracked — locked
+  // decision: recents = "what was I working on", not breadcrumb noise.
+  // The composable handles MRU dedup + cap-at-50 + debounced persist.
+  if (fileStore.req && !fileStore.req.isDir) {
+    recents.track({
+      path: fileStore.req.path,
+      name: fileStore.req.name,
+      isDir: false,
+    });
+  }
 
   if (isCsv.value && fileStore.req) {
     csvContent.value = "";
@@ -1085,6 +1576,13 @@ const updatePreview = async () => {
   // Range request internally so we don't download the full image.
   if (fileStore.req?.type === "image" && previewUrl.value) {
     void loadImageExif(previewUrl.value);
+  }
+
+  // EPUB: resume at the saved per-book position (S5-6). Set BEFORE the
+  // viewer renders with the new src so vue-reader opens at the stored
+  // CFI; defaults to 0 (start) for a book never opened before.
+  if (isEpub.value && fileStore.req?.path) {
+    location.value = epubProgress.get(fileStore.req.path);
   }
 
   if (!listing.value) {
@@ -1147,6 +1645,47 @@ const close = () => {
   const uri = url.removeLastDir(route.path) + "/";
   router.push({ path: uri });
 };
+
+// ── S7-3: touch swipe navigation in the preview ──────────────────────
+// Horizontal swipe = prev/next, mirroring the arrow-key rules; plus a
+// swipe-down-to-close on a fit image (the one viewer with nothing to
+// scroll, so a downward fling can't be mistaken for a scroll gesture).
+// Touch-only via the shared gate; vueuse's useSwipe is passive, so it
+// never blocks native scroll / pan / pinch.
+const stageEl = ref<HTMLElement | null>(null);
+const isTouchDevice = useTouchDevice();
+
+// Horizontal nav: not on video/audio (their own transport gestures own
+// horizontal drags), and not while an image or PDF is zoomed in (then a
+// horizontal drag is a pan). `fitToScreen` is only ever turned off by the
+// image/PDF zoom controls, so it doubles as the "not zoomed" signal.
+const canSwipeNavigate = computed(() => {
+  const t = fileStore.req?.type;
+  if (t === "video" || t === "audio") return false;
+  return fitToScreen.value;
+});
+// Swipe-down-to-close only on a fit image — every other viewer either
+// scrolls (text / PDF / CSV / EPUB) or owns its own gestures, where a
+// downward fling must not be hijacked into a dismiss.
+const canSwipeClose = computed(
+  () => fileStore.req?.type === "image" && fitToScreen.value
+);
+
+const { lengthY } = useSwipe(stageEl, {
+  threshold: 60,
+  onSwipeEnd(_e, direction) {
+    if (!isTouchDevice.value || layoutStore.currentPrompt !== null) return;
+
+    if (direction === "left" || direction === "right") {
+      if (!canSwipeNavigate.value) return;
+      if (direction === "left" && hasNext.value) next();
+      else if (direction === "right" && hasPrevious.value) prev();
+    } else if (direction === "down" && canSwipeClose.value) {
+      // Require a deliberate downward fling so a small drag doesn't close.
+      if (Math.abs(lengthY.value) > 90) close();
+    }
+  },
+});
 </script>
 
 <style scoped>
@@ -1257,12 +1796,12 @@ html.dark .preview-blob__icon--zip {
 }
 
 .preview-blob__btn--primary {
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   border: 1px solid var(--color-accent, #5e6ad2);
   color: white;
 }
 .preview-blob__btn--primary:hover {
-  background: var(--color-accent-strong, #4f5ac4);
+  background: var(--accent-gradient-strong);
 }
 
 .preview-blob__btn--ghost {
@@ -1452,5 +1991,73 @@ html.dark .preview-info__artwork {
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.25),
     0 8px 24px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* ── EPUB cover art ──────────────────────────────────────────────────
+   Shown above the chapter list in the details rail. Constrained so a
+   tall cover doesn't dominate the rail; soft card chrome to match. */
+.preview-epub-cover-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 16px;
+}
+.preview-epub-cover {
+  max-width: 100%;
+  max-height: 240px;
+  width: auto;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.4);
+  background: var(--color-elevated, #f4f4f5);
+}
+
+/* ── EPUB chapter list (S5-5) ────────────────────────────────────────
+   Authored in this component's template (passed into the info-rail's
+   format-section slot), so Preview's scoped styles match it directly.
+   Capped height + scroll so a long book doesn't push the rest of the
+   rail off-screen. */
+.preview-epub-toc {
+  display: flex;
+  flex-direction: column;
+  max-height: 320px;
+  overflow-y: auto;
+  margin: 0 -6px;
+  scrollbar-width: thin;
+}
+.preview-epub-toc__item {
+  display: block;
+  width: 100%;
+  /* Don't let the column flex compress rows when the chapter list overflows
+     its max-height — without this they shrink below their text height and the
+     labels overlap. They scroll instead (the nav has overflow-y: auto). */
+  flex-shrink: 0;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink-2, #52525b);
+  font-size: 12.5px;
+  line-height: 1.4;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+.preview-epub-toc__item:hover {
+  background: var(--color-hover, rgba(24, 24, 27, 0.045));
+  color: var(--color-ink-1, #18181b);
+}
+.preview-epub-toc__item.is-active {
+  background: var(--color-accent-soft, rgba(94, 106, 210, 0.1));
+  color: var(--color-accent, #5e6ad2);
+  font-weight: 600;
+}
+.preview-epub-toc__item:focus-visible {
+  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline-offset: -2px;
 }
 </style>

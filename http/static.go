@@ -46,11 +46,23 @@ func handleWithStaticData(w http.ResponseWriter, _ *http.Request, d *data, fSys 
 		"ReCaptcha":             false,
 		"Theme":                 d.settings.Branding.Theme,
 		"EnableThumbs":          d.server.EnableThumbnails,
+		// S6-2: only advertise video thumbnails when the global thumbnail
+		// setting is on AND ffmpeg is actually available, so the frontend
+		// requests them only when they can be served.
+		"EnableVideoThumbnails": d.server.EnableThumbnails && videoThumbnailsEnabled(),
+		// Cover-art thumbnails: audio (album art) + epub (OPF cover) need no
+		// external binary, so they ride EnableThumbs directly. PDF needs
+		// pdftoppm (poppler) — advertise only when it's actually present.
+		"EnablePdfThumbnails": d.server.EnableThumbnails && pdfThumbnailsEnabled(),
 		"ResizePreview":         d.server.ResizePreview,
-		"EnableExec":            d.server.EnableExec,
-		"TusSettings":           d.settings.Tus,
-		"HideLoginButton":       d.settings.HideLoginButton,
-		"UnzipEnabled":          d.server.UnzipEnabled,
+		// #3: advertise on-demand transcoding only when ffmpeg is available,
+		// so the player attempts the transcode fallback only when it can be
+		// served (otherwise it goes straight to the download card).
+		"TranscodeEnabled": videoTranscodeEnabled(),
+		"EnableExec":       d.server.EnableExec,
+		"TusSettings":      d.settings.Tus,
+		"HideLoginButton":  d.settings.HideLoginButton,
+		"UnzipEnabled":     d.server.UnzipEnabled,
 	}
 
 	if d.settings.Branding.Files != "" {
@@ -104,6 +116,33 @@ func handleWithStaticData(w http.ResponseWriter, _ *http.Request, d *data, fSys 
 	return 0, nil
 }
 
+// serviceWorkerHandler serves the offline-shell service worker (v1.3
+// S6-4) from the embedded assets at the application root. Serving it at
+// the root (rather than under /static) is what gives its scope authority
+// over the whole SPA — navigations AND /static assets — so the app can
+// cold-boot offline. `no-cache` ensures a new build's worker is picked up
+// promptly instead of being pinned by the HTTP cache.
+func serviceWorkerHandler(assetsFs fs.FS) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "", http.StatusNotFound)
+			return
+		}
+		f, err := assetsFs.Open("service-worker.js")
+		if err != nil {
+			http.Error(w, "", http.StatusNotFound)
+			return
+		}
+		defer f.Close()
+
+		w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-cache")
+		if _, err := io.Copy(w, f); err != nil {
+			log.Printf("could not serve service worker: %v", err)
+		}
+	})
+}
+
 func getStaticHandlers(store *storage.Storage, server *settings.Server, assetsFs fs.FS) (index, static http.Handler) {
 	index = handle(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 		if r.Method != http.MethodGet {
@@ -112,7 +151,7 @@ func getStaticHandlers(store *storage.Storage, server *settings.Server, assetsFs
 
 		w.Header().Set("x-xss-protection", "1; mode=block")
 		return handleWithStaticData(w, r, d, assetsFs, "public/index.html", "text/html; charset=utf-8")
-	}, "", store, server)
+	}, "", store, nil, server)
 
 	static = handle(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 		if r.Method != http.MethodGet {
@@ -176,7 +215,7 @@ func getStaticHandlers(store *storage.Storage, server *settings.Server, assetsFs
 		}
 
 		return 0, nil
-	}, "/static/", store, server)
+	}, "/static/", store, nil, server)
 
 	return index, static
 }

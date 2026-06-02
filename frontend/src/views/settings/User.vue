@@ -306,13 +306,13 @@ const send = async (currentPassword: string) => {
 }
 
 .user-edit__btn--primary {
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   border-color: var(--color-accent, #5e6ad2);
   color: white;
 }
 
 .user-edit__btn--primary:hover:not(:disabled) {
-  background: var(--color-accent-strong, #4f5ac4);
+  background: var(--accent-gradient-strong);
   border-color: var(--color-accent-strong, #4f5ac4);
 }
 

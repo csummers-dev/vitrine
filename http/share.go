@@ -15,6 +15,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	fberrors "github.com/filebrowser/filebrowser/v2/errors"
+	"github.com/filebrowser/filebrowser/v2/events"
 	"github.com/filebrowser/filebrowser/v2/share"
 )
 
@@ -95,6 +96,13 @@ var shareDeleteHandler = withPermShare(func(_ http.ResponseWriter, r *http.Reque
 	}
 
 	err = d.store.Share.Delete(hash)
+	if err == nil {
+		events.Publish(events.ShareRevoked{
+			Base:    eventBase(r, d),
+			Path:    link.Path,
+			ShareID: hash,
+		})
+	}
 	return errToStatus(err), err
 })
 
@@ -165,6 +173,13 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 	if err := d.store.Share.Save(s); err != nil {
 		return http.StatusInternalServerError, err
 	}
+
+	events.Publish(events.ShareGranted{
+		Base:    eventBase(r, d),
+		Path:    s.Path,
+		ShareID: s.Hash,
+		HasPwd:  len(s.PasswordHash) > 0,
+	})
 
 	return renderJSON(w, r, s)
 })

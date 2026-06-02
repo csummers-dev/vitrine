@@ -35,6 +35,18 @@
       >
         <Toggle v-model="dateFormat" @update:model-value="autoSave" />
       </SettingsRow>
+      <!-- v1.3 S2-5: Inline tag visibility on file rows. Persisted via
+           the usePreferences composable (S1-2), separately from the
+           legacy user-fields path — no autoSave needed. -->
+      <SettingsRow
+        label="Show tags on file rows"
+        description="When off, file tags only appear in the details sidebar — not inline on each row."
+      >
+        <Toggle
+          v-model="showTagsOnRows"
+          @update:model-value="onShowTagsChange"
+        />
+      </SettingsRow>
     </SettingsSection>
 
     <!-- ── Language ─────────────────────────────────────────────────── -->
@@ -66,20 +78,24 @@
           aria-label="Theme"
         />
       </SettingsRow>
-    </SettingsSection>
 
-    <!-- ── Editor theme ─────────────────────────────────────────────── -->
-    <SettingsSection
-      :title="t('settings.aceEditorTheme')"
-      description="Color theme used when editing files inline."
-    >
-      <SettingsRow stacked label="">
-        <AceEditorTheme
-          id="aceTheme"
-          class="settings-select"
-          v-model:aceEditorTheme="aceEditorTheme"
-          @update:aceEditorTheme="autoSave"
+      <!-- Ambient accent-mesh background (mirrors the login screen). Per-user,
+           syncs to the account; "Off" disables it entirely. -->
+      <SettingsRow
+        label="Background gradient"
+        description="A soft wash of all six accent colors behind the app, like the login screen. Syncs to your account."
+      >
+        <SegmentedControl
+          v-model="bgIntensity"
+          :options="bgIntensityOptions"
+          aria-label="Background gradient intensity"
         />
+      </SettingsRow>
+      <SettingsRow
+        label="Translucent surfaces"
+        description="Let the background gradient glow through panels, toolbars, and the sidebar."
+      >
+        <Toggle v-model="bgTranslucent" />
       </SettingsRow>
     </SettingsSection>
 
@@ -174,13 +190,17 @@ import SettingsSection from "@/components/settings/SettingsSection.vue";
 import SettingsRow from "@/components/settings/SettingsRow.vue";
 import Toggle from "@/components/settings/Toggle.vue";
 import Languages from "@/components/settings/Languages.vue";
-import AceEditorTheme from "@/components/settings/AceEditorTheme.vue";
 import SegmentedControl from "@/components/SegmentedControl.vue";
 import Icon from "@/components/Icon.vue";
 import {
   useThemePreference,
   type ThemePreference,
 } from "@/composables/useThemePreference";
+import { usePreferences } from "@/composables/usePreferences";
+import {
+  useBackgroundGradient,
+  type BgIntensity,
+} from "@/composables/useBackgroundGradient";
 
 const { t } = useI18n();
 const authStore = useAuthStore();
@@ -195,7 +215,19 @@ const singleClick = ref(false);
 const redirectAfterCopyMove = ref(false);
 const dateFormat = ref(false);
 const locale = ref<string>("");
-const aceEditorTheme = ref<string>("");
+
+// v1.3 S2-5: inline tag visibility on file rows. Persists via the
+// usePreferences composable rather than the legacy users.update path
+// — keeps the surface-area split clean (server-validated fields vs.
+// opaque UI prefs bag).
+const prefs = usePreferences();
+const showTagsOnRows = ref<boolean>(
+  prefs.get<boolean>("tags.showOnRows", true)
+);
+
+const onShowTagsChange = (val: boolean) => {
+  void prefs.set("tags.showOnRows", val);
+};
 
 // ── Appearance (theme preference) ────────────────────────────────────
 const themePrefStore = useThemePreference();
@@ -209,6 +241,20 @@ const themeOptions: { value: ThemePreference; label: string; icon: string }[] =
     { value: "dark", label: "Dark", icon: "moon" },
     { value: "system", label: "System", icon: "monitor" },
   ];
+
+// Ambient accent-mesh app background (per-user; same gradient as the login
+// screen). Singleton composable shared with the app-wide bootstrap; the
+// computed setters persist to the prefs bag + apply live.
+const bg = useBackgroundGradient();
+const bgIntensityOptions = bg.intensities;
+const bgIntensity = computed<BgIntensity>({
+  get: () => bg.intensity.value,
+  set: (v) => bg.setIntensity(v),
+});
+const bgTranslucent = computed<boolean>({
+  get: () => bg.translucent.value,
+  set: (v) => bg.setTranslucent(v),
+});
 
 // ── Password (explicit save) ─────────────────────────────────────────
 const password = ref<string>("");
@@ -268,7 +314,6 @@ onMounted(() => {
     singleClick.value = authStore.user.singleClick;
     redirectAfterCopyMove.value = authStore.user.redirectAfterCopyMove;
     dateFormat.value = authStore.user.dateFormat;
-    aceEditorTheme.value = authStore.user.aceEditorTheme;
   }
   isCurrentPasswordRequired.value = authMethod === "json";
   layoutStore.loading = false;
@@ -281,7 +326,6 @@ const PREF_KEYS = [
   "singleClick",
   "redirectAfterCopyMove",
   "dateFormat",
-  "aceEditorTheme",
 ];
 
 const autoSave = () => {
@@ -301,7 +345,6 @@ const autoSave = () => {
         singleClick: singleClick.value,
         redirectAfterCopyMove: redirectAfterCopyMove.value,
         dateFormat: dateFormat.value,
-        aceEditorTheme: aceEditorTheme.value,
       };
       await api.update(data, PREF_KEYS);
       authStore.updateUser(data);
@@ -338,10 +381,10 @@ const updatePassword = async () => {
 </script>
 
 <style scoped>
-/* No-op layout helper for Languages / AceEditorTheme selects. The
-   chrome (height, padding, border, chevron, appearance:none) lives in
-   global `.fb-select` (frontend/src/css/styles.css) which both
-   components already apply via class="fb-select".
+/* No-op layout helper for the Languages select. The chrome (height,
+   padding, border, chevron, appearance:none) lives in global
+   `.fb-select` (frontend/src/css/styles.css) which the select
+   already applies via class="fb-select".
    Previously this rule re-declared a `background: var(...)` shorthand
    that *erased* `.fb-select`'s background-image (the chevron) and
    reduced the right padding, causing the native select to render
@@ -411,13 +454,13 @@ const updatePassword = async () => {
 }
 
 .settings-btn--primary {
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   border-color: var(--color-accent, #5e6ad2);
   color: white;
 }
 
 .settings-btn--primary:hover:not(:disabled) {
-  background: var(--color-accent-strong, #4f5ac4);
+  background: var(--accent-gradient-strong);
   border-color: var(--color-accent-strong, #4f5ac4);
 }
 
@@ -441,7 +484,7 @@ const updatePassword = async () => {
   font-weight: 500;
   /* Saving state uses the app accent (lilac). Saved keeps the calm
      green; error keeps red — both still readable on the same chrome. */
-  background: var(--color-accent, #5e6ad2);
+  background: var(--accent-gradient);
   color: #fff;
   box-shadow: 0 8px 24px -8px rgba(94, 106, 210, 0.45);
 }

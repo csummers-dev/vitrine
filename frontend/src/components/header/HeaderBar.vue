@@ -1,6 +1,6 @@
 <template>
   <header
-    class="h-12 border-b border-line bg-canvas flex items-center px-3 gap-2 shrink-0 sticky top-0 z-10"
+    class="header-bar h-12 border-b border-line bg-canvas flex items-center px-3 gap-2 shrink-0 sticky top-0 z-10"
   >
     <!-- Hamburger: opens the sidebar drawer on mobile. Only shown below
          sm where the inline sidebar is hidden. -->

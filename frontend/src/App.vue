@@ -3,6 +3,13 @@
     <router-view></router-view>
     <CommandPalette v-if="isLoggedIn" />
     <ShortcutsOverlay v-if="isLoggedIn" />
+    <!-- Favorites display-title editor, mounted globally so it can open from
+         the always-present sidebar context menu (and the file listing). Driven
+         by the useFavoriteTitleDialog singleton; renders its own modal scrim. -->
+    <FavoriteTitleDialog v-if="isLoggedIn" />
+    <!-- S6-4: global offline indicator — shown on every surface,
+         including login, independent of auth + the service worker. -->
+    <OfflineBanner />
   </div>
 </template>
 
@@ -17,8 +24,10 @@ import { useCommandPalette } from "@/composables/useCommandPalette";
 import { useShortcutsOverlay } from "@/composables/useShortcutsOverlay";
 import { installShortcuts, useShortcuts } from "@/composables/useShortcuts";
 import { useThemeBootstrap } from "@/composables/useThemePreference";
+import { useBackgroundGradientBootstrap } from "@/composables/useBackgroundGradient";
 import CommandPalette from "@/components/CommandPalette.vue";
 import ShortcutsOverlay from "@/components/ShortcutsOverlay.vue";
+import FavoriteTitleDialog from "@/components/files/FavoriteTitleDialog.vue";
 
 const { locale } = useI18n();
 const router = useRouter();
@@ -33,6 +42,12 @@ const { register } = useShortcuts();
 // preference, applies it, and starts watching the OS color-scheme setting
 // so "System" updates live without a refresh.
 useThemeBootstrap();
+
+// Apply the user's saved ambient accent-mesh background prefs (intensity +
+// translucent sidebar). Sets data-attributes on <html>; styles.css does the
+// rest. Per-user, prefs bag — defaults match the CSS defaults (subtle +
+// translucent) so the common case has no flash before this runs.
+useBackgroundGradientBootstrap();
 
 // Install the global shortcut dispatcher (window-level listener). Idempotent.
 installShortcuts();
