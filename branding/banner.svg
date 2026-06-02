@@ -1,17 +1,24 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg width="100%" height="100%" viewBox="0 0 2560 531" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
-    <g id="prefix__Layer_x0020_1" transform="matrix(0.24708,0,0,0.246977,0,0)">
+<svg width="100%" height="100%" viewBox="0 0 5120 1062" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g id="prefix__Layer_x0020_1" transform="matrix(0.49416,0,0,0.493954,0,0)">
         <g id="prefix___668933328">
             <g id="prefix__text3901" transform="matrix(4.194355,0,0,4.194355,2299.918234,1329.348207)">
-                <text x="0px" y="0px" style="font-family:'Helvetica-Bold', 'Helvetica';font-weight:700;font-size:216px;fill:rgb(85,223,95);">ﬁlebrowser</text>
+                <text x="0px" y="0px" style="font-family:'Helvetica-Bold', 'Helvetica';font-weight:700;font-size:216px;fill:rgb(94,106,210);">ﬁlebrowser</text>
                 <g transform="matrix(1,0,0,1,1212.363,0)">
-                    <text x="0px" y="0px" style="font-family:'Helvetica-Bold', 'Helvetica';font-weight:700;font-size:216px;fill:rgb(94,106,210);">pretty</text>
+                    <g>
+                        <text x="0px" y="0px" style="font-family:'Helvetica-Bold', 'Helvetica';font-weight:700;font-size:216px;fill:rgb(94,106,210);">p</text>
+                        <text x="131.941px" y="0px" style="font-family:'Helvetica-Bold', 'Helvetica';font-weight:700;font-size:216px;fill:rgb(59,130,246);">r</text>
+                        <text x="216px" y="0px" style="font-family:'Helvetica-Bold', 'Helvetica';font-weight:700;font-size:216px;fill:rgb(13,148,136);">e</text>
+                        <text x="336.129px" y="0px" style="font-family:'Helvetica-Bold', 'Helvetica';font-weight:700;font-size:216px;fill:rgb(22,163,74);">t</text>
+                        <text x="408.059px" y="0px" style="font-family:'Helvetica-Bold', 'Helvetica';font-weight:700;font-size:216px;fill:rgb(217,119,6);">t</text>
+                        <text x="479.988px" y="0px" style="font-family:'Helvetica-Bold', 'Helvetica';font-weight:700;font-size:216px;fill:rgb(225,29,72);">y</text>
+                    </g>
                 </g>
             </g>
         </g>
-        <g transform="matrix(1.875294,0,0,1.876081,-9685.875804,-9698.24765)">
-            <use xlink:href="#_Image1" x="5193" y="5190" width="1099px" height="1107px"/>
+        <g id="_Image1_" serif:id="_Image1" transform="matrix(1.875294,0,0,1.876081,52.525938,38.61274)">
+            <use xlink:href="#_Image1" x="0" y="0" width="1099px" height="1107px"/>
         </g>
     </g>
     <defs>
