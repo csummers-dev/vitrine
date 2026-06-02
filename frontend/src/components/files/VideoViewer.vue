@@ -43,12 +43,21 @@
         :options="options"
         :default-subtitle="defaultSubtitle"
       />
-      <!-- Shown while the server prepares a transcoded stream after the
-           native source failed (remux is near-instant; full transcode of
-           a long file takes longer). -->
+      <!-- Shown while the server prepares a transcoded stream (this format
+           can't be decoded natively). A remux is near-instant; a full
+           re-encode of a long/HEVC file takes minutes — the elapsed timer
+           keeps it from looking hung. -->
       <div v-if="preparing" class="video-viewer__preparing">
         <Icon name="loader-circle" :size="22" class="video-viewer__spin" />
-        <span>Preparing video…</span>
+        <span class="video-viewer__preparing-title">
+          Converting video for playback…
+        </span>
+        <span class="video-viewer__preparing-sub">
+          Your browser can’t play this format directly, so the server is
+          transcoding it. Large or high-efficiency (HEVC/4K) files can take a
+          few minutes — it’ll start on its own when ready.
+        </span>
+        <span class="video-viewer__preparing-timer">{{ elapsedLabel }}</span>
       </div>
     </div>
   </div>
@@ -96,6 +105,41 @@ const useTranscode = ref(false);
 // transcoded stream reports loadedmetadata.
 const preparing = ref(false);
 const failed = ref(false);
+
+// Elapsed-time readout for the transcode overlay. A full re-encode blocks
+// until ffmpeg finishes the whole file (the endpoint uses +faststart, so
+// nothing plays until it's done), which can be minutes — a ticking timer
+// signals "still working" instead of "frozen".
+const elapsedSec = ref(0);
+let prepTimer: ReturnType<typeof setInterval> | null = null;
+let prepStartedAt = 0;
+
+const stopPrepTimer = () => {
+  if (prepTimer !== null) {
+    clearInterval(prepTimer);
+    prepTimer = null;
+  }
+};
+const startPrepTimer = () => {
+  stopPrepTimer();
+  prepStartedAt = Date.now();
+  elapsedSec.value = 0;
+  prepTimer = setInterval(() => {
+    elapsedSec.value = Math.floor((Date.now() - prepStartedAt) / 1000);
+  }, 1000);
+};
+
+const elapsedLabel = computed(() => {
+  const m = Math.floor(elapsedSec.value / 60);
+  const s = elapsedSec.value % 60;
+  return `${m}:${String(s).padStart(2, "0")} elapsed`;
+});
+
+// Run the timer exactly while the preparing overlay is visible.
+watch(preparing, (now) => {
+  if (now) startPrepTimer();
+  else stopPrepTimer();
+});
 
 // Are we (about to be) playing the transcoded stream? True either because
 // the container is known-unplayable (preferTranscode) or because the native
@@ -238,6 +282,7 @@ watch(effectiveSource, () => requestAnimationFrame(attach));
 onBeforeUnmount(() => {
   detach();
   video = null;
+  stopPrepTimer();
 });
 </script>
 
@@ -295,11 +340,30 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  background: rgba(10, 10, 10, 0.72);
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+  background: rgba(10, 10, 10, 0.78);
   color: #fff;
   font-size: 13px;
   z-index: 2;
+}
+.video-viewer__preparing-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+.video-viewer__preparing-sub {
+  max-width: 340px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.66);
+}
+.video-viewer__preparing-timer {
+  margin-top: 2px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.5);
 }
 .video-viewer__spin {
   animation: video-viewer-spin 0.9s linear infinite;

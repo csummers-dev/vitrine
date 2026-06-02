@@ -13,7 +13,7 @@
 </div>
 
 <p align="center">
-  <img src="docs/screenshots/hero.png" width="92%" alt="filebrowser pretty — gallery view with the details panel open" />
+  <img src="docs/screenshots/hero.png" width="92%" alt="filebrowser pretty — list view with the details panel open" />
 </p>
 
 ---
@@ -158,9 +158,10 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/bulk-select.png" width="49%" alt="Multi-select with the floating bulk action bar" />
-  <img src="docs/screenshots/context-menu.png" width="49%" alt="Right-click context menu on a file row" />
-  <br/><em>Multi-select bulk actions · right-click context menus</em>
+  <img src="docs/screenshots/bulk-select.png" width="33%" alt="Multi-select with the floating bulk action bar" />
+  <img src="docs/screenshots/context-menu.png" width="33%" alt="Right-click context menu on a file row" />
+  <img src="docs/screenshots/lasso-bulk-select.png" width="33%" alt="Multi-select with lasso select" />
+  <br/><em>Multi-select bulk actions · right-click context menus · lasso select</em>
 </p>
 
 <p align="center">

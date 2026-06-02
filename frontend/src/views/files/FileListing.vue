@@ -816,7 +816,6 @@ import { applySecondarySort } from "@/utils/secondarySort";
 import { users, files as api } from "@/api";
 import { enableExec, unzipEnabled } from "@/utils/constants";
 import { isExtractable } from "@/utils/archive";
-import { filesize } from "@/utils";
 import * as upload from "@/utils/upload";
 import { throttle } from "lodash-es";
 import { Base64 } from "js-base64";
@@ -1526,9 +1525,11 @@ const folderMeta = computed(() => {
   const parts: string[] = [];
   const totalItems = (req.numDirs ?? 0) + (req.numFiles ?? 0);
   parts.push(`${totalItems} ${totalItems === 1 ? "item" : "items"}`);
-  if (req.size) {
-    parts.push(filesize(req.size));
-  }
+  // Deliberately NOT showing a folder size: the filesystem only gives us the
+  // directory's own inode size (a handful of bytes), not the recursive total
+  // of its contents — which was misleading. Computing the real total means a
+  // du-style walk of the whole subtree on every open, which isn't worth the
+  // latency. Per-file sizes still show on the rows.
   if (req.modified) {
     parts.push(`last updated ${dayjs(req.modified).fromNow()}`);
   }
