@@ -15,6 +15,10 @@
           aria-modal="true"
           tabindex="-1"
           @click.stop
+          @touchstart.passive="onPanelTouchStart"
+          @touchmove.passive="onPanelTouchMove"
+          @touchend.passive="onPanelTouchEnd"
+          @touchcancel.passive="onPanelTouchEnd"
         >
           <slot />
         </aside>
@@ -44,6 +48,50 @@ const emit = defineEmits<{
 
 const widthClass = computed(() => "");
 const onCancel = () => emit("cancel");
+
+// ── Swipe-to-close ──────────────────────────────────────────────────────
+// Drag the open panel back toward its own edge (left drawer → swipe left;
+// right drawer → swipe right) to dismiss it. Requires a predominantly
+// horizontal gesture past a threshold so it never fires on a vertical scroll
+// of the drawer's content. Listeners are passive (we never preventDefault),
+// so scrolling the favorites / recents lists stays smooth.
+const SWIPE_CLOSE = 56;
+let cStartX = 0;
+let cStartY = 0;
+let cTracking = false;
+
+const onPanelTouchStart = (e: TouchEvent) => {
+  const t = e.touches[0];
+  if (!t) {
+    cTracking = false;
+    return;
+  }
+  cStartX = t.clientX;
+  cStartY = t.clientY;
+  cTracking = true;
+};
+
+const onPanelTouchMove = (e: TouchEvent) => {
+  if (!cTracking) return;
+  const t = e.touches[0];
+  if (!t) return;
+  const dx = t.clientX - cStartX;
+  const dy = t.clientY - cStartY;
+  // Vertical intent → it's a scroll, not a dismiss.
+  if (Math.abs(dx) < Math.abs(dy)) {
+    cTracking = false;
+    return;
+  }
+  const closing = props.side === "left" ? dx < -SWIPE_CLOSE : dx > SWIPE_CLOSE;
+  if (closing) {
+    cTracking = false;
+    onCancel();
+  }
+};
+
+const onPanelTouchEnd = () => {
+  cTracking = false;
+};
 
 // Focus trap: keeps Tab/Shift+Tab cycling inside the drawer while open
 // and restores focus to the trigger (hamburger button) on close.

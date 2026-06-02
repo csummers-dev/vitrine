@@ -58,13 +58,17 @@ const parts = computed<{ text: string; accent: boolean; chars: string[] }[]>(
 
 <style scoped>
 .brand-name {
-  /* Inherits everything from the parent text; no own chrome. */
+  /* The wordmark is always bold wherever it's printed — sidebar, drawer, login
+     title, and inline within sentences ("Sign in to filebrowser pretty"). It
+     still inherits size / color / family from the surrounding text. */
   display: inline;
+  font-weight: 700;
 }
 
-/* Per-letter accent. Weight inherits from the surrounding text so the colored
-   letters don't introduce a visual "bump" in the type rhythm. Light values
-   below; the html.dark overrides lift them for the dark canvas. */
+/* Per-letter accent. Weight inherits from `.brand-name` (bold) so the colored
+   letters stay in the same weight as the rest of the wordmark — no visual
+   "bump" in the type rhythm. Light values below; the html.dark overrides lift
+   them for the dark canvas. */
 .brand-name__ltr {
   font-weight: inherit;
 }

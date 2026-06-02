@@ -1,8 +1,7 @@
 <template>
   <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
     <header-bar>
-      <breadcrumbs base="/files" />
-      <div class="flex-1"></div>
+      <breadcrumbs base="/files" class="flex-1 min-w-0" />
       <search />
 
       <template #actions>

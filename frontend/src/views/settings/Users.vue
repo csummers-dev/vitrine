@@ -1,6 +1,6 @@
 <template>
   <SettingsPage
-    title="User management"
+    title="User Management"
     icon="users"
     accent="var(--c-amber)"
     description="Add and manage accounts that can sign in to this filebrowser instance."

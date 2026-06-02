@@ -206,6 +206,15 @@ async function initAuth() {
 const router = createRouter({
   history: createWebHistory(baseURL),
   routes,
+  // Reset the window scroll to the top on navigation. The file listings scroll
+  // inside their own containers (not the window), so the window is normally at
+  // 0 already — but a tall, scrollable page like the login screen on mobile can
+  // leave the window scrolled down, and without this that position carried into
+  // /files on login, making the app look pushed down below the header. Saved
+  // positions (browser back/forward) are still honored.
+  scrollBehavior(_to, _from, savedPosition) {
+    return savedPosition || { top: 0 };
+  },
 });
 
 // Active-upload navigation guard (H8). The browser-native

@@ -526,13 +526,19 @@
   width: 100%;
 }
 
-/* ── B. Tile ─────────────────────────────────────────────── */
+/* ── B. Tile (media card) ────────────────────────────────────
+   A full-bleed media block (photo thumbnail or a tinted "app icon") sits at
+   the top of each card with a padded name + meta footer below — a cleaner,
+   genuinely previewable grid, versus the old tiny-icon-in-a-corner card.
+   padding:0 lets the media reach the card edges (the footer adds its own);
+   overflow:hidden clips the media + corner controls to the rounded corners. */
 #listing.mosaic .item {
   display: block;
   width: 100%;
   box-sizing: border-box;
   position: relative;
-  padding: 12px;
+  padding: 0;
+  overflow: hidden;
   background: var(--color-surface, var(--surfacePrimary));
   border: 1px solid var(--color-line, var(--borderPrimary));
   border-radius: var(--radius-md, 8px);
@@ -580,11 +586,26 @@ html.dark #listing.mosaic .item:hover {
   opacity: 1;
 }
 
-/* Touch devices have no hover, and a row tap now OPENS the item — so the
-   checkbox is the only way to build a multi-selection. Surface it
+/* Touch devices have no hover, and on touch a tap opens folders / selects
+   files — so the checkbox is the way to build a multi-selection. Surface it
    permanently on touch (grid/gallery) so it's a visible, tappable target. */
 #listing.mosaic.is-touch .item__select {
   opacity: 1;
+}
+
+/* Grid checkbox sits on the media block now (not over the footer text — that
+   was the reported near-overlap on mobile). Frost it so it reads over both
+   tinted icons and photo thumbnails, mirroring the action button treatment. */
+#listing.mosaic:not(.gallery) .item__select .item__checkbox {
+  background: color-mix(in srgb, var(--color-surface, #fff) 82%, transparent);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+#listing.mosaic:not(.gallery) .item__select .item__checkbox--checked {
+  background: var(--color-accent, var(--accent));
+  border-color: var(--color-accent, var(--accent));
 }
 
 #listing.mosaic .item__actions-btn {
@@ -608,57 +629,75 @@ html.dark #listing.mosaic .item:hover {
   color: var(--color-ink-1, var(--textSecondary));
 }
 
-/* ── Name wrapper (holds C + D) ──────────────────────────── */
+/* ── Name wrapper (holds the media block + the footer name) ── */
 #listing.mosaic .item__name {
   display: block;
   width: 100%;
-  margin-top: 12px;
+  margin: 0;
 }
 
-/* ── C. Icon squircle (40×40, SVG centered inside) ───────── */
-#listing.mosaic .item__icon {
-  display: block;
+/* ── C. Media block: full tile width, fixed 16:10, content centered ──
+   Images / video / audio / pdf thumbnails cover it; other files + folders
+   show their tinted icon centered on the block (the colored bg comes from
+   iconColorClass). Scoped :not(.gallery) so the gallery's full-bleed 4:3
+   icon rules are left entirely untouched. */
+#listing.mosaic:not(.gallery) .item__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  height: auto;
+  margin: 0;
+  border-radius: 0;
+  overflow: hidden;
+  /* The shared squircle drop-shadow would cast a faint line between the media
+     and the footer; the card border + footer already provide the structure. */
+  box-shadow: none;
+}
+
+#listing.mosaic:not(.gallery) .item__icon svg {
   width: 40px;
   height: 40px;
-  margin-bottom: 8px;
-  border-radius: var(--radius-sm, 6px);
-  overflow: hidden;
-  text-align: center;
-  line-height: 40px; /* vertical-center inline-block SVG */
 }
 
-#listing.mosaic .item__icon svg {
-  width: 20px;
-  height: 20px;
-  display: inline-block;
-  vertical-align: middle;
-}
-
-#listing.mosaic .item__icon img {
+#listing.mosaic:not(.gallery) .item__icon img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-/* ── D. Filename (fills tile content width, truncates) ───── */
-#listing.mosaic .item__name-text {
+/* ── D. Footer: filename (padded text block under the media) ── */
+#listing.mosaic:not(.gallery) .item__name-stack {
+  display: block;
+  padding: 8px 10px 0;
+}
+
+#listing.mosaic:not(.gallery) .item__name-text {
   display: block;
   width: 100%;
   font-size: 13px;
   font-weight: 500;
-  line-height: 1.2;
+  line-height: 1.3;
   color: var(--color-ink-1, var(--textSecondary));
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* ── E. Meta line: "size · modified" ─────────────────────── */
-#listing.mosaic .item__meta {
+/* Inline tag chips are hidden in the grid + gallery: they'd vary the tile
+   height (which breaks the windowed/virtualized scroll math) and clutter the
+   compact card. Tags still appear in the list view and the details pane. */
+#listing.mosaic .item__tags {
+  display: none;
+}
+
+/* ── E. Footer: meta line "size · modified" ─────────────── */
+#listing.mosaic:not(.gallery) .item__meta {
   display: flex;
   align-items: baseline;
   width: 100%;
-  margin-top: 2px; /* matches mockup's mt-0.5 */
+  padding: 1px 10px 10px;
   font-size: 11px;
   color: var(--color-ink-3, var(--textPrimary));
   font-variant-numeric: tabular-nums;
