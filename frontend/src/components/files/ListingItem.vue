@@ -25,8 +25,10 @@
     :data-ext="getExtension(name).toLowerCase()"
     @contextmenu="contextMenu"
   >
-    <!-- Selection checkbox -->
-    <div class="item__select">
+    <!-- Selection checkbox. On its own click handler (stop-propagation) so it
+         toggles selection WITHOUT triggering the row's open — the only way to
+         multi-select on touch, where a plain row tap now opens the item. -->
+    <div class="item__select" @click.stop="onSelectClick">
       <div v-if="isSelected" class="item__checkbox item__checkbox--checked">
         <Icon
           name="check"
@@ -183,6 +185,7 @@ import { usePreferences } from "@/composables/usePreferences";
 import { useFavorites } from "@/composables/useFavorites";
 import { useImageHoverPreview } from "@/composables/useImageHoverPreview";
 import { useTransferIndicator } from "@/composables/useTransferIndicator";
+import { useTouchDevice } from "@/composables/useTouchDevice";
 
 import {
   enableThumbs,
@@ -285,6 +288,15 @@ const overflowTagNames = computed<string>(() =>
     .slice(MAX_VISIBLE_TAGS)
     .map((t) => t.name)
     .join(", ")
+);
+
+const isTouchDevice = useTouchDevice();
+
+// A plain row tap OPENS the item when the user prefers single-click OR is on a
+// touch device. On touch this is the standard file-manager gesture (tap to
+// open); selecting for bulk actions is done via the checkbox cell instead.
+const openOnSingleClick = computed(
+  () => !props.readOnly && (authStore.user?.singleClick || isTouchDevice.value)
 );
 
 const singleClick = computed(
@@ -880,7 +892,7 @@ const itemClick = (event: Event | KeyboardEvent) => {
     layoutStore.closeHovers();
   }
   if (
-    singleClick.value &&
+    openOnSingleClick.value &&
     !(event as KeyboardEvent).ctrlKey &&
     !(event as KeyboardEvent).metaKey &&
     !(event as KeyboardEvent).shiftKey &&
@@ -888,6 +900,17 @@ const itemClick = (event: Event | KeyboardEvent) => {
   )
     open();
   else click(event);
+};
+
+// Checkbox-cell click: pure additive selection toggle (never opens). This is
+// how touch users build a multi-selection now that a row tap opens the item.
+const onSelectClick = () => {
+  const i = fileStore.selected.indexOf(props.index);
+  if (i !== -1) {
+    fileStore.removeSelected(props.index);
+  } else {
+    fileStore.selected.push(props.index);
+  }
 };
 
 const contextMenu = (event: MouseEvent) => {

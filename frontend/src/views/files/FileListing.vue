@@ -153,15 +153,27 @@
         </div>
 
         <div
-          v-if="isMobile"
+          v-if="isMobile && fileStore.selectedCount > 0"
           id="file-selection"
           :class="{
             'file-selection-margin-bottom': fileStore.multiple,
           }"
         >
-          <span v-if="fileStore.selectedCount > 0">
+          <span>
             {{ t("prompts.filesSelected", fileStore.selectedCount) }}
           </span>
+          <!-- Opt-in details toggle (mobile). The InfoPane sheet no longer
+               pops on its own when an item is selected; the user expands it
+               here when they actually want metadata. -->
+          <button
+            type="button"
+            class="action"
+            title="Details"
+            aria-label="Details"
+            @click="layoutStore.mobileDetailsOpen = true"
+          >
+            <Icon name="info" :size="18" />
+          </button>
           <action
             v-if="headerButtons.share"
             icon="share"
@@ -278,9 +290,18 @@
             />
             <h1
               v-else
-              class="headline-gradient text-[22px] font-semibold leading-tight truncate max-md:text-[18px]"
+              class="text-[22px] font-semibold leading-tight truncate max-md:text-[18px]"
+              :class="{ 'headline-gradient': !currentFolderAlias }"
             >
-              {{ folderTitle }}
+              <span :class="{ 'headline-gradient': currentFolderAlias }">{{
+                folderTitle
+              }}</span
+              ><span
+                v-if="currentFolderAlias"
+                class="folder-alias"
+                :title="`Favorite display name: ${currentFolderAlias}`"
+                >({{ currentFolderAlias }})</span
+              >
             </h1>
             <div class="mt-1 text-[13px] text-ink-3 tabular max-md:text-[12px]">
               {{ folderMeta }}
@@ -391,7 +412,10 @@
             class="file-icons"
             data-clear-on-click="true"
             :data-drop-url="currentFolderUrl || undefined"
-            :class="[viewMode, { 'listing--virtual': isListVirtual }]"
+            :class="[
+              viewMode,
+              { 'listing--virtual': isListVirtual, 'is-touch': isTouchDevice },
+            ]"
             @click="handleEmptyAreaClick"
             @contextmenu="onListingContextMenu"
             @mousedown="dragSelect.onMouseDown"
@@ -526,7 +550,10 @@
                   data-clear-on-click="true"
                   :style="{ height: dirsWin.topPad + 'px' }"
                 ></div>
-                <div class="listing-section" data-clear-on-click="true">
+                <div
+                  class="listing-section listing-section--dirs"
+                  data-clear-on-click="true"
+                >
                   <item
                     v-for="item in dirs"
                     :key="base64(item.name)"
@@ -801,6 +828,7 @@ import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 import { useTagsStore } from "@/stores/tags";
 import { useFavorites } from "@/composables/useFavorites";
+import { useRootLabel } from "@/composables/useRootLabel";
 import { useFolderViewMode } from "@/composables/useFolderViewMode";
 import { usePreferences } from "@/composables/usePreferences";
 import { useTagPicker } from "@/composables/useTagPicker";
@@ -995,6 +1023,16 @@ const scrollSection = ref<HTMLElement | null>(null);
 // triggers (change → existing uploadInput pipeline).
 const isTouchDevice = useTouchDevice();
 const photoInput = ref<HTMLInputElement | null>(null);
+
+// Retract the mobile details sheet whenever the selection empties — covers
+// deselect-all AND navigation (the route watcher clears `selected`), so a
+// stale sheet never lingers over the next folder.
+watch(
+  () => fileStore.selectedCount,
+  (n) => {
+    if (n === 0) layoutStore.mobileDetailsOpen = false;
+  }
+);
 // v1.3 S6-1: RecycleScroller instance for the virtualized list view.
 // Held so we can scroll a previously-opened item back into view when the
 // user navigates back from a preview (the recycler's analog of the
@@ -1118,9 +1156,13 @@ const ascOrdered = computed(() =>
   fileStore.req ? fileStore.req.sorting.asc : false
 );
 
+// Custom label for the files root ("My files"), set via the sidebar's
+// right-click rename. Falls back to the default at the root.
+const { rootLabel } = useRootLabel();
+
 const folderTitle = computed(() => {
   if (!fileStore.req) return "";
-  return fileStore.req.name || t("sidebar.myFiles");
+  return fileStore.req.name || rootLabel.value || t("sidebar.myFiles");
 });
 
 // ── Section title as parent-folder drop + spring-load target (F2) ──
@@ -1193,6 +1235,17 @@ const onCurrentFolderFavToggle = () => {
   if (!currentFolderPath.value) return;
   favoritesComposable.toggle(currentFolderPath.value);
 };
+
+// The current folder's custom favorite display name (alias), if any — shown
+// alongside the real folder name in the header so a renamed favorite is
+// recognizable here too. Empty unless the folder is a favorite with a title,
+// and suppressed when the alias would just echo the real name.
+const currentFolderAlias = computed<string>(() => {
+  const p = currentFolderPath.value;
+  if (!p) return "";
+  const alias = favoritesComposable.titleFor(p).trim();
+  return alias && alias !== folderTitle.value ? alias : "";
+});
 
 const cancelSectionSpring = () => {
   if (sectionSpringTimer !== null) {
@@ -2987,8 +3040,15 @@ const revealPreviousItem = () => {
   if (ordinal < 0) return;
 
   nextTick(() => {
-    const cols = listingGrid.cols.value || 1;
-    const stride = listingGrid.tileH.value + 12;
+    // Gallery folders use a narrower (smaller-tile) grid than files, so pull
+    // the metrics for whichever section this item lives in.
+    const isDirSec = sectionEl === dirsSectionRef.value;
+    const cols =
+      (isDirSec ? listingGrid.dirsCols.value : listingGrid.filesCols.value) ||
+      1;
+    const stride =
+      (isDirSec ? listingGrid.dirsTileH.value : listingGrid.filesTileH.value) +
+      12;
     const row = Math.floor(ordinal / cols);
     const secTop = sectionEl
       ? sectionEl.getBoundingClientRect().top -
@@ -3498,8 +3558,8 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
   cursor: pointer;
   flex-shrink: 0;
   transition:
-    background-color 120ms ease,
-    color 120ms ease;
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease;
 }
 #file-selection :deep(.action:hover),
 #file-selection :deep(.action:focus-visible) {
@@ -3541,14 +3601,26 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
    the breadcrumb drop-target state for consistency. */
 .section-title {
   transition:
-    background-color 120ms ease,
-    box-shadow 120ms ease;
+    background-color var(--dur-base) ease,
+    box-shadow var(--dur-base) ease;
   border-radius: 8px;
   margin: 0 4px;
 }
 .section-title--drop {
   background: var(--color-accent-soft, rgba(94, 106, 210, 0.08));
   box-shadow: inset 0 0 0 2px var(--color-accent, #5e6ad2);
+}
+
+/* Favorite display-name shown beside the real folder name in the header,
+   e.g. "Documents (Work)". Deliberately smaller + muted so it reads as a
+   secondary alias, not part of the folder name. */
+.folder-alias {
+  margin-left: 8px;
+  font-size: 0.62em;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--color-ink-3, #a1a1aa);
+  vertical-align: baseline;
 }
 
 /* ── Current-folder drop zone (v1.3 H11) ──────────────────────────────
@@ -3576,10 +3648,10 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   text-align: center;
   padding: 16px;
   transition:
-    background-color 120ms ease,
-    border-color 120ms ease,
-    color 120ms ease,
-    box-shadow 120ms ease;
+    background-color var(--dur-base) ease,
+    border-color var(--dur-base) ease,
+    color var(--dur-base) ease,
+    box-shadow var(--dur-base) ease;
   /* Defensive: ensure dragenter/leave fire only on this wrapper, not
      on its decorative children — prevents flicker as the cursor moves
      between the icon and the label. */
@@ -3772,8 +3844,8 @@ html.dark .current-folder-dropzone {
   font-family: inherit;
   color: var(--color-ink-1, #18181b);
   transition:
-    border-color 120ms ease,
-    box-shadow 120ms ease;
+    border-color var(--dur-base) ease,
+    box-shadow var(--dur-base) ease;
 }
 .folder-rename-input:focus {
   border-color: var(--color-accent, #5e6ad2);

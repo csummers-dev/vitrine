@@ -28,7 +28,9 @@
           ]"
           @click="(e) => onNavClick(e, navigate)"
         >
-          <Icon :name="section.icon" :size="14" />
+          <span class="flex items-center" :style="{ color: section.hue }">
+            <Icon :name="section.icon" :size="14" />
+          </span>
           <span class="flex-1">{{ section.label }}</span>
         </button>
       </router-link>
@@ -62,7 +64,9 @@
             ]"
             @click="(e) => onNavClick(e, navigate)"
           >
-            <Icon :name="section.icon" :size="14" />
+            <span class="flex items-center" :style="{ color: section.hue }">
+              <Icon :name="section.icon" :size="14" />
+            </span>
             <span class="flex-1">{{ section.label }}</span>
           </button>
         </router-link>
@@ -116,6 +120,9 @@ interface NavSection {
   to: string;
   label: string;
   icon: string;
+  /** Per-section glyph hue (one of the 6 accent tokens). Keep each in sync
+   *  with the matching page's `accent` on its SettingsPage header. */
+  hue: string;
   /** When matched as a prefix, the link is highlighted (for nested routes). */
   matchPrefix?: string;
 }
@@ -126,6 +133,7 @@ const userSections = computed<NavSection[]>(() => {
       to: "/settings/profile",
       label: t("settings.profileSettings"),
       icon: "user",
+      hue: "var(--c-blue)",
     },
   ];
   if (user.value?.perm.share) {
@@ -133,12 +141,14 @@ const userSections = computed<NavSection[]>(() => {
       to: "/settings/shares",
       label: t("settings.shareManagement"),
       icon: "share-2",
+      hue: "var(--c-teal)",
     });
   }
   list.push({
     to: "/settings/sessions",
     label: "Sessions",
     icon: "monitor-smartphone",
+    hue: "var(--c-green)",
   });
   return list;
 });
@@ -148,22 +158,26 @@ const adminSections = computed<NavSection[]>(() => [
     to: "/settings/global",
     label: t("settings.globalSettings"),
     icon: "settings-2",
+    hue: "var(--c-lilac)",
   },
   {
     to: "/settings/users",
     label: t("settings.userManagement"),
     icon: "users",
+    hue: "var(--c-amber)",
     matchPrefix: "/settings/users",
   },
   {
     to: "/settings/audit",
     label: "Audit log",
     icon: "scroll-text",
+    hue: "var(--c-rose)",
   },
   {
     to: "/settings/webhooks",
     label: "Webhooks",
     icon: "webhook",
+    hue: "var(--c-teal)",
   },
 ]);
 

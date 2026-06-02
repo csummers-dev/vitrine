@@ -4,7 +4,7 @@
 
 # filebrowser pretty
 
-[![Version](https://img.shields.io/badge/version-1.3.2-5e6ad2?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-1.4.0-5e6ad2?style=flat-square)](#)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
 [![Vue](https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js&logoColor=white)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
@@ -185,6 +185,19 @@ Or skip Docker entirely and run the binary directly: `./filebrowser` — opens o
 | EXIF | **exifr 7** |
 
 ---
+
+### v1.4.0 — Color, mobile, and naming polish
+
+- **Preview icons are color-coded** — the action icons in the preview details rail (Share / Download / Rename / Move / Copy / Extract / Open / Delete) now use the same per-action hues as the file-listing details pane, consistently across every preview tool; the preview toolbar's **Download** (blue) and **Share** (teal) glyphs are tinted to match
+- **Color in Settings** — each left-rail nav icon is now its own brand color, and every settings page (Profile, Shares, Sessions, Global, Users, Audit, Webhooks) opens with a matching tinted icon chip in its header
+- **Mobile — tap to open** — a single tap now opens a folder/file on touch (selecting moved to the row checkbox); the details sheet no longer auto-opens and hijacks your next tap (it's opt-in via a **Details** button)
+- **Mobile fixes** — removed the empty gap between the header and the file list when nothing is selected; the sidebar drawer's user / sign-out row no longer gets cut off on short screens; removed the redundant "Profile" entry from the drawer
+- **Rename "My files"** — right-click the **My files** entry to set a custom label (syncs across devices); it shows in the sidebar and the listing header
+- **Favorite display names in the header** — opening a folder you've given a favorite display name now shows it beside the real name, e.g. _Documents (Work)_; these custom names now appear on mobile too
+- **Smaller folder tiles in gallery view** — folders render as a tighter grid so they read as quiet markers rather than dominating the page
+- **Login & sidebar polish** — "Login" → **Sign In**, "Signup" → **Sign Up**, "Already have an account**?**", and the create-account prompt now reads "Click **here** to create an account"; the version number links to the source repo; the sign-out button is rose-tinted
+- **Consistency cleanup** — added motion (`--dur` / `--ease`) and `--radius-xs` design tokens and adopted them across the styles; centralized the preview file-type tint colors into shared tokens so the toolbar and details rail can't drift apart
+- **Release & tooling** — adopted SemVer with images published to GHCR: releases get `X.Y.Z` plus rolling `X.Y` / `X` / `latest`, and `main` builds publish `nightly` + dated snapshots. Images now carry OCI provenance labels, and the in-app version is stamped from the git tag at build time
 
 ### v1.3.2 — Preview, drag & drop, and notification fixes
 

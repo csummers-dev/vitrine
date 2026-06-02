@@ -20,11 +20,15 @@
                application's identity, not the configured workspace label. -->
           <BrandName name="filebrowser pretty" />
         </div>
-        <div
-          class="text-[11px] text-ink-3 leading-tight truncate font-mono tabular"
+        <a
+          :href="repoUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-[11px] text-ink-3 hover:text-accent leading-tight truncate font-mono tabular transition-colors w-fit"
+          title="View source on GitHub"
         >
           v{{ version }}
-        </div>
+        </a>
       </div>
     </div>
 
@@ -59,21 +63,24 @@
       >
         <button
           @click="toRoot"
+          @contextmenu.prevent="onMyFilesContextMenu($event)"
           :class="[
             'w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition text-left max-md:w-10 max-md:h-10 max-md:p-0 max-md:justify-center max-md:gap-0',
             isFiles
               ? 'bg-selected text-accent font-medium'
               : 'hover:bg-hover text-ink-2',
           ]"
-          :title="$t('sidebar.myFiles')"
-          :aria-label="$t('sidebar.myFiles')"
+          :title="rootLabel || $t('sidebar.myFiles')"
+          :aria-label="rootLabel || $t('sidebar.myFiles')"
         >
           <Icon
             name="folder"
             :size="14"
             class="text-[var(--c-lilac)] shrink-0"
           />
-          <span class="flex-1 max-md:hidden">{{ $t("sidebar.myFiles") }}</span>
+          <span class="flex-1 max-md:hidden">{{
+            rootLabel || $t("sidebar.myFiles")
+          }}</span>
           <span
             v-if="filesCount > 0"
             class="text-[11px] text-ink-3 tabular max-md:hidden"
@@ -82,16 +89,9 @@
           </span>
         </button>
 
-        <button
-          v-if="user.perm.admin"
-          @click="toSettings"
-          class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-hover text-ink-2 transition text-left max-md:w-10 max-md:h-10 max-md:p-0 max-md:justify-center max-md:gap-0"
-          :title="$t('sidebar.settings')"
-          :aria-label="$t('sidebar.settings')"
-        >
-          <Icon name="settings-2" :size="14" />
-          <span class="flex-1 max-md:hidden">{{ $t("sidebar.settings") }}</span>
-        </button>
+        <!-- Settings is reachable by clicking the username row below (which
+             routes to Profile/Settings), so a separate nav item here was a
+             duplicate of the same destination. -->
       </nav>
 
       <!-- Favorites (v1.3 S3-2). Pinned folders from useFavorites.
@@ -336,7 +336,7 @@
       <button
         v-if="canLogout"
         @click="logout"
-        class="w-7 h-7 max-md:w-9 max-md:h-9 rounded-md hover:bg-hover flex items-center justify-center text-ink-3 hover:text-ink-1 transition"
+        class="w-7 h-7 max-md:w-9 max-md:h-9 rounded-md flex items-center justify-center transition sidebar-logout"
         :title="$t('sidebar.logout')"
         :aria-label="$t('sidebar.logout')"
       >
@@ -385,6 +385,7 @@ import { useLayoutStore } from "@/stores/layout";
 import * as auth from "@/utils/auth";
 import {
   version,
+  repoUrl,
   signup,
   hideLoginButton,
   disableExternal,
@@ -404,6 +405,7 @@ import { usePreferences } from "@/composables/usePreferences";
 import { useRecents } from "@/composables/useRecents";
 import { useFavorites } from "@/composables/useFavorites";
 import { useFavoriteTitleDialog } from "@/composables/useFavoriteTitleDialog";
+import { useRootLabel } from "@/composables/useRootLabel";
 import { useDropTarget } from "@/composables/useDropTarget";
 
 // How many recents to show before the "View all" disclosure kicks in.
@@ -425,6 +427,7 @@ export default {
     const recentsComposable = useRecents();
     const favoritesComposable = useFavorites();
     const favTitleDialog = useFavoriteTitleDialog();
+    const rootLabelComposable = useRootLabel();
     const router = useRouter();
     const toast = useToast();
     const recentsExpanded = ref(false);
@@ -504,6 +507,31 @@ export default {
           },
         },
       ]);
+    };
+    // "My files" quick-link: rename its label (a preferences alias — the real
+    // storage root is untouched), and reset back to the default when set.
+    const onMyFilesContextMenu = (event) => {
+      const items = [
+        {
+          label: "Rename…",
+          icon: "pencil",
+          action: () => {
+            hideSidebarMenu();
+            rootLabelComposable.openDialog();
+          },
+        },
+      ];
+      if (rootLabelComposable.rootLabel.value) {
+        items.push({
+          label: "Reset to default name",
+          icon: "rotate-ccw",
+          action: () => {
+            hideSidebarMenu();
+            rootLabelComposable.setRootLabel("");
+          },
+        });
+      }
+      openSidebarMenu(event, items);
     };
     // Recent: Open · copy path · remove from the recents log.
     const onRecentContextMenu = (recent, event) => {
@@ -750,6 +778,8 @@ export default {
       hideSidebarMenu,
       onFavoriteContextMenu,
       onRecentContextMenu,
+      onMyFilesContextMenu,
+      rootLabel: rootLabelComposable.rootLabel,
     };
   },
   components: {
@@ -764,6 +794,7 @@ export default {
     signup: () => signup,
     hideLoginButton: () => hideLoginButton,
     version: () => version,
+    repoUrl: () => repoUrl,
     logoPngURL: () => logoPngURL,
     disableExternal: () => disableExternal,
     disableUsedPercentage: () => disableUsedPercentage,
@@ -845,14 +876,6 @@ export default {
       this.$router.push({ path: "/settings/profile" });
       this.closeHovers();
     },
-    toSettings() {
-      // Settings always opens on Profile (RC-31). Global settings remains
-      // one click away in the settings left rail. /settings already
-      // redirects to /settings/profile, but route it explicitly so intent
-      // is obvious at the call site.
-      this.$router.push({ path: "/settings/profile" });
-      this.closeHovers();
-    },
     logout: auth.logout,
   },
   watch: {
@@ -875,6 +898,16 @@ export default {
 </script>
 
 <style scoped>
+/* Sign-out button: rose-tinted so the destructive "leave" action stands out
+   from the neutral nav chrome. Stronger rose + soft rose wash on hover. */
+.sidebar-logout {
+  color: var(--c-rose);
+}
+.sidebar-logout:hover {
+  color: var(--c-rose);
+  background: color-mix(in srgb, var(--c-rose) 14%, transparent);
+}
+
 /* ── Favorites drag affordances ──────────────────────────────────────
    Reordering a favorite must NOT look like moving a file *into* a folder.
    Move-into keeps the solid accent ring (set via Tailwind in the template);

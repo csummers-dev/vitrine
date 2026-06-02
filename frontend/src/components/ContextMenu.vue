@@ -381,8 +381,8 @@ html.dark .context-menu {
   text-align: left;
   cursor: pointer;
   transition:
-    background-color 80ms ease,
-    color 80ms ease;
+    background-color var(--dur-fast) ease,
+    color var(--dur-fast) ease;
 }
 
 /* Pointer hover + keyboard focus both surface the same focused state.
@@ -451,7 +451,7 @@ html.dark .context-menu__item--destructive.context-menu__item--focused {
 /* ── Open/close transition ───────────────────────────────────────── */
 .ctx-menu-enter-active {
   transition:
-    opacity 0.12s ease,
+    opacity var(--dur-base) ease,
     transform 0.14s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .ctx-menu-leave-active {

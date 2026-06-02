@@ -8,10 +8,15 @@ export const useLayoutStore = defineStore("layout", {
     loading: boolean;
     prompts: PopupProps[];
     showShell: boolean | null;
+    /** Mobile only: whether the details (InfoPane) sheet is expanded. On
+     *  touch the sheet no longer auto-opens on selection — the user opens it
+     *  explicitly from the selection toolbar, so it never interrupts a tap. */
+    mobileDetailsOpen: boolean;
   } => ({
     loading: false,
     prompts: [],
     showShell: false,
+    mobileDetailsOpen: false,
   }),
   getters: {
     currentPrompt(state) {

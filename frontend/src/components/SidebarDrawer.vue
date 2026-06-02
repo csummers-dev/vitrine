@@ -7,147 +7,162 @@
         <div class="sd__brand-name">
           <BrandName name="filebrowser pretty" />
         </div>
-        <div class="sd__brand-version">v{{ version }}</div>
+        <a
+          :href="repoUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="sd__brand-version"
+          >v{{ version }}</a
+        >
       </div>
     </header>
 
-    <!-- ── Primary actions ──────────────────────────────────────────── -->
-    <div v-if="user?.perm.create" class="sd__primary">
-      <button
-        type="button"
-        class="sd__btn sd__btn--primary"
-        @click="newDir"
-        :aria-label="t('sidebar.newFolder')"
-      >
-        <Icon name="folder-plus" :size="15" />
-        <span>{{ t("sidebar.newFolder") }}</span>
-      </button>
-      <button
-        type="button"
-        class="sd__btn sd__btn--ghost"
-        @click="newFile"
-        :aria-label="t('sidebar.newFile')"
-        :title="t('sidebar.newFile')"
-      >
-        <Icon name="file-plus" :size="15" />
-      </button>
-    </div>
-
-    <!-- ── Navigation ───────────────────────────────────────────────── -->
-    <nav v-if="isLoggedIn" class="sd__section sd__nav">
-      <div class="sd__section-label">Navigate</div>
-      <button
-        type="button"
-        class="sd__navrow"
-        :class="{ 'is-active': isFiles }"
-        @click="goFiles"
-      >
-        <Icon name="folder" :size="15" />
-        <span class="sd__navrow-label">{{ t("sidebar.myFiles") }}</span>
-        <span v-if="filesCount > 0" class="sd__navrow-count">
-          {{ filesCount }}
-        </span>
-      </button>
-
-      <router-link
-        to="/settings/profile"
-        class="sd__navrow"
-        :class="{ 'is-active': isProfile }"
-      >
-        <Icon name="user" :size="15" />
-        <span class="sd__navrow-label">Profile</span>
-      </router-link>
-
-      <button
-        v-if="user?.perm.admin"
-        type="button"
-        class="sd__navrow"
-        :class="{ 'is-active': isAdmin }"
-        @click="goAdmin"
-      >
-        <Icon name="settings-2" :size="15" />
-        <span class="sd__navrow-label">{{ t("sidebar.settings") }}</span>
-      </button>
-    </nav>
-
-    <!-- Logged-out navigation -->
-    <nav v-else class="sd__section sd__nav">
-      <div class="sd__section-label">Account</div>
-      <router-link v-if="!hideLoginButton" to="/login" class="sd__navrow">
-        <Icon name="log-in" :size="15" />
-        <span class="sd__navrow-label">{{ t("sidebar.login") }}</span>
-      </router-link>
-      <router-link v-if="signup" to="/login" class="sd__navrow">
-        <Icon name="user-plus" :size="15" />
-        <span class="sd__navrow-label">{{ t("sidebar.signup") }}</span>
-      </router-link>
-    </nav>
-
-    <!-- ── Favorites (mobile parity with the desktop sidebar) ───────────
-         Long-press a row to reorder (touch DnD); tap to open. -->
-    <nav v-if="isLoggedIn && favorites.length > 0" class="sd__section sd__favs">
-      <div class="sd__section-label">Favorites</div>
-      <ul ref="favListEl" class="sd__fav-list">
-        <li
-          v-for="(path, index) in favorites"
-          :key="path"
-          :data-fav-index="index"
-          class="sd__fav"
-          :class="{
-            'sd__fav--dragging': favDragIndex === index,
-            'sd__fav--drop-before':
-              favDropIndex === index && favDragIndex !== index && !favDropAfter,
-            'sd__fav--drop-after':
-              favDropIndex === index && favDragIndex !== index && favDropAfter,
-          }"
-          @pointerdown="(e) => favDrag.onPointerDown(e, { index, path })"
+    <!-- Scrollable middle: the header above and the user footer below stay
+         pinned (flex-shrink:0); everything here scrolls, so on a short
+         viewport the footer is never clipped (the reported cut-off). -->
+    <div class="sd__scroll">
+      <!-- ── Primary actions ──────────────────────────────────────────── -->
+      <div v-if="user?.perm.create" class="sd__primary">
+        <button
+          type="button"
+          class="sd__btn sd__btn--primary"
+          @click="newDir"
+          :aria-label="t('sidebar.newFolder')"
         >
-          <button
-            type="button"
-            class="sd__fav-btn"
-            :title="path"
-            @click="(e) => onFavTap(path, e)"
+          <Icon name="folder-plus" :size="15" />
+          <span>{{ t("sidebar.newFolder") }}</span>
+        </button>
+        <button
+          type="button"
+          class="sd__btn sd__btn--ghost"
+          @click="newFile"
+          :aria-label="t('sidebar.newFile')"
+          :title="t('sidebar.newFile')"
+        >
+          <Icon name="file-plus" :size="15" />
+        </button>
+      </div>
+
+      <!-- ── Navigation ───────────────────────────────────────────────── -->
+      <nav v-if="isLoggedIn" class="sd__section sd__nav">
+        <div class="sd__section-label">Navigate</div>
+        <button
+          type="button"
+          class="sd__navrow"
+          :class="{ 'is-active': isFiles }"
+          @click="goFiles"
+        >
+          <Icon name="folder" :size="15" />
+          <span class="sd__navrow-label">{{
+            rootLabel || t("sidebar.myFiles")
+          }}</span>
+          <span v-if="filesCount > 0" class="sd__navrow-count">
+            {{ filesCount }}
+          </span>
+        </button>
+
+        <!-- Profile lives on the user row at the bottom (avatar → profile) and
+           inside Settings, so a separate "Profile" nav item here was a
+           duplicate link to the same page. -->
+        <button
+          v-if="user?.perm.admin"
+          type="button"
+          class="sd__navrow"
+          :class="{ 'is-active': isAdmin }"
+          @click="goAdmin"
+        >
+          <Icon name="settings-2" :size="15" />
+          <span class="sd__navrow-label">{{ t("sidebar.settings") }}</span>
+        </button>
+      </nav>
+
+      <!-- Logged-out navigation -->
+      <nav v-else class="sd__section sd__nav">
+        <div class="sd__section-label">Account</div>
+        <router-link v-if="!hideLoginButton" to="/login" class="sd__navrow">
+          <Icon name="log-in" :size="15" />
+          <span class="sd__navrow-label">{{ t("sidebar.login") }}</span>
+        </router-link>
+        <router-link v-if="signup" to="/login" class="sd__navrow">
+          <Icon name="user-plus" :size="15" />
+          <span class="sd__navrow-label">{{ t("sidebar.signup") }}</span>
+        </router-link>
+      </nav>
+
+      <!-- ── Favorites (mobile parity with the desktop sidebar) ───────────
+         Long-press a row to reorder (touch DnD); tap to open. -->
+      <nav
+        v-if="isLoggedIn && favorites.length > 0"
+        class="sd__section sd__favs"
+      >
+        <div class="sd__section-label">Favorites</div>
+        <ul ref="favListEl" class="sd__fav-list">
+          <li
+            v-for="(path, index) in favorites"
+            :key="path"
+            :data-fav-index="index"
+            class="sd__fav"
+            :class="{
+              'sd__fav--dragging': favDragIndex === index,
+              'sd__fav--drop-before':
+                favDropIndex === index &&
+                favDragIndex !== index &&
+                !favDropAfter,
+              'sd__fav--drop-after':
+                favDropIndex === index &&
+                favDragIndex !== index &&
+                favDropAfter,
+            }"
+            @pointerdown="(e) => favDrag.onPointerDown(e, { index, path })"
           >
-            <Icon
-              name="star"
-              :size="13"
-              :stroke-width="0"
-              fill="currentColor"
-              class="sd__fav-star"
-            />
-            <span class="sd__fav-name">{{ favoriteName(path) }}</span>
-          </button>
-        </li>
-      </ul>
-    </nav>
+            <button
+              type="button"
+              class="sd__fav-btn"
+              :title="path"
+              @click="(e) => onFavTap(path, e)"
+            >
+              <Icon
+                name="star"
+                :size="13"
+                :stroke-width="0"
+                fill="currentColor"
+                class="sd__fav-star"
+              />
+              <span class="sd__fav-name">{{ favoriteName(path) }}</span>
+            </button>
+          </li>
+        </ul>
+      </nav>
 
-    <div class="sd__spacer"></div>
+      <div class="sd__spacer"></div>
 
-    <!-- ── Storage card ─────────────────────────────────────────────── -->
-    <div
-      v-if="isLoggedIn && isFiles && !disableUsedPercentage"
-      class="sd__section"
-    >
-      <div class="sd__storage">
-        <div class="sd__storage-head">
-          <div class="sd__storage-title">
-            <Icon name="hard-drive" :size="14" />
-            <span>Storage</span>
+      <!-- ── Storage card ─────────────────────────────────────────────── -->
+      <div
+        v-if="isLoggedIn && isFiles && !disableUsedPercentage"
+        class="sd__section"
+      >
+        <div class="sd__storage">
+          <div class="sd__storage-head">
+            <div class="sd__storage-title">
+              <Icon name="hard-drive" :size="14" />
+              <span>Storage</span>
+            </div>
+            <span class="sd__storage-pct">{{ usage.usedPercentage }}%</span>
           </div>
-          <span class="sd__storage-pct">{{ usage.usedPercentage }}%</span>
-        </div>
-        <div class="sd__storage-bar">
-          <div
-            class="sd__storage-fill"
-            :style="{ width: usage.usedPercentage + '%' }"
-          ></div>
-        </div>
-        <div class="sd__storage-meta">
-          <span>{{ usage.used }} used</span>
-          <span>{{ usage.total }}</span>
+          <div class="sd__storage-bar">
+            <div
+              class="sd__storage-fill"
+              :style="{ width: usage.usedPercentage + '%' }"
+            ></div>
+          </div>
+          <div class="sd__storage-meta">
+            <span>{{ usage.used }} used</span>
+            <span>{{ usage.total }}</span>
+          </div>
         </div>
       </div>
     </div>
+    <!-- /sd__scroll -->
 
     <!-- ── User row ─────────────────────────────────────────────────── -->
     <footer v-if="isLoggedIn" class="sd__user">
@@ -198,6 +213,7 @@ import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 import { useFavorites } from "@/composables/useFavorites";
+import { useRootLabel } from "@/composables/useRootLabel";
 import { useTouchDrag } from "@/composables/useTouchDrag";
 import * as auth from "@/utils/auth";
 import {
@@ -209,6 +225,7 @@ import {
   logoutPage,
   loginPage,
   logoPngURL,
+  repoUrl,
 } from "@/utils/constants";
 import { files as api } from "@/api";
 import prettyBytes from "pretty-bytes";
@@ -225,7 +242,6 @@ const layoutStore = useLayoutStore();
 const user = computed(() => authStore.user);
 const isLoggedIn = computed(() => authStore.isLoggedIn);
 const isFiles = computed(() => fileStore.isFiles);
-const isProfile = computed(() => route.path === "/settings/profile");
 const isAdmin = computed(() => route.path.startsWith("/settings/global"));
 
 const filesCount = computed(
@@ -285,6 +301,9 @@ onUnmounted(() => usageAbort?.abort());
 const favoritesComposable = useFavorites();
 const favorites = computed(() => favoritesComposable.favorites.value);
 
+// Custom "My files" label (set via the desktop sidebar's right-click rename).
+const { rootLabel } = useRootLabel();
+
 const favListEl = ref<HTMLElement | null>(null);
 const favDragIndex = ref<number | null>(null);
 const favDropIndex = ref<number | null>(null);
@@ -293,16 +312,14 @@ const favDropAfter = ref(false);
 // doesn't also navigate (and close the drawer).
 let suppressClickUntil = 0;
 
-/** basename of a favorited folder path, URL-decoded. */
-const favoriteName = (path: string): string => {
-  const trimmed = String(path).replace(/\/+$/, "");
-  const last = trimmed.split("/").filter(Boolean).pop() ?? path;
-  try {
-    return decodeURIComponent(last);
-  } catch {
-    return last;
-  }
-};
+/** Sidebar label for a favorited folder: the user's custom display title
+ *  when set, otherwise the folder's basename. Delegates to the shared
+ *  useFavorites.displayName so the mobile drawer matches the desktop
+ *  Sidebar — custom titles are stored in (cross-device) preferences, so
+ *  without this the drawer fell back to the basename and the names looked
+ *  "missing" on phones even though they synced fine. */
+const favoriteName = (path: string): string =>
+  favoritesComposable.displayName(path);
 
 const favDrag = useTouchDrag<{ index: number; path: string }>({
   ghostLabel: (p) => favoriteName(p.path),
@@ -384,6 +401,17 @@ const onItemClick = (_event: MouseEvent) => {
   font-size: 13px;
 }
 
+/* Scrollable middle region: absorbs the leftover height between the pinned
+   header and footer and scrolls its own overflow, so the footer (user +
+   logout) can never be pushed off the bottom on a short viewport. */
+.sd__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
 /* ── Workspace header ────────────────────────────────────────────────── */
 .sd__header {
   display: flex;
@@ -425,6 +453,13 @@ const onItemClick = (_event: MouseEvent) => {
   color: var(--color-ink-3, #a1a1aa);
   font-variant-numeric: tabular-nums;
   line-height: 1.2;
+  width: fit-content;
+  text-decoration: none;
+  transition: color var(--dur-base) ease;
+}
+.sd__brand-version:hover {
+  color: var(--color-accent, #5e6ad2);
+  text-decoration: underline;
 }
 
 /* ── Primary actions row ─────────────────────────────────────────────── */
@@ -447,9 +482,9 @@ const onItemClick = (_event: MouseEvent) => {
   gap: 6px;
   cursor: pointer;
   transition:
-    background-color 0.12s ease,
-    border-color 0.12s ease,
-    color 0.12s ease;
+    background-color var(--dur-base) ease,
+    border-color var(--dur-base) ease,
+    color var(--dur-base) ease;
 }
 
 .sd__btn--primary {
@@ -514,8 +549,8 @@ const onItemClick = (_event: MouseEvent) => {
   cursor: pointer;
   text-decoration: none;
   transition:
-    background-color 0.12s ease,
-    color 0.12s ease;
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease;
 }
 
 .sd__navrow:hover {
@@ -704,6 +739,8 @@ const onItemClick = (_event: MouseEvent) => {
   align-items: center;
   gap: 6px;
   padding: 10px 12px;
+  /* Keep the row clear of the iOS home indicator / gesture bar. */
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
   border-top: 1px solid var(--color-line, #ececec);
   flex-shrink: 0;
 }
@@ -721,7 +758,7 @@ const onItemClick = (_event: MouseEvent) => {
   min-width: 0;
   text-align: left;
   font: inherit;
-  transition: background-color 0.12s ease;
+  transition: background-color var(--dur-base) ease;
 }
 
 .sd__user-btn:hover {
@@ -774,25 +811,27 @@ const onItemClick = (_event: MouseEvent) => {
   color: var(--color-ink-3, #a1a1aa);
 }
 
+/* Rose-tinted so the destructive "leave" action reads apart from the neutral
+   nav chrome. */
 .sd__logout {
   width: 36px;
   height: 36px;
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--c-rose);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
   transition:
-    background-color 0.12s ease,
-    color 0.12s ease;
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease;
 }
 
 .sd__logout:hover {
-  background: var(--color-hover, var(--color-elevated, #f4f4f5));
-  color: var(--color-ink-1, #18181b);
+  background: color-mix(in srgb, var(--c-rose) 14%, transparent);
+  color: var(--c-rose);
 }
 </style>

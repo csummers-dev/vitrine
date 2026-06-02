@@ -712,9 +712,9 @@ html.dark .audio-viewer__art--fallback {
   cursor: pointer;
   flex-shrink: 0;
   transition:
-    background-color 120ms ease,
-    color 120ms ease,
-    opacity 120ms ease;
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease,
+    opacity var(--dur-base) ease;
 }
 .audio-viewer__btn:hover:not(:disabled) {
   background: var(--color-elevated, #f4f4f5);
@@ -779,8 +779,8 @@ html.dark .audio-viewer__art--fallback {
   cursor: pointer;
   border-radius: 4px;
   transition:
-    background-color 120ms ease,
-    color 120ms ease;
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease;
 }
 .audio-viewer__volume-btn:hover {
   background: var(--color-hover, rgba(24, 24, 27, 0.045));

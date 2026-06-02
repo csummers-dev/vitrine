@@ -1,6 +1,8 @@
 <template>
   <SettingsPage
     title="Audit log"
+    icon="scroll-text"
+    accent="var(--c-rose)"
     description="A chronological record of file operations, shares, sign-ins, and settings changes across the server. Newest first."
   >
     <!-- ── Filters ──────────────────────────────────────────────────── -->
@@ -351,8 +353,8 @@ onMounted(load);
   font-size: 12.5px;
   cursor: pointer;
   transition:
-    background-color 0.12s ease,
-    border-color 0.12s ease;
+    background-color var(--dur-base) ease,
+    border-color var(--dur-base) ease;
 }
 .audit-clear:hover {
   background: var(--color-elevated, #f4f4f5);
@@ -479,8 +481,8 @@ onMounted(load);
   font-size: 12.5px;
   cursor: pointer;
   transition:
-    background-color 0.12s ease,
-    border-color 0.12s ease;
+    background-color var(--dur-base) ease,
+    border-color var(--dur-base) ease;
 }
 .audit-pager__btn:hover:not(:disabled) {
   background: var(--color-elevated, #f4f4f5);

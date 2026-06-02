@@ -130,8 +130,8 @@ const onRemove = (event: MouseEvent) => {
   cursor: default;
   user-select: none;
   transition:
-    background-color 0.12s ease,
-    box-shadow 0.12s ease;
+    background-color var(--dur-base) ease,
+    box-shadow var(--dur-base) ease;
   /* Default fallback if color class doesn't match — should never happen
      since the union type is enforced server-side, but defensive. */
   background: var(--color-elevated, #f4f4f5);

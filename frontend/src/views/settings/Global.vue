@@ -1,6 +1,8 @@
 <template>
   <SettingsPage
     :title="t('settings.globalSettings')"
+    icon="settings-2"
+    accent="var(--c-lilac)"
     description="System-wide configuration. Applies to every account on this filebrowser instance."
   >
     <template v-if="settings">

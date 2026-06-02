@@ -457,8 +457,8 @@ const onCancel = () => {
   border-radius: 5px;
   cursor: pointer;
   transition:
-    background-color 120ms ease,
-    color 120ms ease;
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease;
 }
 .brp-mode:hover:not(:disabled) {
   color: var(--color-ink-1, #18181b);
@@ -501,8 +501,8 @@ const onCancel = () => {
   color: var(--color-ink-1, #18181b);
   outline: none;
   transition:
-    border-color 120ms ease,
-    box-shadow 120ms ease;
+    border-color var(--dur-base) ease,
+    box-shadow var(--dur-base) ease;
 }
 .brp-input:focus {
   border-color: var(--color-accent, #5e6ad2);
@@ -678,9 +678,9 @@ html.dark .brp-preview-row--conflict .brp-reason {
   border: 1px solid transparent;
   cursor: pointer;
   transition:
-    background-color 120ms ease,
-    border-color 120ms ease,
-    color 120ms ease;
+    background-color var(--dur-base) ease,
+    border-color var(--dur-base) ease,
+    color var(--dur-base) ease;
 }
 .brp-btn--ghost {
   background: transparent;

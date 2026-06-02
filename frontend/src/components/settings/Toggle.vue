@@ -42,7 +42,7 @@ const onClick = () => {
   cursor: pointer;
   position: relative;
   flex-shrink: 0;
-  transition: background-color 0.12s ease;
+  transition: background-color var(--dur-base) ease;
 }
 
 .toggle:focus-visible {

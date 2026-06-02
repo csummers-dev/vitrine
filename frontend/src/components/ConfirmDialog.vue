@@ -243,13 +243,13 @@ const onCancel = () => emit("cancel");
 /* Transitions */
 .confirm-enter-active,
 .confirm-leave-active {
-  transition: opacity 0.12s ease;
+  transition: opacity var(--dur-base) ease;
 }
 .confirm-enter-active .confirm-dialog,
 .confirm-leave-active .confirm-dialog {
   transition:
     transform 0.16s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.12s ease;
+    opacity var(--dur-base) ease;
 }
 .confirm-enter-from,
 .confirm-leave-to {

@@ -59,7 +59,7 @@ const clicked = () => {
   padding: 4px 10px;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.12s ease;
+  transition: background-color var(--dur-base) ease;
 }
 
 .ct__action:hover {

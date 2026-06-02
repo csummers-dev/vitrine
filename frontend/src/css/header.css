@@ -36,8 +36,8 @@ header .action {
   border: 0;
   cursor: pointer;
   transition:
-    background-color 0.12s ease,
-    color 0.12s ease;
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease;
 }
 
 header .action:hover {
@@ -70,8 +70,8 @@ header .action .counter {
   cursor: pointer;
   position: relative;
   transition:
-    background-color 0.12s ease,
-    color 0.12s ease;
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease;
 }
 
 .hb-btn:hover {
@@ -90,7 +90,7 @@ header .action .counter {
   right: -2px;
   background: var(--accent-gradient);
   color: white;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   font-size: 9px;
   font-weight: 700;
   min-width: 14px;

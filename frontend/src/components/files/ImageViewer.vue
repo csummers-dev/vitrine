@@ -267,9 +267,9 @@ html.dark .image-viewer__img {
   background-color: var(--color-elevated, #f4f4f5);
   cursor: pointer;
   transition:
-    border-color 120ms ease,
-    transform 120ms ease,
-    box-shadow 120ms ease;
+    border-color var(--dur-base) ease,
+    transform var(--dur-base) ease,
+    box-shadow var(--dur-base) ease;
   padding: 0;
 }
 .image-viewer__thumb:hover {

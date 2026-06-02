@@ -51,7 +51,7 @@
       <div class="preview-toolbar__actions">
         <button
           v-if="canDownload"
-          class="preview-toolbar__btn"
+          class="preview-toolbar__btn preview-toolbar__btn--download"
           :title="$t('buttons.download')"
           :aria-label="$t('buttons.download')"
           @click="$emit('download')"
@@ -61,7 +61,7 @@
         </button>
         <button
           v-if="canShare"
-          class="preview-toolbar__btn"
+          class="preview-toolbar__btn preview-toolbar__btn--share"
           :title="$t('buttons.share')"
           :aria-label="$t('buttons.share')"
           @click="$emit('share')"
@@ -265,7 +265,7 @@ defineEmits<{
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  transition: background-color 120ms ease;
+  transition: background-color var(--dur-base) ease;
 }
 .preview-toolbar__back:hover {
   background: var(--color-hover, rgba(24, 24, 27, 0.045));
@@ -300,72 +300,40 @@ defineEmits<{
   color: var(--color-ink-2, #52525b);
 }
 
-/* Per-file-type squircle tints — match the file-icon system locked in
-   Stages 1–4. Viewer components pass the right is-* class. */
+/* Per-file-type squircle tints. Colors come from the shared --tint-*-bg/fg
+   tokens (tokens.css), which flip for dark mode — so no per-component dark
+   block, and the toolbar + details rail share one source of truth. */
 .preview-toolbar__icon.is-image {
-  background: rgba(236, 72, 153, 0.16);
-  color: #be185d;
+  background: var(--tint-image-bg);
+  color: var(--tint-image-fg);
 }
 .preview-toolbar__icon.is-video {
-  background: rgba(99, 102, 241, 0.16);
-  color: #4338ca;
+  background: var(--tint-video-bg);
+  color: var(--tint-video-fg);
 }
 .preview-toolbar__icon.is-audio {
-  background: rgba(250, 204, 21, 0.22);
-  color: #a16207;
+  background: var(--tint-audio-bg);
+  color: var(--tint-audio-fg);
 }
 .preview-toolbar__icon.is-pdf {
-  background: rgba(244, 63, 94, 0.16);
-  color: #be123c;
+  background: var(--tint-pdf-bg);
+  color: var(--tint-pdf-fg);
 }
 .preview-toolbar__icon.is-text {
-  background: rgba(82, 82, 91, 0.12);
-  color: #3f3f46;
+  background: var(--tint-text-bg);
+  color: var(--tint-text-fg);
 }
 .preview-toolbar__icon.is-archive {
-  background: rgba(251, 146, 60, 0.16);
-  color: #c2410c;
+  background: var(--tint-archive-bg);
+  color: var(--tint-archive-fg);
 }
 .preview-toolbar__icon.is-epub {
-  background: rgba(20, 184, 166, 0.16);
-  color: #0f766e;
+  background: var(--tint-epub-bg);
+  color: var(--tint-epub-fg);
 }
 .preview-toolbar__icon.is-csv {
-  background: rgba(34, 197, 94, 0.16);
-  color: #15803d;
-}
-
-html.dark .preview-toolbar__icon.is-image {
-  background: rgba(244, 114, 182, 0.22);
-  color: #fbcfe8;
-}
-html.dark .preview-toolbar__icon.is-video {
-  background: rgba(129, 140, 248, 0.22);
-  color: #c7d2fe;
-}
-html.dark .preview-toolbar__icon.is-audio {
-  background: rgba(250, 204, 21, 0.2);
-  color: #fde68a;
-}
-html.dark .preview-toolbar__icon.is-pdf {
-  background: rgba(251, 113, 133, 0.22);
-  color: #fecdd3;
-}
-html.dark .preview-toolbar__icon.is-text {
-  background: rgba(161, 161, 170, 0.18);
-  color: #e4e4e7;
-}
-html.dark .preview-toolbar__icon.is-archive {
-  background: rgba(251, 146, 60, 0.22);
-  color: #fdba74;
-}
-html.dark .preview-toolbar__icon.is-epub {
-  background: rgba(45, 212, 191, 0.22);
-  color: #99f6e4;
-}
-html.dark .preview-toolbar__icon.is-csv {
-  background: rgba(74, 222, 128, 0.2);
-  color: #bbf7d0;
+  background: var(--tint-csv-bg);
+  color: var(--tint-csv-fg);
 }
 
 .preview-toolbar__title-text {
@@ -408,9 +376,9 @@ html.dark .preview-toolbar__icon.is-csv {
   gap: 6px;
   cursor: pointer;
   transition:
-    background-color 120ms ease,
-    color 120ms ease,
-    border-color 120ms ease;
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease,
+    border-color var(--dur-base) ease;
 }
 .preview-toolbar__btn:hover:not(:disabled) {
   background: var(--color-elevated, #f4f4f5);
@@ -428,6 +396,22 @@ html.dark .preview-toolbar__icon.is-csv {
   width: 28px;
   padding: 0;
   justify-content: center;
+}
+
+/* Colorful action glyphs — download (blue) and share (teal) match the
+   per-action hues used in InfoPane / PreviewInfoRail. Only the icon is
+   tinted; the label stays neutral. The explicit svg rule overrides the
+   button's currentColor (incl. its hover color), so the glyph keeps its
+   hue on hover. :deep() is needed because the svg lives in the Icon child. */
+.preview-toolbar__btn--download {
+  --tb-hue: var(--c-blue);
+}
+.preview-toolbar__btn--share {
+  --tb-hue: var(--c-teal);
+}
+.preview-toolbar__btn--download :deep(svg),
+.preview-toolbar__btn--share :deep(svg) {
+  color: var(--tb-hue);
 }
 .preview-toolbar__btn.is-active {
   background: var(--color-selected, rgba(94, 106, 210, 0.08));
@@ -509,8 +493,8 @@ html.dark .preview-shell__stage {
   cursor: pointer;
   box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.12);
   transition:
-    background-color 120ms ease,
-    color 120ms ease;
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease;
   z-index: 5;
 }
 .preview-shell__nav:hover {

@@ -1,6 +1,8 @@
 <template>
   <SettingsPage
     title="Webhooks"
+    icon="webhook"
+    accent="var(--c-teal)"
     description="POST a JSON payload to external URLs when files change — wire up Discord, n8n, Home Assistant, or your own service. Deliveries are server-wide and retried on failure."
   >
     <SettingsSection
@@ -368,8 +370,8 @@ load();
   font-weight: 500;
   cursor: pointer;
   transition:
-    background-color 0.12s ease,
-    border-color 0.12s ease;
+    background-color var(--dur-base) ease,
+    border-color var(--dur-base) ease;
 }
 .wh-add-btn:hover:not(:disabled) {
   border-color: var(--color-accent, #5e6ad2);
@@ -447,8 +449,8 @@ load();
   font-weight: 500;
   cursor: pointer;
   transition:
-    background-color 0.12s ease,
-    border-color 0.12s ease;
+    background-color var(--dur-base) ease,
+    border-color var(--dur-base) ease;
 }
 .wh-btn:hover:not(:disabled) {
   background: var(--color-elevated, #f4f4f5);
@@ -561,9 +563,9 @@ load();
   color: var(--color-ink-2, #52525b);
   cursor: pointer;
   transition:
-    background-color 0.12s ease,
-    border-color 0.12s ease,
-    color 0.12s ease;
+    background-color var(--dur-base) ease,
+    border-color var(--dur-base) ease,
+    color var(--dur-base) ease;
 }
 .wh-icon-btn:hover:not(:disabled) {
   background: var(--color-elevated, #f4f4f5);

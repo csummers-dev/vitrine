@@ -37,19 +37,19 @@
 }
 .video-js .vjs-button:hover {
   background: rgba(255, 255, 255, 0.16);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 .video-js .vjs-button:focus-visible {
   outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.45));
   outline-offset: 1px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 
 /* Center play button (shown before first play / on pause) */
 .video-js .vjs-big-play-button {
   background: rgba(0, 0, 0, 0.50);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   width: 64px;
   height: 64px;
   line-height: 64px;
@@ -59,7 +59,7 @@
   left: 50%;
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-  transition: background-color 120ms ease, transform 120ms ease;
+  transition: background-color var(--dur-base) ease, transform var(--dur-base) ease;
 }
 .video-js:hover .vjs-big-play-button,
 .video-js .vjs-big-play-button:focus {
@@ -73,20 +73,20 @@
 }
 .video-js .vjs-progress-holder {
   height: 4px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: rgba(255, 255, 255, 0.20);
   margin: 0;
 }
 .video-js .vjs-play-progress {
   background: var(--accent-gradient);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
 }
 .video-js .vjs-play-progress::before {
   content: "";
   display: block;
   width: 12px;
   height: 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--accent-gradient);
   box-shadow: 0 0 0 4px rgba(94, 106, 210, 0.32);
   position: absolute;
@@ -97,7 +97,7 @@
 }
 .video-js .vjs-load-progress {
   background: rgba(255, 255, 255, 0.32);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
 }
 .video-js .vjs-load-progress div {
   background: rgba(255, 255, 255, 0.32);
@@ -106,11 +106,11 @@
 /* ── Volume slider ─────────────────────────────────────────────── */
 .video-js .vjs-volume-bar {
   background: rgba(255, 255, 255, 0.20);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
 }
 .video-js .vjs-volume-level {
   background: white;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
 }
 
 /* ── Time display ──────────────────────────────────────────────── */
@@ -131,7 +131,7 @@
   background: rgba(0, 0, 0, 0.80);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid rgba(255, 255, 255, 0.08);
   font-family: var(--font-sans, system-ui);
   font-size: 12.5px;
@@ -140,7 +140,7 @@
 }
 .video-js .vjs-menu li {
   padding: 6px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-weight: 500;
 }
 .video-js .vjs-menu li.vjs-selected {
@@ -160,6 +160,6 @@
 .video-js .vjs-text-track-display .vjs-text-track-cue {
   background: rgba(0, 0, 0, 0.66) !important;
   font-family: var(--font-sans, system-ui) !important;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   padding: 2px 6px !important;
 }

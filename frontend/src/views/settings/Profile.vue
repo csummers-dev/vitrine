@@ -1,6 +1,8 @@
 <template>
   <SettingsPage
     :title="t('settings.profileSettings')"
+    icon="user"
+    accent="var(--c-blue)"
     description="Personal preferences for your account. Toggles save automatically; password requires confirmation."
   >
     <!-- ── Preferences (auto-save toggles) ───────────────────────────── -->

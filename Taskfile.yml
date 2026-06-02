@@ -24,14 +24,26 @@ tasks:
     vars:
       GIT_COMMIT:
         sh: git log -n 1 --format=%h
+      # On an exact tag this is the clean version (e.g. v1.4.0 → 1.4.0); on
+      # any other commit it's "1.4.0-7-gabc1234" so dev/nightly builds are
+      # self-identifying. Falls back to 0.0.0-dev when no tag is reachable.
       VERSION:
-        sh: git describe --tags --abbrev=0 --match=v* | cut -c 2-
+        sh: git describe --tags --match=v* 2>/dev/null | cut -c 2- || echo "0.0.0-dev"
 
   build:
     desc: Build both frontend and backend
     cmds:
       - task: build:frontend
       - task: build:backend
+
+  version:badge:
+    desc: Sync the README version badge (defaults to the latest v* git tag)
+    summary: |
+      Updates the version badge in README.md.
+        task version:badge            # use the latest v* tag
+        task version:badge -- 1.4.0   # explicit version
+    cmds:
+      - ./scripts/update-readme-badge.sh {{.CLI_ARGS}}
 
   release:make:
     internal: true
