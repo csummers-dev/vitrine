@@ -1038,3 +1038,20 @@ html.dark #listing.mosaic .item:hover {
     padding-right: 2px;
   }
 }
+
+/* ── Drop-into-folder target ─────────────────────────────────────────────
+   When a dragged file/folder hovers a folder's "into" zone, that folder row
+   gets a high-contrast accent ring + tint so it's unmistakably the drop
+   destination (replaces the old opacity-only cue). Toggled imperatively by
+   ListingItem.enter/leaveIntoZone; swept by FileListing.resetOpacity on drag
+   end. color-mix degrades gracefully — the ring alone still reads clearly. */
+.item.item--drop-into {
+  outline: 2px solid var(--color-accent, #5e6ad2);
+  outline-offset: -2px;
+  border-radius: 8px;
+  background: color-mix(
+    in srgb,
+    var(--color-accent, #5e6ad2) 16%,
+    transparent
+  );
+}

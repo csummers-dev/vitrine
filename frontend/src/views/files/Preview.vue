@@ -179,27 +179,6 @@
           <span class="max-md:hidden">Edit</span>
         </button>
       </template>
-
-      <!-- Video: Picture-in-Picture (S5-8). Shown only when the browser
-           supports PiP for the current <video>. Active state highlights
-           while the floating window is open. -->
-      <template v-if="fileStore.req?.type === 'video' && videoPip.supported">
-        <button
-          type="button"
-          class="preview-fit__btn"
-          :class="{ 'is-active': videoPip.active }"
-          :title="
-            videoPip.active ? 'Exit picture-in-picture' : 'Picture-in-picture'
-          "
-          :aria-label="
-            videoPip.active ? 'Exit picture-in-picture' : 'Picture-in-picture'
-          "
-          :aria-pressed="videoPip.active"
-          @click="videoViewer?.togglePip()"
-        >
-          <Icon name="picture-in-picture-2" :size="14" />
-        </button>
-      </template>
     </template>
 
     <!-- ── Stage: format-specific viewer ──────────────────────────── -->
@@ -277,7 +256,6 @@
           <VideoViewer
             v-else-if="fileStore.req?.type == 'video'"
             :key="videoKey"
-            ref="videoViewer"
             :source="previewUrl"
             :subtitles="subtitles"
             :options="videoOptions"
@@ -287,7 +265,6 @@
             :download-url="downloadUrl"
             :direct-url="directUrl"
             @metadata="onVideoMetadata"
-            @pip="onVideoPip"
           />
 
           <!-- PDF (E4: PdfViewer = PDF.js-rendered pages with
@@ -934,20 +911,6 @@ const onVideoMetadata = (m: VideoMeta) => {
   videoMeta.value = m;
 };
 
-// ── Picture-in-Picture (S5-8) ──────────────────────────────────────
-// Template ref to the VideoViewer so the toolbar PiP button can call
-// its exposed togglePip(). `videoPip` mirrors the viewer's @pip event
-// (browser support + active state) to drive the button's visibility +
-// highlight.
-const videoViewer = ref<{ togglePip: () => void } | null>(null);
-const videoPip = ref<{ supported: boolean; active: boolean }>({
-  supported: false,
-  active: false,
-});
-const onVideoPip = (state: { supported: boolean; active: boolean }) => {
-  videoPip.value = state;
-};
-
 // Audio metadata (E2) — parsed client-side from ID3v2 by AudioViewer.
 const audioMeta = ref<AudioMeta | null>(null);
 const onAudioMetadata = (m: AudioMeta) => {
@@ -1355,7 +1318,6 @@ watch(route, () => {
   // Reset per-format metadata so the previous file's stats don't show
   // against the new file during the brief load window.
   videoMeta.value = null;
-  videoPip.value = { supported: false, active: false };
   defaultSubtitle.value = "";
   audioMeta.value = null;
   imageExif.value = null;

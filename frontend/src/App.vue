@@ -27,6 +27,7 @@ import { useThemeBootstrap } from "@/composables/useThemePreference";
 import { useBackgroundGradientBootstrap } from "@/composables/useBackgroundGradient";
 import CommandPalette from "@/components/CommandPalette.vue";
 import ShortcutsOverlay from "@/components/ShortcutsOverlay.vue";
+import OfflineBanner from "@/components/OfflineBanner.vue";
 import FavoriteTitleDialog from "@/components/files/FavoriteTitleDialog.vue";
 
 const { locale } = useI18n();
