@@ -729,10 +729,13 @@ html.dark #listing.mosaic .item:hover {
   /* Color inherits from text-{hue}-{xxx} of iconColorClass */
 }
 
-/* Folders get a large 64×64 folder icon centered on the tinted bg, no inner squircle */
+/* Folders get a deliberately SMALL folder glyph centered on the tinted bg, no
+   inner squircle. The folder glyph is plain and doesn't reward being blown up,
+   so we keep it smaller than the 64×64 file cards / full-bleed media thumbnails
+   — it reads as a quiet "this is a folder" marker rather than a hero element. */
 #listing.mosaic.gallery .item[data-dir="true"] .item__icon svg {
-  width: 64px;
-  height: 64px;
+  width: 44px;
+  height: 44px;
   /* Colorful UI: amber GLYPH on a soft tint (below). The vivid saturated tile
      used in list/grid is too loud at this large full-cell gallery size. */
   color: var(--c-amber);
