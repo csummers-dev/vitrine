@@ -51,7 +51,7 @@
       <div class="preview-toolbar__actions">
         <button
           v-if="canDownload"
-          class="preview-toolbar__btn"
+          class="preview-toolbar__btn preview-toolbar__btn--download"
           :title="$t('buttons.download')"
           :aria-label="$t('buttons.download')"
           @click="$emit('download')"
@@ -61,7 +61,7 @@
         </button>
         <button
           v-if="canShare"
-          class="preview-toolbar__btn"
+          class="preview-toolbar__btn preview-toolbar__btn--share"
           :title="$t('buttons.share')"
           :aria-label="$t('buttons.share')"
           @click="$emit('share')"
@@ -428,6 +428,22 @@ html.dark .preview-toolbar__icon.is-csv {
   width: 28px;
   padding: 0;
   justify-content: center;
+}
+
+/* Colorful action glyphs — download (blue) and share (teal) match the
+   per-action hues used in InfoPane / PreviewInfoRail. Only the icon is
+   tinted; the label stays neutral. The explicit svg rule overrides the
+   button's currentColor (incl. its hover color), so the glyph keeps its
+   hue on hover. :deep() is needed because the svg lives in the Icon child. */
+.preview-toolbar__btn--download {
+  --tb-hue: var(--c-blue);
+}
+.preview-toolbar__btn--share {
+  --tb-hue: var(--c-teal);
+}
+.preview-toolbar__btn--download :deep(svg),
+.preview-toolbar__btn--share :deep(svg) {
+  color: var(--tb-hue);
 }
 .preview-toolbar__btn.is-active {
   background: var(--color-selected, rgba(94, 106, 210, 0.08));
