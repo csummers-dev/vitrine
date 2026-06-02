@@ -38,6 +38,14 @@
             class="max-w-full max-h-full w-auto h-auto object-contain rounded-md"
             alt="Album artwork"
           />
+          <!-- batch #4: embedded EPUB cover for a selected book, so the
+               details pane matches the preview pane. -->
+          <img
+            v-else-if="epubCoverUrl"
+            :src="epubCoverUrl"
+            class="max-w-full max-h-full w-auto h-auto object-contain rounded-md shadow-sm"
+            alt="Book cover"
+          />
           <div
             v-else
             class="w-14 h-14 rounded-xl flex items-center justify-center backdrop-blur-sm border border-line/60 shadow-sm"
@@ -347,6 +355,7 @@ import { filesize } from "@/utils";
 import { enableThumbs, unzipEnabled } from "@/utils/constants";
 import { isExtractable } from "@/utils/archive";
 import { files as api } from "@/api";
+import type { Book } from "epubjs";
 import dayjs from "dayjs";
 import { computed, inject, onMounted, onUnmounted, ref, watch } from "vue";
 import { useTagPicker } from "@/composables/useTagPicker";
@@ -586,6 +595,86 @@ watch(
 );
 
 onUnmounted(clearAlbumArt);
+
+// ── Embedded cover art for a selected EPUB (batch #4) ───────────────
+// The Preview pane shows the cover because it mounts EpubViewer, which
+// loads epub.js and calls book.coverUrl(). The details pane never mounts
+// the reader, so it had no cover. Mirror the album-art approach: lazily
+// import epub.js (kept OUT of the always-loaded listing bundle via the
+// dynamic import — it stays in the shared epubjs async chunk), open the
+// book just long enough to resolve its cover into our OWN blob URL, then
+// destroy the book so the archive doesn't linger in memory.
+const epubCoverUrl = ref<string>("");
+let epubCoverRevocable: string | null = null;
+let epubCoverToken = 0;
+
+const isEpub = computed(
+  () =>
+    !!item.value &&
+    !item.value.isDir &&
+    item.value.extension?.toLowerCase() === ".epub"
+);
+
+const clearEpubCover = () => {
+  // Bump the token so any in-flight load drops its result on return.
+  epubCoverToken++;
+  if (epubCoverRevocable) {
+    URL.revokeObjectURL(epubCoverRevocable);
+    epubCoverRevocable = null;
+  }
+  epubCoverUrl.value = "";
+};
+
+const loadEpubCover = async (resource: ResourceItem) => {
+  const token = ++epubCoverToken;
+  if (epubCoverRevocable) {
+    URL.revokeObjectURL(epubCoverRevocable);
+    epubCoverRevocable = null;
+  }
+  epubCoverUrl.value = "";
+  let book: Book | null = null;
+  try {
+    // The ?auth= token in the inline download URL is the real
+    // authenticator (same as the working preview path, RC-44), so we
+    // don't need requestCredentials. openAs:'epub' skips epub.js's
+    // extension sniff, which the auth JWT's dots otherwise confuse.
+    const url = api.getDownloadURL(resource, true);
+    const ePub = (await import("epubjs")).default;
+    if (token !== epubCoverToken) return; // selection moved on
+    book = ePub(url, { openAs: "epub" });
+    await book.ready;
+    if (token !== epubCoverToken) return;
+    const coverUrl = await book.coverUrl();
+    if (token !== epubCoverToken || !coverUrl) return;
+    // Copy the cover into our OWN blob URL so it survives book.destroy()
+    // (which revokes epub.js's internally-created archive URLs).
+    const blob = await (await fetch(coverUrl)).blob();
+    if (token !== epubCoverToken) return;
+    const objUrl = URL.createObjectURL(blob);
+    epubCoverRevocable = objUrl;
+    epubCoverUrl.value = objUrl;
+  } catch {
+    /* no cover / open failed — keep the generic book glyph */
+  } finally {
+    try {
+      book?.destroy();
+    } catch {
+      /* ignore */
+    }
+  }
+};
+
+// Re-extract whenever the selected EPUB changes; clear for anything else.
+watch(
+  () => (isEpub.value ? (item.value?.url ?? null) : null),
+  (url) => {
+    if (url) void loadEpubCover(item.value as ResourceItem);
+    else clearEpubCover();
+  },
+  { immediate: true }
+);
+
+onUnmounted(clearEpubCover);
 
 const typeLabel = computed(() => {
   if (!item.value) return "";

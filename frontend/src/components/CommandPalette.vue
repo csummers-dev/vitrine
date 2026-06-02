@@ -80,6 +80,7 @@
                   :size="15"
                   :stroke-width="1.6"
                   class="cmd-palette__row-icon"
+                  :style="{ color: rowIconColor(cmd) }"
                 />
                 <span class="cmd-palette__row-label">{{ cmd.label }}</span>
                 <span v-if="cmd.hint" class="cmd-palette__row-hint">{{
@@ -134,6 +135,69 @@ interface ScoredCommand extends Command {
   _score: number;
   _flatIndex: number;
 }
+
+// ── Colorful row icons ──────────────────────────────────────────────────
+// Each row's icon takes a hue from the app's 6-color palette so the palette
+// reads as vividly as the listing (Raycast-style). Semantic per-icon mapping
+// first (delete = rose, folders = amber, code = teal, …), mirroring the file
+// tile hues where it makes sense; any unmapped icon falls back to a per-group
+// hue so nothing is ever flat grey. Bound inline so the color wins over the
+// base `.cmd-palette__row-icon` rule (and persists on the selected row).
+const ICON_HUE: Record<string, string> = {
+  // Folders + creation
+  folder: "var(--c-amber)",
+  "folder-plus": "var(--c-amber)",
+  "file-plus": "var(--c-green)",
+  // File-type glyphs (from fileIcon) — track the listing tile colors
+  file: "var(--c-blue)",
+  "file-text": "var(--c-blue)",
+  "file-pen-line": "var(--c-blue)",
+  type: "var(--c-blue)",
+  image: "var(--c-rose)",
+  music: "var(--c-amber)",
+  video: "var(--c-lilac)",
+  code: "var(--c-teal)",
+  terminal: "var(--c-teal)",
+  sheet: "var(--c-green)",
+  presentation: "var(--c-amber)",
+  "file-archive": "var(--c-amber)",
+  package: "var(--c-amber)",
+  "package-open": "var(--c-amber)",
+  disc: "var(--c-lilac)",
+  unlink: "var(--c-rose)",
+  // Action verbs
+  download: "var(--c-blue)",
+  forward: "var(--c-blue)",
+  copy: "var(--c-teal)",
+  pencil: "var(--c-amber)",
+  "share-2": "var(--c-teal)",
+  "check-check": "var(--c-green)",
+  x: "var(--c-rose)",
+  "rotate-ccw": "var(--c-blue)",
+  "trash-2": "var(--c-rose)",
+  "log-out": "var(--c-rose)",
+  // Views
+  list: "var(--c-blue)",
+  "layout-grid": "var(--c-teal)",
+  // Navigation / account
+  "settings-2": "var(--c-lilac)",
+  user: "var(--c-lilac)",
+  users: "var(--c-blue)",
+  star: "var(--c-amber)",
+  search: "var(--c-blue)",
+};
+
+const GROUP_HUE: Record<string, string> = {
+  quickActions: "var(--c-lilac)",
+  recent: "var(--c-blue)",
+  files: "var(--c-teal)",
+  actions: "var(--c-green)",
+  view: "var(--c-amber)",
+  navigation: "var(--c-rose)",
+};
+
+const rowIconColor = (cmd: { icon: string; group: string }): string =>
+  ICON_HUE[cmd.icon] ?? GROUP_HUE[cmd.group] ?? "var(--color-ink-2, #52525b)";
 
 interface ResultGroup {
   id: CommandGroup;

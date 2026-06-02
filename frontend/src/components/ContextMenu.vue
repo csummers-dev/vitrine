@@ -1,77 +1,88 @@
 <template>
-  <Transition name="ctx-menu">
-    <div
-      v-if="show"
-      ref="contextMenu"
-      class="context-menu"
-      role="menu"
-      tabindex="-1"
-      :style="{
-        top: `${resolvedY}px`,
-        left: `${resolvedX}px`,
-      }"
-      @keydown="onKeydown"
-    >
-      <!-- Items-based rendering. Preferred for new callers — gives us
+  <!--
+    Teleport to <body> so the popover escapes any ancestor that establishes a
+    containing block for fixed positioning. The files header (.header-bar) and
+    other chrome carry `backdrop-filter` under the translucent-surfaces theme,
+    which traps + clips `position: fixed` descendants to that ancestor's box —
+    that silently broke the in-header Sort menu (it opened, but clipped to the
+    thin header strip so nothing showed). Teleporting roots the menu at <body>
+    so its fixed coords resolve against the viewport, unclipped.
+  -->
+  <Teleport to="body">
+    <Transition name="ctx-menu">
+      <div
+        v-if="show"
+        ref="contextMenu"
+        class="context-menu"
+        role="menu"
+        tabindex="-1"
+        :style="{
+          top: `${resolvedY}px`,
+          left: `${resolvedX}px`,
+        }"
+        @keydown="onKeydown"
+      >
+        <!-- Items-based rendering. Preferred for new callers — gives us
            keyboard nav, type-ahead, separators, disabled / destructive
            variants. Falls back to slot rendering when no items prop
            is provided so existing callers (e.g., the section-title
            More dropdown's pre-migration usage) keep working. -->
-      <template v-if="items && items.length">
-        <template v-for="(item, i) in items" :key="i">
-          <div
-            v-if="item.type === 'separator'"
-            class="context-menu__separator"
-            role="separator"
-          />
-          <div
-            v-else-if="item.type === 'header'"
-            class="context-menu__header"
-            role="presentation"
-          >
-            {{ item.label }}
-          </div>
-          <button
-            v-else
-            type="button"
-            class="context-menu__item"
-            :class="{
-              'context-menu__item--focused': focusedIndex === i,
-              'context-menu__item--disabled': item.disabled,
-              'context-menu__item--destructive': item.destructive,
-            }"
-            role="menuitem"
-            :tabindex="item.disabled ? -1 : 0"
-            :aria-disabled="item.disabled ? 'true' : undefined"
-            :data-index="i"
-            @click="onItemClick(item)"
-            @mouseenter="focusedIndex = i"
-          >
-            <Icon
-              v-if="item.icon"
-              :name="item.icon"
-              :size="14"
-              :stroke-width="1.6"
-              class="context-menu__item-icon"
+        <template v-if="items && items.length">
+          <template v-for="(item, i) in items" :key="i">
+            <div
+              v-if="item.type === 'separator'"
+              class="context-menu__separator"
+              role="separator"
             />
-            <span class="context-menu__item-label">{{ item.label }}</span>
-            <span
-              v-if="item.kbd"
-              class="context-menu__item-kbd"
-              aria-hidden="true"
+            <div
+              v-else-if="item.type === 'header'"
+              class="context-menu__header"
+              role="presentation"
             >
-              {{ item.kbd }}
-            </span>
-          </button>
+              {{ item.label }}
+            </div>
+            <button
+              v-else
+              type="button"
+              class="context-menu__item"
+              :class="{
+                'context-menu__item--focused': focusedIndex === i,
+                'context-menu__item--disabled': item.disabled,
+                'context-menu__item--destructive': item.destructive,
+              }"
+              role="menuitem"
+              :tabindex="item.disabled ? -1 : 0"
+              :aria-disabled="item.disabled ? 'true' : undefined"
+              :data-index="i"
+              @click="onItemClick(item)"
+              @mouseenter="focusedIndex = i"
+            >
+              <Icon
+                v-if="item.icon"
+                :name="item.icon"
+                :size="14"
+                :stroke-width="1.6"
+                class="context-menu__item-icon"
+              />
+              <span class="context-menu__item-label">{{ item.label }}</span>
+              <span
+                v-if="item.kbd"
+                class="context-menu__item-kbd"
+                aria-hidden="true"
+              >
+                {{ item.kbd }}
+              </span>
+            </button>
+          </template>
         </template>
-      </template>
 
-      <!-- Legacy slot path — preserved for back-compat. Existing callers
+        <!-- Legacy slot path — preserved for back-compat. Existing callers
            pass <action> components and rely on the click-outside handler
            below to dismiss. -->
-      <slot v-else />
-    </div>
-  </Transition>
+        <slot v-else />
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">

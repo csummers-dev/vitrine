@@ -106,7 +106,7 @@
         <!-- Upload (primary; collapses to icon-only at < md) -->
         <button
           v-if="headerButtons.upload"
-          class="h-7 px-2.5 max-md:w-7 max-md:h-7 max-md:px-0 max-md:justify-center rounded-md bg-accent text-white text-[13px] font-medium flex items-center gap-1.5 hover:bg-accent-strong shadow-sm transition"
+          class="h-7 px-2.5 max-md:w-7 max-md:h-7 max-md:px-0 max-md:justify-center rounded-md btn-accent-gradient text-white text-[13px] font-medium flex items-center gap-1.5 shadow-sm transition"
           @click="uploadFunc"
           :title="t('buttons.upload')"
           :aria-label="t('buttons.upload')"
@@ -790,6 +790,11 @@
          by the useImageHoverPreview singleton; rows schedule/cancel it.
          Self-teleports to body + size-caps the image. -->
     <ImageHoverPreview />
+
+    <!-- Favorites display-title editor. Opened from the row right-click
+         menu and the section ⋯ menu via the useFavoriteTitleDialog
+         singleton; self-mounts its own modal scrim when open. -->
+    <FavoriteTitleDialog />
   </div>
 </template>
 
@@ -804,6 +809,7 @@ import { useFavorites } from "@/composables/useFavorites";
 import { useFolderViewMode } from "@/composables/useFolderViewMode";
 import { usePreferences } from "@/composables/usePreferences";
 import { useTagPicker } from "@/composables/useTagPicker";
+import { useFavoriteTitleDialog } from "@/composables/useFavoriteTitleDialog";
 import { useBulkRename } from "@/composables/useBulkRename";
 import { useDragSelect } from "@/composables/useDragSelect";
 import { useListingGrid } from "@/composables/useListingGrid";
@@ -830,6 +836,7 @@ import Action from "@/components/header/Action.vue";
 import Search from "@/components/Search.vue";
 import Item from "@/components/files/ListingItem.vue";
 import InfoPane from "@/components/files/InfoPane.vue";
+import FavoriteTitleDialog from "@/components/files/FavoriteTitleDialog.vue";
 import ImageHoverPreview from "@/components/files/ImageHoverPreview.vue";
 import InlineNewItem from "@/components/files/InlineNewItem.vue";
 import ListingSkeleton from "@/components/files/ListingSkeleton.vue";
@@ -878,6 +885,9 @@ const prefs = usePreferences();
 // S4-1: shared open-state for the TagPickerSheet so the row context
 // menu can open it from outside InfoPane.
 const tagPicker = useTagPicker();
+// Shared open-state for the favorites display-title editor, opened from the
+// row context menu + the section ⋯ menu (both gated on the folder being pinned).
+const favTitleDialog = useFavoriteTitleDialog();
 // S4-2: shared open-state for the BulkRenamePanel so the row context
 // menu, the bulk-pill button, and the command palette all trigger
 // through the same flag.
@@ -2698,6 +2708,16 @@ const sectionMoreItems = computed<MenuItem[]>(() => {
           action: startFolderRename,
         }
       : null,
+    // Edit the sidebar Favorites alias for the CURRENT folder — only when it's
+    // pinned (the title is meaningless otherwise). Sidebar-only; the real
+    // folder is untouched.
+    currentFolderFavorited.value
+      ? {
+          label: "Favorites display title…",
+          icon: "star",
+          action: () => favTitleDialog.open(currentFolderPath.value),
+        }
+      : null,
     { label: "Refresh", icon: "rotate-ccw", action: refresh, kbd: "R" },
     {
       label: t("buttons.info"),
@@ -3058,6 +3078,24 @@ const rowMenuItems = computed<MenuItem[]>(() => {
       action: () => {
         hideContextMenu();
         tagPicker.open();
+      },
+    });
+  }
+  // Favorites display title — only for a folder that's currently pinned, since
+  // the title only shows in the sidebar Favorites section. Sets a sidebar-only
+  // alias; never renames the real folder.
+  if (
+    singleItem &&
+    singleItem.isDir &&
+    favoritesComposable.isFavorited(singleItem.url)
+  ) {
+    const favPath = singleItem.url;
+    items.push({
+      label: "Favorites display title…",
+      icon: "star",
+      action: () => {
+        hideContextMenu();
+        favTitleDialog.open(favPath);
       },
     });
   }
@@ -3576,7 +3614,9 @@ html.dark .current-folder-dropzone {
   border: 0;
   border-radius: 4px;
   background: transparent;
-  color: var(--color-ink-3, #a1a1aa);
+  /* Colorful-UI: a blue navigation tint (matches the breadcrumb home glyph)
+     so the parent-up affordance reads as a nav control, not muted chrome. */
+  color: var(--c-blue, #3b82f6);
   cursor: pointer;
   transition:
     background-color 0.1s ease,
@@ -3585,13 +3625,14 @@ html.dark .current-folder-dropzone {
 
 .parent-up-btn:hover {
   background: var(--color-hover, rgba(24, 24, 27, 0.045));
-  color: var(--color-accent, #5e6ad2);
+  color: var(--c-blue, #3b82f6);
+  filter: brightness(0.94);
 }
 
 .parent-up-btn:focus-visible {
   outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
   outline-offset: 1px;
-  color: var(--color-accent, #5e6ad2);
+  color: var(--c-blue, #3b82f6);
 }
 
 /* Current-folder favorites star (v1.3 S3-2). Sits next to the

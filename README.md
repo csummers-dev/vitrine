@@ -12,6 +12,10 @@
 
 </div>
 
+<p align="center">
+  <img src="docs/screenshots/hero.png" width="92%" alt="filebrowser pretty — gallery view with the details panel open" />
+</p>
+
 ---
 
 ## Features
@@ -90,41 +94,41 @@
 
 ---
 
+## Screenshots
+
+<!--
+  Capture guide — drop PNGs into docs/screenshots/ (filenames below). Several
+  are placeholders for shots not yet taken.
+
+  • Default theme on (subtle gradient + translucent surfaces) so the signature
+    look shows; include the dark shots in the Light & dark table.
+  • Consistent 1440×900 desktop window; real device frame for the mobile trio.
+  • Seed a demo account with real photos, a video, an audio file with embedded
+    art, an EPUB with a cover, and a few tagged + favorited folders.
+  • Capture at 2× so images stay crisp when scaled.
+  • Must-haves if trimming: hero, the Light & dark table, gallery, command
+    palette, the preview grid, bulk-select, and settings-profile.
+-->
+
+### Browse
+
 <p align="center">
-  <img src="docs/screenshots/listing-list.png" width="80%" alt="List view with file-icon system and inline meta" />
-  <br/><em>List view with file-icon system and inline meta</em>
+  <img src="docs/screenshots/listing-list.png" width="80%" alt="List view with the colorful file-type icon system, tags, and inline meta" />
+  <br/><em>List view — colorful file-type tiles, inline tags, and the green sort indicator</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/listing-grid.png" width="49%" alt="Grid view" />
-  <img src="docs/screenshots/listing-gallery.png" width="49%" alt="Gallery view with image thumbnails" />
-  <br/><em>Grid and gallery views with file-icon system and inline meta</em>
+  <img src="docs/screenshots/listing-grid.png" width="49%" alt="Grid view with vivid file-type tiles" />
+  <img src="docs/screenshots/listing-gallery.png" width="49%" alt="Gallery view with edge-to-edge image thumbnails" />
+  <br/><em>Grid and gallery views</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/preview-image.png" width="80%" alt="Image preview with EXIF info" />
-  <br/><em>Image preview with EXIF info</em>
+  <img src="docs/screenshots/app-gradient.png" width="80%" alt="The subtle accent-gradient application background" />
+  <br/><em>The signature accent-gradient background — configurable off / whisper / subtle / bold</em>
 </p>
 
-<p align="center">
-  <img src="docs/screenshots/preview-video.png" width="80%" alt="Video preview and playback with media info" />
-  <br/><em>Video preview and playback with media info</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/preview-audio.png" width="80%" alt="Audio preview and playback with album art and custom transport" />
-  <br/><em>Audio preview and playback with album art and custom transport</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/preview-pdf.png" width="80%" alt="PDF preview with thumbnail" />
-  <br/><em>PDF preview with thumbnail</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/preview-epub.png" width="80%" alt="EPUB preview" />
-  <br/><em>EPUB preview</em>
-</p>
+### Light &amp; dark
 
 <table>
   <tr>
@@ -141,21 +145,92 @@
   </tr>
 </table>
 
+### Search &amp; navigate
+
 <p align="center">
-  <img src="docs/screenshots/command-palette.png" width="70%" alt="⌘K command palette with file search" />
-  <br/><em>⌘K command palette with file search</em>
+  <img src="docs/screenshots/command-palette.png" width="70%" alt="Command palette with colorful icons and instant file search" />
+  <br/><em>⌘K command palette — instant file search, quick actions, color-coded icons</em>
 </p>
+
+<p align="center">
+  <img src="docs/screenshots/breadcrumb-siblings.png" width="70%" alt="Breadcrumb navigation with a sibling-folder jump dropdown open" />
+  <br/><em>Breadcrumbs with depth ellipsis and a sibling-folder jump dropdown</em>
+</p>
+
+### Previews
+
+<p align="center">
+  <img src="docs/screenshots/preview-image.png" width="80%" alt="Image preview with film strip and EXIF info" />
+  <br/><em>Image preview — film strip, fit / zoom, and EXIF camera data</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/preview-video.png" width="49%" alt="Video preview and playback with media info" />
+  <img src="docs/screenshots/preview-audio.png" width="49%" alt="Audio preview with album art and custom transport" />
+  <br/><em>Video playback with track info · audio with album art and ID3 tags</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/preview-pdf.png" width="49%" alt="PDF preview with page navigation" />
+  <img src="docs/screenshots/preview-epub.png" width="49%" alt="EPUB reader with chapter list and cover" />
+  <br/><em>PDF reader · EPUB reader with chapter list and remembered position</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/preview-markdown.png" width="80%" alt="Rendered Markdown preview and the themed code editor" />
+  <br/><em>Rendered Markdown (toggle to raw) and the themed in-browser editor</em>
+</p>
+
+### Power features
+
+<p align="center">
+  <img src="docs/screenshots/bulk-select.png" width="49%" alt="Multi-select with the floating bulk action bar" />
+  <img src="docs/screenshots/context-menu.png" width="49%" alt="Right-click context menu on a file row" />
+  <br/><em>Multi-select bulk actions · right-click context menus</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/drag-drop.png" width="49%" alt="Drag and drop with a drag ghost and highlighted drop target" />
+  <img src="docs/screenshots/tags.png" width="49%" alt="Color-coded tags with the tag picker open" />
+  <br/><em>Drag and drop with spring-loaded folders · color-coded tags</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/move-copy.png" width="49%" alt="Move / copy slide-over folder picker" />
+  <img src="docs/screenshots/extract.png" width="49%" alt="Archive extract slide-over" />
+  <br/><em>Move / copy folder picker · archive extraction</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/upload-dock.png" width="70%" alt="Floating upload dock with per-file progress and cancel" />
+  <br/><em>Floating upload dock — per-file progress, cancel, and queueing</em>
+</p>
+
+### Personalization &amp; admin
+
+<p align="center">
+  <img src="docs/screenshots/settings-profile.png" width="80%" alt="Per-user profile settings — theme, background gradient, translucent surfaces" />
+  <br/><em>Per-user settings — theme, background gradient, and translucent surfaces</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/favorites-titles.png" width="49%" alt="Sidebar favorites with custom display titles and the edit dialog" />
+  <img src="docs/screenshots/users.png" width="49%" alt="Admin user management with colorful avatars and permission chips" />
+  <br/><em>Favorites with custom display titles · admin user management</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/login.png" width="70%" alt="Login page with the full six-color gradient backdrop" />
+  <br/><em>Login — the full six-color gradient backdrop</em>
+</p>
+
+### Mobile
 
 <p align="center">
   <img src="docs/screenshots/mobile-drawer.png" width="32%" alt="Mobile sidebar drawer" />
   <img src="docs/screenshots/mobile-listing.png" width="32%" alt="Mobile file listing" />
   <img src="docs/screenshots/mobile-preview.png" width="32%" alt="Mobile preview" />
-  <br/><em>Mobile-friendly design principles</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/settings-profile.png" width="80%" alt="Global and per-user pofile settings" />
-  <br/><em>Global and per-user pofile settings</em>
+  <br/><em>Responsive on every screen — slide-out sidebar, pull-to-refresh, swipe between files</em>
 </p>
 
 ---

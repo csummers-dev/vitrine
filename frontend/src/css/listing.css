@@ -426,12 +426,15 @@
   background: var(--color-hover, var(--hover));
 }
 
-/* Column header — same 5-col grid as rows */
+/* Column header — same 5-col grid as rows. Transparent so it blends into the
+   page background; only the two divider rules above/below frame the column
+   labels. (Safe to be fill-free: in the virtualized list the header renders
+   ABOVE the RecycleScroller, so no rows ever scroll behind it.) */
 #listing.list .item.header {
   display: grid !important;
   grid-template-columns: 28px minmax(0, 1fr) 120px 80px 32px;
   gap: 12px;
-  background: var(--color-canvas, var(--background));
+  background: transparent;
   height: 32px;
   padding: 0 6px;
   margin: 0 0 2px;
@@ -730,6 +733,14 @@ html.dark #listing.mosaic .item:hover {
 #listing.mosaic.gallery .item[data-dir="true"] .item__icon svg {
   width: 64px;
   height: 64px;
+  /* Colorful UI: amber GLYPH on a soft tint (below). The vivid saturated tile
+     used in list/grid is too loud at this large full-cell gallery size. */
+  color: var(--c-amber);
+}
+#listing.mosaic.gallery .item[data-dir="true"] .item__icon {
+  background-color: color-mix(in srgb, var(--c-amber) 16%, var(--color-surface));
+  background-image: none;
+  box-shadow: none;
 }
 
 /* Non-image, non-video, non-folder files in gallery:

@@ -36,7 +36,7 @@
       >
         <button
           @click="showHover('newDir')"
-          class="flex-1 h-8 rounded-md bg-accent text-white text-[13px] font-medium flex items-center justify-center gap-1.5 hover:bg-accent-strong transition shadow-sm max-md:flex-none max-md:w-10 max-md:h-10 max-md:p-0"
+          class="flex-1 h-8 rounded-md btn-accent-gradient text-white text-[13px] font-medium flex items-center justify-center gap-1.5 transition shadow-sm max-md:flex-none max-md:w-10 max-md:h-10 max-md:p-0"
           :title="$t('sidebar.newFolder')"
           :aria-label="$t('sidebar.newFolder')"
         >
@@ -219,7 +219,7 @@
           v-show="!isSectionCollapsed('recent')"
           class="list-none m-0 p-0 space-y-0.5"
         >
-          <li v-for="r in visibleRecents" :key="r.path">
+          <li v-for="(r, ri) in visibleRecents" :key="r.path">
             <router-link
               :to="`/files${r.path}`"
               class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] hover:bg-hover text-ink-2 transition"
@@ -228,7 +228,8 @@
               <Icon
                 name="file"
                 :size="12"
-                class="text-[var(--c-blue)] shrink-0"
+                :style="{ color: recentHue(ri) }"
+                class="shrink-0"
               />
               <span class="truncate flex-1">{{ r.name }}</span>
             </router-link>
@@ -420,18 +421,11 @@ export default {
     const removeHintPos = ref({ x: 0, y: 0 });
     const favListEl = ref(null);
 
-    /** basename of a favorited folder path, URL-decoded.
-     *  "/files/Documents/Letters/" → "Letters". */
-    const favoriteName = (path) => {
-      const trimmed = String(path).replace(/\/+$/, "");
-      const segments = trimmed.split("/").filter(Boolean);
-      const last = segments[segments.length - 1] ?? path;
-      try {
-        return decodeURIComponent(last);
-      } catch {
-        return last;
-      }
-    };
+    /** Sidebar label for a favorited folder: the user's custom display title
+     *  when set, otherwise the folder's URL-decoded basename. The title is a
+     *  presentation alias stored in prefs — set via the row right-click menu
+     *  or the section ⋯ menu, never touching the real folder. */
+    const favoriteName = (path) => favoritesComposable.displayName(path);
 
     const isInsideFavList = (target) =>
       !!favListEl.value &&
@@ -659,6 +653,19 @@ export default {
   },
   methods: {
     ...mapActions(useLayoutStore, ["closeHovers", "showHover"]),
+    // Colorful UI: cycle the recent-files icons through the six accent hues
+    // (theme-aware tokens) so the Recent section reads colorful, not uniform.
+    recentHue(i) {
+      const hues = [
+        "var(--c-lilac)",
+        "var(--c-blue)",
+        "var(--c-teal)",
+        "var(--c-green)",
+        "var(--c-amber)",
+        "var(--c-rose)",
+      ];
+      return hues[i % hues.length];
+    },
     abortOngoingFetchUsage() {
       this.usageAbortController.abort();
     },

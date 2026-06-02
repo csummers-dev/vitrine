@@ -1,5 +1,5 @@
 <template>
-  <div ref="rootEl" class="epub-viewer">
+  <div ref="rootEl" class="epub-viewer" tabindex="-1">
     <!--
       openAs: 'epub' is REQUIRED, do not remove. The `src` carries a
       `?auth=<JWT>` query (RC-44, so the request authenticates). epub.js
@@ -331,6 +331,13 @@ const captureRendition = (r: Rendition) => {
     (_section: unknown, view: { iframe?: HTMLIFrameElement }) => {
       applyTheme();
       attachIframeKey(view);
+      // Keep focus on the reader SHELL, not the book iframe. epubjs/vue-reader
+      // call `iframe.contentWindow.focus()` on every render, which steals focus
+      // into the iframe and kills the parent's arrow handlers — that's the
+      // "arrows only work for a second" bug. Re-claiming focus here (after
+      // their focus call, via rAF) keeps ←/→ (file nav) and ↑/↓ (page nav)
+      // working through Preview's window-level key handlers.
+      requestAnimationFrame(() => rootEl.value?.focus({ preventScroll: true }));
     }
   );
   installIframeKeyHandler(r);
@@ -364,6 +371,14 @@ onMounted(() => {
   }
   wireIframes();
   [100, 300, 600, 1200].forEach((ms) => window.setTimeout(wireIframes, ms));
+
+  // Claim focus for the reader shell up front (and again after epubjs has had
+  // a chance to grab it) so the parent window's arrow handlers are live from
+  // the moment the book opens — without requiring a click outside the book.
+  rootEl.value?.focus({ preventScroll: true });
+  [150, 400, 800].forEach((ms) =>
+    window.setTimeout(() => rootEl.value?.focus({ preventScroll: true }), ms)
+  );
 });
 
 onBeforeUnmount(() => {
@@ -380,6 +395,13 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   display: flex;
+}
+
+/* The shell is programmatically focused (tabindex="-1") to keep arrow-key
+   navigation alive; don't paint a focus ring around the whole reader. */
+.epub-viewer:focus,
+.epub-viewer:focus-visible {
+  outline: none;
 }
 
 .epub-viewer :deep(> div) {

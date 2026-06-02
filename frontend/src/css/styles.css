@@ -789,14 +789,10 @@ html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) #file-select
   -webkit-backdrop-filter: blur(9px);
 }
 
-/* List-view column header (Name / Modified / Size). It's a sticky bar with an
-   opaque canvas fill that covered the mesh at the top of the listing — frost
-   it like the other chrome bars (it needs a backing since rows scroll under). */
-html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) #listing.list .item.header {
-  background-color: color-mix(in srgb, var(--color-canvas) 70%, transparent);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-}
+/* List-view column header (Name / Modified / Size) is intentionally transparent
+   now (see listing.css) so it blends into the mesh with only its divider rules
+   visible — no frosted backing needed since it sits above the virtual scroller
+   and nothing scrolls behind it. */
 
 /* Detail-panel action buttons (Download / Share / Rename / Delete / More) —
    shared `.info-action` class in BOTH the listing details pane (InfoPane) and
@@ -834,4 +830,16 @@ html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .info-action
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+/* Primary action buttons (New folder, Upload) — lilac gradient, not flat. */
+.btn-accent-gradient {
+  background-image: linear-gradient(
+    135deg,
+    var(--color-accent),
+    var(--color-accent-grad)
+  );
+}
+.btn-accent-gradient:hover {
+  filter: brightness(1.06);
 }

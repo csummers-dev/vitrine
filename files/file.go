@@ -230,7 +230,8 @@ func (i *FileInfo) detectType(modify, saveContent, readHeader bool, calcImgRes b
 	// of files couldn't be opened: we'd have immediately
 	// a 500 even though it doesn't matter. So we just log it.
 
-	mimetype := mime.TypeByExtension(i.Extension)
+	extMime := mime.TypeByExtension(i.Extension)
+	mimetype := extMime
 
 	var buffer []byte
 	if readHeader {
@@ -270,6 +271,12 @@ func (i *FileInfo) detectType(modify, saveContent, readHeader bool, calcImgRes b
 	// to the blob (download) card instead of letting the heuristic force a
 	// text preview on an unknown file. `text/*` MIMEs (incl. extensionless
 	// files DetectContentType reads as text/plain) still preview as text.
+	// An empty file with an UNKNOWN extension otherwise sniffs as text/plain
+	// (Go's DetectContentType verdict for empty input) and wrongly opens the
+	// text editor — `file.nothing` / `file.fjksf` are blobs, not text. Empty
+	// files with a known text extension (e.g. a fresh `.txt`) stay editable.
+	case extMime == "" && i.Size == 0:
+		i.Type = "blob"
 	case mimetype != "application/octet-stream" &&
 		(strings.HasPrefix(mimetype, "text") || !isBinary(buffer)) &&
 		i.Size <= 10*1024*1024: // 10 MB

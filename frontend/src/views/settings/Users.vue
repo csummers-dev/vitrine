@@ -253,12 +253,19 @@ const summaryPerms = (user: IUser) => {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
-.users-card__avatar--admin {
-  background: linear-gradient(135deg, #5e6ad2 0%, #4f5ac4 100%);
-}
-
+/* Rainbow conic — matches the colorful user avatar in the sidebar/drawer. */
+.users-card__avatar--admin,
 .users-card__avatar--user {
-  background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+  background: conic-gradient(
+    from 210deg,
+    var(--c-lilac),
+    var(--c-blue),
+    var(--c-teal),
+    var(--c-green),
+    var(--c-amber),
+    var(--c-rose),
+    var(--c-lilac)
+  );
 }
 
 /* Identity column */
