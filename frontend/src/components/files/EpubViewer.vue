@@ -1,5 +1,10 @@
 <template>
-  <div ref="rootEl" class="epub-viewer" tabindex="-1">
+  <div
+    ref="rootEl"
+    class="epub-viewer"
+    :class="{ 'epub-viewer--dark': dark }"
+    tabindex="-1"
+  >
     <!--
       openAs: 'epub' is REQUIRED, do not remove. The `src` carries a
       `?auth=<JWT>` query (RC-44, so the request authenticates). epub.js
@@ -67,6 +72,10 @@ const props = defineProps<{
   src: string;
   location: number | string;
   size: number;
+  /** Effective book theme, resolved by the parent (app theme + the reader's
+   *  per-book override). Drives both the in-iframe text colors and the
+   *  surrounding reader chrome. */
+  dark: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -131,10 +140,8 @@ const prevPage = () => {
 };
 defineExpose({ goTo, nextPage, prevPage });
 
-const isDarkNow = () => document.documentElement.classList.contains("dark");
-
 /**
- * Apply the active app theme to the epubjs rendition via `themes.override`.
+ * Apply the active book theme to the epubjs rendition via `themes.override`.
  *
  * Why override (not register + select): epubjs's `themes.register` +
  * `themes.select` writes a CSS rule into the iframe's <head>, but the
@@ -147,7 +154,7 @@ const isDarkNow = () => document.documentElement.classList.contains("dark");
 const applyTheme = () => {
   const r = rendition.value;
   if (!r) return;
-  if (isDarkNow()) {
+  if (props.dark) {
     // Warmer near-black instead of pitch #18181b — easier on the eyes
     // for long reading sessions and matches the app's elevated dark
     // surface. Ink at zinc-200 (#e4e4e7) reads as cleanly off-white
@@ -349,18 +356,16 @@ watch(
   (next) => rendition.value?.themes.fontSize(`${next}%`)
 );
 
-// Watch the <html> classList for `.dark` toggles. setTheme in
-// useThemePreference REPLACES className (sets to "dark" or "light"), so
-// every flip triggers an `attributes` mutation we can react to.
-let themeObserver: MutationObserver | null = null;
+// Re-apply the book theme whenever the parent flips `dark` — either the app
+// theme changed (and no per-book override is set) or the reader's dark-mode
+// toggle was used. `themes.override` is idempotent, so this is safe to run on
+// every change. The parent (Preview.vue) owns the app-theme observation now.
+watch(
+  () => props.dark,
+  () => applyTheme()
+);
 
 onMounted(() => {
-  themeObserver = new MutationObserver(() => applyTheme());
-  themeObserver.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ["class"],
-  });
-
   // Wire arrow-key handling into the book iframe(s). Watch the viewer
   // subtree so we catch the iframe whenever vue-reader (re)creates it, and
   // run a few timed passes for the async window between the iframe
@@ -382,8 +387,6 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  themeObserver?.disconnect();
-  themeObserver = null;
   iframeObserver?.disconnect();
   iframeObserver = null;
 });
@@ -505,11 +508,14 @@ onBeforeUnmount(() => {
   background: var(--color-elevated, #f4f4f5) !important;
 }
 
-/* Dark-mode overrides win because of source order — keep these last. */
-html.dark .epub-viewer :deep(.readerArea) {
+/* Dark-mode chrome keys off the effective book theme (the `--dark` modifier
+   the parent sets), NOT the app's `html.dark` — so a per-book override themes
+   the reader gutter + TOC area to match the book content. Source order keeps
+   these last so they win over the light defaults above. */
+.epub-viewer--dark :deep(.readerArea) {
   background-color: #1f1f23 !important;
 }
-html.dark .epub-viewer :deep(.tocArea) {
+.epub-viewer--dark :deep(.tocArea) {
   background: #18181b !important;
 }
 </style>

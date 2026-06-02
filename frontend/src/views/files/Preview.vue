@@ -107,6 +107,26 @@
         </div>
       </template>
 
+      <!-- EPUB: book dark-mode toggle. Independent of the app theme and
+           remembered — follows the app theme until the reader flips it. -->
+      <template v-if="isEpub">
+        <button
+          type="button"
+          class="preview-fit__btn"
+          :class="{ 'is-active': epubDark }"
+          :title="epubDark ? 'Light book theme' : 'Dark book theme'"
+          :aria-label="
+            epubDark
+              ? 'Switch book to light theme'
+              : 'Switch book to dark theme'
+          "
+          :aria-pressed="epubDark"
+          @click="toggleEpubDark"
+        >
+          <Icon :name="epubDark ? 'sun' : 'moon'" :size="14" />
+        </button>
+      </template>
+
       <!-- Image: zoom + fit toggle -->
       <template v-if="fileStore.req?.type === 'image'">
         <div class="preview-zoom">
@@ -209,6 +229,7 @@
             :src="previewUrl"
             :location="location"
             :size="size"
+            :dark="epubDark"
             @update:location="locationChange"
             @update:size="changeSize"
             @navigate-prev="prev"
@@ -640,6 +661,7 @@ import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
 import { useRecents } from "@/composables/useRecents";
 import { useEpubProgress } from "@/composables/useEpubProgress";
+import { usePreferences } from "@/composables/usePreferences";
 import ImageEditor from "@/components/files/ImageEditor.vue";
 import SubtitleUpload from "@/components/files/SubtitleUpload.vue";
 import { useLayoutStore } from "@/stores/layout";
@@ -779,6 +801,38 @@ const onEpubCover = (url: string) => {
 };
 const goToChapter = (href: string) => {
   epubViewer.value?.goTo(href);
+};
+
+// ── EPUB dark mode (independent of the app theme, remembered) ──────────
+// The book's light/dark is its own setting: by default it follows the app
+// theme, but the reader's toolbar toggle pins it light or dark regardless of
+// the app theme and persists that choice (prefs key `epub.dark`). Stored as
+// "light" | "dark" | null, where null = "follow the app theme".
+const prefs = usePreferences();
+const epubThemeOverride = computed<"light" | "dark" | null>(() =>
+  prefs.get<"light" | "dark" | null>("epub.dark", null)
+);
+
+// Reactive mirror of the app's resolved theme (the `.dark` class on <html>,
+// which useThemePreference toggles). A MutationObserver keeps it live so the
+// book follows app-theme changes while no override is set.
+const appIsDark = ref(
+  typeof document !== "undefined" &&
+    document.documentElement.classList.contains("dark")
+);
+let appThemeObserver: MutationObserver | null = null;
+
+/** Effective book theme: the override when set, else the app theme. */
+const epubDark = computed<boolean>(() => {
+  const o = epubThemeOverride.value;
+  if (o === "dark") return true;
+  if (o === "light") return false;
+  return appIsDark.value;
+});
+
+const toggleEpubDark = () => {
+  // Pin the book to the opposite of whatever it's showing now, and remember.
+  void prefs.set("epub.dark", epubDark.value ? "light" : "dark");
 };
 
 /** Active-row match. TOC hrefs + the relocated href may differ in
@@ -1320,11 +1374,24 @@ onMounted(async () => {
   window.addEventListener("keydown", navKey, true);
   listing.value = fileStore.oldReq?.items ?? null;
   updatePreview();
+
+  // Track the app's resolved theme so the EPUB reader follows it while no
+  // per-book override is set. setTheme() rewrites <html class>, so a class
+  // observer is the reliable signal (covers light / dark / system).
+  appThemeObserver = new MutationObserver(() => {
+    appIsDark.value = document.documentElement.classList.contains("dark");
+  });
+  appThemeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("keydown", key);
   window.removeEventListener("keydown", navKey, true);
+  appThemeObserver?.disconnect();
+  appThemeObserver = null;
 });
 
 // ── Actions ──────────────────────────────────────────────────────────
@@ -1960,6 +2027,10 @@ html.dark .preview-info__artwork {
 .preview-epub-toc__item {
   display: block;
   width: 100%;
+  /* Don't let the column flex compress rows when the chapter list overflows
+     its max-height — without this they shrink below their text height and the
+     labels overlap. They scroll instead (the nav has overflow-y: auto). */
+  flex-shrink: 0;
   text-align: left;
   border: 0;
   background: transparent;

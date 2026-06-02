@@ -3015,6 +3015,14 @@ const revealPreviousItem = () => {
 const contextMenuMode = ref<"row" | "background">("row");
 
 const onListingContextMenu = (event: MouseEvent) => {
+  // macOS synthesizes a `contextmenu` event from ctrl+left-click. Treat that
+  // as a (multi-)select modifier, NOT a right-click: suppress both the custom
+  // and the native menu so ctrl+drag can lasso and ctrl+click just toggles
+  // selection (matching cmd+click) instead of popping a menu on first click.
+  if (event.ctrlKey) {
+    event.preventDefault();
+    return;
+  }
   event.preventDefault();
   const target = event.target as HTMLElement | null;
   // Treat `.item.header` (the column-header row) as background — it

@@ -115,6 +115,14 @@ export function useDragSelect(opts: UseDragSelectOptions) {
         : "replace";
     pendingStart = true;
 
+    // Stop the browser from text-selecting the listing chrome (filenames,
+    // meta) the moment the drag begins — not after the activation threshold,
+    // by which point the selection has already started. We only get here on
+    // empty listing space (items/controls returned early above), so there's
+    // nothing legitimate to select or focus. Covers cmd+drag AND ctrl+drag.
+    event.preventDefault();
+    document.body.style.userSelect = "none";
+
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
   };

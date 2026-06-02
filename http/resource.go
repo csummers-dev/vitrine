@@ -13,6 +13,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/shirou/gopsutil/v4/disk"
@@ -145,6 +146,18 @@ func resourcePostHandler(fileCache FileCache) handleFunc {
 					Path:  r.URL.Path,
 					IsDir: true,
 				})
+			} else if errors.Is(err, syscall.ENOTDIR) {
+				// os.MkdirAll reports ENOTDIR ("not a directory") when a
+				// component of the path — or the target name itself — already
+				// exists as a non-directory (a stray file, a dangling symlink),
+				// or when a parent isn't a real directory (e.g. a misconfigured
+				// bind-mount). That's a client-visible name conflict, not a
+				// server fault, so answer 409 with an actionable message rather
+				// than a bare 500 that hides the cause.
+				return http.StatusConflict, fmt.Errorf(
+					"cannot create directory %q: a file with that name already exists, or its parent is not a directory",
+					path.Clean(r.URL.Path),
+				)
 			}
 			return errToStatus(err), err
 		}
