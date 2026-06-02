@@ -1753,8 +1753,8 @@ html.dark .preview-blob__icon--zip {
   cursor: pointer;
   text-decoration: none;
   transition:
-    background-color 120ms ease,
-    border-color 120ms ease;
+    background-color var(--dur-base) ease,
+    border-color var(--dur-base) ease;
 }
 
 .preview-blob__btn--primary {
@@ -1831,8 +1831,8 @@ html.dark .preview-blob__icon--zip {
   justify-content: center;
   cursor: pointer;
   transition:
-    background-color 120ms ease,
-    color 120ms ease;
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease;
 }
 .preview-zoom__btn:hover:not(:disabled) {
   background: var(--color-hover, rgba(24, 24, 27, 0.045));
@@ -1863,9 +1863,9 @@ html.dark .preview-blob__icon--zip {
   justify-content: center;
   cursor: pointer;
   transition:
-    background-color 120ms ease,
-    color 120ms ease,
-    border-color 120ms ease;
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease,
+    border-color var(--dur-base) ease;
 }
 .preview-fit__btn:hover {
   background: var(--color-elevated, #f4f4f5);
@@ -1900,9 +1900,9 @@ html.dark .preview-blob__icon--zip {
   gap: 5px;
   cursor: pointer;
   transition:
-    background-color 120ms ease,
-    color 120ms ease,
-    border-color 120ms ease;
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease,
+    border-color var(--dur-base) ease;
 }
 .preview-toolbar-format__btn:hover {
   background: var(--color-elevated, #f4f4f5);
@@ -2006,8 +2006,8 @@ html.dark .preview-info__artwork {
   overflow: hidden;
   text-overflow: ellipsis;
   transition:
-    background-color 120ms ease,
-    color 120ms ease;
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease;
 }
 .preview-epub-toc__item:hover {
   background: var(--color-hover, rgba(24, 24, 27, 0.045));

@@ -338,8 +338,8 @@ onBeforeUnmount(() => {
   justify-content: center;
   cursor: pointer;
   transition:
-    background-color 0.12s ease,
-    color 0.12s ease;
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease;
 }
 .editor-iconbtn:hover:not(:disabled) {
   background: var(--color-elevated, #f4f4f5);
@@ -368,8 +368,8 @@ onBeforeUnmount(() => {
   font-weight: 600;
   cursor: pointer;
   transition:
-    background-color 0.12s ease,
-    opacity 0.12s ease;
+    background-color var(--dur-base) ease,
+    opacity var(--dur-base) ease;
 }
 .editor-savebtn:hover:not(:disabled) {
   background: var(--color-accent-strong, #4e5ac0);

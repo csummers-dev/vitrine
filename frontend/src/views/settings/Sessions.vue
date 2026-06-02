@@ -1,6 +1,8 @@
 <template>
   <SettingsPage
     title="Sessions"
+    icon="monitor-smartphone"
+    accent="var(--c-green)"
     description="Where you're signed in. The app uses a stateless token, so individual devices aren't tracked — but you can revoke every other session at once."
   >
     <SettingsSection
@@ -128,8 +130,8 @@ const doRevoke = async () => {
   font-weight: 500;
   cursor: pointer;
   transition:
-    background-color 0.12s ease,
-    border-color 0.12s ease;
+    background-color var(--dur-base) ease,
+    border-color var(--dur-base) ease;
 }
 .session-danger-btn:hover:not(:disabled) {
   background: rgba(220, 38, 38, 0.06);

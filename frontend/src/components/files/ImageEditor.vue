@@ -607,7 +607,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 120ms ease;
+  transition: background-color var(--dur-base) ease;
 }
 .img-editor__icon-btn:hover {
   background: var(--color-elevated, #f4f4f5);
@@ -637,9 +637,9 @@ onBeforeUnmount(() => {
   font-size: 12.5px;
   cursor: pointer;
   transition:
-    background-color 120ms ease,
-    color 120ms ease,
-    border-color 120ms ease;
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease,
+    border-color var(--dur-base) ease;
 }
 .img-editor__tool:hover:not(:disabled) {
   background: var(--color-elevated, #f4f4f5);
@@ -846,8 +846,8 @@ html.dark .img-editor__stage {
   font-family: var(--font-mono, monospace);
   outline: none;
   transition:
-    border-color 120ms ease,
-    box-shadow 120ms ease;
+    border-color var(--dur-base) ease,
+    box-shadow var(--dur-base) ease;
 }
 .img-editor__name-input:focus {
   border-color: var(--color-accent, #5e6ad2);
@@ -877,9 +877,9 @@ html.dark .img-editor__save-error {
   align-items: center;
   gap: 6px;
   transition:
-    background-color 120ms ease,
-    border-color 120ms ease,
-    color 120ms ease;
+    background-color var(--dur-base) ease,
+    border-color var(--dur-base) ease,
+    color var(--dur-base) ease;
 }
 .img-editor__btn--ghost {
   background: transparent;

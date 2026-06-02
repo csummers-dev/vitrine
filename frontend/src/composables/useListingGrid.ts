@@ -61,7 +61,12 @@ export interface ListingGridOptions {
 
 const GUTTER = 12; // matches CSS `gap: 12px`
 const MIN_GRID = 160; // matches `minmax(160px, 1fr)`
-const MIN_GALLERY = 220; // matches `minmax(220px, 1fr)`
+const MIN_GALLERY = 220; // matches `minmax(220px, 1fr)` (file tiles)
+// Folders get NARROWER gallery tracks → smaller, more-compact tiles. They
+// sit in their own section above the divider and carry no media thumbnail,
+// so they read as quiet "jump here" chips rather than hero tiles. Keep this
+// in sync with `.listing-section--dirs` minmax() in listing.css.
+const MIN_GALLERY_DIR = 150; // matches `minmax(150px, 1fr)` (folder tiles)
 // Extra rows rendered above + below the viewport so a flick doesn't reveal
 // blank space before the scroll handler catches up.
 const BUFFER_ROWS = 3;
@@ -76,10 +81,17 @@ const emptyWin = (): SectionWindow => ({
 });
 
 export function useListingGrid(opts: ListingGridOptions) {
-  /** Columns currently fitting the section width. */
-  const cols = ref(1);
-  /** Visible tile height (px) for the active mode. */
-  const tileH = ref(GRID_TILE_H);
+  // Per-section geometry. In grid view + list view the two sections share
+  // identical dimensions; in GALLERY the folder section uses narrower
+  // tracks (smaller tiles), so each section tracks its own column count +
+  // tile height. computeWindow / hitTest / keyboard-scroll all read the
+  // section-appropriate pair.
+  /** Columns fitting the folder / file section widths. */
+  const dirsCols = ref(1);
+  const filesCols = ref(1);
+  /** Visible tile height (px) for the folder / file sections. */
+  const dirsTileH = ref(GRID_TILE_H);
+  const filesTileH = ref(GRID_TILE_H);
 
   const dirsWin = reactive<SectionWindow>(emptyWin());
   const filesWin = reactive<SectionWindow>(emptyWin());
@@ -96,20 +108,37 @@ export function useListingGrid(opts: ListingGridOptions) {
 
   /** Recompute columns + tile height from the live DOM. Cheap; safe to
    *  call before any tile exists (falls back to estimates). */
+  /** Column count + 4:3 tile height for a gallery section with the given
+   *  minimum track width. */
+  const galleryMetrics = (width: number, minTrack: number) => {
+    const c = Math.max(1, Math.floor((width + GUTTER) / (minTrack + GUTTER)));
+    const colW = (width - (c - 1) * GUTTER) / c;
+    return { c, th: (colW * 3) / 4 };
+  };
+
   const measure = () => {
     const width = sectionWidth();
     if (width <= 0) return;
-    const min = opts.gallery() ? MIN_GALLERY : MIN_GRID;
-    cols.value = Math.max(1, Math.floor((width + GUTTER) / (min + GUTTER)));
 
     if (opts.gallery()) {
-      // 4:3 tile → height derived from the responsive column width.
-      const colW = (width - (cols.value - 1) * GUTTER) / cols.value;
-      tileH.value = (colW * 3) / 4;
+      // Files use the standard tracks; folders use narrower ones → smaller
+      // tiles. Both stay 4:3 (CSS), so a narrower track is proportionally
+      // smaller in both dimensions.
+      const f = galleryMetrics(width, MIN_GALLERY);
+      filesCols.value = f.c;
+      filesTileH.value = f.th;
+      const d = galleryMetrics(width, MIN_GALLERY_DIR);
+      dirsCols.value = d.c;
+      dirsTileH.value = d.th;
     } else {
+      // Grid view: folders + files share identical tracks + tile height
+      // (measured live from whichever section is mounted).
+      const c = Math.max(1, Math.floor((width + GUTTER) / (MIN_GRID + GUTTER)));
       const el = opts.dirsSectionEl() || opts.filesSectionEl();
       const tile = el?.querySelector<HTMLElement>(".item:not(.header)");
-      if (tile && tile.offsetHeight > 0) tileH.value = tile.offsetHeight;
+      const h = tile && tile.offsetHeight > 0 ? tile.offsetHeight : GRID_TILE_H;
+      dirsCols.value = filesCols.value = c;
+      dirsTileH.value = filesTileH.value = h;
     }
   };
 
@@ -130,13 +159,14 @@ export function useListingGrid(opts: ListingGridOptions) {
     count: number,
     secTop: number,
     scrollTop: number,
-    viewH: number
+    viewH: number,
+    c: number,
+    th: number
   ): SectionWindow => {
-    const c = cols.value;
-    const stride = tileH.value + GUTTER;
-    if (count === 0 || stride <= 0) return emptyWin();
+    const stride = th + GUTTER;
+    if (count === 0 || stride <= 0 || c <= 0) return emptyWin();
     const totalRows = Math.ceil(count / c);
-    const fullHeight = totalRows * tileH.value + (totalRows - 1) * GUTTER;
+    const fullHeight = totalRows * th + (totalRows - 1) * GUTTER;
 
     // Viewport span relative to this section's top.
     const top = scrollTop - secTop;
@@ -152,7 +182,7 @@ export function useListingGrid(opts: ListingGridOptions) {
 
     const topPad = firstRow * stride;
     const renderedRows = lastRow - firstRow + 1;
-    const renderedH = renderedRows * tileH.value + (renderedRows - 1) * GUTTER;
+    const renderedH = renderedRows * th + (renderedRows - 1) * GUTTER;
     const botPad = Math.max(0, fullHeight - topPad - renderedH);
 
     return { start, end, topPad, botPad };
@@ -172,11 +202,25 @@ export function useListingGrid(opts: ListingGridOptions) {
     const fCount = opts.filesCount();
 
     const dTop = sectionTop(opts.dirsSectionEl(), sc);
-    const dWin = computeWindow(dCount, dTop, scrollTop, viewH);
+    const dWin = computeWindow(
+      dCount,
+      dTop,
+      scrollTop,
+      viewH,
+      dirsCols.value,
+      dirsTileH.value
+    );
     Object.assign(dirsWin, dWin);
 
     const fTop = sectionTop(opts.filesSectionEl(), sc);
-    const fWin = computeWindow(fCount, fTop, scrollTop, viewH);
+    const fWin = computeWindow(
+      fCount,
+      fTop,
+      scrollTop,
+      viewH,
+      filesCols.value,
+      filesTileH.value
+    );
     Object.assign(filesWin, fWin);
   };
 
@@ -194,12 +238,16 @@ export function useListingGrid(opts: ListingGridOptions) {
   ): number[] => {
     const sc = opts.scrollEl();
     if (!sc) return [];
-    const c = cols.value;
-    const stride = tileH.value + GUTTER;
     const out: number[] = [];
 
-    const section = (el: HTMLElement | null, indices: number[]): void => {
+    const section = (
+      el: HTMLElement | null,
+      indices: number[],
+      c: number,
+      th: number
+    ): void => {
       if (!el || indices.length === 0) return;
+      const stride = th + GUTTER;
       const box = el.getBoundingClientRect();
       const colW = (box.width - (c - 1) * GUTTER) / c;
       const colStride = colW + GUTTER;
@@ -227,14 +275,21 @@ export function useListingGrid(opts: ListingGridOptions) {
       }
     };
 
-    section(opts.dirsSectionEl(), dirIndices);
-    section(opts.filesSectionEl(), fileIndices);
+    section(opts.dirsSectionEl(), dirIndices, dirsCols.value, dirsTileH.value);
+    section(
+      opts.filesSectionEl(),
+      fileIndices,
+      filesCols.value,
+      filesTileH.value
+    );
     return out;
   };
 
   return {
-    cols: cols as Ref<number>,
-    tileH: tileH as Ref<number>,
+    dirsCols: dirsCols as Ref<number>,
+    filesCols: filesCols as Ref<number>,
+    dirsTileH: dirsTileH as Ref<number>,
+    filesTileH: filesTileH as Ref<number>,
     dirsWin,
     filesWin,
     measure,

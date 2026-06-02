@@ -215,8 +215,8 @@ const prettify = (key: string): string => {
   align-items: center;
   justify-content: center;
   transition:
-    background-color 0.12s ease,
-    color 0.12s ease;
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease;
 }
 
 .shortcuts__close:hover {

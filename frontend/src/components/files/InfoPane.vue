@@ -459,7 +459,10 @@ const toggleCollapse = () => {
 const paneVisible = computed(
   () =>
     (!isMobile.value && !collapsed.value) ||
-    (isMobile.value && selectedCount.value >= 1)
+    // Mobile: opt-in only. The sheet used to auto-open on any selection,
+    // which covered the row and hijacked the user's next tap; now it opens
+    // exclusively from the selection toolbar's Details button.
+    (isMobile.value && layoutStore.mobileDetailsOpen)
 );
 const showRail = computed(() => !isMobile.value && collapsed.value);
 
@@ -733,7 +736,10 @@ const canExtract = computed(
 );
 
 const close = () => {
-  fileStore.selected = [];
+  // Mobile-only (desktop's header button calls toggleCollapse instead). Just
+  // retract the sheet; the selection is kept so the top selection toolbar
+  // stays available for actions. Deselect via the row checkboxes.
+  layoutStore.mobileDetailsOpen = false;
 };
 
 const action = (name: string) => {
@@ -885,9 +891,9 @@ html.dark .preview-mesh {
   font-weight: 500;
   cursor: pointer;
   transition:
-    background-color 0.12s ease,
-    border-color 0.12s ease,
-    color 0.12s ease;
+    background-color var(--dur-base) ease,
+    border-color var(--dur-base) ease,
+    color var(--dur-base) ease;
 }
 
 .info-action--wide {
@@ -961,9 +967,9 @@ html.dark .preview-mesh {
   letter-spacing: 0.04em;
   cursor: pointer;
   transition:
-    background-color 120ms ease,
-    color 120ms ease,
-    border-color 120ms ease;
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease,
+    border-color var(--dur-base) ease;
 }
 .info-pane__copy-path:hover {
   background: var(--color-elevated, #f4f4f5);

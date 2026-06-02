@@ -1,5 +1,10 @@
 <template>
-  <SettingsPage :title="pageTitle" :description="pageDescription">
+  <SettingsPage
+    :title="pageTitle"
+    :description="pageDescription"
+    icon="user-cog"
+    accent="var(--c-amber)"
+  >
     <form v-if="user" class="user-edit" @submit.prevent="save">
       <UserForm
         v-model:user="user"

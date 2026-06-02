@@ -1,6 +1,8 @@
 <template>
   <SettingsPage
     :title="t('settings.shareManagement')"
+    icon="share-2"
+    accent="var(--c-teal)"
     description="Public links you've created. Anyone with a link can access the file or folder without signing in."
   >
     <SettingsSection

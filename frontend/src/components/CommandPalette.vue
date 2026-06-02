@@ -814,13 +814,13 @@ const run = async (cmd: Command) => {
 /* ── Transitions ────────────────────────────────────────────────────── */
 .palette-enter-active,
 .palette-leave-active {
-  transition: opacity 0.12s ease;
+  transition: opacity var(--dur-base) ease;
 }
 .palette-enter-active .cmd-palette,
 .palette-leave-active .cmd-palette {
   transition:
     transform 0.16s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.12s ease;
+    opacity var(--dur-base) ease;
 }
 .palette-enter-from,
 .palette-leave-to {

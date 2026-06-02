@@ -48,6 +48,10 @@ const unzipEnabled: boolean = window.FileBrowser.UnzipEnabled ?? true;
 // only when this is set; otherwise it goes straight to the download card.
 const transcodeEnabled: boolean = window.FileBrowser.TranscodeEnabled ?? false;
 
+// Project source repository — surfaced from the version label in the sidebar
+// header and the login footer.
+const repoUrl = "https://github.com/csummers-dev/filebrowser-pretty";
+
 export {
   name,
   disableExternal,
@@ -75,4 +79,5 @@ export {
   hideLoginButton,
   unzipEnabled,
   transcodeEnabled,
+  repoUrl,
 };

@@ -72,6 +72,10 @@ watch(
 
 .drawer {
   height: 100%;
+  /* Dynamic viewport height where supported: on mobile the address bar can
+     make 100% taller than the visible area, pushing the drawer's footer
+     out of view. dvh tracks the actually-visible height. */
+  height: 100dvh;
   background: var(--color-surface, #fff);
   border-right: 1px solid var(--color-line, #ececec);
   display: flex;

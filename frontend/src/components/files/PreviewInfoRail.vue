@@ -219,71 +219,40 @@ defineEmits<{
   color: var(--color-ink-2, #52525b);
 }
 
-/* Same per-type squircle tints as the toolbar */
+/* Same per-type squircle tints as the toolbar — shared --tint-*-bg/fg tokens
+   (tokens.css) that flip in dark mode, so there's no per-component dark block
+   and the rail can't drift from the toolbar. */
 .preview-info__icon.is-image {
-  background: rgba(236, 72, 153, 0.16);
-  color: #be185d;
+  background: var(--tint-image-bg);
+  color: var(--tint-image-fg);
 }
 .preview-info__icon.is-video {
-  background: rgba(99, 102, 241, 0.16);
-  color: #4338ca;
+  background: var(--tint-video-bg);
+  color: var(--tint-video-fg);
 }
 .preview-info__icon.is-audio {
-  background: rgba(250, 204, 21, 0.22);
-  color: #a16207;
+  background: var(--tint-audio-bg);
+  color: var(--tint-audio-fg);
 }
 .preview-info__icon.is-pdf {
-  background: rgba(244, 63, 94, 0.16);
-  color: #be123c;
+  background: var(--tint-pdf-bg);
+  color: var(--tint-pdf-fg);
 }
 .preview-info__icon.is-text {
-  background: rgba(82, 82, 91, 0.12);
-  color: #3f3f46;
+  background: var(--tint-text-bg);
+  color: var(--tint-text-fg);
 }
 .preview-info__icon.is-archive {
-  background: rgba(251, 146, 60, 0.16);
-  color: #c2410c;
+  background: var(--tint-archive-bg);
+  color: var(--tint-archive-fg);
 }
 .preview-info__icon.is-epub {
-  background: rgba(20, 184, 166, 0.16);
-  color: #0f766e;
+  background: var(--tint-epub-bg);
+  color: var(--tint-epub-fg);
 }
 .preview-info__icon.is-csv {
-  background: rgba(34, 197, 94, 0.16);
-  color: #15803d;
-}
-
-html.dark .preview-info__icon.is-image {
-  background: rgba(244, 114, 182, 0.22);
-  color: #fbcfe8;
-}
-html.dark .preview-info__icon.is-video {
-  background: rgba(129, 140, 248, 0.22);
-  color: #c7d2fe;
-}
-html.dark .preview-info__icon.is-audio {
-  background: rgba(250, 204, 21, 0.2);
-  color: #fde68a;
-}
-html.dark .preview-info__icon.is-pdf {
-  background: rgba(251, 113, 133, 0.22);
-  color: #fecdd3;
-}
-html.dark .preview-info__icon.is-text {
-  background: rgba(161, 161, 170, 0.18);
-  color: #e4e4e7;
-}
-html.dark .preview-info__icon.is-archive {
-  background: rgba(251, 146, 60, 0.22);
-  color: #fdba74;
-}
-html.dark .preview-info__icon.is-epub {
-  background: rgba(45, 212, 191, 0.22);
-  color: #99f6e4;
-}
-html.dark .preview-info__icon.is-csv {
-  background: rgba(74, 222, 128, 0.2);
-  color: #bbf7d0;
+  background: var(--tint-csv-bg);
+  color: var(--tint-csv-fg);
 }
 
 .preview-info__header-text {
@@ -355,9 +324,9 @@ html.dark .preview-info__icon.is-csv {
   font-weight: 500;
   cursor: pointer;
   transition:
-    background-color 120ms ease,
-    color 120ms ease,
-    border-color 120ms ease;
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease,
+    border-color var(--dur-base) ease;
   min-width: 0;
 }
 

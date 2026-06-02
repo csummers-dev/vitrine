@@ -5,7 +5,7 @@
 .md_preview {
   padding: 20px 24px;
   border: 1px solid var(--color-line, #ececec);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--color-surface, #fff);
   color: var(--color-ink-1, #18181b);
   font-family: var(--font-sans, system-ui);
@@ -18,7 +18,7 @@
   font-family: var(--font-mono, monospace);
   font-size: 12.5px;
   background: var(--color-canvas, #fafaf9);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   padding: 1px 6px;
 }
 

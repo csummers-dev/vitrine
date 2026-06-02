@@ -165,18 +165,31 @@
 
       <!-- Mode toggle (signup only) -->
       <p v-if="signup" class="login-toggle">
-        <span>
-          {{
-            createMode ? t("login.loginInstead") : t("login.createAnAccount")
-          }}
-        </span>
-        <button type="button" class="login-toggle__link" @click="toggleMode">
-          {{ createMode ? "Sign in" : "Create one" }}
-        </button>
+        <template v-if="createMode">
+          <span>{{ t("login.loginInstead") }}</span>
+          <button type="button" class="login-toggle__link" @click="toggleMode">
+            Sign in
+          </button>
+        </template>
+        <template v-else>
+          <span>Click</span>
+          <button type="button" class="login-toggle__link" @click="toggleMode">
+            here
+          </button>
+          <span>to create an account</span>
+        </template>
       </p>
 
-      <!-- App version footer -->
-      <footer v-if="version" class="login-card__footer">v{{ version }}</footer>
+      <!-- App version footer — links to the project repo. -->
+      <footer v-if="version" class="login-card__footer">
+        <a
+          :href="repoUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="login-card__version"
+          >v{{ version }}</a
+        >
+      </footer>
     </form>
   </main>
 </template>
@@ -194,6 +207,7 @@ import {
   recaptchaKey,
   signup,
   version,
+  repoUrl,
 } from "@/utils/constants";
 import { computed, inject, nextTick, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -632,8 +646,8 @@ html[dir="rtl"] .login-input--has-toggle {
   justify-content: center;
   cursor: pointer;
   transition:
-    background-color 0.12s ease,
-    color 0.12s ease,
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease,
     box-shadow 0.1s ease;
 }
 
@@ -747,7 +761,20 @@ html[dir="rtl"] .login-password-toggle {
   font-weight: 600;
   color: var(--color-accent, #5e6ad2);
   cursor: pointer;
-  margin-left: 4px;
+  /* Symmetric so the link reads with a space on BOTH sides whether it sits
+     at the end ("…account? Sign in") or mid-sentence ("Click here to …"). */
+  margin: 0 4px;
+}
+
+/* Version footer link → project repo. Subtle by default, accent on hover. */
+.login-card__version {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--dur-base) ease;
+}
+.login-card__version:hover {
+  color: var(--color-accent, #5e6ad2);
+  text-decoration: underline;
 }
 
 .login-toggle__link:hover {
@@ -774,7 +801,7 @@ html[dir="rtl"] .login-password-toggle {
 .login-error-enter-active,
 .login-error-leave-active {
   transition:
-    opacity 0.12s ease,
+    opacity var(--dur-base) ease,
     transform 0.16s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .login-error-enter-from,

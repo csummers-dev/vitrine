@@ -7,6 +7,9 @@
          the always-present sidebar context menu (and the file listing). Driven
          by the useFavoriteTitleDialog singleton; renders its own modal scrim. -->
     <FavoriteTitleDialog v-if="isLoggedIn" />
+    <!-- Files-root ("My files") label editor, opened from the sidebar
+         quick-link's right-click menu via the useRootLabel singleton. -->
+    <RootLabelDialog v-if="isLoggedIn" />
     <!-- S6-4: global offline indicator — shown on every surface,
          including login, independent of auth + the service worker. -->
     <OfflineBanner />
@@ -29,6 +32,7 @@ import CommandPalette from "@/components/CommandPalette.vue";
 import ShortcutsOverlay from "@/components/ShortcutsOverlay.vue";
 import OfflineBanner from "@/components/OfflineBanner.vue";
 import FavoriteTitleDialog from "@/components/files/FavoriteTitleDialog.vue";
+import RootLabelDialog from "@/components/files/RootLabelDialog.vue";
 
 const { locale } = useI18n();
 const router = useRouter();

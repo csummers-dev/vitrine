@@ -102,13 +102,12 @@
     "fileEncoding": "File Encoding"
   },
   "login": {
-    "createAnAccount": "Create an account",
-    "loginInstead": "Already have an account",
+    "loginInstead": "Already have an account?",
     "password": "Password",
     "passwordConfirm": "Password Confirmation",
     "passwordsDontMatch": "Passwords don't match",
-    "signup": "Signup",
-    "submit": "Login",
+    "signup": "Sign Up",
+    "submit": "Sign In",
     "username": "Username",
     "usernameTaken": "Username already taken",
     "wrongCredentials": "Wrong credentials",
@@ -280,14 +279,14 @@
   "sidebar": {
     "diskUsed": "{used} of {total} used",
     "hugoNew": "Hugo New",
-    "login": "Login",
+    "login": "Sign In",
     "logout": "Logout",
     "myFiles": "My files",
     "newFile": "New file",
     "newFolder": "New folder",
     "preview": "Preview",
     "settings": "Settings",
-    "signup": "Signup",
+    "signup": "Sign Up",
     "siteSettings": "Site Settings"
   },
   "success": {

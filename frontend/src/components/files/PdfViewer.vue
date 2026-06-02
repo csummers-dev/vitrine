@@ -579,9 +579,9 @@ onBeforeUnmount(() => {
   overflow: hidden;
   flex-shrink: 0;
   transition:
-    border-color 120ms ease,
-    transform 120ms ease,
-    box-shadow 120ms ease;
+    border-color var(--dur-base) ease,
+    transform var(--dur-base) ease,
+    box-shadow var(--dur-base) ease;
 }
 .pdf-viewer__thumb:hover {
   border-color: var(--color-line-strong, #d4d4d8);
@@ -692,7 +692,7 @@ html.dark .pdf-viewer__stage {
   font-size: 13px;
   font-weight: 500;
   text-decoration: none;
-  transition: background-color 120ms ease;
+  transition: background-color var(--dur-base) ease;
 }
 .pdf-viewer__fallback-btn:hover {
   background: var(--accent-gradient-strong);

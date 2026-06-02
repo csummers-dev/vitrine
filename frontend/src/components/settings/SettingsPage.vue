@@ -1,10 +1,19 @@
 <template>
   <div class="settings-page">
     <header class="settings-page__header">
-      <h1 class="settings-page__title">{{ title }}</h1>
-      <p v-if="description" class="settings-page__description">
-        {{ description }}
-      </p>
+      <div
+        v-if="icon"
+        class="settings-page__icon"
+        :style="accent ? { '--page-accent': accent } : undefined"
+      >
+        <Icon :name="icon" :size="20" :stroke-width="1.9" />
+      </div>
+      <div class="settings-page__heading">
+        <h1 class="settings-page__title">{{ title }}</h1>
+        <p v-if="description" class="settings-page__description">
+          {{ description }}
+        </p>
+      </div>
     </header>
     <div class="settings-page__body">
       <slot />
@@ -13,9 +22,16 @@
 </template>
 
 <script setup lang="ts">
+import Icon from "@/components/Icon.vue";
+
 defineProps<{
   title: string;
   description?: string;
+  /** Optional Lucide icon rendered as a tinted chip beside the title. */
+  icon?: string;
+  /** CSS color driving the chip tint + glyph, e.g. "var(--c-blue)".
+   *  Keep each page's hue in sync with its SettingsRail nav icon. */
+  accent?: string;
 }>();
 </script>
 
@@ -27,7 +43,37 @@ defineProps<{
 }
 
 .settings-page__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
   margin-bottom: 24px;
+}
+
+/* Tinted icon chip — gives each settings page a spot of color that matches
+   its left-rail nav icon. Hue comes from the `accent` prop (--page-accent),
+   defaulting to the app accent. */
+.settings-page__icon {
+  --page-accent: var(--c-lilac, #5e6ad2);
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--page-accent);
+  background: color-mix(
+    in srgb,
+    var(--page-accent) 14%,
+    var(--color-surface, #fff)
+  );
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--page-accent) 24%, transparent);
+}
+
+.settings-page__heading {
+  min-width: 0;
+  flex: 1;
 }
 
 .settings-page__title {

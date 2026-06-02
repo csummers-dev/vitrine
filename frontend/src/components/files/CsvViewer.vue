@@ -325,7 +325,7 @@ watch(selectedEncoding, () => {
 
 .csv-table tbody tr:hover {
   background-color: var(--color-hover, rgba(24, 24, 27, 0.045));
-  transition: background-color 0.12s ease;
+  transition: background-color var(--dur-base) ease;
 }
 
 .csv-footer {

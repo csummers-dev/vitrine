@@ -438,8 +438,8 @@ onBeforeUnmount(() => {
   justify-content: center;
   cursor: pointer;
   transition:
-    background-color 120ms ease,
-    color 120ms ease;
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease;
 }
 .epub-viewer__btn:hover:not(:disabled) {
   background: var(--color-elevated, #f4f4f5);

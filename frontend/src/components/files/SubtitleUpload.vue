@@ -199,9 +199,9 @@ const upload = async () => {
   font-size: 12px;
   cursor: pointer;
   transition:
-    border-color 120ms ease,
-    background-color 120ms ease,
-    color 120ms ease;
+    border-color var(--dur-base) ease,
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease;
 }
 .sub-upload__zone:hover,
 .sub-upload__zone:focus-visible {
@@ -252,8 +252,8 @@ const upload = async () => {
   font-family: var(--font-mono, monospace);
   outline: none;
   transition:
-    border-color 120ms ease,
-    box-shadow 120ms ease;
+    border-color var(--dur-base) ease,
+    box-shadow var(--dur-base) ease;
 }
 .sub-upload__lang-input:focus {
   border-color: var(--color-accent, #5e6ad2);
@@ -274,7 +274,7 @@ const upload = async () => {
   align-items: center;
   gap: 5px;
   flex-shrink: 0;
-  transition: background-color 120ms ease;
+  transition: background-color var(--dur-base) ease;
 }
 .sub-upload__btn:hover:not(:disabled) {
   background: var(--color-accent-strong, #4f59c4);

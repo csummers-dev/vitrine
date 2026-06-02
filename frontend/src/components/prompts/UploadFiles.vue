@@ -363,7 +363,7 @@ html.dark .upload-dock {
   padding: 12px 12px 12px 14px;
   cursor: pointer;
   user-select: none;
-  transition: background-color 120ms ease;
+  transition: background-color var(--dur-base) ease;
 }
 .upload-dock__head:hover {
   background: var(--color-hover, rgba(24, 24, 27, 0.03));
@@ -380,8 +380,8 @@ html.dark .upload-dock {
   justify-content: center;
   flex-shrink: 0;
   transition:
-    background-color 200ms ease,
-    color 200ms ease;
+    background-color var(--dur-slow) ease,
+    color var(--dur-slow) ease;
 }
 .upload-dock__icon.is-done {
   background: rgba(16, 185, 129, 0.16);
@@ -439,8 +439,8 @@ html.dark .upload-dock__icon.is-done {
   justify-content: center;
   cursor: pointer;
   transition:
-    background-color 120ms ease,
-    color 120ms ease;
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease;
 }
 .upload-dock__btn:hover {
   background: var(--color-elevated, #f4f4f5);
@@ -471,8 +471,8 @@ html.dark .upload-dock__btn--danger:hover {
   height: 100%;
   background: var(--accent-gradient);
   transition:
-    width 200ms ease,
-    background-color 200ms ease;
+    width var(--dur-slow) ease,
+    background-color var(--dur-slow) ease;
   border-radius: 0 999px 999px 0;
 }
 .upload-dock__bar-fill.is-done {
@@ -582,9 +582,9 @@ html.dark .upload-dock__btn--danger:hover {
   cursor: pointer;
   opacity: 0;
   transition:
-    opacity 120ms ease,
-    background-color 120ms ease,
-    color 120ms ease;
+    opacity var(--dur-base) ease,
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease;
 }
 .upload-dock__file:hover .upload-dock__file-remove,
 .upload-dock__file-remove:focus-visible {
@@ -621,7 +621,7 @@ html.dark .upload-dock__file-remove:hover {
 .upload-dock__file-bar-fill {
   height: 100%;
   background: var(--accent-gradient);
-  transition: width 200ms ease;
+  transition: width var(--dur-slow) ease;
   border-radius: 999px;
 }
 

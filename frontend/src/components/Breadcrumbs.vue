@@ -493,9 +493,9 @@ watch(
   display: inline-flex;
   align-items: center;
   transition:
-    background-color 120ms ease,
-    box-shadow 120ms ease,
-    color 120ms ease;
+    background-color var(--dur-base) ease,
+    box-shadow var(--dur-base) ease,
+    color var(--dur-base) ease;
 }
 .breadcrumb-link:hover {
   background: var(--color-hover, rgba(24, 24, 27, 0.045));

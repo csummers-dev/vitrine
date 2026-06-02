@@ -365,7 +365,7 @@ html.dark .extract-source__icon {
   border: 1px solid var(--color-line, #ececec);
   background: var(--color-surface, #fff);
   cursor: pointer;
-  transition: background-color 0.12s ease;
+  transition: background-color var(--dur-base) ease;
 }
 
 .extract-option:hover {
