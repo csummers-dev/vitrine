@@ -4,7 +4,7 @@
 
 # filebrowser pretty
 
-[![Version](https://img.shields.io/badge/version-1.6.2-5e6ad2?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-1.6.3-5e6ad2?style=flat-square)](#)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
 [![Vue](https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js&logoColor=white)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
@@ -187,6 +187,15 @@ Or skip Docker entirely and run the binary directly: `./filebrowser` — opens o
 | EXIF | **exifr 7** |
 
 ---
+
+### v1.6.3 — Preview & details panel refinements
+
+- **Details panel now matches the sidebar** — the listing details rail was using a more opaque white fill, so it looked starkly whiter than the sidebar in light mode. It now uses the same frosted `--color-canvas` surface as the sidebar / header, so the app's background gradient glows through it consistently
+- **Calmer preview details** — removed the divider lines between the action buttons, Properties, and Location in the preview details rail so it reads as one continuous panel
+- **Gallery hover seam fixed** — eliminated a faint 1px "red" line that could appear between a tile's thumbnail and its name on hover (a colored-background leak through inline-image baselines, most visible with the details panel open)
+- **Folder header buttons** — the Share / Download / More cluster now sits at the top-right of the folder header instead of sinking to the middle
+- **Colorful image Edit button** — the Edit control in the image preview toolbar is now accent-tinted to stand out from the neutral zoom / fit controls
+- **Storage bar gradient** — dropped the blue stop that clashed with the green; it's now a clean teal→green gradient that still reads clearly in light mode
 
 ### v1.6.2 — Details panel & tile polish
 

@@ -222,7 +222,7 @@
              already at the root of their scope. -->
         <div
           v-if="!layoutStore.loading && fileStore.req && fileStore.req.isDir"
-          class="section-title px-5 pt-4 pb-3 flex items-end justify-between gap-3 max-md:px-4 max-md:pt-3 max-md:pb-2"
+          class="section-title px-5 pt-4 pb-3 flex items-start justify-between gap-3 max-md:px-4 max-md:pt-3 max-md:pb-2"
           :class="{ 'section-title--drop': sectionDropActive }"
           @dragenter="onSectionDragEnter"
           @dragover="onSectionDragOver"
