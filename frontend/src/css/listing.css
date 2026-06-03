@@ -316,6 +316,19 @@
   display: block;
 }
 
+/* Real fix for the seam: a thumbnail tile drops its colored icon background
+   (and the sheen) entirely. The image already covers the cell, so the vivid
+   bg is only ever VISIBLE as a leaked seam when an object-cover image lands
+   ~1px short of an edge on fractional pixel sizes — most obvious as a "red"
+   line on image / PDF tiles (pink / rose bg). With no colored bg, any such
+   gap shows the tile's own neutral surface instead of a vivid line. The bg is
+   still needed for ICON-only files, which have no <img> to match here. */
+#listing .item__icon:has(img) {
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+}
+
 /* Folder icon (filled instead of outline for visual weight) */
 #listing .item[data-dir="true"] .item__icon svg {
   fill: currentColor;

@@ -165,7 +165,7 @@
       <div v-else class="pb-4"></div>
 
       <!-- Properties -->
-      <div class="px-4 py-3 border-t border-line">
+      <div class="px-4 py-3">
         <div
           class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] mb-2"
         >
@@ -197,7 +197,7 @@
          opens the picker SlideOver. Empty state shows the CTA on its
          own. Reads tags from the cache populated by FileListing's
          batch fetch; falls back to forFile when stale. -->
-      <div class="px-4 py-3 border-t border-line">
+      <div class="px-4 py-3">
         <div class="mb-1.5 flex items-center justify-between gap-2">
           <div
             class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em]"
@@ -230,7 +230,7 @@
       </div>
 
       <!-- Location -->
-      <div class="px-4 py-3 border-t border-line">
+      <div class="px-4 py-3">
         <div class="mb-1.5 flex items-center justify-between gap-2">
           <div
             class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em]"
@@ -317,7 +317,7 @@
     <!-- Keyboard hint footer — only meaningful with a selection -->
     <div
       v-if="item"
-      class="px-4 py-2.5 border-t border-line text-[11px] text-ink-3 flex items-center justify-between shrink-0"
+      class="px-4 py-2.5 text-[11px] text-ink-3 flex items-center justify-between shrink-0"
     >
       <span class="flex items-center gap-1.5">
         <kbd
