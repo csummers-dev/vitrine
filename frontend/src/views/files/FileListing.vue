@@ -3217,7 +3217,14 @@ const rowMenuItems = computed<MenuItem[]>(() => {
   }
   if (hb.move) {
     items.push({
-      label: sel === 1 ? t("buttons.moveFile") : `Move ${sel} items…`,
+      // Folder-aware single-item label so a folder reads "Move folder", not
+      // "Move file". Multi-select uses the neutral "N items" wording.
+      label:
+        sel === 1
+          ? singleItem?.isDir
+            ? "Move folder"
+            : t("buttons.moveFile")
+          : `Move ${sel} items…`,
       icon: "forward",
       action: () => {
         hideContextMenu();
@@ -3227,7 +3234,12 @@ const rowMenuItems = computed<MenuItem[]>(() => {
   }
   if (hb.copy) {
     items.push({
-      label: sel === 1 ? t("buttons.copyFile") : `Copy ${sel} items…`,
+      label:
+        sel === 1
+          ? singleItem?.isDir
+            ? "Copy folder"
+            : t("buttons.copyFile")
+          : `Copy ${sel} items…`,
       icon: "copy",
       action: () => {
         hideContextMenu();

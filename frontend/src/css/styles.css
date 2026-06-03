@@ -665,10 +665,19 @@ html.dark .confirm-prompt__icon.is-warn {
    common case paints correctly before init() runs. No blur() filter on the
    mesh itself — soft radial edges only — to keep paint cheap. */
 
-/* .app-shell forms a stacking context (isolate) so the z-index:-1 mesh paints
-   ABOVE the canvas background but BEHIND every in-flow surface. */
+/* The app shell is PINNED to the viewport (position:fixed; inset:0) instead of
+   being an in-flow 100vh box. On mobile a 100vh element is taller than the
+   visible viewport (the browser's dynamic toolbar), which let the whole
+   document scroll — pushing the sticky header off the top of the screen with
+   no way to scroll back to it. Pinning the shell means the document never
+   scrolls (only the inner listing/section does), so the header is always at the
+   top. It also still forms a stacking context (isolate) so the z-index:-1 mesh
+   paints above the canvas background but behind every in-flow surface.
+   Note: the login screen is a separate route (not inside .app-shell), so it
+   keeps normal flow and can still scroll a tall form on a small screen. */
 .app-shell {
-  position: relative;
+  position: fixed;
+  inset: 0;
   isolation: isolate;
 }
 
