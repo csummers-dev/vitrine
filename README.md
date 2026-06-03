@@ -4,7 +4,7 @@
 
 # filebrowser pretty
 
-[![Version](https://img.shields.io/badge/version-1.6.1-5e6ad2?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-1.6.2-5e6ad2?style=flat-square)](#)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
 [![Vue](https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js&logoColor=white)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
@@ -187,6 +187,18 @@ Or skip Docker entirely and run the binary directly: `./filebrowser` — opens o
 | EXIF | **exifr 7** |
 
 ---
+
+### v1.6.2 — Details panel & tile polish
+
+- **Colorful preview tiles in the details panel** — a selected folder or any non-image file (archives, code, blobs…) now fills the whole details preview area with that file type's vivid color + a soft gradient and a matching icon, instead of a small icon on an empty card. Folders show the same gold gradient + white folder as the grid/gallery tile
+- **Gallery folders match the grid exactly** — the gallery folder tile now uses the same amber token as the grid tile (the previous hand-picked hex read slightly off / less vibrant)
+- **More previews in the details panel** — selecting a video or PDF now shows its thumbnail in the details panel (it previously only showed an icon, even though the listing had the thumbnail); audio falls back to album art, then the color tile
+- **Images fill the preview frame** — a selected image now fills the details preview area instead of being letterboxed with gaps on the sides
+- **Tidier file names** — long names in the details panel now wrap at natural separators (`.`, `-`, `_`, `/`) instead of splitting mid-word
+- **Calmer details panel** — removed the divider under the "Details" header and matched the panel background to the sidebar so the two rails read as one surface; the collapse/expand control is now accent-colored
+- **Visible list checkboxes** — an unchecked checkbox in list view now sits on a soft fill so it reads as a real control rather than blank white
+- **Storage bar gradient in light mode** — the storage meter now shows its gradient in light mode too (the old two-tone stops were nearly flat there)
+- **Wording** — the preview header's **Back** button now reads **Exit Preview**
 
 ### v1.6.1 — Audio-tag hardening & UI polish
 

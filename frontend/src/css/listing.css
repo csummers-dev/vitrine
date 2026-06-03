@@ -200,7 +200,9 @@
   height: 14px;
   border-radius: var(--radius-xs);
   border: 1px solid var(--color-line-strong, var(--borderSecondary));
-  background: var(--color-surface, var(--surfacePrimary));
+  /* An empty checkbox sits on a soft elevated fill (not plain white) so it
+     reads as a real control against the row even when unchecked. */
+  background: var(--color-elevated, var(--surfacePrimary));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -968,7 +970,9 @@ html.dark #listing.mosaic .item:hover {
   height: auto;
   aspect-ratio: 16 / 10;
   border-radius: 0;
-  background-color: #f59e0b;
+  /* Exact grid match — the Tailwind amber-500 token the listing's folder tiles
+     use, not a hand-picked hex (which read slightly off / less vibrant). */
+  background-color: var(--color-amber-500);
   background-image: linear-gradient(
     140deg,
     rgba(255, 255, 255, 0.3),

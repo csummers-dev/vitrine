@@ -3,14 +3,12 @@
     v-if="paneVisible"
     class="info-pane w-[320px] shrink-0 border-l border-line bg-canvas flex flex-col overflow-y-auto max-lg:fixed max-lg:top-12 max-lg:right-0 max-lg:bottom-0 max-lg:h-[calc(100vh-48px)] max-lg:z-40 max-lg:shadow-2xl max-[540px]:left-16 max-[540px]:w-auto"
   >
-    <!-- Pane header -->
-    <div
-      class="h-12 px-4 flex items-center justify-between border-b border-line shrink-0"
-    >
+    <!-- Pane header (no divider — keeps the panel calm + sidebar-like) -->
+    <div class="h-11 px-4 flex items-center justify-between shrink-0">
       <div class="text-[12px] font-semibold text-ink-2">Details</div>
       <button
         @click="isMobile ? close() : toggleCollapse()"
-        class="w-6 h-6 rounded hover:bg-hover flex items-center justify-center text-ink-3 hover:text-ink-1 transition"
+        class="w-6 h-6 rounded hover:bg-hover flex items-center justify-center text-[var(--c-lilac)] transition"
         :title="isMobile ? 'Close' : 'Collapse panel'"
         :aria-label="isMobile ? 'Close info pane' : 'Collapse info pane'"
       >
@@ -21,21 +19,22 @@
     <!-- ── State 1: a single item is selected (RC-4) ─────────────── -->
     <template v-if="item">
       <!-- Preview -->
-      <div class="p-4 pb-3">
+      <div class="px-4 pt-2 pb-3">
         <div
           class="aspect-[4/3] rounded-lg border border-line overflow-hidden relative flex items-center justify-center preview-mesh"
         >
+          <!-- Photo / video / PDF thumbnail — fill the whole frame. -->
           <img
             v-if="hasThumbnail"
             :src="thumbnailUrl"
-            class="max-w-full max-h-full w-auto h-auto object-contain"
+            class="w-full h-full object-cover"
             :alt="item.name"
           />
           <!-- RC-42: embedded album art for a selected music file. -->
           <img
             v-else-if="albumArtUrl"
             :src="albumArtUrl"
-            class="max-w-full max-h-full w-auto h-auto object-contain rounded-md"
+            class="w-full h-full object-cover"
             alt="Album artwork"
           />
           <!-- batch #4: embedded EPUB cover for a selected book, so the
@@ -46,12 +45,16 @@
             class="max-w-full max-h-full w-auto h-auto object-contain rounded-md shadow-sm"
             alt="Book cover"
           />
-          <div
-            v-else
-            class="w-14 h-14 rounded-xl flex items-center justify-center backdrop-blur-sm border border-line/60 shadow-sm"
-            :class="iconColorClass"
-          >
-            <Icon :name="iconName" :size="28" :stroke-width="1.4" />
+          <!-- No image preview (folders, archives, code, blobs, …): fill the
+               whole frame with the file's vivid color tile + matching icon,
+               mirroring the grid / gallery tile styling. -->
+          <div v-else class="info-tile" :class="iconColorClass">
+            <Icon
+              :name="iconName"
+              :size="46"
+              :stroke-width="1.5"
+              :fill="item.isDir ? 'currentColor' : 'none'"
+            />
           </div>
         </div>
       </div>
@@ -59,9 +62,11 @@
       <!-- Title -->
       <div class="px-4 pb-3">
         <div
-          class="text-[15px] font-semibold text-ink-1 break-words leading-snug"
+          class="info-name text-[15px] font-semibold text-ink-1 leading-snug"
         >
-          {{ item.name }}
+          <template v-for="(seg, i) in nameSegments" :key="i"
+            >{{ seg }}<wbr
+          /></template>
         </div>
         <div class="text-[12px] text-ink-3 mt-0.5 tabular">
           {{ typeLabel }}<span v-if="!item.isDir"> · {{ sizeLabel }}</span>
@@ -338,7 +343,7 @@
        so the pane can be reclaimed without losing the entry point. -->
   <button
     v-else-if="showRail"
-    class="info-pane-rail shrink-0 border-l border-line bg-canvas flex items-start justify-center pt-3 text-ink-3 hover:text-ink-1 hover:bg-hover transition"
+    class="info-pane-rail shrink-0 border-l border-line bg-canvas flex items-start justify-center pt-3 text-[var(--c-lilac)] hover:bg-hover transition"
     title="Show details"
     aria-label="Show details panel"
     @click="toggleCollapse"
@@ -357,7 +362,12 @@ import { useLayoutStore } from "@/stores/layout";
 import { useTagsStore } from "@/stores/tags";
 import { fileIcon, fileIconColor } from "@/utils/fileIcon";
 import { filesize } from "@/utils";
-import { enableThumbs, unzipEnabled } from "@/utils/constants";
+import {
+  enableThumbs,
+  enableVideoThumbs,
+  enablePdfThumbs,
+  unzipEnabled,
+} from "@/utils/constants";
 import { isExtractable } from "@/utils/archive";
 import { files as api } from "@/api";
 import type { Book } from "epubjs";
@@ -520,13 +530,24 @@ const iconColorClass = computed(() =>
 );
 
 const hasThumbnail = computed(() => {
-  return (
-    enableThumbs &&
-    item.value !== null &&
-    item.value.type === "image" &&
-    !item.value.isDir
-  );
+  if (!enableThumbs || !item.value || item.value.isDir) return false;
+  // Mirror the listing's thumbnail support so the details preview shows the
+  // same backend-rendered thumbnails the grid does — images always, video +
+  // PDF when the server supports them. Audio falls through to album art, then
+  // to the color tile.
+  const t = item.value.type;
+  if (t === "image") return true;
+  if (t === "video") return enableVideoThumbs;
+  if (t === "pdf") return enablePdfThumbs;
+  return false;
 });
+
+// Break long file names at separators (., -, _, /, space) instead of mid-word:
+// each segment is rendered with a trailing <wbr> so wrapping prefers those
+// natural points and only breaks a long run as a last resort.
+const nameSegments = computed(() =>
+  (item.value?.name ?? "").split(/(?<=[._\-\s/])/)
+);
 
 const thumbnailUrl = computed(() => {
   if (!item.value) return "";
@@ -799,12 +820,17 @@ onUnmounted(() => {
   justify-content: center;
   margin-bottom: 12px;
 }
-/* Folder summary icon mirrors the gallery folder tile: a filled amber glyph
-   on a soft amber tint (same --c-amber formula as the listing), so the
-   "current folder" marker reads consistently across the app. */
+/* Folder summary icon mirrors the GRID folder tile exactly: the vivid amber-500
+   base (same Tailwind token the listing uses) + the white diagonal sheen + a
+   white filled folder glyph. */
 .ip-summary__icon--folder {
-  background: color-mix(in srgb, var(--c-amber) 16%, var(--color-surface));
-  color: var(--c-amber);
+  background-color: var(--color-amber-500);
+  background-image: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.3),
+    rgba(255, 255, 255, 0) 60%
+  );
+  color: #fff;
 }
 .ip-summary__icon--accent {
   background: var(--color-accent-soft, rgba(94, 106, 210, 0.12));
@@ -869,6 +895,36 @@ onUnmounted(() => {
 .info-pane-rail {
   width: 36px;
   cursor: pointer;
+}
+
+/* Match the details panel background to the main sidebar (both --color-canvas)
+   so the two rails read as the same surface. */
+.info-pane {
+  background: var(--color-canvas);
+}
+
+/* Full-frame color tile for files with no image preview (folders, archives,
+   code, blobs, …). The vivid background-color comes from the file's
+   iconColorClass (bg-{hue}); we layer the same diagonal white sheen the grid /
+   gallery tiles use, and the icon inherits the class's white color. */
+.info-tile {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.3),
+    rgba(255, 255, 255, 0) 60%
+  );
+}
+
+/* File name wraps at the <wbr> separators first, only breaking a long
+   unbroken run as a last resort — no ugly mid-word splits. */
+.info-name {
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 
 .preview-mesh {
