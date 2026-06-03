@@ -1,5 +1,5 @@
 <template>
-  <div class="app-shell flex h-screen overflow-hidden bg-canvas text-ink-1">
+  <div class="app-shell flex overflow-hidden bg-canvas text-ink-1">
     <!-- Ambient accent-mesh background (per-user; mirrors the login screen).
          Sits on the canvas behind all in-flow content; visibility + intensity
          are driven by data-attributes on <html> (useBackgroundGradient). -->
@@ -61,8 +61,6 @@ import Shell from "@/components/Shell.vue";
 import UploadFiles from "@/components/prompts/UploadFiles.vue";
 import Drawer from "@/components/Drawer.vue";
 import { useMobileNav } from "@/composables/useMobileNav";
-import { useEdgeSwipe } from "@/composables/useEdgeSwipe";
-import { useTouchDevice } from "@/composables/useTouchDevice";
 import { enableExec } from "@/utils/constants";
 import { watch } from "vue";
 import { useRoute } from "vue-router";
@@ -73,21 +71,13 @@ const fileStore = useFileStore();
 const uploadStore = useUploadStore();
 const route = useRoute();
 const mobileNav = useMobileNav();
-const isTouch = useTouchDevice();
 
-// Swipe in from the left edge to open the mobile nav drawer (and swipe the
-// open drawer back to the left to close it — handled inside Drawer.vue). Only
-// active on touch + narrow viewports where the inline sidebar is hidden, so it
-// never interferes with desktop or the always-visible sidebar.
-useEdgeSwipe({
-  onOpen: () => mobileNav.open(),
-  enabled: () =>
-    isTouch.value &&
-    !mobileNav.isOpen.value &&
-    authStore.isLoggedIn &&
-    typeof window !== "undefined" &&
-    window.matchMedia("(max-width: 639px)").matches,
-});
+// NOTE: there is intentionally no "swipe in from the left edge to open the
+// drawer" gesture. That rightward edge-swipe is reserved by iOS Safari and
+// Android for browser/OS back-navigation and can't be reliably overridden by
+// a web page, so it fought the back gesture. The hamburger opens the drawer;
+// swiping the OPEN drawer left to close it (in Drawer.vue) is a leftward
+// gesture and doesn't collide with the browser.
 
 // Auto-close the mobile drawer when the user clicks a nav item inside it
 // (sidebar links push routes; the route watcher below also closes, but

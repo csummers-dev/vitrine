@@ -4,7 +4,7 @@
 
 # filebrowser pretty
 
-[![Version](https://img.shields.io/badge/version-1.5.0-5e6ad2?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-1.5.1-5e6ad2?style=flat-square)](#)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
 [![Vue](https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js&logoColor=white)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
@@ -185,6 +185,13 @@ Or skip Docker entirely and run the binary directly: `./filebrowser` — opens o
 | EXIF | **exifr 7** |
 
 ---
+
+### v1.5.1 — Mobile follow-ups
+
+- **Dropped the left-edge swipe-to-open** — that rightward edge swipe is reserved by iOS Safari / Android for back-navigation and can't be reliably overridden by a web page, so it fought the browser's "back." Open the drawer with the hamburger; swiping the open drawer left to close it (a leftward gesture) still works
+- **Mobile settings sidebar** — the settings drawer now carries a **My Files** link at the top and your account + **Sign Out** at the bottom (on mobile it's the only sidebar there); the old bottom "Back to files" link moved up
+- **Header always visible on mobile** — pinned the app to the visible viewport so the document can no longer scroll the sticky header off the top of the screen (where you'd get stuck below it with no way back); signing in lands you at the top with the header in view
+- **Folder context-menu wording** — right-clicking a folder now reads **Move folder** / **Copy folder** instead of "Move file" / "Copy file"
 
 ### v1.5.0 — Mobile gestures, faster folders, and a grid redesign
 
