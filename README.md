@@ -4,7 +4,7 @@
 
 # filebrowser pretty
 
-[![Version](https://img.shields.io/badge/version-1.5.1-5e6ad2?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-1.6.1-5e6ad2?style=flat-square)](#)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
 [![Vue](https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js&logoColor=white)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
@@ -147,7 +147,7 @@ Or skip Docker entirely and run the binary directly: `./filebrowser` — opens o
 │  │  • Tailwind v4 design tokens                           │  │
 │  │  • Composables for shortcuts, drag, focus, theme       │  │
 │  │  • Format-specific viewers: pdfjs / videojs /          │  │
-│  │    vue-reader (EPUB) / Ace / music-metadata / exifr    │  │
+│  │    vue-reader (EPUB) / music-metadata / exifr          │  │
 │  └────────────────────────────────────────────────────────┘  │
 │                            │ HTTP / WebSocket                │
 │                            ▼                                 │
@@ -178,13 +178,32 @@ Or skip Docker entirely and run the binary directly: `./filebrowser` — opens o
 | Virtual list | **vue-virtual-scroller** |
 | PDF | **pdfjs-dist 6** |
 | Video | **video.js 8** + **ffmpeg** thumbnails |
-| Audio | **music-metadata 11** |
+| Audio metadata (read) | **music-metadata 11** |
+| Audio tags (read/write) | **id3v2 + go-flac** (MP3 / FLAC) |
+| Archives | **mholt/archives** (zip / 7z / rar / tar) |
 | EPUB | **vue-reader + epub.js** |
-| Code | **Ace 1.44** |
+| Code / text edit | **native `<textarea>`** |
 | Markdown | **marked + KaTeX** |
 | EXIF | **exifr 7** |
 
 ---
+
+### v1.6.1 — Audio-tag hardening & UI polish
+
+- **Sturdier audio tag writes** — editing an MP3 comment now leaves technical frames (iTunes `iTunNORM`/`iTunSMPB`) intact instead of wiping them; a FLAC that stores its track as `5/12` keeps the total when you change just the number (no more lost "of 12"); a genre like `Folk/Rock` is treated as one genre, not two; and cover uploads are validated as real images, size-bounded, and no longer leave temp files behind. Save errors now read as friendly messages instead of leaking server paths
+- **Gallery folders match grid** — folder tiles in gallery view now use the same compact card (amber media block + name footer) as grid view, instead of the full-bleed hero treatment meant for media files
+- **View mode sticks to your account** — list / grid / gallery is now a single per-user preference that carries across folders, so navigating no longer resets your chosen layout
+- **Clearer sort control** — a dedicated ascending/descending toggle replaces the old "click the active field again to flip it"; the direction persists per user across folders, and the sort menu now just picks the field
+- **Details panel polish** — the folder Path is shown in full (it was being cut off), and the "current folder" icon matches the gold folder glyph used in the listing
+- **Mobile settings** — your account + Sign Out are pinned to the bottom of the settings drawer, matching the main sidebar
+- **More color** — the Download button above listings, the sidebar Storage and New File icons, and the ⌘K search hint are now accent-tinted instead of flat grey
+
+### v1.6.0 — Audio tag editor
+
+- **Edit ID3 / Vorbis tags in place** — right-click an **MP3** or **FLAC** (or open the Edit tags button on its preview details rail) to edit **title, artist, album, album artist, year, track / disc numbers, genre, composer, and comment**, plus **embedded cover art** — add, replace, or remove the artwork without leaving the browser. Writes happen atomically (temp file → rename) so a half-written tag can never corrupt the original
+- **Batch-apply across a selection** — select several audio files and choose **Edit tags** from the selection bar or right-click menu to edit them together. The editor opens blank and applies **only the fields you actually change** to every file, so you can stamp a shared Album / Album artist / Year (or a single cover) across a whole album in one save while each track keeps its own title and track number
+- **Honest, safe writes** — only the two formats we can losslessly round-trip (MP3, FLAC) are offered; the action requires the **modify** permission, and a partial batch failure is reported clearly (e.g. "Updated 9 of 10 files") rather than silently
+- Built on pure-Go tag libraries — no `ffmpeg`/`cgo` dependency added
 
 ### v1.5.1 — Mobile follow-ups
 

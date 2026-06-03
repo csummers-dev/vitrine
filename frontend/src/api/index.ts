@@ -6,6 +6,7 @@ import * as pub from "./pub";
 import * as tags from "./tags";
 import * as audit from "./audit";
 import * as webhooks from "./webhooks";
+import * as audiotags from "./audiotags";
 import search from "./search";
 import commands from "./commands";
 
@@ -20,4 +21,5 @@ export {
   tags,
   audit,
   webhooks,
+  audiotags,
 };

@@ -84,6 +84,12 @@ func NewHandler(
 	// extracts any supported archive format (zip / 7z / rar / tar family).
 	api.PathPrefix("/unzip").Handler(monkey(extractHandler(), "/api/unzip")).Methods("POST")
 
+	// Audio tag editor (ID3 / FLAC). Paths travel in the request body so a
+	// multi-file selection is one request: read is POST, write is PATCH
+	// (multipart — JSON `payload` + optional `artwork` image part).
+	api.Handle("/audio-tags/read", monkey(audioTagsReadHandler(), "")).Methods("POST")
+	api.Handle("/audio-tags", monkey(audioTagsWriteHandler(), "")).Methods("PATCH")
+
 	// On-demand video transcode (#3): browser-unplayable containers (.mkv,
 	// .avi, …) are remuxed/transcoded to a cached, seekable MP4.
 	api.PathPrefix("/transcode").Handler(monkey(transcodeHandler(), "/api/transcode")).Methods("GET")

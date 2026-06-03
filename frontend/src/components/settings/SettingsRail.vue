@@ -1,6 +1,6 @@
 <template>
   <aside
-    class="settings-rail w-full flex flex-col overflow-y-auto bg-canvas"
+    class="settings-rail w-full h-full min-h-0 flex flex-col overflow-y-auto bg-canvas"
     :class="{ 'border-r border-line': !borderless }"
   >
     <!-- Mobile-only: quick return to the file browser, pinned at the top with

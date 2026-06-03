@@ -121,15 +121,21 @@ export function useListingGrid(opts: ListingGridOptions) {
     if (width <= 0) return;
 
     if (opts.gallery()) {
-      // Files use the standard tracks; folders use narrower ones → smaller
-      // tiles. Both stay 4:3 (CSS), so a narrower track is proportionally
-      // smaller in both dimensions.
+      // Files use the standard tracks and stay full-bleed 4:3.
       const f = galleryMetrics(width, MIN_GALLERY);
       filesCols.value = f.c;
       filesTileH.value = f.th;
+      // Folders use narrower tracks AND now render as grid-style cards
+      // (amber media block + name footer), so they're no longer a fixed 4:3.
+      // Keep the column count from the track width, but measure the real tile
+      // height from the DOM (falling back to the 4:3 metric before a tile has
+      // rendered) so the windowing math matches the cards' actual height.
       const d = galleryMetrics(width, MIN_GALLERY_DIR);
       dirsCols.value = d.c;
-      dirsTileH.value = d.th;
+      const dirsEl = opts.dirsSectionEl();
+      const dirTile = dirsEl?.querySelector<HTMLElement>(".item:not(.header)");
+      dirsTileH.value =
+        dirTile && dirTile.offsetHeight > 0 ? dirTile.offsetHeight : d.th;
     } else {
       // Grid view: folders + files share identical tracks + tile height
       // (measured live from whichever section is mounted).
