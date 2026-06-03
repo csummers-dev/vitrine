@@ -845,14 +845,13 @@ html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .info-action
 }
 
 .storage-fill {
-  /* Single-family teal→green gradient (no blue — that clashed with the green).
-     The teal end is lightened so the gradient still reads clearly in light
-     mode, where the raw teal + green tokens are close in luminance. */
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--c-teal) 72%, white),
-    var(--c-green)
-  );
+  /* Single-family teal→green gradient (no blue — that clashed with the green). */
+  background: linear-gradient(90deg, var(--c-teal), var(--c-green));
+}
+/* Light mode: the default green sits too close to the teal in luminance and
+   reads flat, so use a brighter green secondary stop. */
+html:not(.dark) .storage-fill {
+  background: linear-gradient(90deg, var(--c-teal), #1cd05e);
 }
 
 /* Gradient section headline (folder title). lilac→rose, theme-aware. */
