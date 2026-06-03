@@ -170,7 +170,7 @@
         <button
           v-if="!!authStore.user?.perm.create"
           type="button"
-          class="preview-toolbar-format__btn"
+          class="preview-toolbar-format__btn preview-toolbar-format__btn--edit"
           title="Edit image"
           aria-label="Edit image"
           @click="imageEditorOpen = true"
@@ -1918,6 +1918,17 @@ html.dark .preview-blob__icon--zip {
 .preview-toolbar-format__btn:hover {
   background: var(--color-elevated, #f4f4f5);
   color: var(--color-ink-1, #18181b);
+}
+/* Edit (image editor) — lilac-tinted so the "make changes" action stands out
+   from the neutral zoom/fit controls beside it. */
+.preview-toolbar-format__btn--edit {
+  color: var(--c-lilac);
+  border-color: color-mix(in srgb, var(--c-lilac) 30%, var(--color-line));
+  background: color-mix(in srgb, var(--c-lilac) 10%, var(--color-surface));
+}
+.preview-toolbar-format__btn--edit:hover {
+  color: var(--c-lilac);
+  background: color-mix(in srgb, var(--c-lilac) 18%, var(--color-surface));
 }
 .preview-toolbar-format__btn:focus-visible {
   outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));

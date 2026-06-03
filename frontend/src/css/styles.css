@@ -733,18 +733,23 @@ html[data-bg-intensity="bold"] .app-mesh {
    utilities, so they win the cascade. Backed by data-attributes that
    useBackgroundGradient writes on <html>. */
 
-/* Chrome bars (sidebar / files toolbar / preview toolbar) — airier frost. */
+/* Chrome bars + the details rail (sidebar / files toolbar / preview toolbar /
+   info-pane) — airier canvas frost so they all read as the SAME surface. The
+   info-pane belongs here (not with the content panels below): it's a rail like
+   the sidebar, so it uses the same --color-canvas base and blur, otherwise it
+   looked whiter than the sidebar (it was using the more-opaque --color-surface
+   fill). */
 html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .sidebar-root,
 html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .header-bar,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .info-pane,
 html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .preview-toolbar {
   background-color: color-mix(in srgb, var(--color-canvas) 64%, transparent);
   backdrop-filter: blur(7px);
   -webkit-backdrop-filter: blur(7px);
 }
 
-/* Content panels (details / settings / slide-overs) — more opaque so text
-   and form fields stay crisp, with a touch more blur. */
-html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .info-pane,
+/* Content panels (settings / slide-overs) — more opaque so text and form
+   fields stay crisp, with a touch more blur. */
 html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .settings-section,
 html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .slideover {
   background-color: color-mix(in srgb, var(--color-surface) 82%, transparent);
@@ -840,13 +845,12 @@ html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .info-action
 }
 
 .storage-fill {
-  /* Three cool stops so the gradient is clearly visible in BOTH themes — the
-     old teal→green pair was nearly flat in light mode (the two tokens are
-     close in luminance there). */
+  /* Single-family teal→green gradient (no blue — that clashed with the green).
+     The teal end is lightened so the gradient still reads clearly in light
+     mode, where the raw teal + green tokens are close in luminance. */
   background: linear-gradient(
     90deg,
-    var(--c-blue),
-    var(--c-teal) 55%,
+    color-mix(in srgb, var(--c-teal) 72%, white),
     var(--c-green)
   );
 }

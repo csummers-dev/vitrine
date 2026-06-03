@@ -306,6 +306,16 @@
   object-fit: cover;
 }
 
+/* All listing thumbnails are block-level so there's no inline-baseline gap
+   under the image. Otherwise that gap leaks the tile's colored icon
+   background as a faint 1px seam (most visible as a "red" line on image / PDF
+   tiles, whose bg is pink / rose) when the grid lands on fractional pixel
+   sizes — e.g. with the details panel open narrowing the columns. */
+#listing .item__icon img,
+#listing .item__thumb {
+  display: block;
+}
+
 /* Folder icon (filled instead of outline for visual weight) */
 #listing .item[data-dir="true"] .item__icon svg {
   fill: currentColor;

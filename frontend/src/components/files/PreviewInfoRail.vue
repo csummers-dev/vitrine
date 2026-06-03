@@ -203,12 +203,13 @@ defineEmits<{
   height: 100%;
 }
 
+/* No section dividers — the rail reads as one calm surface (less boxy).
+   Tighter vertical padding keeps the groups distinct via spacing alone. */
 .preview-info__section {
-  padding: 16px;
-  border-bottom: 1px solid var(--color-line, #ececec);
+  padding: 12px 16px;
 }
-.preview-info__section:last-of-type {
-  border-bottom: 0;
+.preview-info__section:first-of-type {
+  padding-top: 14px;
 }
 
 .preview-info__header {
