@@ -840,7 +840,15 @@ html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .info-action
 }
 
 .storage-fill {
-  background: linear-gradient(90deg, var(--c-teal), var(--c-green));
+  /* Three cool stops so the gradient is clearly visible in BOTH themes — the
+     old teal→green pair was nearly flat in light mode (the two tokens are
+     close in luminance there). */
+  background: linear-gradient(
+    90deg,
+    var(--c-blue),
+    var(--c-teal) 55%,
+    var(--c-green)
+  );
 }
 
 /* Gradient section headline (folder title). lilac→rose, theme-aware. */

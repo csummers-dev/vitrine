@@ -19,7 +19,7 @@
         @click="$emit('close')"
       >
         <Icon name="arrow-left" :size="14" />
-        <span class="max-md:hidden">Back</span>
+        <span class="max-md:hidden">Exit Preview</span>
       </button>
 
       <div class="preview-toolbar__divider"></div>
