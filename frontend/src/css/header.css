@@ -205,9 +205,11 @@ header .action .counter {
   font-weight: 500;
   padding: 1px 5px;
   border-radius: var(--radius-sm, 6px);
-  background: var(--color-elevated, #f4f4f5);
-  border: 1px solid var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
+  /* Colorful ⌘K hint: lilac-tinted chip so the shortcut affordance pops
+     against the neutral search field instead of reading as grey chrome. */
+  background: color-mix(in srgb, var(--c-lilac) 12%, var(--color-elevated));
+  border: 1px solid color-mix(in srgb, var(--c-lilac) 30%, var(--color-line));
+  color: var(--c-lilac);
   line-height: 1.4;
   flex-shrink: 0;
 }

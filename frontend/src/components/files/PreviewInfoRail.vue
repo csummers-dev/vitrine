@@ -87,6 +87,15 @@
           <span>Extract</span>
         </button>
         <button
+          v-if="canEditTags"
+          class="info-action info-action--edit-tags"
+          title="Edit tags"
+          @click="$emit('editTags')"
+        >
+          <Icon name="music" :size="14" />
+          <span>Edit tags</span>
+        </button>
+        <button
           v-if="canOpenDirect"
           class="info-action info-action--open"
           title="Open in new tab"
@@ -170,6 +179,7 @@ defineProps<{
   canMove?: boolean;
   canCopy?: boolean;
   canExtract?: boolean;
+  canEditTags?: boolean;
   canOpenDirect?: boolean;
 }>();
 
@@ -181,6 +191,7 @@ defineEmits<{
   (e: "move"): void;
   (e: "copy"): void;
   (e: "extract"): void;
+  (e: "editTags"): void;
   (e: "openDirect"): void;
 }>();
 </script>
@@ -349,6 +360,9 @@ defineEmits<{
 }
 .preview-info .info-action--extract {
   --action-hue: var(--c-green);
+}
+.preview-info .info-action--edit-tags {
+  --action-hue: var(--c-lilac);
 }
 .preview-info .info-action--open {
   --action-hue: var(--c-lilac);

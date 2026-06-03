@@ -276,7 +276,12 @@
     <template v-else>
       <div class="ip-summary">
         <div class="ip-summary__icon ip-summary__icon--folder">
-          <Icon name="folder" :size="26" :stroke-width="1.4" />
+          <Icon
+            name="folder"
+            :size="26"
+            :stroke-width="1.4"
+            fill="currentColor"
+          />
         </div>
         <div class="ip-summary__title">{{ folderName }}</div>
         <div class="ip-summary__meta">
@@ -291,7 +296,7 @@
             <dt>Files</dt>
             <dd class="tabular">{{ folderFileCount }}</dd>
           </div>
-          <div class="ip-summary__prop">
+          <div class="ip-summary__prop ip-summary__prop--path">
             <dt>Path</dt>
             <dd class="ip-summary__path" :title="folderPath">
               {{ folderPath }}
@@ -794,9 +799,12 @@ onUnmounted(() => {
   justify-content: center;
   margin-bottom: 12px;
 }
+/* Folder summary icon mirrors the gallery folder tile: a filled amber glyph
+   on a soft amber tint (same --c-amber formula as the listing), so the
+   "current folder" marker reads consistently across the app. */
 .ip-summary__icon--folder {
-  background: var(--color-amber-soft, rgba(245, 158, 11, 0.16));
-  color: var(--color-amber-strong, #d97706);
+  background: color-mix(in srgb, var(--c-amber) 16%, var(--color-surface));
+  color: var(--c-amber);
 }
 .ip-summary__icon--accent {
   background: var(--color-accent-soft, rgba(94, 106, 210, 0.12));
@@ -839,13 +847,18 @@ onUnmounted(() => {
   margin: 0;
   min-width: 0;
 }
+/* The Path row stacks (label above, value below) and the value wraps fully
+   so the whole path is visible instead of being clipped with an ellipsis. */
+.ip-summary__prop--path {
+  flex-direction: column;
+  gap: 3px;
+}
 .ip-summary__path {
   font-family: var(--font-mono, monospace);
   font-size: 11px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 180px;
+  line-height: 1.4;
+  word-break: break-all;
+  max-width: 100%;
 }
 .ip-summary__hint {
   font-size: 11.5px;

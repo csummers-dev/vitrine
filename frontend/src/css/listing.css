@@ -937,6 +937,95 @@ html.dark #listing.mosaic .item:hover {
   box-shadow: 0 0 0 2px var(--color-accent-ring, var(--accent-ring)) !important;
 }
 
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ *  GALLERY FOLDERS — match the GRID folder-card design (request)
+ *
+ *  In gallery view FILE tiles stay full-bleed 4:3 heroes, but FOLDERS read
+ *  better as the same compact "amber media block + name footer" card the grid
+ *  view uses (rather than the soft-tint hero with a white name overlay). These
+ *  rules mirror the #listing.mosaic:not(.gallery) folder card and are scoped to
+ *  the folder section (.listing-section--dirs) so file tiles are untouched.
+ *  Since the card is no longer a fixed 4:3, the folder tile height is measured
+ *  live in useListingGrid's gallery branch (MIN_GALLERY_DIR governs columns).
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+#listing.mosaic.gallery .listing-section--dirs .item {
+  aspect-ratio: auto;
+}
+#listing.mosaic.gallery .listing-section--dirs .item__name {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+}
+/* Media block: full width, 16:10, vivid amber tile with a white folder glyph
+   (matches grid's bg-amber-500 / text-white folder card — amber-500 is the
+   same in light + dark). */
+#listing.mosaic.gallery
+  .listing-section--dirs
+  .item[data-dir="true"]
+  .item__icon {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 10;
+  border-radius: 0;
+  background-color: #f59e0b;
+  background-image: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.3),
+    rgba(255, 255, 255, 0) 60%
+  );
+  box-shadow: none;
+}
+#listing.mosaic.gallery
+  .listing-section--dirs
+  .item[data-dir="true"]
+  .item__icon
+  svg {
+  width: 40px;
+  height: 40px;
+  color: #fff;
+}
+/* Footer: filename in dark text under the media (not the white overlay). */
+#listing.mosaic.gallery .listing-section--dirs .item__name-stack {
+  display: block;
+  padding: 8px 10px 0;
+}
+#listing.mosaic.gallery .listing-section--dirs .item__name-text {
+  position: static;
+  inset: auto;
+  padding: 0;
+  background: none;
+  color: var(--color-ink-1, var(--textSecondary));
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  z-index: auto;
+  pointer-events: auto;
+}
+/* Footer: modified time, matching the grid folder card. */
+#listing.mosaic.gallery
+  .listing-section--dirs
+  .item[data-dir="true"]
+  .item__meta {
+  position: static;
+  inset: auto;
+  display: flex;
+  margin: 0;
+  padding: 1px 10px 10px;
+  font-size: 11px;
+  color: var(--color-ink-3, var(--textPrimary));
+  z-index: auto;
+  pointer-events: auto;
+}
+#listing.mosaic.gallery
+  .listing-section--dirs
+  .item[data-dir="true"]
+  .item__meta
+  .item__modified::before {
+  content: "";
+  margin: 0;
+}
+
 /* * * * * * * * * * * * * *
  *      SELECTED STATE     *
  * * * * * * * * * * * * * */

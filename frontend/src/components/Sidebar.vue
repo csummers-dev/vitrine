@@ -49,7 +49,7 @@
         </button>
         <button
           @click="showHover('newFile')"
-          class="w-8 h-8 max-md:w-10 max-md:h-10 rounded-md border border-line bg-surface hover:bg-elevated flex items-center justify-center text-ink-2 transition"
+          class="sidebar-newfile w-8 h-8 max-md:w-10 max-md:h-10 rounded-md border flex items-center justify-center transition"
           :title="$t('sidebar.newFile')"
           :aria-label="$t('sidebar.newFile')"
         >
@@ -287,7 +287,7 @@
       <div class="sidebar-storage p-3 rounded-lg border border-line bg-surface">
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-1.5">
-            <Icon name="hard-drive" :size="14" class="text-ink-2" />
+            <Icon name="hard-drive" :size="14" class="text-[var(--c-teal)]" />
             <span class="text-[12px] font-semibold text-ink-1">Storage</span>
           </div>
           <span class="text-[11px] text-ink-3 tabular"
@@ -906,6 +906,18 @@ export default {
 .sidebar-logout:hover {
   color: var(--c-rose);
   background: color-mix(in srgb, var(--c-rose) 14%, transparent);
+}
+
+/* New-file button: green-tinted so the secondary "create" action reads as
+   colorful alongside the accent-gradient New folder button (rather than a
+   flat neutral square). */
+.sidebar-newfile {
+  color: var(--c-green);
+  border-color: color-mix(in srgb, var(--c-green) 30%, var(--color-line));
+  background: color-mix(in srgb, var(--c-green) 10%, var(--color-surface));
+}
+.sidebar-newfile:hover {
+  background: color-mix(in srgb, var(--c-green) 18%, var(--color-surface));
 }
 
 /* ── Favorites drag affordances ──────────────────────────────────────

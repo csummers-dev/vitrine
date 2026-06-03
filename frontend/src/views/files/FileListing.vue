@@ -64,11 +64,7 @@
           :title="`Sort: ${sortLabel}`"
           :aria-label="`Sort: ${sortLabel}`"
         >
-          <Icon
-            name="arrow-down-narrow-wide"
-            :size="14"
-            class="text-[var(--c-green)]"
-          />
+          <Icon name="arrow-up-down" :size="14" class="text-[var(--c-green)]" />
           <span class="max-md:hidden">{{ sortLabel }}</span>
         </button>
         <context-menu
@@ -77,6 +73,19 @@
           :items="sortMenuItems"
           @hide="sortMenuShow = false"
         />
+
+        <!-- Sort direction toggle — a dedicated asc/desc control so flipping
+             the order is one obvious click (the field button only picks the
+             sort field). Persists per-user across folders via
+             user.sorting.asc. -->
+        <button
+          class="h-7 w-7 rounded-md border border-line bg-surface hover:bg-elevated inline-flex items-center justify-center transition"
+          @click="toggleSortDirection"
+          :title="`Sort direction: ${sortDirLabel}`"
+          :aria-label="`Sort direction: ${sortDirLabel}`"
+        >
+          <Icon :name="sortDirIcon" :size="14" class="text-[var(--c-blue)]" />
+        </button>
 
         <!-- S7-2: camera-roll / photo-library upload. Touch devices only
              (the native file chooser is the win here; desktops already
@@ -319,7 +328,7 @@
             </button>
             <button
               v-if="headerButtons.download"
-              class="h-7 px-2 max-md:w-7 max-md:px-0 max-md:justify-center rounded-md border border-line bg-surface hover:bg-elevated text-[13px] text-ink-2 flex items-center gap-1.5 transition"
+              class="listing-download h-7 px-2 max-md:w-7 max-md:px-0 max-md:justify-center rounded-md border text-[13px] flex items-center gap-1.5 transition"
               @click="download"
               :title="t('buttons.download')"
               :aria-label="t('buttons.download')"
@@ -727,6 +736,17 @@
                 <Icon name="pencil" :size="14" />
                 <span>Rename</span>
               </button>
+              <!-- 1.6.0: batch-edit ID3/Vorbis tags across the audio files in
+                   the selection. Only fields changed in the editor are applied
+                   to all of them. -->
+              <button
+                v-if="canBulkEditTags"
+                @click="layoutStore.showHover('audio-tags')"
+                :title="`Edit tags on ${bulkAudioCount} audio files`"
+              >
+                <Icon name="music" :size="14" />
+                <span>Edit tags</span>
+              </button>
               <button
                 v-if="headerButtons.delete"
                 @click="layoutStore.showHover('delete')"
@@ -828,7 +848,6 @@ import { useLayoutStore } from "@/stores/layout";
 import { useTagsStore } from "@/stores/tags";
 import { useFavorites } from "@/composables/useFavorites";
 import { useRootLabel } from "@/composables/useRootLabel";
-import { useFolderViewMode } from "@/composables/useFolderViewMode";
 import { usePreferences } from "@/composables/usePreferences";
 import { useTagPicker } from "@/composables/useTagPicker";
 import { useFavoriteTitleDialog } from "@/composables/useFavoriteTitleDialog";
@@ -843,6 +862,7 @@ import { applySecondarySort } from "@/utils/secondarySort";
 import { users, files as api } from "@/api";
 import { enableExec, unzipEnabled } from "@/utils/constants";
 import { isExtractable } from "@/utils/archive";
+import { isAudioTaggable } from "@/utils/audio";
 import * as upload from "@/utils/upload";
 import { throttle } from "lodash-es";
 import { Base64 } from "js-base64";
@@ -1742,6 +1762,29 @@ const headerButtons = computed(() => {
   };
 });
 
+// 1.6.0 batch audio-tag editing — how many of the selected items are taggable
+// audio files (MP3 / FLAC). Drives the bulk "Edit tags" entry points (pill +
+// context menu). Non-audio items in a mixed selection are simply ignored; the
+// editor operates on the audio subset and states the count it'll affect.
+const bulkAudioCount = computed(() => {
+  const req = fileStore.req;
+  if (!req) return 0;
+  let n = 0;
+  for (const idx of fileStore.selected) {
+    const item = req.items[idx];
+    if (item && isAudioTaggable(item.name)) n++;
+  }
+  return n;
+});
+// Show the bulk action only for a genuine multi-file batch (≥2 audio files);
+// a single selected audio file already gets the inline "Edit tags…" path.
+const canBulkEditTags = computed(
+  () =>
+    fileStore.selectedCount > 1 &&
+    bulkAudioCount.value >= 2 &&
+    !!authStore.user?.perm.modify
+);
+
 const isMobile = computed(() => {
   return width.value <= 736;
 });
@@ -2333,81 +2376,42 @@ const download = () => {
 // localStorage map keyed by folder URL. Per-folder overrides win over
 // the user's global default. Locked decision: per-device, not
 // cross-device — view mode is fundamentally shaped by viewport.
-const folderViewMode = useFolderViewMode();
-
-const switchView = async () => {
-  layoutStore.closeHovers();
-
-  const modes: Record<ViewModeType, ViewModeType> = {
-    list: "mosaic",
-    mosaic: "mosaic gallery",
-    "mosaic gallery": "list",
-  };
-  const current = viewMode.value;
-  const next = modes[current] ?? "list";
-
-  // Per-folder save (S3-3) instead of touching the user record. The
-  // global default is now changed only via Profile settings (or
-  // explicit "set as default" UI, future). This keeps "set list view
-  // for /Photos" from secretly changing the default everywhere.
-  const folderPath = fileStore.req?.url;
-  if (folderPath) {
-    folderViewMode.setModeForPath(folderPath, next);
+// View mode (list / grid / gallery) is a single PER-USER account preference,
+// persisted server-side via `users.update` and mirrored locally through
+// `authStore.updateUser`. It deliberately retains across folders — the chosen
+// layout is the user's, not the folder's, so navigating around never resets it.
+// (This replaces the old per-folder localStorage override.)
+const persistViewMode = async (mode: ViewModeType) => {
+  if (!authStore.user) return;
+  const data = { id: authStore.user.id, viewMode: mode };
+  try {
+    await users.update(data, ["viewMode"]);
+  } catch {
+    // Failing to persist shouldn't block the visible switch — the optimistic
+    // ref update below already applied it for this session.
   }
-  // Update the reactive ref directly so the change shows immediately.
-  // We deliberately do NOT touch authStore.user.viewMode — the per-folder
-  // override is local-only and must not silently change the account
-  // default (that's only set via Profile / the command palette).
-  viewMode.value = next;
-
-  setItemWeight();
-  fillWindow();
+  authStore.updateUser(data);
 };
 
 const setView = async (mode: string) => {
   if (!authStore.user) return;
   if (viewMode.value === mode) return;
-
   layoutStore.closeHovers();
-
-  // Per-folder save instead of touching the user record (S3-3).
-  const folderPath = fileStore.req?.url;
-  if (folderPath) {
-    folderViewMode.setModeForPath(folderPath, mode as ViewModeType);
-  }
-  // Drive the reactive ref directly (RC-2). We don't mutate
-  // authStore.user.viewMode here — the per-folder override is local-only
-  // and shouldn't move the account default.
-  viewMode.value = mode as ViewModeType;
+  viewMode.value = mode as ViewModeType; // optimistic — show immediately
   setItemWeight();
   fillWindow();
+  void persistViewMode(mode as ViewModeType);
 };
 
-/** Effective view mode for the current folder: per-folder override if
- *  set, else the user's account-wide default.
- *
- *  Backed by a `ref` rather than a plain computed: the per-folder
- *  override lives in `localStorage`, which is NOT reactive. A computed
- *  over `getModeForPath()` only tracks `req.url`, so toggling the view
- *  in the *same* folder changed localStorage but never re-ran the
- *  computed — the buttons looked dead until you navigated away or
- *  refreshed (RC-2). This ref is the source of truth: re-seeded on
- *  folder navigation and account-default changes, and set synchronously
- *  by setView/switchView. */
-const resolveViewMode = (): ViewModeType => {
-  const folderPath = fileStore.req?.url;
-  if (folderPath) {
-    return folderViewMode.getModeForPath(folderPath);
-  }
-  return authStore.user?.viewMode ?? "list";
-};
-
-const viewMode = ref<ViewModeType>(resolveViewMode());
+// Source of truth for the active layout. Seeded from the account default and
+// kept in sync if that default changes elsewhere (command palette, Profile, or
+// another tab via the auth store).
+const viewMode = ref<ViewModeType>(authStore.user?.viewMode ?? "list");
 
 watch(
-  () => [fileStore.req?.url, authStore.user?.viewMode] as const,
-  () => {
-    viewMode.value = resolveViewMode();
+  () => authStore.user?.viewMode,
+  (mode) => {
+    if (mode && mode !== viewMode.value) viewMode.value = mode;
   }
 );
 
@@ -2421,7 +2425,6 @@ watch(viewMode, () => {
     listingGrid.update();
   });
 });
-void switchView;
 
 const totalItems = computed(
   () => (fileStore.req?.numDirs ?? 0) + (fileStore.req?.numFiles ?? 0)
@@ -2863,6 +2866,21 @@ const sortLabel = computed(() => {
   return by;
 });
 
+// Sort direction is its own first-class toggle (rather than "re-click the
+// active field to flip it," which read as a confusing swap). It persists
+// per-user via user.sorting.asc — server-side, so it sticks across folders
+// until the user changes it.
+const sortDirIcon = computed(() =>
+  ascOrdered.value ? "arrow-up-narrow-wide" : "arrow-down-wide-narrow"
+);
+const sortDirLabel = computed(() =>
+  ascOrdered.value ? "Ascending" : "Descending"
+);
+const toggleSortDirection = () => {
+  const by = (fileStore.req?.sorting.by ?? "name") as SortKey;
+  void sortRaw(by, !ascOrdered.value);
+};
+
 // ── Multi-column sort popover (v1.3 S3-4) ───────────────────────────
 // Replaces the legacy cycle button (and the brief S3-5-extension
 // cycle extension). Click → ContextMenu with primary + secondary
@@ -2937,17 +2955,13 @@ const sortMenuItems = computed<MenuItem[]>(() => {
     { type: "header", label: "Primary" },
     ...SORT_OPTIONS.map((opt) => ({
       label: opt.label,
-      icon:
-        primaryBy === opt.key
-          ? primaryAsc
-            ? "arrow-up"
-            : "arrow-down"
-          : undefined,
+      // A check marks the active field; direction is owned by the dedicated
+      // asc/desc toggle in the toolbar, so the menu no longer flips it.
+      icon: primaryBy === opt.key ? "check" : undefined,
       action: () => {
-        // Re-clicking the active primary toggles direction; clicking
-        // a different criterion picks it ascending by default.
-        const nextAsc = primaryBy === opt.key ? !primaryAsc : true;
-        setPrimarySort(opt.key, nextAsc);
+        // Picking a field keeps the current direction; re-picking the active
+        // field is a no-op (use the toolbar toggle to change direction).
+        setPrimarySort(opt.key, primaryAsc);
       },
     })),
     { type: "separator" },
@@ -3189,6 +3203,32 @@ const rowMenuItems = computed<MenuItem[]>(() => {
       },
     });
   }
+  // Edit audio tags (1.6.0) — single MP3 / FLAC file, requires modify perm.
+  if (
+    singleItem &&
+    isAudioTaggable(singleItem.name) &&
+    authStore.user?.perm.modify
+  ) {
+    items.push({
+      label: "Edit tags…",
+      icon: "music",
+      action: () => {
+        hideContextMenu();
+        layoutStore.showHover("audio-tags");
+      },
+    });
+  } else if (canBulkEditTags.value) {
+    // Batch variant — multiple audio files in the selection. The editor opens
+    // blank and applies only the fields the user changes to all of them.
+    items.push({
+      label: `Edit tags on ${bulkAudioCount.value} files…`,
+      icon: "music",
+      action: () => {
+        hideContextMenu();
+        layoutStore.showHover("audio-tags");
+      },
+    });
+  }
 
   // ── Rename / Move / Copy / Copy path / Download (varies) ─────────
   if (items.length > 0) items.push({ type: "separator" });
@@ -3410,6 +3450,18 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
 <style scoped>
 #listing {
   min-height: calc(100vh - 8rem);
+}
+
+/* Colorful download button in the folder header toolbar — blue-tinted so the
+   "save this out" action reads as a real action next to the neutral Share /
+   More buttons rather than flat grey chrome. */
+.listing-download {
+  color: var(--c-blue);
+  border-color: color-mix(in srgb, var(--c-blue) 30%, var(--color-line));
+  background: color-mix(in srgb, var(--c-blue) 10%, var(--color-surface));
+}
+.listing-download:hover {
+  background: color-mix(in srgb, var(--c-blue) 18%, var(--color-surface));
 }
 
 /* ── List virtualization layout (v1.3 S6-1) ──────────────────────────

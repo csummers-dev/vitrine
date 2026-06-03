@@ -20,6 +20,15 @@
     <!-- Boot-time loading (no view component yet): use the same listing
          skeleton FileListing shows so the layout stays consistent. -->
     <ListingSkeleton v-else mode="list" :count="8" />
+
+    <!-- Audio tag editor (1.6.0). Mounted in this parent so it's reachable
+         from BOTH the listing and the preview view (each swaps into the
+         router-view above). Opened via showHover("audio-tags"). -->
+    <AudioTagEditor
+      :open="audioTagsOpen"
+      @cancel="closeAudioTags"
+      @done="closeAudioTags"
+    />
   </div>
 </template>
 
@@ -45,6 +54,7 @@ import ListingSkeleton from "@/components/files/ListingSkeleton.vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import FileListing from "@/views/files/FileListing.vue";
+import AudioTagEditor from "@/components/files/AudioTagEditor.vue";
 import { StatusError } from "@/api/utils";
 import { name } from "../utils/constants";
 import { useShortcutsOverlay } from "@/composables/useShortcutsOverlay";
@@ -64,6 +74,14 @@ const router = useRouter();
 const favorites = useFavorites();
 
 const { t } = useI18n({});
+
+// Audio tag editor (1.6.0). Driven by the shared prompt name so both the
+// listing row context menu and the preview details rail can open it via
+// showHover("audio-tags"); closeHovers() dismisses it.
+const audioTagsOpen = computed(
+  () => layoutStore.currentPromptName === "audio-tags"
+);
+const closeAudioTags = () => layoutStore.closeHovers();
 
 let fetchDataController = new AbortController();
 

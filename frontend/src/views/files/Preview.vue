@@ -375,6 +375,7 @@
         :can-move="!!authStore.user?.perm.rename"
         :can-copy="!!authStore.user?.perm.create"
         :can-extract="canExtractZip"
+        :can-edit-tags="canEditTags"
         :can-open-direct="canOpenDirect"
         @share="share"
         @download="download"
@@ -383,6 +384,7 @@
         @move="move"
         @copy="copy"
         @extract="openExtract"
+        @edit-tags="openAudioTags"
         @open-direct="openDirect"
       >
         <!-- Format-specific section. Each format may emit metadata
@@ -650,6 +652,7 @@ import {
   transcodeEnabled,
 } from "@/utils/constants";
 import { isExtractable } from "@/utils/archive";
+import { isAudioTaggable } from "@/utils/audio";
 import url from "@/utils/url";
 import { throttle } from "lodash-es";
 import { filesize } from "@/utils";
@@ -1144,6 +1147,14 @@ const canExtractZip = computed(
   () => unzipEnabled && !!authStore.user?.perm.create && isArchive.value
 );
 const openExtract = () => layoutStore.showHover("extract");
+
+// Edit ID3/Vorbis tags (1.6.0). Surfaced on the audio preview's details rail
+// when the file is a taggable audio format and the user can modify it.
+const canEditTags = computed(
+  () =>
+    !!authStore.user?.perm.modify && isAudioTaggable(fileStore.req?.name ?? "")
+);
+const openAudioTags = () => layoutStore.showHover("audio-tags");
 
 const subtitles = computed(() => {
   if (fileStore.req?.subtitles) return api.getSubtitlesURL(fileStore.req);
