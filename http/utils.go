@@ -48,6 +48,11 @@ func errToStatus(err error) int {
 		errors.Is(err, libErrors.ErrMultiVolumeUnsupported),
 		errors.Is(err, libErrors.ErrEncryptedArchiveUnsupported):
 		return http.StatusBadRequest
+	// A (correct) password is needed — 422 (NOT 401, which the frontend's
+	// fetchURL treats as session-expiry and force-logs-out on).
+	case errors.Is(err, libErrors.ErrArchivePasswordRequired),
+		errors.Is(err, libErrors.ErrArchivePasswordIncorrect):
+		return http.StatusUnprocessableEntity
 	case errors.Is(err, libErrors.ErrRootUserDeletion):
 		return http.StatusForbidden
 	case errors.Is(err, imgErrors.ErrImageTooLarge):

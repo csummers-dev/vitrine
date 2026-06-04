@@ -1,6 +1,8 @@
 // Package audiotags reads and writes the common metadata tags (and embedded
 // cover art) of audio files. It supports MP3 (ID3v2) and FLAC (Vorbis
-// comments) — the two formats the tag editor targets.
+// comments) via dedicated native libraries, plus MP4/AAC/ALAC (.m4a) and the
+// Ogg family (.ogg/.oga Vorbis, .opus) via TagLib (compiled to WebAssembly,
+// run through the pure-Go wazero runtime — no cgo).
 //
 // Writes are ATOMIC: the new file is built in a sibling temp file and
 // rename()d over the original, so a crash or error mid-write can never
@@ -14,8 +16,8 @@ import (
 	"strings"
 )
 
-// ErrUnsupportedFormat is returned for a file whose extension isn't a format
-// we can edit (anything other than .mp3 / .flac).
+// ErrUnsupportedFormat is returned for a file whose extension isn't an editable
+// audio format.
 var ErrUnsupportedFormat = errors.New("audiotags: unsupported audio format")
 
 // Picture is an embedded cover image.
@@ -83,7 +85,7 @@ type Changes struct {
 // IsSupported reports whether the file (by extension) is an editable format.
 func IsSupported(name string) bool {
 	switch strings.ToLower(filepath.Ext(name)) {
-	case ".mp3", ".flac":
+	case ".mp3", ".flac", ".m4a", ".ogg", ".oga", ".opus":
 		return true
 	}
 	return false
@@ -98,6 +100,8 @@ func Read(realPath string) (*Tags, error) {
 		return readMP3(realPath)
 	case ".flac":
 		return readFLAC(realPath)
+	case ".m4a", ".ogg", ".oga", ".opus":
+		return readTagLib(realPath)
 	default:
 		return nil, ErrUnsupportedFormat
 	}
@@ -113,6 +117,10 @@ func Write(realPath string, ch Changes) error {
 	case ".flac":
 		return atomicReplace(realPath, func(tmp string) error {
 			return writeFLAC(realPath, tmp, ch)
+		})
+	case ".m4a", ".ogg", ".oga", ".opus":
+		return atomicReplace(realPath, func(tmp string) error {
+			return writeTagLib(realPath, tmp, ch)
 		})
 	default:
 		return ErrUnsupportedFormat

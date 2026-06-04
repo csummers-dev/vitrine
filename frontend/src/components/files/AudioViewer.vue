@@ -204,6 +204,12 @@ const props = withDefaults(
     /** Whether to enable prev / next track navigation buttons. */
     hasPrevious?: boolean;
     hasNext?: boolean;
+    /** 2.1 #2: server-side cover thumbnail URL. Used as a fallback when the
+     *  client-side music-metadata parse yields no artwork — notably .opus,
+     *  whose METADATA_BLOCK_PICTURE base64 makes music-metadata's atob() throw
+     *  and abort the whole parse. The backend (which wrote the cover) extracts
+     *  it reliably. */
+    coverFallbackUrl?: string;
   }>(),
   {
     title: "",
@@ -211,6 +217,7 @@ const props = withDefaults(
     album: "",
     hasPrevious: false,
     hasNext: false,
+    coverFallbackUrl: "",
   }
 );
 
@@ -413,7 +420,12 @@ const revokeArtwork = () => {
  * gracefully no-op — the audio element still plays, and the UI shows
  * the filename + fallback gradient artwork.
  */
-const METADATA_RANGE_BYTES = 512 * 1024; // 512 KB — comfortable for ID3v2 + APIC
+// V3-E #17: 512 KB held an MP3's ID3v2 APIC (which lives in the header), but an
+// OGG embeds its cover as base64 in a Vorbis comment (METADATA_BLOCK_PICTURE) —
+// ~33% larger — so a ~1 MB cover was sliced in half ("only top half visible").
+// 2 MB captures the whole comment for typical covers while staying bounded
+// (never the whole multi-MB file) so it can't starve the audio element's fetch.
+const METADATA_RANGE_BYTES = 2 * 1024 * 1024; // 2 MB
 
 const extractMetadata = async (src: string) => {
   if (!src) return;
@@ -457,7 +469,25 @@ const extractMetadata = async (src: string) => {
     emit("metadata", meta);
   } catch {
     /* swallow — playback is unaffected, just no ID3 surface */
+  } finally {
+    // 2.1 #2: if the client-side parse produced no artwork (no embedded cover,
+    // or — for .opus — music-metadata threw on the base64 picture), fall back
+    // to the server-extracted cover, which is reliable across all formats.
+    applyCoverFallback();
   }
+};
+
+// Probe the backend cover thumbnail and adopt it only if it actually loads, so
+// a format/file the server can't cover for stays on the gradient rather than a
+// broken image. No-op once we already have artwork.
+const applyCoverFallback = () => {
+  if (artworkUrl.value || !props.coverFallbackUrl) return;
+  const candidate = props.coverFallbackUrl;
+  const probe = new Image();
+  probe.onload = () => {
+    if (!artworkUrl.value) artworkUrl.value = candidate;
+  };
+  probe.src = candidate;
 };
 
 // ── Reset on src change so a swap between tracks doesn't show the
@@ -564,10 +594,15 @@ onBeforeUnmount(() => {
     align-items: stretch;
   }
   .audio-viewer__art {
-    /* Art scales with the card but never dominates; the body keeps the rest. */
+    /* Art scales with the card but never dominates; the body keeps the rest.
+       Album art is always square, so keep the 1:1 box (the previous
+       aspect-ratio:auto + align-items:stretch stretched it into a tall
+       rectangle). align-self:center stops the row's stretch from overriding
+       the square; the body, being taller, owns the remaining height. */
     width: clamp(220px, 34cqw, 360px);
     height: auto;
-    aspect-ratio: auto;
+    aspect-ratio: 1 / 1;
+    align-self: center;
     flex-shrink: 0;
   }
   .audio-viewer__body {
@@ -582,10 +617,16 @@ onBeforeUnmount(() => {
 /* ── Album art ────────────────────────────────────────────────── */
 .audio-viewer__art {
   aspect-ratio: 1 / 1;
-  background-size: cover;
+  /* V3-E #14: show the FULL artwork. `cover` cropped it to fill the box (and in
+     the wide layout the box is no longer square), so only the centre was
+     visible. `contain` fits the whole image, letterboxing against the chip
+     colour for non-square art. */
+  background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
   background-color: var(--color-elevated, #f4f4f5);
+  /* 2.1 #5: 10px squircle so the square art doesn't read as a flat slab. */
+  border-radius: 10px;
 }
 
 /* Fallback gradient when no embedded artwork was found in the file. */

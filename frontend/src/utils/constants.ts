@@ -1,7 +1,10 @@
-// Fallback applies when the backend's `settings.Branding.Name` is empty
-// (fresh install before quickSetup, or admin cleared the field). Lowercase
-// is intentional — this is the app's wordmark, not a sentence.
-const name: string = window.FileBrowser.Name || "filebrowser pretty";
+// The app's fixed wordmark. Lowercase is intentional — it's a brand mark,
+// not a sentence. Used as the trailing segment of the document <title>.
+const brand = "filebrowser pretty";
+// `name` is the instance/branding name (`settings.Branding.Name`), falling
+// back to the wordmark when empty (fresh install before quickSetup, or admin
+// cleared the field). Drives the sidebar wordmark and the root listing title.
+const name: string = window.FileBrowser.Name || brand;
 const disableExternal: boolean = window.FileBrowser.DisableExternal;
 const disableUsedPercentage: boolean = window.FileBrowser.DisableUsedPercentage;
 const baseURL: string = window.FileBrowser.BaseURL;
@@ -54,6 +57,7 @@ const repoUrl = "https://github.com/csummers-dev/filebrowser-pretty";
 
 export {
   name,
+  brand,
   disableExternal,
   disableUsedPercentage,
   baseURL,

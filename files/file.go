@@ -278,8 +278,17 @@ func (i *FileInfo) detectType(modify, saveContent, readHeader bool, calcImgRes b
 	case strings.HasSuffix(mimetype, "pdf"):
 		i.Type = "pdf"
 		return nil
-	// Text classification. The `!isBinary(buffer)` clause is a fallback that
+	// Text classification. The `!isBinary(header())` clause is a fallback that
 	// rescues text files whose MIME isn't `text/*` (e.g. application/json).
+	// It MUST call `header()` (the lazy reader), not the bare `buffer` var:
+	// `buffer` is only populated when `header()` was already invoked, and that
+	// only happens above when `mimetype == ""` (the DetectContentType branch).
+	// A registered non-text `application/*` MIME (zip, 7z, tar, gzip, rar…)
+	// skips that branch, so `buffer` would still be nil here and `isBinary(nil)`
+	// returns false — which previously mis-classified every such archive as
+	// "text" and dumped raw bytes into the text viewer (WS3). `header()` reads
+	// the real first bytes (when readHeader is set) so archives fall through to
+	// the blob/no-preview card instead.
 	// But when the content sniff returned "application/octet-stream" — Go's
 	// explicit "this is unknown/binary" verdict — trust it and fall through
 	// to the blob (download) card instead of letting the heuristic force a
@@ -292,7 +301,7 @@ func (i *FileInfo) detectType(modify, saveContent, readHeader bool, calcImgRes b
 	case extMime == "" && i.Size == 0:
 		i.Type = "blob"
 	case mimetype != "application/octet-stream" &&
-		(strings.HasPrefix(mimetype, "text") || !isBinary(buffer)) &&
+		(strings.HasPrefix(mimetype, "text") || !isBinary(header())) &&
 		i.Size <= 10*1024*1024: // 10 MB
 		i.Type = "text"
 

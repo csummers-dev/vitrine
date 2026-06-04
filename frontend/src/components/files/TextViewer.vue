@@ -96,7 +96,11 @@ watchEffect(async () => {
   display: flex;
   align-items: stretch;
   justify-content: center;
-  padding: 0;
+  /* 2.1 #4: drop the text card below the floating Exit button (top-left, ~44px
+     tall) so it never overlaps the card or its first lines. On wide viewports
+     the card is centred and the Exit sits in the side margin anyway; this keeps
+     it clear on narrow ones too. */
+  padding: 52px 0 0;
 }
 
 .text-viewer__card {

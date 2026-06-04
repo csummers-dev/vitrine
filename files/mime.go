@@ -590,7 +590,7 @@ var types = map[string]string{
 	".flac":      "audio/x-flac",
 	".amr":       "audio/amr",
 	".aac":       "audio/aac",
-	".opus":      "video/ogg",
+	".opus":      "audio/ogg",
 	".m4v":       "video/mp4",
 	".mkv":       "video/x-matroska",
 	".caf":       "audio/x-caf",

@@ -44,6 +44,8 @@ func safeTagError(err error, fallback string) string {
 		return "file not found"
 	case errors.Is(err, os.ErrPermission):
 		return "permission denied"
+	case errors.Is(err, io.ErrUnexpectedEOF):
+		return "this file appears to be incomplete or corrupt"
 	default:
 		return fallback
 	}

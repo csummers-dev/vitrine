@@ -4,131 +4,67 @@
     role="region"
     :aria-label="`Preview: ${name}`"
     tabindex="-1"
-    @mousemove="$emit('userActivity')"
-    @touchstart="$emit('userActivity')"
+    @mousemove="onActivity"
+    @touchstart="onActivity"
   >
-    <!-- ── Toolbar (canonical 48px header) ───────────────────────────
-         Matches the chrome of FileListing's HeaderBar so the user
-         doesn't experience a jarring chrome change when entering the
-         preview. Sits on `--color-canvas` — no more cinematic black. -->
-    <header class="preview-toolbar">
-      <button
-        class="preview-toolbar__back"
-        :title="$t('buttons.close')"
-        :aria-label="$t('buttons.close')"
-        @click="$emit('close')"
-      >
-        <Icon name="arrow-left" :size="14" />
-        <span class="max-md:hidden">Exit Preview</span>
-      </button>
-
-      <div class="preview-toolbar__divider"></div>
-
-      <!-- File-type squircle + filename + position counter. The squircle
-           tint comes from the file-icon system so it matches the row's
-           treatment in the listing — visual continuity. -->
-      <div class="preview-toolbar__title">
-        <span class="preview-toolbar__icon" :class="iconColorClass">
-          <Icon :name="iconName" :size="14" :stroke-width="1.8" />
-        </span>
-        <div class="preview-toolbar__title-text">
-          <div class="preview-toolbar__name">{{ name }}</div>
-          <div v-if="positionLabel" class="preview-toolbar__position">
-            {{ positionLabel }}
-          </div>
-        </div>
-      </div>
-
-      <!-- Format-specific toolbar controls (zoom, captions, etc.) -->
-      <div class="preview-toolbar__format" v-if="$slots['toolbar-format']">
-        <slot name="toolbar-format" />
-        <div class="preview-toolbar__divider"></div>
-      </div>
-
-      <!-- Universal actions cluster — same chrome as FileListing's
-           section-title row. Each viewer gets the same set so muscle
-           memory transfers. -->
-      <div class="preview-toolbar__actions">
+    <!-- ── Body: stage (full-bleed, floating controls) + full-height info
+         rail. V2-J dissolved the 48px header: Back floats top-left, the
+         action cluster (download / share / details / close) floats top-right,
+         and the per-format controls float in a bottom-centre pill — all over
+         the media, so the rail can run edge-to-edge on the right. -->
+    <div class="preview-shell__body">
+      <section class="preview-shell__stage">
+        <!-- Floating Back (top-left) -->
         <button
-          v-if="canDownload"
-          class="preview-toolbar__btn preview-toolbar__btn--download"
-          :title="$t('buttons.download')"
-          :aria-label="$t('buttons.download')"
-          @click="$emit('download')"
-        >
-          <Icon name="download" :size="14" />
-          <span class="max-md:hidden">{{ $t("buttons.download") }}</span>
-        </button>
-        <button
-          v-if="canShare"
-          class="preview-toolbar__btn preview-toolbar__btn--share"
-          :title="$t('buttons.share')"
-          :aria-label="$t('buttons.share')"
-          @click="$emit('share')"
-        >
-          <Icon name="share" :size="14" />
-          <span class="max-md:hidden">{{ $t("buttons.share") }}</span>
-        </button>
-        <div class="preview-toolbar__divider"></div>
-
-        <!-- Info-rail toggle. Filled state when open so the user can see
-             at a glance whether the rail is currently visible. -->
-        <button
-          class="preview-toolbar__btn preview-toolbar__btn--icon"
-          :class="{ 'is-active': infoOpen }"
-          :title="infoOpen ? 'Hide details' : 'Show details'"
-          :aria-label="infoOpen ? 'Hide details' : 'Show details'"
-          :aria-pressed="infoOpen"
-          @click="$emit('toggleInfo')"
-        >
-          <Icon
-            :name="infoOpen ? 'panel-right-close' : 'panel-right-open'"
-            :size="14"
-          />
-        </button>
-
-        <!-- Close. The Back button on the left covers the same intent;
-             this one is closer to the rest of the action cluster, so
-             power users right-end their clicks here. -->
-        <button
-          class="preview-toolbar__btn preview-toolbar__btn--icon preview-toolbar__btn--close"
-          :title="$t('buttons.close') + ' (Esc)'"
+          class="preview-float preview-float--back"
+          :class="{ 'is-idle-hidden': fadeChrome && !controlsVisible }"
+          :title="$t('buttons.close')"
           :aria-label="$t('buttons.close')"
           @click="$emit('close')"
         >
-          <Icon name="x" :size="16" />
+          <Icon name="arrow-left" :size="16" />
+          <span class="max-md:hidden">Exit</span>
         </button>
-      </div>
-    </header>
 
-    <!-- ── Body: stage (with side-nav arrows) + info rail ────────────
-         Two-column flex. The stage fills; the info rail is fixed 320px
-         and hides at max-md (replaced by the toolbar Info toggle which
-         opens a bottom sheet in the mobile pass). -->
-    <div class="preview-shell__body">
-      <section class="preview-shell__stage">
+        <!-- Floating action cluster (top-right). V3-D #9: download / share /
+             close were removed here — every action lives in the details rail,
+             and Exit (top-left) + Esc already close. Only the details toggle
+             remains, so the user has one obvious "show me the controls" affordance. -->
+        <div
+          class="preview-float preview-float--actions"
+          :class="{ 'is-idle-hidden': fadeChrome && !controlsVisible }"
+        >
+          <button
+            class="preview-float__btn"
+            :class="{ 'is-active': infoOpen }"
+            :title="infoOpen ? 'Hide details' : 'Show details'"
+            :aria-label="infoOpen ? 'Hide details' : 'Show details'"
+            :aria-pressed="infoOpen"
+            @click="$emit('toggleInfo')"
+          >
+            <Icon
+              :name="infoOpen ? 'panel-right-close' : 'panel-right-open'"
+              :size="16"
+            />
+          </button>
+        </div>
+
         <slot name="stage" />
 
-        <!-- Side navigation arrows. Sit at the inner edge of the stage,
-             not floating over the media. Hidden on mobile (use swipe). -->
-        <button
-          v-if="hasPrevious"
-          class="preview-shell__nav preview-shell__nav--prev"
-          :title="$t('buttons.previous') + ' (←)'"
-          :aria-label="$t('buttons.previous')"
-          @click="$emit('prev')"
+        <!-- Floating per-format controls (bottom-centre): zoom / fit / page /
+             edit. The viewer fills this via the toolbar-format slot.
+             V3-D #15: gate on REAL content — audio/comic/video provide the slot
+             but all its v-if branches are false, leaving only comment vnodes,
+             which used to render as an empty pill (the "small circle" at
+             bottom-centre). V3-D #11: fade out after inactivity so the size
+             pill in PDF behaves like a media player's chrome. -->
+        <div
+          v-if="hasFormatControls"
+          class="preview-float preview-float--format"
+          :class="{ 'is-idle-hidden': !controlsVisible }"
         >
-          <Icon name="chevron-left" :size="16" />
-        </button>
-        <button
-          v-if="hasNext"
-          class="preview-shell__nav preview-shell__nav--next"
-          :title="$t('buttons.next') + ' (→)'"
-          :aria-label="$t('buttons.next')"
-          @click="$emit('next')"
-        >
-          <Icon name="chevron-right" :size="16" />
-        </button>
+          <slot name="toolbar-format" />
+        </div>
       </section>
 
       <!-- Info rail (right side, desktop). Slot is optional — the
@@ -164,29 +100,71 @@
  * for every format. Splitting the canonical chrome out lets each
  * format viewer focus on its own concern and inherit a single layout.
  */
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import {
+  Comment,
+  Text,
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  useSlots,
+} from "vue";
 import Icon from "@/components/Icon.vue";
 import Drawer from "@/components/Drawer.vue";
 
+// V3-I: trimmed to what the floating-controls shell actually consumes. The old
+// 48px toolbar (V2-J) and its top-right download/share/close cluster (V3-D #9)
+// are gone, so iconName / iconColorClass / canDownload / canShare props and the
+// download / share emits they drove were dead — removed here, along with their
+// bindings in Preview.vue.
 const props = defineProps<{
-  /** Display filename. Sits next to the squircle in the toolbar. */
+  /** Display filename — used in the region's aria-label. */
   name: string;
-  /** Lucide icon name for the file-type squircle (e.g. "image", "video"). */
-  iconName: string;
-  /** Tailwind / scoped class controlling the squircle tint (e.g. "is-image"). */
-  iconColorClass?: string;
-  /** Optional position counter shown under the filename (e.g. "3 of 24"). */
-  positionLabel?: string;
-  /** Whether to show the prev / next nav arrows. */
-  hasPrevious?: boolean;
-  hasNext?: boolean;
   /** Whether the right-side info rail is currently visible. */
   infoOpen: boolean;
-  /** Show/hide universal toolbar buttons based on perms. */
-  canDownload?: boolean;
-  canShare?: boolean;
+  /** 2.1 #6: when true (comic & PDF), the Exit + details floats fade with the
+   *  controls pill on inactivity. Other previews keep them always visible. */
+  fadeChrome?: boolean;
 }>();
 void props;
+
+const emit = defineEmits<{
+  (e: "close"): void;
+  (e: "toggleInfo"): void;
+  (e: "userActivity"): void;
+}>();
+
+// V3-D #15: does the toolbar-format slot actually render any controls? The
+// parent always *provides* the slot, but for audio/comic/video every branch
+// inside it is `v-if`-false, so it resolves to comment placeholders only.
+// Treat comment + whitespace-only nodes as "empty" so the floating pill (and
+// its stray-circle look) only appears when there's something to show.
+const slots = useSlots();
+const hasFormatControls = computed(() => {
+  const nodes = slots["toolbar-format"]?.() ?? [];
+  return nodes.some((n) => {
+    if (n.type === Comment) return false;
+    if (n.type === Text && String(n.children ?? "").trim() === "") return false;
+    return true;
+  });
+});
+
+// V3-D #11: auto-hide the floating format pill after a spell of inactivity
+// (a media-player convention). Any pointer/touch movement over the shell
+// reveals it again and restarts the timer. Only the format pill fades — Exit
+// and the details toggle stay put so the user can always leave / open details.
+const IDLE_HIDE_MS = 2500;
+const controlsVisible = ref(true);
+let idleTimer: ReturnType<typeof setTimeout> | null = null;
+const onActivity = () => {
+  emit("userActivity");
+  controlsVisible.value = true;
+  if (idleTimer) clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => {
+    controlsVisible.value = false;
+    idleTimer = null;
+  }, IDLE_HIDE_MS);
+};
 
 // Track viewport width so we can swap between the inline info rail and
 // the mobile right-side drawer. Threshold matches the .preview-shell__info
@@ -204,20 +182,14 @@ const updateIsMobile = () => {
 onMounted(() => {
   updateIsMobile();
   window.addEventListener("resize", updateIsMobile);
+  // Kick off the idle timer so the format pill auto-hides even if the user
+  // never moves the pointer after opening the preview.
+  onActivity();
 });
 onBeforeUnmount(() => {
   window.removeEventListener("resize", updateIsMobile);
+  if (idleTimer) clearTimeout(idleTimer);
 });
-
-defineEmits<{
-  (e: "close"): void;
-  (e: "prev"): void;
-  (e: "next"): void;
-  (e: "download"): void;
-  (e: "share"): void;
-  (e: "toggleInfo"): void;
-  (e: "userActivity"): void;
-}>();
 </script>
 
 <style scoped>
@@ -237,195 +209,6 @@ defineEmits<{
   flex-direction: column;
   overflow: hidden;
   font-family: var(--font-sans, system-ui);
-}
-
-/* ── Toolbar ─────────────────────────────────────────────────────────── */
-.preview-toolbar {
-  height: 48px;
-  border-bottom: 1px solid var(--color-line, #ececec);
-  background: var(--color-canvas, #fafaf9);
-  display: flex;
-  align-items: center;
-  padding: 0 12px;
-  gap: 8px;
-  flex-shrink: 0;
-  z-index: 10;
-}
-
-.preview-toolbar__back {
-  height: 32px;
-  padding: 0 10px;
-  border: 0;
-  background: transparent;
-  border-radius: 6px;
-  font: inherit;
-  font-size: 13px;
-  color: var(--color-ink-2, #52525b);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  transition: background-color var(--dur-base) ease;
-}
-.preview-toolbar__back:hover {
-  background: var(--color-hover, rgba(24, 24, 27, 0.045));
-}
-
-.preview-toolbar__divider {
-  width: 1px;
-  height: 20px;
-  background: var(--color-line, #ececec);
-  margin: 0 4px;
-  flex-shrink: 0;
-}
-
-.preview-toolbar__title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  flex: 1;
-}
-
-.preview-toolbar__icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  /* Default tint — viewers override via :class for file-type colors. */
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-2, #52525b);
-}
-
-/* Per-file-type squircle tints. Colors come from the shared --tint-*-bg/fg
-   tokens (tokens.css), which flip for dark mode — so no per-component dark
-   block, and the toolbar + details rail share one source of truth. */
-.preview-toolbar__icon.is-image {
-  background: var(--tint-image-bg);
-  color: var(--tint-image-fg);
-}
-.preview-toolbar__icon.is-video {
-  background: var(--tint-video-bg);
-  color: var(--tint-video-fg);
-}
-.preview-toolbar__icon.is-audio {
-  background: var(--tint-audio-bg);
-  color: var(--tint-audio-fg);
-}
-.preview-toolbar__icon.is-pdf {
-  background: var(--tint-pdf-bg);
-  color: var(--tint-pdf-fg);
-}
-.preview-toolbar__icon.is-text {
-  background: var(--tint-text-bg);
-  color: var(--tint-text-fg);
-}
-.preview-toolbar__icon.is-archive {
-  background: var(--tint-archive-bg);
-  color: var(--tint-archive-fg);
-}
-.preview-toolbar__icon.is-epub {
-  background: var(--tint-epub-bg);
-  color: var(--tint-epub-fg);
-}
-.preview-toolbar__icon.is-csv {
-  background: var(--tint-csv-bg);
-  color: var(--tint-csv-fg);
-}
-
-.preview-toolbar__title-text {
-  min-width: 0;
-  line-height: 1.2;
-}
-.preview-toolbar__name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-ink-1, #18181b);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.preview-toolbar__position {
-  font-size: 11px;
-  color: var(--color-ink-3, #a1a1aa);
-  font-variant-numeric: tabular-nums;
-}
-
-.preview-toolbar__format,
-.preview-toolbar__actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.preview-toolbar__btn {
-  height: 28px;
-  padding: 0 8px;
-  border-radius: 6px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
-  font: inherit;
-  font-size: 13px;
-  color: var(--color-ink-2, #52525b);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  transition:
-    background-color var(--dur-base) ease,
-    color var(--dur-base) ease,
-    border-color var(--dur-base) ease;
-}
-.preview-toolbar__btn:hover:not(:disabled) {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
-}
-.preview-toolbar__btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
-  outline-offset: 1px;
-}
-.preview-toolbar__btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-.preview-toolbar__btn--icon {
-  width: 28px;
-  padding: 0;
-  justify-content: center;
-}
-
-/* Colorful action glyphs — download (blue) and share (teal) match the
-   per-action hues used in InfoPane / PreviewInfoRail. Only the icon is
-   tinted; the label stays neutral. The explicit svg rule overrides the
-   button's currentColor (incl. its hover color), so the glyph keeps its
-   hue on hover. :deep() is needed because the svg lives in the Icon child. */
-.preview-toolbar__btn--download {
-  --tb-hue: var(--c-blue);
-}
-.preview-toolbar__btn--share {
-  --tb-hue: var(--c-teal);
-}
-.preview-toolbar__btn--download :deep(svg),
-.preview-toolbar__btn--share :deep(svg) {
-  color: var(--tb-hue);
-}
-.preview-toolbar__btn.is-active {
-  background: var(--color-selected, rgba(94, 106, 210, 0.08));
-  color: var(--color-accent, #5e6ad2);
-  border-color: transparent;
-}
-.preview-toolbar__btn--close {
-  background: transparent;
-  border-color: transparent;
-  margin-left: 4px;
-}
-.preview-toolbar__btn--close:hover:not(:disabled) {
-  background: var(--color-hover, rgba(24, 24, 27, 0.045));
-  color: var(--color-ink-1, #18181b);
 }
 
 /* ── Body ────────────────────────────────────────────────────────────── */
@@ -459,6 +242,138 @@ html.dark .preview-shell__stage {
   );
 }
 
+/* ── V2-J floating preview controls (overlay the stage) ──────────────────
+   Glassy translucent pills with a blur so they stay legible on any media,
+   freeing the header space entirely. */
+.preview-float {
+  position: absolute;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.preview-float--back {
+  top: 14px;
+  left: 14px;
+  /* 2.1 #4: slightly smaller + tighter so the arrow sits closer to "Exit". */
+  height: 30px;
+  gap: 3px;
+  padding: 0 10px 0 7px;
+  border-radius: 8px;
+  border: 1px solid var(--color-line, #ececec);
+  background: color-mix(in srgb, var(--color-surface, #fff) 82%, transparent);
+  backdrop-filter: blur(8px);
+  color: var(--color-ink-1, #18181b);
+  font-size: 12.5px;
+  font-weight: 550;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-base) ease,
+    opacity var(--dur-base) ease,
+    transform var(--dur-base) ease;
+}
+.preview-float--back:hover {
+  background: var(--color-elevated, #f4f4f5);
+}
+/* V3-D #10: colorful Exit glyph. The arrow takes the brand accent so the
+   "leave preview" affordance pops against the neutral pill; the "Exit" label
+   stays ink-1 for legibility. :deep() reaches the svg inside the Icon child. */
+.preview-float--back :deep(svg) {
+  color: var(--color-accent-ink, #5e6ad2);
+}
+.preview-float--actions {
+  top: 14px;
+  right: 14px;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--color-line, #ececec);
+  background: color-mix(in srgb, var(--color-surface, #fff) 82%, transparent);
+  backdrop-filter: blur(8px);
+  transition:
+    opacity var(--dur-base) ease,
+    transform var(--dur-base) ease;
+}
+/* 2.1 #6: in comic & PDF previews the Exit + details floats fade together with
+   the controls pill on inactivity (gated by the fadeChrome prop). They slide up
+   a touch and drop pointer events so they can't be clicked while invisible. */
+.preview-float--back.is-idle-hidden {
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+}
+.preview-float--actions.is-idle-hidden {
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .preview-float--back.is-idle-hidden,
+  .preview-float--actions.is-idle-hidden {
+    transform: none;
+  }
+}
+.preview-float--format {
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  gap: 6px;
+  padding: 6px;
+  border-radius: 12px;
+  border: 1px solid var(--color-line, #ececec);
+  background: color-mix(in srgb, var(--color-surface, #fff) 88%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  max-width: calc(100% - 32px);
+  flex-wrap: wrap;
+  justify-content: center;
+  /* V3-D #11: fade in/out as the controls show/hide on (in)activity. */
+  transition:
+    opacity var(--dur-base) ease,
+    transform var(--dur-base) ease;
+}
+/* Idle state: slide down + fade, and drop pointer events so it can't be
+   clicked while invisible. translateX is preserved so it stays centred. */
+.preview-float--format.is-idle-hidden {
+  opacity: 0;
+  transform: translateX(-50%) translateY(10px);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .preview-float--format {
+    transition: opacity var(--dur-base) ease;
+  }
+  .preview-float--format.is-idle-hidden {
+    transform: translateX(-50%);
+  }
+}
+.preview-float__btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink-2, #52525b);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease;
+}
+.preview-float__btn:hover {
+  background: var(--color-hover, rgba(24, 24, 27, 0.045));
+  color: var(--color-ink-1, #18181b);
+}
+.preview-float__btn.is-active {
+  background: var(--color-selected, rgba(94, 106, 210, 0.08));
+  color: var(--color-accent-ink, #5e6ad2);
+}
+.preview-float__btn--close:hover {
+  color: var(--c-rose, #fb7185);
+}
+
 .preview-shell__info {
   width: 320px;
   border-left: 1px solid var(--color-line, #ececec);
@@ -472,50 +387,6 @@ html.dark .preview-shell__stage {
 @media (max-width: 767px) {
   .preview-shell__info {
     /* Info rail collapses on mobile — P7 wires a bottom sheet instead. */
-    display: none;
-  }
-}
-
-/* ── Side nav arrows ─────────────────────────────────────────────────── */
-.preview-shell__nav {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.12);
-  transition:
-    background-color var(--dur-base) ease,
-    color var(--dur-base) ease;
-  z-index: 5;
-}
-.preview-shell__nav:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
-}
-.preview-shell__nav:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
-  outline-offset: 2px;
-}
-.preview-shell__nav--prev {
-  left: 16px;
-}
-.preview-shell__nav--next {
-  right: 16px;
-}
-
-@media (max-width: 540px) {
-  /* Hide click-target nav arrows on small viewports — swipe / keyboard
-     instead. Keeps the stage uncluttered for one-handed use. */
-  .preview-shell__nav {
     display: none;
   }
 }

@@ -16,7 +16,6 @@ interface ISettings {
 
 interface SettingsDefaults {
   scope: string;
-  locale: string;
   viewMode: ViewModeType;
   singleClick: boolean;
   redirectAfterCopyMove: boolean;

@@ -61,6 +61,47 @@ func (dir inaccessibleChildDir) Readdir(int) ([]os.FileInfo, error) {
 	return nil, os.ErrPermission
 }
 
+// Archives carry a registered application/* MIME (zip, 7z, tar, gzip…) that is
+// neither text/* nor octet-stream, so they skip the DetectContentType branch.
+// The text-classifier's `!isBinary(...)` rescue must therefore read the real
+// header bytes — otherwise every such archive was mis-typed as "text" and its
+// raw bytes were dumped into the text viewer (WS3). This guards the fix.
+func TestDetectTypeArchivesAreBlobNotText(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+
+	// zip local-file-header magic: "PK\x03\x04" — the 0x03 is a control byte
+	// that isBinary must catch when the header is actually read.
+	zipBytes := append([]byte{'P', 'K', 0x03, 0x04, 0x14, 0x00}, make([]byte, 64)...)
+	cases := map[string]struct {
+		content []byte
+		want    string
+	}{
+		"archive.zip": {zipBytes, "blob"},
+		"notes.json":  {[]byte(`{"hello":"world","n":42}`), "text"},
+		"readme.txt":  {[]byte("just some plain text here\n"), "text"},
+	}
+
+	for name, tc := range cases {
+		if err := afero.WriteFile(memFs, "/"+name, tc.content, 0o644); err != nil {
+			t.Fatalf("%s: write: %v", name, err)
+		}
+		fi, err := NewFileInfo(&FileOptions{
+			Fs:         memFs,
+			Path:       "/" + name,
+			Expand:     true,
+			ReadHeader: true,
+			Modify:     true,
+			Checker:    allowAllChecker{},
+		})
+		if err != nil {
+			t.Fatalf("%s: NewFileInfo: %v", name, err)
+		}
+		if fi.Type != tc.want {
+			t.Errorf("%s: type = %q, want %q", name, fi.Type, tc.want)
+		}
+	}
+}
+
 func TestReadListingSkipsInaccessibleChildren(t *testing.T) {
 	memFs := afero.NewMemMapFs()
 	for _, dir := range []string{"/media", "/proton-mount"} {

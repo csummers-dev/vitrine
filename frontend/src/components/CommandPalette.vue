@@ -115,6 +115,8 @@ import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 import { searchSmart } from "@/utils/searchSmart";
 import { useRecents } from "@/composables/useRecents";
+import { usePreferences } from "@/composables/usePreferences";
+import { displayName } from "@/utils/filename";
 import {
   useCommandMRU,
   STARTER_COMMAND_IDS,
@@ -219,6 +221,12 @@ const fileResults = ref<Command[]>([]);
 // v1.3 S3-1: Recents log composable. Reads from user prefs; reactive,
 // so the recent group updates as files are previewed.
 const recents = useRecents();
+
+// V2 #27: respect the "show file extensions" pref in the recents group.
+const palettePrefs = usePreferences();
+const showExtensions = computed<boolean>(() =>
+  palettePrefs.get<boolean>("nav.showExtensions", true)
+);
 
 // v1.3 S3-8: Palette MRU — surfaces recently-run commands (or starter
 // commands for first-time users) as a top "Quick actions" group. The
@@ -350,7 +358,7 @@ const recentCommands = computed<Command[]>(() => {
   return recents.recents.value.slice(0, PALETTE_RECENT_COUNT).map((r) => ({
     id: `recent:${r.path}`,
     group: "recent" as const,
-    label: r.name,
+    label: displayName(r.name, r.isDir, showExtensions.value),
     hint: r.path,
     icon: iconForFile({ isDir: r.isDir, type: "blob", name: r.name }),
     run: () => void router.push(`/files${r.path}`),
@@ -536,14 +544,17 @@ watch(selectedIndex, async () => {
     `[data-flat-index="${selectedIndex.value}"]`
   ) as HTMLElement | null;
   if (!el) return;
-  const containerTop = resultsEl.value.scrollTop;
-  const containerBottom = containerTop + resultsEl.value.clientHeight;
-  const elTop = el.offsetTop;
-  const elBottom = elTop + el.offsetHeight;
-  if (elTop < containerTop) {
-    resultsEl.value.scrollTop = elTop - 8;
-  } else if (elBottom > containerBottom) {
-    resultsEl.value.scrollTop = elBottom - resultsEl.value.clientHeight + 8;
+  // V2 #30: measure against the scroll container with viewport-relative rects,
+  // not `offsetTop`. Rows live inside per-group <section>s, so `offsetTop`
+  // resolves against the group (the offsetParent), not `resultsEl` — which made
+  // the list jump whenever a group header sat between the cursor and the edge.
+  const cont = resultsEl.value.getBoundingClientRect();
+  const r = el.getBoundingClientRect();
+  const PAD = 8;
+  if (r.top < cont.top + PAD) {
+    resultsEl.value.scrollTop -= cont.top + PAD - r.top;
+  } else if (r.bottom > cont.bottom - PAD) {
+    resultsEl.value.scrollTop += r.bottom - (cont.bottom - PAD);
   }
 });
 

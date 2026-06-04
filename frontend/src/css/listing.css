@@ -92,31 +92,23 @@
   overflow: hidden;
 }
 
-/* Inline tag chips strip (v1.3 S2-5). Sits below the filename on a
-   new line. flex-wrap kept off so they don't push other rows; overflow
-   shows ellipsis. The cap-at-2 + "+N" chip lives in ListingItem's
-   template — this just lays the strip out. */
-#listing .item__tags {
+/* Tag dots (V2 #23). A compact colour dot per tag, sitting at the right
+   end of the name column (against the Modified column). `flex-shrink: 0`
+   keeps them from being squished — the name-stack (flex: 1) yields space,
+   pushing the dots right. Ordered alphabetically + hover-titled in the
+   template. */
+#listing .item__tag-dots {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-top: 3px;
-  overflow: hidden;
-  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: 6px;
 }
-
-#listing .item__tags-overflow {
-  display: inline-flex;
-  align-items: center;
-  height: 18px;
-  padding: 0 6px;
-  border-radius: var(--radius-full);
-  font-size: 10.5px;
-  font-weight: 500;
-  color: var(--color-ink-3, #a1a1aa);
-  background: var(--color-elevated, #f4f4f5);
-  white-space: nowrap;
-  cursor: help;
+#listing .item__tag-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 /* Inline rename input — sits in place of `.item__name-text` (Stage 8). */
@@ -281,17 +273,33 @@
   pointer-events: none;
   z-index: 1;
 }
-.item__spring-ring-track {
-  stroke: var(--color-line, rgba(24, 24, 27, 0.12));
-  opacity: 0.6;
-}
+/* V2: only the filling arc is drawn (no scrim disc, no full track circle —
+   those read as a dark ring over the folder icon). A white arc with a soft
+   dark drop-shadow stays legible on any folder-icon colour, in both themes. */
 .item__spring-ring-fill {
-  stroke: var(--color-accent, #5e6ad2);
+  /* 2.1 #9: vivid blue (was white) so the countdown ring stands out from the
+     white folder glyph inside the amber tile. The dark drop-shadow keeps it
+     legible on any folder/icon colour. */
+  stroke: var(--c-blue, #2563eb);
   transition: stroke-dashoffset 60ms linear;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.55));
 }
 /* Subtle ring around the row itself so users see *which* row is loading. */
 .item.item--spring-loaded {
   background: var(--color-accent-soft, rgba(94, 106, 210, 0.08));
+}
+/* V3-B #5: in grid + gallery the icon fills the whole tile, so the inset:0 ring
+   stretches edge-to-edge and the countdown sits right against the tile border.
+   Cap it to a centered ~52px badge so it reads as a deliberate countdown framing
+   the folder glyph with breathing room. List view keeps inset:0 (its icon is a
+   small squircle the ring already fits cleanly). */
+#listing.mosaic .item__spring-ring {
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  width: 52px;
+  height: 52px;
+  transform: translate(-50%, -50%);
 }
 
 /* Default: inner wrapper is layout-transparent (list & grid use icon directly).
@@ -462,7 +470,9 @@
   background: transparent;
   height: 32px;
   padding: 0 6px;
-  margin: 0 0 2px;
+  /* V2 #21: no gap below the column-header divider — the first row sits
+     directly against the line. */
+  margin: 0;
   border-radius: 0;
   border-top: 1px solid var(--color-line, var(--borderPrimary));
   border-bottom: 1px solid var(--color-line, var(--borderPrimary));
@@ -710,10 +720,10 @@ html.dark #listing.mosaic .item:hover {
   text-overflow: ellipsis;
 }
 
-/* Inline tag chips are hidden in the grid + gallery: they'd vary the tile
-   height (which breaks the windowed/virtualized scroll math) and clutter the
-   compact card. Tags still appear in the list view and the details pane. */
-#listing.mosaic .item__tags {
+/* Tag dots are hidden in the grid + gallery: they'd clutter the compact card
+   and there's no Modified column to anchor against. Tags still appear in the
+   list view (as dots) and the details pane. */
+#listing.mosaic .item__tag-dots {
   display: none;
 }
 
@@ -1222,12 +1232,22 @@ html.dark #listing.mosaic .item:hover {
    ListingItem.enter/leaveIntoZone; swept by FileListing.resetOpacity on drag
    end. color-mix degrades gracefully — the ring alone still reads clearly. */
 .item.item--drop-into {
-  outline: 2px solid var(--color-accent, #5e6ad2);
+  /* V2 #22: drive the highlight off --color-accent-ink (the base accent in
+     light mode, a LIGHT lilac in dark) so the fill + ring pop on the dark
+     canvas instead of reading as a muddy dark tint. */
+  outline: 2px solid var(--color-accent-ink, #5e6ad2);
   outline-offset: -2px;
   border-radius: var(--radius-md);
   background: color-mix(
     in srgb,
-    var(--color-accent, #5e6ad2) 16%,
+    var(--color-accent-ink, #5e6ad2) 28%,
     transparent
   );
+  box-shadow: 0 0 0 4px
+    color-mix(in srgb, var(--color-accent-ink, #5e6ad2) 20%, transparent);
+}
+/* V2 #22: the target folder's icon lifts/brightens so it's obvious you're
+   dropping INTO it (not just near it). */
+.item.item--drop-into .item__icon {
+  filter: brightness(1.18) saturate(1.1);
 }

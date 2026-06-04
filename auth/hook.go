@@ -161,7 +161,6 @@ func (a *HookAuth) SaveUser() (*users.User, error) {
 			Username:              a.Cred.Username,
 			Password:              pass,
 			Scope:                 a.Settings.Defaults.Scope,
-			Locale:                a.Settings.Defaults.Locale,
 			ViewMode:              a.Settings.Defaults.ViewMode,
 			SingleClick:           a.Settings.Defaults.SingleClick,
 			RedirectAfterCopyMove: a.Settings.Defaults.RedirectAfterCopyMove,
@@ -225,7 +224,6 @@ func (a *HookAuth) GetUser(d *users.User) *users.User {
 		Username:              d.Username,
 		Password:              d.Password,
 		Scope:                 a.Fields.GetString("user.scope", d.Scope),
-		Locale:                a.Fields.GetString("user.locale", d.Locale),
 		ViewMode:              users.ViewMode(a.Fields.GetString("user.viewMode", string(d.ViewMode))),
 		SingleClick:           a.Fields.GetBoolean("user.singleClick", d.SingleClick),
 		RedirectAfterCopyMove: a.Fields.GetBoolean("user.redirectAfterCopyMove", d.RedirectAfterCopyMove),
@@ -252,7 +250,6 @@ type hookFields struct {
 var validHookFields = []string{
 	"hook.action",
 	"user.scope",
-	"user.locale",
 	"user.viewMode",
 	"user.singleClick",
 	"user.redirectAfterCopyMove",

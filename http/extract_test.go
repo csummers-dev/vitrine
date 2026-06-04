@@ -39,7 +39,7 @@ func TestDetectArchive_RejectsSplitAndMultiVolume(t *testing.T) {
 	ctx := context.Background()
 	// Name-based rejections short-circuit before touching disk.
 	for _, name := range []string{"foo.z01", "foo.Z02", "foo.7z.001", "foo.7z.002"} {
-		_, _, _, err := detectArchive(ctx, filepath.Join(t.TempDir(), name))
+		_, _, _, err := detectArchive(ctx, filepath.Join(t.TempDir(), name), "")
 		if !errors.Is(err, fberrors.ErrMultiVolumeUnsupported) {
 			t.Errorf("detectArchive(%q) err = %v, want ErrMultiVolumeUnsupported", name, err)
 		}
@@ -50,7 +50,7 @@ func TestDetectArchive_RarFirstVolumeMissing(t *testing.T) {
 	dir := t.TempDir()
 	// Only part02 present; part01 (the first volume) is missing.
 	mustWrite(t, filepath.Join(dir, "set.part02.rar"), []byte("x"))
-	_, _, _, err := detectArchive(context.Background(), filepath.Join(dir, "set.part02.rar"))
+	_, _, _, err := detectArchive(context.Background(), filepath.Join(dir, "set.part02.rar"), "")
 	if !errors.Is(err, fs.ErrNotExist) {
 		t.Fatalf("err = %v, want fs.ErrNotExist", err)
 	}
@@ -61,7 +61,7 @@ func TestDetectArchive_RarUsesFirstVolume(t *testing.T) {
 	mustWrite(t, filepath.Join(dir, "set.part01.rar"), []byte("x"))
 	mustWrite(t, filepath.Join(dir, "set.part02.rar"), []byte("y"))
 	// Click the SECOND volume — detect should normalize to the first.
-	ex, reader, closeFn, err := detectArchive(context.Background(), filepath.Join(dir, "set.part02.rar"))
+	ex, reader, closeFn, err := detectArchive(context.Background(), filepath.Join(dir, "set.part02.rar"), "")
 	if err != nil {
 		t.Fatalf("unexpected err: %v", err)
 	}
@@ -102,7 +102,7 @@ func TestDetectArchive_UnsupportedFormat(t *testing.T) {
 	dir := t.TempDir()
 	p := filepath.Join(dir, "notanarchive.bin")
 	mustWrite(t, p, []byte("just some bytes, definitely not an archive header"))
-	_, _, _, err := detectArchive(context.Background(), p)
+	_, _, _, err := detectArchive(context.Background(), p, "")
 	if !errors.Is(err, fberrors.ErrUnsupportedArchive) {
 		t.Fatalf("err = %v, want ErrUnsupportedArchive", err)
 	}
@@ -113,7 +113,7 @@ func TestDetectArchive_UnsupportedFormat(t *testing.T) {
 func assertExtracts(t *testing.T, path string, want map[string]string) {
 	t.Helper()
 	ctx := context.Background()
-	ex, reader, closeFn, err := detectArchive(ctx, path)
+	ex, reader, closeFn, err := detectArchive(ctx, path, "")
 	if err != nil {
 		t.Fatalf("detectArchive: %v", err)
 	}

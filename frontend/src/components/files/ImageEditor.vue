@@ -20,11 +20,15 @@
               title="Close"
               @click="onCancel"
             >
-              <Icon name="x" :size="16" />
+              <!-- V3-F #12: colourful close glyph. -->
+              <Icon name="x" :size="16" class="text-[var(--c-rose)]" />
             </button>
           </header>
 
-          <!-- Toolbar -->
+          <!-- Toolbar. V3-F #12: colourful tool glyphs — rotate (blue), flip
+               (teal), crop (violet) — so the edit affordances pop like the
+               rest of the app. Labels/buttons stay neutral; only the icons
+               carry the hue (and keep it on hover via the direct svg colour). -->
           <div class="img-editor__toolbar">
             <button
               type="button"
@@ -34,7 +38,7 @@
               :disabled="busy"
               @click="rotateBy(-90)"
             >
-              <Icon name="rotate-ccw" :size="15" />
+              <Icon name="rotate-ccw" :size="15" class="text-[var(--c-blue)]" />
             </button>
             <button
               type="button"
@@ -44,7 +48,7 @@
               :disabled="busy"
               @click="rotateBy(90)"
             >
-              <Icon name="rotate-cw" :size="15" />
+              <Icon name="rotate-cw" :size="15" class="text-[var(--c-blue)]" />
             </button>
             <div class="img-editor__sep"></div>
             <button
@@ -55,7 +59,11 @@
               :disabled="busy"
               @click="flipH = !flipH"
             >
-              <Icon name="flip-horizontal-2" :size="15" />
+              <Icon
+                name="flip-horizontal-2"
+                :size="15"
+                class="text-[var(--c-teal)]"
+              />
             </button>
             <button
               type="button"
@@ -65,7 +73,11 @@
               :disabled="busy"
               @click="flipV = !flipV"
             >
-              <Icon name="flip-vertical-2" :size="15" />
+              <Icon
+                name="flip-vertical-2"
+                :size="15"
+                class="text-[var(--c-teal)]"
+              />
             </button>
             <div class="img-editor__sep"></div>
             <button
@@ -77,7 +89,7 @@
               :disabled="busy"
               @click="toggleCrop"
             >
-              <Icon name="crop" :size="15" />
+              <Icon name="crop" :size="15" class="text-[var(--c-lilac)]" />
             </button>
             <div class="img-editor__spacer"></div>
             <button

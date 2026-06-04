@@ -19,12 +19,13 @@
       </div>
 
       <template v-else-if="targets.length > 0">
-        <!-- Batch banner — apply-only-touched semantics across the selection -->
-        <div v-if="isBatch" class="atag-batch-note">
-          <Icon name="layers" :size="14" />
+        <!-- WS7 #5: yellow warning naming exactly which fields a bulk save will
+             overwrite across every selected file. -->
+        <div v-if="showOverwriteWarning" class="atag-overwrite-note">
+          <Icon name="triangle-alert" :size="14" />
           <span>
-            Editing {{ targets.length }} files — only fields you change are
-            applied to all of them.
+            Saving overwrites <strong>{{ overwriteList }}</strong> on all
+            {{ targets.length }} files.
           </span>
         </div>
 
@@ -65,19 +66,39 @@
         <div class="atag-fields">
           <label class="atag-field">
             <span class="atag-field__label">Title</span>
-            <input v-model="form.title" class="atag-input" type="text" />
+            <input
+              v-model="form.title"
+              class="atag-input"
+              type="text"
+              :placeholder="placeholderFor('title')"
+            />
           </label>
           <label class="atag-field">
             <span class="atag-field__label">Artist</span>
-            <input v-model="form.artist" class="atag-input" type="text" />
+            <input
+              v-model="form.artist"
+              class="atag-input"
+              type="text"
+              :placeholder="placeholderFor('artist')"
+            />
           </label>
           <label class="atag-field">
             <span class="atag-field__label">Album</span>
-            <input v-model="form.album" class="atag-input" type="text" />
+            <input
+              v-model="form.album"
+              class="atag-input"
+              type="text"
+              :placeholder="placeholderFor('album')"
+            />
           </label>
           <label class="atag-field">
             <span class="atag-field__label">Album artist</span>
-            <input v-model="form.albumArtist" class="atag-input" type="text" />
+            <input
+              v-model="form.albumArtist"
+              class="atag-input"
+              type="text"
+              :placeholder="placeholderFor('albumArtist')"
+            />
           </label>
 
           <div class="atag-row">
@@ -88,6 +109,7 @@
                 class="atag-input"
                 type="text"
                 inputmode="numeric"
+                :placeholder="placeholderFor('year')"
               />
             </label>
             <label class="atag-field">
@@ -99,6 +121,7 @@
                   type="text"
                   inputmode="numeric"
                   aria-label="Track number"
+                  :placeholder="placeholderFor('track')"
                 />
                 <span class="atag-numtotal__sep">/</span>
                 <input
@@ -107,6 +130,7 @@
                   type="text"
                   inputmode="numeric"
                   aria-label="Total tracks"
+                  :placeholder="placeholderFor('trackTotal')"
                 />
               </div>
             </label>
@@ -119,6 +143,7 @@
                   type="text"
                   inputmode="numeric"
                   aria-label="Disc number"
+                  :placeholder="placeholderFor('disc')"
                 />
                 <span class="atag-numtotal__sep">/</span>
                 <input
@@ -127,6 +152,7 @@
                   type="text"
                   inputmode="numeric"
                   aria-label="Total discs"
+                  :placeholder="placeholderFor('discTotal')"
                 />
               </div>
             </label>
@@ -138,12 +164,17 @@
               v-model="form.genres"
               class="atag-input"
               type="text"
-              placeholder="Separate multiple with ; "
+              :placeholder="placeholderFor('genres')"
             />
           </label>
           <label class="atag-field">
             <span class="atag-field__label">Composer</span>
-            <input v-model="form.composer" class="atag-input" type="text" />
+            <input
+              v-model="form.composer"
+              class="atag-input"
+              type="text"
+              :placeholder="placeholderFor('composer')"
+            />
           </label>
           <label class="atag-field">
             <span class="atag-field__label">Comment</span>
@@ -151,6 +182,7 @@
               v-model="form.comment"
               class="atag-input atag-textarea"
               rows="2"
+              :placeholder="placeholderFor('comment')"
             ></textarea>
           </label>
         </div>
@@ -224,6 +256,38 @@ const blankForm = () => ({
 const form = reactive(blankForm());
 // The values as loaded, for change detection (only changed fields are sent).
 let loaded = blankForm();
+
+// WS7 #5: per-field "values differ across the selection" flag. In batch mode a
+// field whose value is identical on every file is pre-filled with that shared
+// value; a field that differs is left blank and shows the <Multiple> placeholder
+// so the user knows the files disagree. Either way `loaded[k]` holds the
+// baseline, so the existing dirty check (form[k] !== loaded[k]) still means
+// "the user typed something → apply it to all". Empty in this map → single mode.
+const MULTIPLE = "<Multiple>";
+const multiField = reactive<Record<string, boolean>>({});
+
+const FIELD_LABELS: Record<string, string> = {
+  title: "Title",
+  artist: "Artist",
+  album: "Album",
+  albumArtist: "Album artist",
+  year: "Year",
+  track: "Track",
+  trackTotal: "Total tracks",
+  disc: "Disc",
+  discTotal: "Total discs",
+  genres: "Genre",
+  composer: "Composer",
+  comment: "Comment",
+};
+
+// Placeholder for a field: <Multiple> when the selection disagrees, otherwise
+// the field's own hint (only Genre has one).
+const placeholderFor = (k: string): string => {
+  if (multiField[k]) return MULTIPLE;
+  if (k === "genres") return "Separate multiple with ; ";
+  return "";
+};
 
 // Cover-art state. `coverPreview` is what's shown; it's the existing embedded
 // art (thumbnail endpoint) until the user replaces or removes it.
@@ -318,6 +382,42 @@ async function load(target: Target) {
   }
 }
 
+// WS7 #5: batch read. Pull tags for every selected file, then per field decide
+// whether they all agree (prefill the shared value) or differ (blank + the
+// <Multiple> placeholder). Files that fail to read are skipped for the
+// agreement check but still get written on save.
+async function loadBatch(list: Target[]) {
+  loading.value = true;
+  loadError.value = "";
+  try {
+    const results = await audioTagsApi.read(list.map((t) => t.path));
+    const tagsList = results
+      .map((r) => r.tags)
+      .filter((t): t is NonNullable<typeof t> => !!t);
+    if (tagsList.length === 0) {
+      loadError.value =
+        results.find((r) => r.error)?.error ||
+        "Couldn't read tags from the selection.";
+      return;
+    }
+    const fieldValue = (t: (typeof tagsList)[number], k: string): string =>
+      k === "genres"
+        ? (t.genres ?? []).join("; ")
+        : ((t as unknown as Record<string, string>)[k] ?? "");
+    for (const k of TEXT_KEYS) {
+      const vals = tagsList.map((t) => fieldValue(t, k));
+      const allSame = vals.every((v) => v === vals[0]);
+      form[k] = allSame ? vals[0] : "";
+      loaded[k] = form[k];
+      multiField[k] = !allSame;
+    }
+  } catch (e) {
+    loadError.value = e instanceof Error ? e.message : "Failed to read tags.";
+  } finally {
+    loading.value = false;
+  }
+}
+
 // Reset + load whenever the panel opens.
 watch(
   () => props.open,
@@ -327,6 +427,7 @@ watch(
     artworkFile.value = null;
     Object.assign(form, blankForm());
     loaded = blankForm();
+    Object.keys(multiField).forEach((k) => delete multiField[k]);
     loadError.value = "";
     coverPreview.value = "";
     if (!open) {
@@ -340,8 +441,10 @@ watch(
       return;
     }
     // Single file → load its existing tags + cover so they're pre-filled.
-    // Batch (>1) → leave everything blank; only touched fields get applied.
+    // Batch (>1) → read every file; shared values prefill, differing values
+    // show the <Multiple> placeholder. Either way only touched fields are saved.
     if (found.length === 1) void load(found[0]);
+    else void loadBatch(found);
   }
 );
 
@@ -397,6 +500,21 @@ const canSave = computed(
     targets.value.length > 0 && !loading.value && !saving.value && dirty.value
 );
 
+// WS7 #5: in batch mode, the fields that will be written to EVERY selected file.
+// Drives the yellow overwrite warning so a bulk apply is never a surprise.
+const changedFieldLabels = computed(() => {
+  const out: string[] = [];
+  for (const k of TEXT_KEYS) {
+    if (form[k] !== loaded[k]) out.push(FIELD_LABELS[k]);
+  }
+  if (artworkAction.value !== "keep") out.push("Cover art");
+  return out;
+});
+const showOverwriteWarning = computed(
+  () => isBatch.value && changedFieldLabels.value.length > 0
+);
+const overwriteList = computed(() => changedFieldLabels.value.join(", "));
+
 function buildSet(): AudioTagSet {
   const set: AudioTagSet = {};
   for (const k of TEXT_KEYS) {
@@ -442,6 +560,12 @@ const onSave = async () => {
         isBatch.value ? `Tags applied to ${ok} files` : "Tags saved"
       );
     }
+    // WS7 #9: keep the edited file(s) selected through the post-save refetch.
+    // Only relevant in the listing — preselect is consumed after a dir fetch
+    // (Files.applyPreSelection); harmless when editing from the preview.
+    if (fileStore.req?.isDir) {
+      fileStore.setPreselect(targets.value.map((t) => t.path));
+    }
     // Re-fetch so the listing / preview + cover thumbnails reflect the change
     // (thumb URLs are keyed on each file's modified time, which just bumped).
     fileStore.reload = true;
@@ -482,26 +606,28 @@ const onSave = async () => {
   }
 }
 
-/* ── Batch banner ────────────────────────────────────────────────────── */
-.atag-batch-note {
+/* WS7 #5: yellow overwrite warning — louder than the neutral batch note so a
+   bulk apply that will clobber existing values is impossible to miss. */
+.atag-overwrite-note {
   display: flex;
   align-items: flex-start;
   gap: 8px;
   margin-bottom: 16px;
   padding: 10px 12px;
   border-radius: 8px;
-  background: var(
-    --tint-lilac,
-    color-mix(in srgb, var(--c-lilac) 10%, transparent)
-  );
+  background: color-mix(in srgb, var(--c-amber) 14%, transparent);
   color: var(--color-ink-2, #52525b);
   font-size: 12.5px;
   line-height: 1.4;
 }
-.atag-batch-note svg {
+.atag-overwrite-note svg {
   flex-shrink: 0;
   margin-top: 1px;
-  color: var(--c-lilac);
+  color: var(--c-amber);
+}
+.atag-overwrite-note strong {
+  color: var(--color-ink-1, #18181b);
+  font-weight: 600;
 }
 
 /* ── Cover art ───────────────────────────────────────────────────────── */
@@ -532,9 +658,13 @@ const onSave = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 4px;
+  padding: 0 8px;
   color: var(--color-ink-3, #a1a1aa);
   font-size: 10.5px;
+  /* WS7 #7: center the "Optional — applies to all" caption within the frame. */
+  text-align: center;
 }
 
 .atag-cover__actions {

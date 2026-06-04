@@ -75,7 +75,7 @@
            while uploads are still pending. -->
       <div v-if="!isComplete" class="upload-dock__hint" role="note">
         <Icon name="info" :size="11" :stroke-width="2" />
-        <span>Keep this tab open until uploads finish.</span>
+        <span>Keep this window open until uploads finish.</span>
       </div>
 
       <!-- Aggregate progress bar — always visible across the bottom of
@@ -139,6 +139,12 @@
                 <Icon name="x" :size="12" :stroke-width="2" />
               </button>
             </div>
+            <!-- Destination folder for this file, in smaller muted text under
+                 the name. Useful when uploading a folder tree where files land
+                 in different sub-directories. -->
+            <div class="upload-dock__file-path" :title="targetDir(upload)">
+              {{ targetDir(upload) }}
+            </div>
             <div class="upload-dock__file-bar">
               <div
                 class="upload-dock__file-bar-fill"
@@ -175,8 +181,10 @@
  * the chrome was rebuilt.
  */
 import Icon from "@/components/Icon.vue";
+import { removePrefix } from "@/api/utils";
 import { useFileStore } from "@/stores/file";
 import { useUploadStore } from "@/stores/upload";
+import { useRootLabel } from "@/composables/useRootLabel";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import buttons from "@/utils/buttons";
@@ -191,6 +199,7 @@ const eta = ref<number>(Infinity);
 
 const fileStore = useFileStore();
 const uploadStore = useUploadStore();
+const { rootLabel } = useRootLabel();
 
 const { sentBytes, totalBytes } = storeToRefs(uploadStore);
 
@@ -226,6 +235,35 @@ const speedText = computed(() => {
 const filePercent = (upload: { sentBytes: number; totalBytes: number }) => {
   if (!upload.totalBytes) return 0;
   return Math.min(100, (upload.sentBytes / upload.totalBytes) * 100).toFixed(0);
+};
+
+// Destination folder for a row — the upload's full (URL-encoded) target path
+// with the trailing file/folder name stripped, decoded for display. Useful
+// when uploading a folder tree where files land in different sub-directories.
+// V3-G #18: the root alias ("My files", or the user's custom nav.rootLabel) so
+// a file dropped at the top level reads as "My files/" rather than a bare "/".
+const rootDisplay = computed(() => rootLabel.value || t("sidebar.myFiles"));
+
+const targetDir = (upload: Upload): string => {
+  try {
+    const rel = decodeURIComponent(removePrefix(upload.path)).replace(
+      /\/+$/,
+      ""
+    );
+    const slash = rel.lastIndexOf("/");
+    // `rel` already carries its leading "/" from removePrefix (which strips only
+    // the API prefix, not the root slash). V2 #1: the old `"/" + rel` added a
+    // SECOND slash → "//folder/sub". Slice to the parent, keeping the one slash.
+    const parent = slash > 0 ? rel.slice(0, slash) : "/";
+    // V3-G #18: name the destination. Root → "My files/"; nested → the root
+    // alias + the sub-path (parent starts with "/"), so every row shows a real
+    // location instead of "/".
+    return parent === "/"
+      ? `${rootDisplay.value}/`
+      : `${rootDisplay.value}${parent}`;
+  } catch {
+    return `${rootDisplay.value}/`;
+  }
 };
 
 // v1.3 H13: per-row cancel / remove. `isActive` distinguishes an
@@ -538,7 +576,20 @@ html.dark .upload-dock__btn--danger:hover {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 5px;
+  margin-bottom: 2px;
+}
+
+/* Destination folder, smaller + muted, aligned under the name (clearing the
+   13px icon + 8px gap). Truncates with an ellipsis on long paths. */
+.upload-dock__file-path {
+  margin: 0 0 6px;
+  padding-left: 21px;
+  font-size: 10.5px;
+  line-height: 1.3;
+  color: var(--color-ink-3, #a1a1aa);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .upload-dock__file-icon {
   color: var(--color-ink-3, #a1a1aa);

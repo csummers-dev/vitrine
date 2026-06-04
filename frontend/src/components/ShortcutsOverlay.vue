@@ -17,8 +17,10 @@
                 Keyboard shortcuts
               </h2>
               <p class="shortcuts__subtitle">
-                Press <kbd class="shortcuts__inlinekbd">?</kbd> any time to open
-                this list.
+                Open this list any time from the command palette (<kbd
+                  class="shortcuts__inlinekbd"
+                  >⌘K</kbd
+                >).
               </p>
             </div>
             <button
@@ -45,16 +47,10 @@
                   class="shortcuts__row"
                 >
                   <div class="shortcuts__keys">
-                    <template
-                      v-for="(chip, ki) in renderKeys(item.keys)"
-                      :key="ki"
-                    >
+                    <template v-for="(chip, ki) in item.chips" :key="ki">
                       <kbd>{{ chip }}</kbd>
                       <span
-                        v-if="
-                          Array.isArray(item.keys) &&
-                          ki < renderKeys(item.keys).length - 1
-                        "
+                        v-if="item.then && ki < item.chips.length - 1"
                         class="shortcuts__then"
                         >then</span
                       >
@@ -85,17 +81,11 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import {
-  useShortcuts,
-  type ShortcutDefinition,
-  type ShortcutGroup,
-} from "@/composables/useShortcuts";
 import { useShortcutsOverlay } from "@/composables/useShortcutsOverlay";
 import { useFocusTrap } from "@/composables/useFocusTrap";
 import Icon from "@/components/Icon.vue";
 
 const overlay = useShortcutsOverlay();
-const { shortcuts } = useShortcuts();
 const dialog = ref<HTMLElement | null>(null);
 
 // Trap Tab inside the dialog and restore focus to the trigger on close
@@ -110,40 +100,87 @@ watch(
   }
 );
 
-interface GroupSpec {
-  id: ShortcutGroup;
+// Row shape consumed by the template. `then` inserts the "then" chord
+// connector between chips (unused now that all chords are gone, kept for shape).
+interface Row {
+  chips: string[];
+  then: boolean;
   label: string;
 }
+interface Group {
+  id: string;
+  label: string;
+  items: Row[];
+}
 
-const GROUP_SPECS: GroupSpec[] = [
-  { id: "navigation", label: "Navigation" },
-  { id: "view", label: "View" },
-  { id: "files", label: "Files" },
-  { id: "help", label: "Help" },
+// Platform-aware modifier glyphs.
+const isMac = /mac|iphone|ipad|ipod/i.test(
+  navigator.platform || navigator.userAgent || ""
+);
+const MOD = isMac ? "⌘" : "Ctrl";
+const ALT = isMac ? "⌥" : "Alt";
+const SHIFT = isMac ? "⇧" : "Shift";
+
+// WS10: every shortcut is now handled directly (listing keydown / preview
+// keydown / drag modifiers) — the dispatcher registry is empty, so this list is
+// fully static and curated to match exactly what the app still does.
+const GROUPS: Group[] = [
+  {
+    id: "navigation",
+    label: "File listing",
+    items: [
+      {
+        chips: ["↑", "↓"],
+        then: false,
+        label: "Move selection (← → in grid & gallery)",
+      },
+      { chips: [`${SHIFT} ↑↓`], then: false, label: "Extend the selection" },
+      { chips: ["Home", "End"], then: false, label: "Jump to first / last" },
+      {
+        chips: ["A–Z"],
+        then: false,
+        // V2 #3: clarify that type-ahead matches beyond the first character.
+        label:
+          "Type to jump to a name — keep typing to match a longer prefix; tap the same letter to cycle through matches",
+      },
+      { chips: ["Enter"], then: false, label: "Open the selected item" },
+      { chips: ["/"], then: false, label: "Refresh the current folder" },
+      { chips: [`${MOD} A`], then: false, label: "Select all" },
+      { chips: ["Esc"], then: false, label: "Clear selection" },
+      { chips: [`${MOD} K`], then: false, label: "Open command palette" },
+    ],
+  },
+  {
+    id: "preview",
+    label: "Preview",
+    items: [
+      {
+        chips: ["←", "→"],
+        then: false,
+        label: "Previous / next page (PDF, ebook, comic)",
+      },
+      { chips: ["Esc"], then: false, label: "Close the preview" },
+    ],
+  },
+  {
+    id: "dragdrop",
+    label: "Drag & drop",
+    items: [
+      {
+        chips: [MOD],
+        then: false,
+        label: "Hold while dragging to copy instead of move",
+      },
+      {
+        chips: [ALT],
+        then: false,
+        label: "Hold while dragging to drop into the current folder",
+      },
+    ],
+  },
 ];
 
-const groups = computed(() =>
-  GROUP_SPECS.map((spec) => ({
-    ...spec,
-    items: shortcuts.value.filter((s) => s.group === spec.id),
-  })).filter((g) => g.items.length > 0)
-);
-
-/**
- * Turn a key descriptor into per-chip labels. Single-key shortcuts render
- * as `["Key"]`; chords render as `["Key1", "Key2"]` so the template can
- * insert a "then" connector between them.
- */
-const renderKeys = (keys: ShortcutDefinition["keys"]): string[] => {
-  if (typeof keys === "string") return [prettify(keys)];
-  return keys.map(prettify);
-};
-
-const prettify = (key: string): string => {
-  if (key === " ") return "Space";
-  if (key.length === 1) return key.toUpperCase();
-  return key;
-};
+const groups = computed(() => GROUPS.filter((g) => g.items.length > 0));
 </script>
 
 <style scoped>

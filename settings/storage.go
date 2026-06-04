@@ -75,10 +75,6 @@ func (s *Storage) Save(set *Settings) error {
 		return fberrors.ErrEmptyKey
 	}
 
-	if set.Defaults.Locale == "" {
-		set.Defaults.Locale = "en"
-	}
-
 	if set.Defaults.Commands == nil {
 		set.Defaults.Commands = []string{}
 	}

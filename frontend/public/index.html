@@ -13,15 +13,22 @@
     [{[ end ]}]
 
     <title>
-      [{[ if .Name -]}][{[ .Name ]}][{[ else ]}]File Browser[{[ end ]}]
+      [{[ if .Name -]}][{[ .Name ]}][{[ else ]}]filebrowser pretty[{[ end ]}]
     </title>
 
     <meta name="robots" content="noindex,nofollow" />
 
     <link
       rel="icon"
-      type="image/svg+xml"
-      href="[{[ .StaticURL ]}]/img/icons/favicon.svg"
+      type="image/png"
+      sizes="32x32"
+      href="[{[ .StaticURL ]}]/img/icons/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="[{[ .StaticURL ]}]/img/icons/favicon-16x16.png"
     />
     <link rel="shortcut icon" href="[{[ .StaticURL ]}]/img/icons/favicon.ico" />
     <link
@@ -29,7 +36,7 @@
       sizes="180x180"
       href="[{[ .StaticURL ]}]/img/icons/apple-touch-icon.png"
     />
-    <meta name="apple-mobile-web-app-title" content="File Browser" />
+    <meta name="apple-mobile-web-app-title" content="filebrowser pretty" />
 
     <!-- Add to home screen for Android and modern mobile browsers -->
     <link
@@ -39,7 +46,7 @@
     />
     <meta
       name="theme-color"
-      content="[{[ if .Color -]}][{[ .Color ]}][{[ else ]}]#2979ff[{[ end ]}]"
+      content="[{[ if .Color -]}][{[ .Color ]}][{[ else ]}]#5e6ad2[{[ end ]}]"
     />
 
     <!-- Inject Some Variables and generate the manifest json -->
@@ -68,7 +75,7 @@
         start_url: window.location.origin + window.FileBrowser.BaseURL,
         display: "standalone",
         background_color: "#ffffff",
-        theme_color: window.FileBrowser.Color || "#455a64",
+        theme_color: window.FileBrowser.Color || "#5e6ad2",
       };
 
       const stringManifest = JSON.stringify(dynamicManifest);

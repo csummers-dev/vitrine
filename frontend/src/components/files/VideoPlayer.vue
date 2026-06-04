@@ -60,30 +60,16 @@ onBeforeUnmount(() => {
   }
 });
 
-const initVideoPlayer = async () => {
+const initVideoPlayer = () => {
   try {
-    const lang = document.documentElement.lang;
-    const languagePack = await (
-      languageImports[lang] || languageImports.en
-    )?.();
-    const code = languageImports[lang] ? lang : "en";
-    videojs.addLanguage(code, languagePack.default);
-    sourceType.value = "";
-
-    //
+    // English is the only supported language; video.js ships English built-in,
+    // so no language pack needs to be loaded or registered.
     sourceType.value = getSourceType(source.value);
 
     const srcOpt = { sources: { src: props.source, type: sourceType.value } };
-    //Supporting localized language display.
-    const langOpt = { language: code };
     // support for playback at different speeds.
     const playbackRatesOpt = { playbackRates: [0.5, 1, 1.5, 2, 2.5, 3] };
-    const options = getOptions(
-      props.options,
-      langOpt,
-      srcOpt,
-      playbackRatesOpt
-    );
+    const options = getOptions(props.options, srcOpt, playbackRatesOpt);
     player.value = videojs(videoPlayer.value!, options, () => {});
 
     // TODO: need to test on mobile
@@ -159,42 +145,6 @@ const subLabel = (subUrl: string) => {
   );
 
   return label;
-};
-
-interface LanguageImports {
-  [key: string]: () => Promise<any>;
-}
-
-const languageImports: LanguageImports = {
-  ar: () => import("video.js/dist/lang/ar.json"),
-  bg: () => import("video.js/dist/lang/bg.json"),
-  cs: () => import("video.js/dist/lang/cs.json"),
-  de: () => import("video.js/dist/lang/de.json"),
-  el: () => import("video.js/dist/lang/el.json"),
-  en: () => import("video.js/dist/lang/en.json"),
-  es: () => import("video.js/dist/lang/es.json"),
-  fr: () => import("video.js/dist/lang/fr.json"),
-  he: () => import("video.js/dist/lang/he.json"),
-  hr: () => import("video.js/dist/lang/hr.json"),
-  hu: () => import("video.js/dist/lang/hu.json"),
-  it: () => import("video.js/dist/lang/it.json"),
-  ja: () => import("video.js/dist/lang/ja.json"),
-  ko: () => import("video.js/dist/lang/ko.json"),
-  lv: () => import("video.js/dist/lang/lv.json"),
-  nb: () => import("video.js/dist/lang/nb.json"),
-  nl: () => import("video.js/dist/lang/nl.json"),
-  "nl-be": () => import("video.js/dist/lang/nl.json"),
-  pl: () => import("video.js/dist/lang/pl.json"),
-  "pt-br": () => import("video.js/dist/lang/pt-BR.json"),
-  "pt-pt": () => import("video.js/dist/lang/pt-PT.json"),
-  ro: () => import("video.js/dist/lang/ro.json"),
-  ru: () => import("video.js/dist/lang/ru.json"),
-  sk: () => import("video.js/dist/lang/sk.json"),
-  tr: () => import("video.js/dist/lang/tr.json"),
-  uk: () => import("video.js/dist/lang/uk.json"),
-  vi: () => import("video.js/dist/lang/vi.json"),
-  "zh-cn": () => import("video.js/dist/lang/zh-CN.json"),
-  "zh-tw": () => import("video.js/dist/lang/zh-TW.json"),
 };
 </script>
 <style scoped>

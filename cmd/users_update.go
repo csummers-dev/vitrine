@@ -53,7 +53,6 @@ options you want to change.`,
 
 		defaults := settings.UserDefaults{
 			Scope:                 user.Scope,
-			Locale:                user.Locale,
 			ViewMode:              user.ViewMode,
 			SingleClick:           user.SingleClick,
 			RedirectAfterCopyMove: user.RedirectAfterCopyMove,
@@ -68,7 +67,6 @@ options you want to change.`,
 		}
 
 		user.Scope = defaults.Scope
-		user.Locale = defaults.Locale
 		user.ViewMode = defaults.ViewMode
 		user.SingleClick = defaults.SingleClick
 		user.RedirectAfterCopyMove = defaults.RedirectAfterCopyMove

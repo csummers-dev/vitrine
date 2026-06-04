@@ -2,172 +2,78 @@
 
 All notable changes to **filebrowser pretty**.
 
-## v1.6.4 — Details panel & gallery follow-ups
+## v2.1.0 — Listing, drag & preview polish
 
-- **Listing details panel dividers removed** — the divider lines between the action buttons, Properties, Tags and Location in the listing details panel (desktop and mobile) are gone, matching the preview rail — one calm, continuous surface
-- **Brighter storage gradient in light mode** — the teal→green storage meter now ends on a brighter green so the gradient no longer reads flat in light mode (the previous green sat too close to the teal)
-- **Gallery hover seam — proper fix** — a thumbnail tile no longer carries a colored icon background at all, so a cover image that lands a sub-pixel short of an edge can't leak the vivid (pink / rose) background as a faint seam on hover. (The earlier fix didn't fully cover this.)
-- **Image Edit — icon-only color** — only the Edit control's icon is accent-tinted now (not the whole button), so the toolbar control matches its neutral neighbours
+- **Listing no longer hides behind the breadcrumb bar** — the bottom breadcrumb strip was sitting under an oversized scroll area, so the last rows/tiles could disappear behind it. The listing now fills its scroll section as a proper flex child (the section gained the missing `min-height: 0` so its overflow actually scrolls), leaving just the intended slim gap above the bar. The virtualized list view also shed a stray 1rem bottom padding that was lifting its scroll viewport off the breadcrumb, so list rows now run all the way down to the bar
+- **Drag-highlight works from any direction** — hovering a file over a folder now lights it up fully no matter which side you approach from. Previously the full highlight only "took" when you came in from the right; from any other direction it fell back to the dimmed state. The un-dim is now re-asserted on every drag-over frame so the document-wide drag dim can't win on a timing race
+- **Countdown ring stands out** — the spring-load "open this folder" countdown ring is now **vivid blue** instead of white, so it no longer blends into the white folder glyph on the amber tile
+- **Text preview controls moved to the details panel** — the Rendered/Raw, Soft-wrap, and Edit controls left the floating bottom pill and now live as colorful, full-width buttons in the details rail, keeping the reading area clear
+- **Exit button** — slightly smaller (the arrow sits closer to "Exit"), and in the text preview the reading card now drops below it so the two never overlap
+- **Album art for `.opus`** — the audio player now shows cover art for Opus files. The client-side metadata reader (`music-metadata`) throws on Opus's embedded picture and aborts, so the player falls back to the server-extracted cover (which the backend reads reliably for every audio format)
+- **Album art is a 10px squircle** — the square cover in the audio player gets softly rounded corners so it doesn't read as a flat slab (still square)
+- **Kobo `.kepub.epub` books render** — Kobo kepub chapters showed blank pages. The cause: Kobo injects a self-closing `<script src="kobo.js"/>` into every chapter's `<head>`, and since epub.js parses spine documents (whose filenames end in `.html`) as HTML — where a self-closing `<script/>` isn't valid — the parser swallowed the rest of the chapter as unterminated script text, leaving an empty page. The reader now closes self-closing raw-text tags in spine documents before parsing (scoped to content documents, never the package/OPF XML), so kepub files page through normally like any other epub. This also fixes a kepub that's simply been renamed to `.epub`
+- **Comic & PDF chrome auto-hides** — in comic and PDF previews the Exit and details buttons now fade out together with the controls pill after a spell of inactivity (and return on movement), for a cleaner full-screen read. Other previews keep them always visible
+- **Conflict dialog "Decide" button** — recoloured from amber (which darkened to an unpleasant brown on the light surface) to a positive-action **green**, tuned per theme for AA contrast (a deepened green with a white label on light; the bright green token with a near-black label on dark), with its icon matching the label. Fixed a hover bug where the button washed out to an unreadable near-white on the light theme (the generic button-hover rule was overriding the accent fill; the accent hover now declares its own green)
 
-## v1.6.3 — Preview & details panel refinements
+## v2.0.0 — The "pretty" milestone
 
-- **Details panel now matches the sidebar** — the listing details rail was using a more opaque white fill, so it looked starkly whiter than the sidebar in light mode. It now uses the same frosted `--color-canvas` surface as the sidebar / header, so the app's background gradient glows through it consistently
-- **Calmer preview details** — removed the divider lines between the action buttons, Properties, and Location in the preview details rail so it reads as one continuous panel
-- **Gallery hover seam fixed** — eliminated a faint 1px "red" line that could appear between a tile's thumbnail and its name on hover (a colored-background leak through inline-image baselines, most visible with the details panel open)
-- **Folder header buttons** — the Share / Download / More cluster now sits at the top-right of the folder header instead of sinking to the middle
-- **Colorful image Edit button** — the Edit control in the image preview toolbar is now accent-tinted to stand out from the neutral zoom / fit controls
-- **Storage bar gradient** — dropped the blue stop that clashed with the green; it's now a clean teal→green gradient that still reads clearly in light mode
+filebrowser pretty 2.0 is a top-to-bottom reimagining of upstream File Browser: a redesigned interface, in-browser viewers for every common format, real keyboard-driven navigation, tags, an audio-tag editor, admin tooling, and a deep performance pass. This single entry consolidates everything that defines the 2.0 product.
 
-## v1.6.2 — Details panel & tile polish
+### Breaking / upgrade notes
 
-- **Colorful preview tiles in the details panel** — a selected folder or any non-image file (archives, code, blobs…) now fills the whole details preview area with that file type's vivid color + a soft gradient and a matching icon, instead of a small icon on an empty card. Folders show the same gold gradient + white folder as the grid/gallery tile
-- **Gallery folders match the grid exactly** — the gallery folder tile now uses the same amber token as the grid tile (the previous hand-picked hex read slightly off / less vibrant)
-- **More previews in the details panel** — selecting a video or PDF now shows its thumbnail in the details panel (it previously only showed an icon, even though the listing had the thumbnail); audio falls back to album art, then the color tile
-- **Images fill the preview frame** — a selected image now fills the details preview area instead of being letterboxed with gaps on the sides
-- **Tidier file names** — long names in the details panel now wrap at natural separators (`.`, `-`, `_`, `/`) instead of splitting mid-word
-- **Calmer details panel** — removed the divider under the "Details" header and matched the panel background to the sidebar so the two rails read as one surface; the collapse/expand control is now accent-colored
-- **Visible list checkboxes** — an unchecked checkbox in list view now sits on a soft fill so it reads as a real control rather than blank white
-- **Storage bar gradient in light mode** — the storage meter now shows its gradient in light mode too (the old two-tone stops were nearly flat there)
-- **Wording** — the preview header's **Back** button now reads **Exit Preview**
+- **English-only.** The legacy multi-language system — inaccurate translations carried over from upstream and incompatible with the reworked UI — was removed: all non-English locale bundles, the in-app language picker, the RTL machinery, and the per-user `Locale` field (model, settings, `--locale` flag, auth payloads) are gone. **Existing databases keep working** — a stored locale is simply ignored and dropped on next save.
+- Otherwise drop-in: **no schema migration is required**, and existing users, shares, tags, and settings are preserved.
 
-## v1.6.1 — Audio-tag hardening & UI polish
+### Interface & design
 
-- **Sturdier audio tag writes** — editing an MP3 comment now leaves technical frames (iTunes `iTunNORM`/`iTunSMPB`) intact instead of wiping them; a FLAC that stores its track as `5/12` keeps the total when you change just the number (no more lost "of 12"); a genre like `Folk/Rock` is treated as one genre, not two; and cover uploads are validated as real images, size-bounded, and no longer leave temp files behind. Save errors now read as friendly messages instead of leaking server paths
-- **Gallery folders match grid** — folder tiles in gallery view now use the same compact card (amber media block + name footer) as grid view, instead of the full-bleed hero treatment meant for media files
-- **View mode sticks to your account** — list / grid / gallery is now a single per-user preference that carries across folders, so navigating no longer resets your chosen layout
-- **Clearer sort control** — a dedicated ascending/descending toggle replaces the old "click the active field again to flip it"; the direction persists per user across folders, and the sort menu now just picks the field
-- **Details panel polish** — the folder Path is shown in full (it was being cut off), and the "current folder" icon matches the gold folder glyph used in the listing
-- **Mobile settings** — your account + Sign Out are pinned to the bottom of the settings drawer, matching the main sidebar
-- **More color** — the Download button above listings, the sidebar Storage and New File icons, and the ⌘K search hint are now accent-tinted instead of flat grey
+- **A cohesive, modern shell** — rebuilt **List**, **Grid** (media cards with a thumbnail + name/meta footer), and **Gallery** views; a redesigned sidebar with Recent / Favorites / Tags + a storage meter; slide-over panels for move / copy / share; and a settings area with a full-height left rail where each page carries its own tinted icon + title + description. Full **light & dark themes**, with a six-preset **accent color** picker synced per user.
+- **Header-less, unified layout** — the top toolbars are gone. The listing runs edge-to-edge into a slim floating control cluster (search · view · sort · direction · upload · More), with the directory breadcrumb in a quiet bar pinned to the bottom. Search is a compact "⌘K" pill that expands into a real input on focus. Sidebar → primary → details rails read as one continuous frosted surface.
+- **Color, used deliberately** — file-type icons, per-action buttons (share / download / rename / move / copy / extract / delete), settings nav chips, the command palette, and the storage gradient are all color-coded for fast scanning, consistent across both themes.
+- **Brand** — uniformly **filebrowser pretty** (lowercase) with a lilac (`#5e6ad2`) accent applied to the theme-color, favicon, and PWA manifest (an admin `branding.color` override still wins). Rename the storage root ("My files") to a custom label that syncs across devices, and give favorited folders friendly display names.
 
-## v1.6.0 — Audio tag editor
+### File previews
 
-- **Edit ID3 / Vorbis tags in place** — right-click an **MP3** or **FLAC** (or open the Edit tags button on its preview details rail) to edit **title, artist, album, album artist, year, track / disc numbers, genre, composer, and comment**, plus **embedded cover art** — add, replace, or remove the artwork without leaving the browser. Writes happen atomically (temp file → rename) so a half-written tag can never corrupt the original
-- **Batch-apply across a selection** — select several audio files and choose **Edit tags** from the selection bar or right-click menu to edit them together. The editor opens blank and applies **only the fields you actually change** to every file, so you can stamp a shared Album / Album artist / Year (or a single cover) across a whole album in one save while each track keeps its own title and track number
-- **Honest, safe writes** — only the two formats we can losslessly round-trip (MP3, FLAC) are offered; the action requires the **modify** permission, and a partial batch failure is reported clearly (e.g. "Updated 9 of 10 files") rather than silently
-- Built on pure-Go tag libraries — no `ffmpeg`/`cgo` dependency added
+- **Seven format viewers** — **image** (zoom / fit, basic rotate · flip · crop saved as a copy), **video** (themed video.js skin, subtitle upload, on-the-fly transcode with a live progress label), **audio**, **PDF** (full PDF.js chrome with a thumbnail rail and lazy, resolution-capped page rendering so huge documents stay sharp), **EPUB** (chapter list, remembered reading position, an independent dark-reading toggle), **CSV**, and **code / text**. Markdown renders, with a toggle back to raw.
+- **Comic reader** — open a `.cbz` / `.cbr` and page through it (edge taps, chevrons, keyboard, fullscreen, right-to-left for manga); pages stream and pre-cache, and it resumes on the page you left off.
+- **Floating preview shell** — previews are a docked region beside the sidebar (not a take-over modal): **Exit** floats top-left, a single **details** toggle floats top-right, and per-format controls (zoom / page / fit) sit in a bottom-center pill that auto-hides on inactivity like a media player. Arrow keys step between files; swipe does the same on touch (swipe-down closes a fit image).
+- **Rich metadata + cover art** — EXIF for photos, ID3 / Vorbis for audio (with embedded album art shown full + square), and track info for video. The details-rail file icon matches the listing row exactly, and listing rows show real cover thumbnails for **audio** (album art), **EPUB**, **PDF** (first page), and **`.cbr`** (first page) — extracted server-side and disk-cached.
 
-## v1.5.1 — Mobile follow-ups
+### Browsing & navigation
 
-- **Dropped the left-edge swipe-to-open** — that rightward edge swipe is reserved by iOS Safari / Android for back-navigation and can't be reliably overridden by a web page, so it fought the browser's "back." Open the drawer with the hamburger; swiping the open drawer left to close it (a leftward gesture) still works
-- **Mobile settings sidebar** — the settings drawer now carries a **My Files** link at the top and your account + **Sign Out** at the bottom (on mobile it's the only sidebar there); the old bottom "Back to files" link moved up
-- **Header always visible on mobile** — pinned the app to the visible viewport so the document can no longer scroll the sticky header off the top of the screen (where you'd get stuck below it with no way back); signing in lands you at the top with the header in view
-- **Folder context-menu wording** — right-clicking a folder now reads **Move folder** / **Copy folder** instead of "Move file" / "Copy file"
+- **Finder-style keyboard navigation** — arrows / Home / End / Enter to move and open, Shift to range-select, and **type-ahead** to jump to a name as you type (a space extends a multi-word prefix). Plus `Cmd/Ctrl+A` select-all, `/` to refresh, PDF page keys, and audio prev/next-track keys. A shortcuts cheat-sheet overlay lists them.
+- **Command palette + search** — a ⌘K palette with recents and quick actions, and a fast backend-backed file search with live, debounced results.
+- **Power-user sidebar** — Recent and Favorites (drag-reorder, custom display names, graceful dead-pin handling), per-folder view-mode memory, multi-column sort (including by extension) with a persistent ascending/descending toggle, breadcrumb depth-ellipsis, and right-click context menus on rows and empty space.
+- **Tags** — per-file, color-coded tags shown as inline dots on each row (alphabetical, expanding on hover) with a picker; tags follow files through renames and moves.
 
-## v1.5.0 — Mobile gestures, faster folders, and a grid redesign
+### File operations
 
-- **Faster large folders** — a directory listing no longer opens and reads every file just to detect its type. The type is taken from the file extension whenever that's definitive (images, video, audio, PDFs, text…), and the few remaining header reads now run in parallel. A ~2,000-file folder on a NAS that took ~15 s now loads in a second or two. (Prefer extension-only typing? `--disable-type-detection-by-header` skips header reads entirely.)
-- **Grid view redesign** — grid tiles are now proper "media cards": a full-width thumbnail (or a large tinted file icon) on top with a name + meta footer below, so images actually preview at a glance. On mobile the selection checkbox now sits on the thumbnail instead of nearly overlapping it
-- **Mobile — swipe the sidebar** — swipe in from the left edge to open the navigation drawer, and swipe it left to close
-- **Mobile drawer parity** — the drawer now has the **Recent** files section, and **Favorites / Recent are collapsible** (the collapsed state syncs with the desktop sidebar). Removed the redundant Settings link (it's reachable from your account row)
-- **Mobile — tap a file to select** — a single tap on a file now selects it (and offers a **Details** toggle) instead of yanking you into a full-screen preview; folders still open on a tap, and a double-tap opens a file
-- **Login lands at the top** — signing in no longer inherits the login screen's scroll position, so you arrive at the top of your files instead of part-way down the page
-- **Password managers detect the login form** — the username / password fields now carry proper `name` attributes, so mobile and third-party managers (Bitwarden, 1Password, iOS Keychain) recognize and fill them
-- **Breadcrumb path scrolls** — a long path scrolls horizontally instead of being clipped behind the search box on narrow / mobile windows; removed the hover-to-list-sibling-folders dropdown
-- **Consistent branding** — the app is now uniformly **filebrowser pretty** (lowercase) everywhere it's printed, in every language, and the wordmark renders bold
-- **Copy & i18n cleanup** — standardized settings wording (Sign In / Sign Up / Sign Out, sentence-case field labels, several grammar/typo fixes) and removed 76 dead / unreferenced translation keys
+- Inline **new folder / file**, inline **rename**, and **delete** with an optimistic **Undo** toast.
+- **Move / copy** run in the background via a floating transfer indicator, with an optional "open destination" toggle; **bulk rename** offers pattern and find-and-replace modes with live preview and conflict highlighting.
+- **Drag & drop** — spring-loaded folders open on hover (with a countdown ring), breadcrumb segments are drop targets (drag to any ancestor), a drag ghost shows what's moving, and grid / gallery support marquee selection. The drop-into-folder zone hugs the icon + name so dropping *alongside* into the current folder is easy.
+- **Archive extraction** — extract `.zip` / `.7z` / `.rar` server-side, including **password-protected** archives (detect-and-prompt — the password travels in a request header, never the URL or audit log, and a wrong password leaves no half-extracted files behind), with an optional "delete the archive after success" toggle and a destination picker.
+- **Uploads** — a redesigned upload dock with per-file rows, an aggregate progress bar, per-file cancel, and **resumable** transfers that survive a dropped connection; each row names its destination folder.
 
-## v1.4.0 — Color, mobile, and naming polish
+### Audio tag editing
 
-- **Preview icons are color-coded** — the action icons in the preview details rail (Share / Download / Rename / Move / Copy / Extract / Open / Delete) now use the same per-action hues as the file-listing details pane, consistently across every preview tool; the preview toolbar's **Download** (blue) and **Share** (teal) glyphs are tinted to match
-- **Color in Settings** — each left-rail nav icon is now its own brand color, and every settings page (Profile, Shares, Sessions, Global, Users, Audit, Webhooks) opens with a matching tinted icon chip in its header
-- **Mobile — tap to open** — a single tap now opens a folder/file on touch (selecting moved to the row checkbox); the details sheet no longer auto-opens and hijacks your next tap (it's opt-in via a **Details** button)
-- **Mobile fixes** — removed the empty gap between the header and the file list when nothing is selected; the sidebar drawer's user / sign-out row no longer gets cut off on short screens; removed the redundant "Profile" entry from the drawer
-- **Rename "My files"** — right-click the **My files** entry to set a custom label (syncs across devices); it shows in the sidebar and the listing header
-- **Favorite display names in the header** — opening a folder you've given a favorite display name now shows it beside the real name, e.g. _Documents (Work)_; these custom names now appear on mobile too
-- **Smaller folder tiles in gallery view** — folders render as a tighter grid so they read as quiet markers rather than dominating the page
-- **Login & sidebar polish** — "Login" → **Sign In**, "Signup" → **Sign Up**, "Already have an account**?**", and the create-account prompt now reads "Click **here** to create an account"; the version number links to the source repo; the sign-out button is rose-tinted
-- **Consistency cleanup** — added motion (`--dur` / `--ease`) and `--radius-xs` design tokens and adopted them across the styles; centralized the preview file-type tint colors into shared tokens so the toolbar and details rail can't drift apart
-- **Release & tooling** — adopted SemVer with images published to GHCR: releases get `X.Y.Z` plus rolling `X.Y` / `X` / `latest`, and `main` builds publish `nightly` + dated snapshots. Images now carry OCI provenance labels, and the in-app version is stamped from the git tag at build time
+- Edit **title, artist, album, album artist, year, track / disc, genre, composer, and comment**, plus embedded **cover art** (add / replace / remove), for **MP3, FLAC, M4A** (MP4 / AAC / ALAC), and the **Ogg** family (Vorbis / Opus) — single-file or **batch** (the editor applies only the fields you actually change across a selection). Writes are atomic (temp file → rename); the newer formats use TagLib compiled to WebAssembly via the pure-Go `wazero` runtime (no cgo). Requires the **modify** permission.
 
-## v1.3.2 — Preview, drag & drop, and notification fixes
+### Admin & operations
 
-- **PDF previews fixed for large documents** — pages now render lazily (only what's near the viewport, released as you scroll away) with a per-page resolution cap, so long or high-resolution PDFs no longer go blank partway through
-- **Cover thumbnails made reliable** — fixed PDF / audio / EPUB cover generation (`pdftoppm` renders to a temp file instead of an unreliable stdout mode that failed on many files)
-- **Multi-file zip download** — selecting several files and downloading them as a zip no longer returns a 401
-- **Favorites drag fixed** — reordering pinned folders, and dragging a pin out of the section to remove it, work again (the row was a link that hijacked the drag)
-- **Video preview** — the transcode wait now reads "Converting video for playback…" with a live elapsed timer instead of an open-ended spinner; Picture-in-Picture was removed
-- **EPUB preview** — fixed chapter-list (TOC) overlap and added a dark-mode toggle that's independent of the app theme
-- **Notifications** — every toast now appears bottom-center, newest stacked on top, with semantic colors (green = success, red = failure, amber = attention) and a separating border
-- **Details panel** — the action buttons (Share / Download / Rename / Delete / …) are color-coded for faster scanning
-- **Drag & drop** — the drop-target folder shows a clear accent ring + tint; the marquee/lasso no longer selects page text, and Ctrl-drag no longer opens a context menu
-- **Folder header** — removed the misleading folder "size" (it showed the directory's own bytes, not the size of its contents)
-- **Reliability** — keyboard shortcuts now unregister correctly when leaving a view, and the dispatcher is hardened so one bad handler can't disable every shortcut; creating a folder over a misconfigured mount returns a clear 409 instead of a 500; fixed a stray missing-import console warning
-- **Tests & CI** — +37 frontend unit tests (113 total) covering sort, palette, favorites, recents, MRU, and keyboard logic; CI now runs lint + type-check + tests on every push
+- **Audit log** recording file operations, shares, sign-ins, and settings changes, filterable by action / user / date / path.
+- **Webhooks** that POST a JSON payload on file events, with per-endpoint event filters, a test button, last-delivery status, and retry-with-backoff.
+- **Session management** with "sign out everywhere."
 
-## v1.3.1 — Cover thumbnails, favorites polish, and fixes
+### Performance & platform
 
-- **Cover-art thumbnails in the listing** — rows now show real artwork instead of a generic icon for three more formats: embedded **album art** for audio, **EPUB covers** (pulled from the book's OPF), and **PDF first pages**. They ride the same server-side thumbnail pipeline + disk cache as image and video thumbnails, generate once, and fall back to the colored icon when there's no cover. PDF rendering uses poppler's `pdftoppm` (bundled in the Docker image); absent → generic icon, like ffmpeg for video
-- **Favorites — custom display titles** — give a pinned folder a friendlier sidebar name from its right-click menu, the section ⋯ menu, or the sidebar itself. Purely a display alias; the folder is never renamed
-- **Favorites — pins survive a rename** — renaming a favorited folder (or any of its parents) now rewrites the pin so the link keeps working, instead of silently breaking
-- **Favorites — dead-pin handling** — opening a favorite whose folder was renamed, moved, or deleted shows a tailored "Favorite unavailable" card with a one-click **Remove from Favorites**, instead of a bare 404
-- **Sidebar right-click menus** — context menus on Favorites (open / set display title / remove) and Recent (open / copy path / remove from recent)
-- **Colorful UI polish** — color-coded command-palette icons, a blue parent-folder nav arrow next to the FOLDER eyebrow, and a transparent list-view column header that blends into the background
+- **Faster large folders** — file type is taken from the extension whenever that's definitive, and the few remaining header reads run in parallel; a ~2,000-file NAS folder drops from ~15 s to a second or two (`--disable-type-detection-by-header` skips header reads entirely).
+- **Virtual scrolling** keeps folders with tens of thousands of files smooth; **format viewers lazy-load** (~1.7 MB of pdfjs / video.js / ace / epub.js / music-metadata pulled out of first load); and an **offline app shell** loads without a connection, with named error states (server unreachable / permission denied / not found) and one-click retry.
+- Server-side **video thumbnails** (ffmpeg) and the audio / EPUB / PDF / CBR cover pipeline are bundled in the Docker image and fall back to colored icons when a tool isn't present. Robust cover extraction — including a lenient ID3 fallback for MP3s whose malformed tag frames defeat the strict parser.
 
-## v1.3.0 — Tags, scale, and admin tooling
+### Mobile
 
-- **Tags & smart folders** — per-file color-coded tags with inline chips and a picker, plus saved-search "smart folders" over a compound `tag:` / `type:` / `name:` query syntax. Tags follow files through renames and moves
-- **Right-click context menus** — on file rows and empty listing space, with keyboard navigation and type-ahead
-- **Bulk rename** — pattern and find-and-replace modes in a slide-over, with live preview and conflict highlighting
-- **Drag-select lasso** — rubber-band selection in grid and gallery; a drag ghost shows what's being moved; spring-loaded folders open on hover
-- **Preview enhancements** — PDF text search with highlights; rendered Markdown (toggle to raw); an image film strip and basic editing (rotate / flip / crop, saved as a copy); EPUB chapter list and remembered reading position; subtitle upload and picture-in-picture for video; size-capped image hover-preview in the listing
-- **Virtual scrolling** — the list view stays smooth in folders with tens of thousands of files
-- **Server-side video thumbnails** — ffmpeg-generated poster frames, bundled in the Docker image, with a clean fall back to the generic icon when ffmpeg isn't present
-- **Resumable uploads** — uploads survive a dropped connection and resume from where they left off; per-file cancel / remove in the dock; smarter retry handling
-- **Offline app shell** — the interface loads without a connection, with an "offline" indicator and clear, named error states (server unreachable / permission denied / not found) with one-click retry
-- **Mobile gestures** — pull-to-refresh, camera-roll / photo upload, and swipe between files (plus swipe-down to close) in the preview
-- **Audit log** — admin page recording file operations, shares, sign-ins, and settings changes, filterable by action / user / date / path
-- **Webhooks** — POST a JSON payload to configured endpoints on file events, with per-endpoint event filters, a test button, last-delivery status, and retry with backoff
-- **Session management** — "sign out everywhere" revokes every other session at once
-- **Accent color** — six-preset picker that recolors the whole interface, synced per user
-- **Power-user navigation** — recents and favorites in the sidebar, per-folder view-mode memory, multi-column sort (including by extension), breadcrumb depth-ellipsis with a sibling-folder dropdown, and command-palette recents
+- Pull-to-refresh, camera-roll / photo upload, swipe between files (and swipe-down to close) in previews, a navigation drawer (Recent + collapsible Favorites), tap-to-select with an opt-in **Details** sheet, and a pinned header so the app chrome can't scroll off-screen. Login fields carry proper `name` attributes so password managers (Bitwarden / 1Password / iOS Keychain) detect and fill them.
 
-## v1.2.1 — Keyboard + search + preview
+### Build & internals
 
-- **Keyboard shortcuts I expected to already exist** — `Cmd+A` / `Ctrl+A` select all in the listing (with a proper input-focus guard so it doesn't hijack the search bar's native select-all), `r` to refresh the current folder, `j` / `k` for previous / next track inside the audio preview, `PageUp` / `PageDown` / `Home` / `End` for page navigation inside the PDF preview
-- **Copy path action** — small button next to the Location label in the details sidebar. Copies the relative path to the clipboard, flashes "Copied" inline, and surfaces a toast. Falls back to `execCommand("copy")` on HTTP-only homelab deployments where the modern clipboard API isn't available
-- **Searching… indicator in the command palette** — the palette no longer looks empty during the debounce + fetch window. A small accent-tinted spinner row appears as soon as the user types ≥ 2 characters and clears when the search resolves
-- **Spring-load on breadcrumbs and section title** — extending the spring-loaded folders pattern from row drops to header navigation: hovering a breadcrumb segment during a drag for 2 s navigates to that folder; hovering the section title navigates to the parent folder. Drop still wins over the timer
-- **Command palette no-results bug** — backend search results were being silently filtered out by a client-side fuzzy-score pass over the basename. Now the file group bypasses the fuzzy filter and trusts what the backend returned; static commands still go through scoring as before
-- **Mobile multi-select pill styling** — the `#file-selection` row that shows up on narrow viewports had no CSS at all (legacy `.action` class with dead tokens). Now a proper toolbar — surface background, border-bottom, 36 px rounded tap targets, destructive-tinted Delete hover
-- **Audio preview reliability** — fixed a temporal-dead-zone bug where `AudioViewer`'s `immediate: true` watch fired before its helper functions were initialized. Audio previews work again
-- **Theme default is explicit System** — first-init writes `"system"` to localStorage immediately, instead of just falling back to it in memory. Visible in DevTools and consistent across tabs from the moment the user loads the app
-- **Text-preview Edit button styling** — `.preview-toolbar-format__btn` was referenced in markup but never defined in CSS, so the button rendered with browser defaults next to the styled soft-wrap toggle. Defined the class to match its sibling chrome
-- **Vue Router deprecation cleanup** — converted both navigation guards from the legacy `next(value)` callback to the return-value pattern. Removes a stream of deprecation warnings from every navigation
-
-## v1.2.0 — Audio + lazy-loaded viewers
-
-- **Album artwork on the audio info-rail** — embedded APIC artwork (extracted client-side via music-metadata) now renders as a square tile at the top of the Track section, matching the chrome of the AudioViewer card itself
-- **Audio preview reliability fix** — temporal-dead-zone bug in `AudioViewer.vue` where an `immediate: true` watch fired before its helper functions were initialized; surfaced as paired "watcher callback" + "setup function" errors and broke audio previews entirely. Resolved by reordering the declarations
-- **Lazy-loaded format viewers** — `PdfViewer` / `VideoViewer` / `AudioViewer` / `EpubViewer` / `TextViewer` / `CsvViewer` now load on demand via `defineAsyncComponent` instead of bundling into the main chunk. Pulled ~1.7 MB of viewer code (pdfjs-dist, video.js, ace-builds, epub.js, music-metadata) out of first-load. Image previews stay statically loaded.
-- **CI workflow hardening** — branch name fixed (`master` → `main`), upstream-only release + docs deploy jobs trimmed, `lint-pr.yaml` removed
-- **Docs polish** — Docker section in the README replaced with the real cross-compile + buildx + GHCR flow
-
-## v1.1.1 — Surface polish
-
-- **Upload dock redesign** — the floating progress card got a ground-up restyle: design-system tokens, live aggregate bar at the bottom edge of the head, per-file rows, dark mode, mobile full-width layout, completion checkmark, reduced-motion respect
-- **Inline rename for the current folder** — new "Rename folder" action in the section-title ⋯ menu; swaps the h1 for an input with the same Enter/Esc/blur UX as inline row rename
-- **Avatar tinted accent** — the user-row gradient now matches the brand mark (lilac) instead of the legacy emerald
-- **Removed dead UI** — stripped the no-op More (⋯) button from the preview header
-- **Tightened deploy docs** — Docker section in the README now matches the actual cross-compile + buildx flow
-
-## v1.1.0 — Drag, preview, polish
-
-- **Spring-loaded folders** — hover-to-open on drag, 2 s with a clockwise progress ring
-- **Breadcrumb drop targets** — drag-to-parent (or any ancestor) without leaving the folder
-- **Rich preview metadata** — EXIF for photos, ID3 for audio (with APIC artwork), track info for video, full PDF.js chrome
-- **EPUB dark mode that actually works** — `themes.override` with the priority flag so the book's own CSS doesn't win specificity
-- **Cross-format arrow nav** — `←` / `→` reliably step between previewable files even from inside EPUB iframes and PDF.js viewers
-- **Zip extract with delete-original** — server-side extraction, with an optional "remove the archive after success" toggle
-- **Shared drag composable** (`useDropTarget`) — single source of truth for move-vs-copy, conflict resolution, and error toasts
-
-## v1.0
-
-- Grid + Gallery views, multi-select pill, responsive sweep
-- Command palette + search
-- Inline file operations
-- Slide-overs, settings rebuild, user admin
-- Login + share-view rewrites
-- A11y, dark mode, mobile, keyboard, polish
-- Preview rebuild: All seven format viewers
-- Build pipeline, prettier sweep, dead code, Docker
+- **SemVer** releases published to GHCR (`X.Y.Z` plus rolling `X.Y` / `X` / `latest`, and `nightly` + dated snapshots from `main`), with the in-app version stamped from the git tag and OCI provenance labels.
+- A design-token system (color / motion / radius); pure-Go media libraries (no cgo) so the static cross-platform builds are unaffected; and lint + type-check + unit tests on every push. Third-party licenses are tracked in [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).

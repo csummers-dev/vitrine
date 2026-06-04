@@ -109,8 +109,13 @@ header .action .counter {
 #search {
   position: relative;
   height: 32px;
-  width: 380px;
+  /* V2-J: compact pill when idle (icon + "Search" + ⌘K); expands to a real
+     input field once activated (#search.active below). */
+  width: auto;
   max-width: 380px;
+}
+#search.active {
+  width: 340px;
 }
 
 /* Responsive: shrink search at narrower viewports */

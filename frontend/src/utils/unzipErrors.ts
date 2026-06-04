@@ -44,6 +44,14 @@ export function mapUnzipError(err: unknown): string {
     if (msg.includes("password-protected archives")) {
       return "Password-protected archives aren't supported.";
     }
+    // Extraction now accepts a password (gathered by the prompt-and-retry loop
+    // in useExtractIndicator); these only surface on non-prompt callers.
+    if (msg.includes("this archive is password-protected")) {
+      return "This archive is password-protected.";
+    }
+    if (msg.includes("the archive password is incorrect")) {
+      return "Incorrect password — try again.";
+    }
 
     // Status-based fallbacks for non-text payloads.
     const status = err.status ?? 0;
@@ -66,6 +74,17 @@ export function mapUnzipError(err: unknown): string {
   }
 
   return "Extraction failed.";
+}
+
+/**
+ * Whether an extraction failure means "the server needs a (correct) archive
+ * password" — the signal to prompt the user and retry. The backend returns
+ * HTTP 422 for both "password required" and "password incorrect" (NOT 401,
+ * which fetchURL treats as session-expiry and force-logs-out on), so the status
+ * alone is an unambiguous trigger.
+ */
+export function isArchivePasswordError(err: unknown): boolean {
+  return err instanceof StatusError && err.status === 422;
 }
 
 /**

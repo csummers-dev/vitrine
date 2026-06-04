@@ -85,15 +85,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, inject, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
-import { files as api, users } from "@/api";
+import { users } from "@/api";
 import { removePrefix } from "@/api/utils";
 import * as upload from "@/utils/upload";
-import { useTransferIndicator } from "@/composables/useTransferIndicator";
+import { startTransfer } from "@/utils/transfers";
 import SlideOver from "@/components/SlideOver.vue";
 import FolderPicker from "@/components/files/FolderPicker.vue";
 import Toggle from "@/components/settings/Toggle.vue";
@@ -115,7 +115,7 @@ const authStore = useAuthStore();
 const fileStore = useFileStore();
 const layoutStore = useLayoutStore();
 // Shared floating transfer indicator (same one drag-drop moves use).
-const { runTransfer } = useTransferIndicator();
+const $showError = inject<IToastError>("$showError");
 
 const pickerRef = ref<InstanceType<typeof FolderPicker> | null>(null);
 const destPath = ref<string>("");
@@ -245,42 +245,26 @@ const onSubmit = async () => {
   // overwrite/rename flags (set during conflict resolution) are read by
   // the move/copy API; the (false, false) args are just the defaults.
   const runInBackground = () => {
-    if (busy.value) return;
-    busy.value = true;
     const isCopy = props.mode === "copy";
-    const op = isCopy ? api.copy : api.move;
-    // Snapshot the source route NOW. The op runs in the background, so by the
-    // time it finishes the user may have navigated elsewhere — we must not
-    // yank their current view (RC review #1).
     const sourceRoute = route.path;
     const goToDest =
       openDest.value && dest !== sourceRoute && dest !== sourceRoute + "/";
 
-    // Close the panel now — the operation continues independently.
+    // Close the panel now — the transfer runs in the background and its
+    // progress + result are shown by the floating transfer dock, which also
+    // refreshes the listing when the job settles.
     emit("done");
 
-    void runTransfer(() => op(items, false, false), isCopy, items, {
-      // Route-aware refresh handled in onSuccess instead.
-      reloadOnSuccess: false,
-      onSuccess: () => {
-        // Only touch the listing if the user is STILL on the source folder.
-        // If they navigated away mid-transfer, leave their view alone — the
-        // result shows on next visit to the source/destination.
-        const stillOnSource =
-          route.path === sourceRoute || route.path === sourceRoute + "/";
-        if (!stillOnSource) return;
-        // Re-select the moved/copied items in the destination so the
-        // selection survives (decode — items[].to is URL-encoded).
-        fileStore.setPreselect(
-          items.map((i) => decodeURIComponent(removePrefix(i.to)))
-        );
-        if (goToDest) {
-          router.push({ path: dest });
-        } else {
-          fileStore.reload = true;
-        }
-      },
-    });
+    // Re-select the moved/copied items in the destination so the selection
+    // survives the post-transfer refresh (decode — items[].to is URL-encoded).
+    fileStore.setPreselect(
+      items.map((i) => decodeURIComponent(removePrefix(i.to)))
+    );
+    if (goToDest) router.push({ path: dest });
+
+    void startTransfer(isCopy ? "copy" : "move", items).catch((e) =>
+      $showError?.(e as Error)
+    );
   };
 
   if (conflict.length > 0) {

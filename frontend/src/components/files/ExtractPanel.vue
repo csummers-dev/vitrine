@@ -33,13 +33,31 @@
           <span class="extract-option__text">
             <span class="extract-option__label">Extract into new folder</span>
             <span class="extract-option__hint">
-              <code v-if="newSubfolder && subfolderName">{{
-                subfolderName
-              }}</code>
-              <span v-else>Files extract into the current location.</span>
+              {{
+                newSubfolder
+                  ? "Contents extract into a new folder you name below."
+                  : "Files extract into the current location."
+              }}
             </span>
           </span>
         </label>
+        <!-- WS9: editable destination folder name — shown only while the
+             "new folder" toggle is on; seeded from the archive's name. -->
+        <div v-if="newSubfolder" class="extract-folder-name">
+          <label class="extract-folder-name__label" for="extract-folder-input">
+            Folder name
+          </label>
+          <input
+            id="extract-folder-input"
+            v-model="folderName"
+            type="text"
+            class="extract-folder-name__input"
+            placeholder="New folder name"
+            spellcheck="false"
+            autocomplete="off"
+            @keydown.enter.prevent="canSubmit && onSubmit()"
+          />
+        </div>
         <label
           class="extract-option"
           :class="{ 'is-disabled': newSubfolder }"
@@ -147,6 +165,10 @@ const { runExtract } = useExtractIndicator();
 const pickerRef = ref<InstanceType<typeof FolderPicker> | null>(null);
 const destPath = ref<string>("");
 const newSubfolder = ref<boolean>(true);
+// WS9: the editable name for the "extract into new folder" destination. Seeded
+// from the archive's derived name on open; the user can rename it. Only used
+// (and only shown) while `newSubfolder` is on.
+const folderName = ref<string>("");
 const overwrite = ref<boolean>(false);
 // F7: Off by default. When on, the source .zip is removed AFTER a
 // successful extraction. Failed extractions never trigger the delete
@@ -178,10 +200,6 @@ const initialPath = computed(() =>
   fileStore.isFiles ? route.path.replace(/\/?$/, "/") : "/files/"
 );
 
-const subfolderName = computed(() =>
-  snapshot.value ? deriveSubfolderName(snapshot.value.name) : ""
-);
-
 /**
  * Final destination path the backend receives. When the "new subfolder"
  * toggle is on, we append the derived folder name to whatever the user
@@ -190,10 +208,20 @@ const subfolderName = computed(() =>
 const finalDest = computed(() => {
   if (!destPath.value) return "";
   const base = destPath.value.replace(/\/?$/, "/");
-  if (newSubfolder.value && subfolderName.value) {
-    return base + encodeURIComponent(subfolderName.value);
+  if (newSubfolder.value) {
+    const fname = folderName.value.trim();
+    if (!fname) return "";
+    return base + encodeURIComponent(fname);
   }
   return base;
+});
+
+// WS9: re-seed the folder name from the archive whenever the toggle turns on
+// and the field is empty, so flipping it back on never lands on a blank name.
+watch(newSubfolder, (on) => {
+  if (on && !folderName.value.trim() && snapshot.value) {
+    folderName.value = deriveSubfolderName(snapshot.value.name);
+  }
 });
 
 const title = computed(() => snapshot.value?.name ?? "Extract");
@@ -201,7 +229,8 @@ const title = computed(() => snapshot.value?.name ?? "Extract");
 const canSubmit = computed(() => {
   if (!snapshot.value) return false;
   if (!destPath.value) return false;
-  if (newSubfolder.value && !subfolderName.value) return false;
+  // WS9: a new-folder extraction needs a non-empty folder name.
+  if (newSubfolder.value && !folderName.value.trim()) return false;
   return true;
 });
 
@@ -264,6 +293,8 @@ watch(
       name: item.name,
       size: item.size,
     };
+    // WS9: seed the editable new-folder name from the archive.
+    folderName.value = deriveSubfolderName(item.name);
   }
 );
 </script>
@@ -354,6 +385,45 @@ html.dark .extract-source__icon {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* WS9: editable destination folder name (only shown with "new folder" on).
+   Indented under its toggle so the relationship reads at a glance. */
+.extract-folder-name {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: -2px 0 2px 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-canvas, #fafaf9);
+}
+.extract-folder-name__label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-ink-3, #a1a1aa);
+}
+.extract-folder-name__input {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid var(--color-line-strong, #d4d4d8);
+  background: var(--color-surface, #fff);
+  color: var(--color-ink-1, #18181b);
+  font: inherit;
+  font-size: 13px;
+  transition:
+    border-color var(--dur-base) ease,
+    box-shadow var(--dur-base) ease;
+}
+.extract-folder-name__input:focus {
+  outline: none;
+  border-color: var(--color-accent, #5e6ad2);
+  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(94, 106, 210, 0.25));
 }
 
 .extract-option {

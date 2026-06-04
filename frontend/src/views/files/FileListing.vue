@@ -1,340 +1,217 @@
 <template>
   <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
-    <header-bar>
-      <breadcrumbs base="/files" class="flex-1 min-w-0" />
-      <search />
-
-      <template #actions>
-        <!-- Vertical divider -->
-        <div class="w-px h-5 bg-line mx-1"></div>
-
-        <!-- View toggle segmented control -->
-        <div
-          class="h-7 p-0.5 rounded-md border border-line bg-surface flex items-center"
-        >
-          <button
-            @click="setView('list')"
-            :class="[
-              'h-6 w-7 rounded flex items-center justify-center transition',
-              viewMode === 'list'
-                ? 'bg-elevated text-[var(--c-blue)] shadow-sm'
-                : 'text-ink-3 hover:text-ink-1',
-            ]"
-            title="List"
-            aria-label="List view"
-          >
-            <Icon name="list" :size="14" />
-          </button>
-          <button
-            @click="setView('mosaic')"
-            :class="[
-              'h-6 w-7 rounded flex items-center justify-center transition',
-              viewMode === 'mosaic'
-                ? 'bg-elevated text-[var(--c-blue)] shadow-sm'
-                : 'text-ink-3 hover:text-ink-1',
-            ]"
-            title="Grid"
-            aria-label="Grid view"
-          >
-            <Icon name="layout-grid" :size="14" />
-          </button>
-          <button
-            @click="setView('mosaic gallery')"
-            :class="[
-              'h-6 w-7 rounded flex items-center justify-center transition',
-              viewMode === 'mosaic gallery'
-                ? 'bg-elevated text-[var(--c-blue)] shadow-sm'
-                : 'text-ink-3 hover:text-ink-1',
-            ]"
-            title="Gallery"
-            aria-label="Gallery view"
-          >
-            <Icon name="image" :size="14" />
-          </button>
-        </div>
-
-        <!-- Sort popover trigger (v1.3 S3-4). Was a cycle button —
-             now opens a ContextMenu with primary + secondary criteria
-             selection. min-w sized to fit the widest label ("Modified"
-             / "Extension") so layout doesn't jump as the user changes
-             the active sort. -->
-        <button
-          class="h-7 px-2 min-w-[110px] max-md:min-w-0 max-md:w-7 max-md:h-7 max-md:px-0 max-md:justify-center rounded-md border border-line bg-surface hover:bg-elevated inline-flex items-center justify-center gap-1.5 text-[13px] text-ink-2 transition"
-          @click.stop="openSortMenu"
-          :title="`Sort: ${sortLabel}`"
-          :aria-label="`Sort: ${sortLabel}`"
-        >
-          <Icon name="arrow-up-down" :size="14" class="text-[var(--c-green)]" />
-          <span class="max-md:hidden">{{ sortLabel }}</span>
-        </button>
-        <context-menu
-          :show="sortMenuShow"
-          :pos="sortMenuPos"
-          :items="sortMenuItems"
-          @hide="sortMenuShow = false"
-        />
-
-        <!-- Sort direction toggle — a dedicated asc/desc control so flipping
-             the order is one obvious click (the field button only picks the
-             sort field). Persists per-user across folders via
-             user.sorting.asc. -->
-        <button
-          class="h-7 w-7 rounded-md border border-line bg-surface hover:bg-elevated inline-flex items-center justify-center transition"
-          @click="toggleSortDirection"
-          :title="`Sort direction: ${sortDirLabel}`"
-          :aria-label="`Sort direction: ${sortDirLabel}`"
-        >
-          <Icon :name="sortDirIcon" :size="14" class="text-[var(--c-blue)]" />
-        </button>
-
-        <!-- S7-2: camera-roll / photo-library upload. Touch devices only
-             (the native file chooser is the win here; desktops already
-             have the rich Upload prompt). No `capture` attr, so iOS /
-             Android show their full sheet — Photo Library / Take Photo /
-             Browse — and the chosen files flow through the SAME upload
-             pipeline as everything else (uploadInput). -->
-        <button
-          v-if="headerButtons.upload && isTouchDevice"
-          class="h-7 w-7 rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 inline-flex items-center justify-center transition"
-          @click="photoInput?.click()"
-          title="Add photos or videos"
-          aria-label="Add photos or videos"
-        >
-          <Icon name="image-plus" :size="14" />
-        </button>
-        <input
-          ref="photoInput"
-          style="display: none"
-          type="file"
-          accept="image/*,video/*"
-          multiple
-          @change="uploadInput($event)"
-        />
-
-        <!-- Upload (primary; collapses to icon-only at < md) -->
-        <button
-          v-if="headerButtons.upload"
-          class="h-7 px-2.5 max-md:w-7 max-md:h-7 max-md:px-0 max-md:justify-center rounded-md btn-accent-gradient text-white text-[13px] font-medium flex items-center gap-1.5 shadow-sm transition"
-          @click="uploadFunc"
-          :title="t('buttons.upload')"
-          :aria-label="t('buttons.upload')"
-        >
-          <Icon name="upload" :size="14" />
-          <span class="max-md:hidden">{{ t("buttons.upload") }}</span>
-        </button>
-      </template>
-    </header-bar>
-
     <div class="flex-1 flex min-h-0 overflow-hidden">
-      <section
-        ref="scrollSection"
-        class="flex-1 flex flex-col min-w-0 overflow-y-auto ptr-host"
-        :class="{ 'scroll-section--virtual': isListVirtual }"
-      >
-        <!-- S7-1: pull-to-refresh indicator. Only visible during a pull
-             or while refreshing; pinned at the visible top (scrollTop is
-             held at 0 throughout the gesture, so absolute top:0 = top of
-             the viewport). -->
-        <div
-          v-if="ptrActive"
-          class="ptr-indicator"
-          :class="{ 'ptr-indicator--pulling': ptrPulling }"
-          :style="{
-            transform: `translate(-50%, ${ptrOffset}px)`,
-            opacity: ptrOpacity,
-          }"
-          aria-hidden="true"
-        >
-          <div class="ptr-indicator__pill">
-            <Icon
-              name="loader-circle"
-              :size="18"
-              class="ptr-indicator__spin"
-              :class="{ 'ptr-indicator__spin--active': ptrRefreshing }"
-              :style="
-                ptrRefreshing
-                  ? undefined
-                  : { transform: `rotate(${ptrRotation}deg)` }
-              "
-            />
-          </div>
-        </div>
-
-        <div
-          v-if="isMobile && fileStore.selectedCount > 0"
-          id="file-selection"
-          :class="{
-            'file-selection-margin-bottom': fileStore.multiple,
-          }"
-        >
-          <span>
-            {{ t("prompts.filesSelected", fileStore.selectedCount) }}
-          </span>
-          <!-- Opt-in details toggle (mobile). The InfoPane sheet no longer
-               pops on its own when an item is selected; the user expands it
-               here when they actually want metadata. -->
+      <!-- Primary column (V2-J): hero + scrolling listing + bottom breadcrumb
+           bar, stacked. The details rail (InfoPane) sits beside it as a
+           full-height sibling. -->
+      <div class="fb-primary flex-1 flex flex-col min-w-0 min-h-0">
+        <!-- V2-J unified hero: title (left) + adaptive control cluster (right).
+             Replaces the dissolved top header bar; always rendered so the
+             controls never flash out during a folder load. The title block is
+             also the parent-folder drop / spring-load target (F2). -->
+        <div class="fb-hero">
+          <!-- Mobile: open the sidebar drawer (no top bar to host it). -->
           <button
             type="button"
-            class="action"
-            title="Details"
-            aria-label="Details"
-            @click="layoutStore.mobileDetailsOpen = true"
+            class="fb-hero__menu hidden max-sm:inline-flex"
+            aria-label="Open navigation menu"
+            title="Open menu"
+            @click="mobileNav.open"
           >
-            <Icon name="info" :size="18" />
+            <Icon name="menu" :size="18" />
           </button>
-          <action
-            v-if="headerButtons.share"
-            icon="share"
-            :label="t('buttons.share')"
-            show="share"
-          />
-          <action
-            v-if="headerButtons.rename"
-            icon="pencil"
-            :label="t('buttons.rename')"
-            show="rename"
-          />
-          <action
-            v-if="headerButtons.copy"
-            icon="copy"
-            :label="t('buttons.copyFile')"
-            show="copy"
-          />
-          <action
-            v-if="headerButtons.move"
-            icon="forward"
-            :label="t('buttons.moveFile')"
-            show="move"
-          />
-          <action
-            v-if="headerButtons.delete"
-            icon="trash-2"
-            :label="t('buttons.delete')"
-            show="delete"
-          />
-        </div>
 
-        <!-- Section title (folder name + counts + folder-level actions).
-             F2: also acts as a drop target + spring-load shortcut to the
-             PARENT folder during a drag. Lit up with an accent ring when
-             a drag is over it; drop = move to parent; hover for 2 s with
-             a drag in progress = navigate up. Hidden when the user is
-             already at the root of their scope. -->
-        <div
-          v-if="!layoutStore.loading && fileStore.req && fileStore.req.isDir"
-          class="section-title px-5 pt-4 pb-3 flex items-start justify-between gap-3 max-md:px-4 max-md:pt-3 max-md:pb-2"
-          :class="{ 'section-title--drop': sectionDropActive }"
-          @dragenter="onSectionDragEnter"
-          @dragover="onSectionDragOver"
-          @dragleave="onSectionDragLeave"
-          @drop="onSectionDrop"
-        >
-          <div class="min-w-0">
-            <div
-              class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] mb-1 flex items-center gap-1.5"
-            >
-              <span>Folder</span>
-              <!-- Parent-folder nav button (H5). Same destination as the
-                   F2 spring-load on this section title — explicit click
-                   affordance for users who don't think to drag-hover.
-                   Hidden at root where parentFolderUrl is null. -->
-              <button
-                v-if="parentFolderUrl"
-                type="button"
-                class="parent-up-btn"
-                :title="`Go to parent folder${parentFolderName ? ` (${parentFolderName})` : ''}`"
-                :aria-label="`Go to parent folder${parentFolderName ? ` (${parentFolderName})` : ''}`"
-                @click.stop="goToParentFolder"
+          <div
+            v-if="!layoutStore.loading && fileStore.req && fileStore.req.isDir"
+            class="section-title fb-hero__title"
+            :class="{ 'section-title--drop': sectionDropActive }"
+            @dragenter="onSectionDragEnter"
+            @dragover="onSectionDragOver"
+            @dragleave="onSectionDragLeave"
+            @drop="onSectionDrop"
+          >
+            <div class="min-w-0">
+              <div
+                class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] mb-1 flex items-center gap-1.5"
               >
-                <Icon name="arrow-up" :size="11" :stroke-width="2.2" />
-              </button>
-              <!-- Favorite star for the current folder (v1.3 S3-2).
-                   Pairs visually with the parent-up button. Always
-                   visible (filled when favorited, outline when not)
-                   — discoverable affordance for the canonical
-                   "pin this folder" action. -->
-              <button
-                v-if="fileStore.req?.isDir && currentFolderPath"
-                type="button"
-                class="current-fav-btn"
-                :class="{ 'current-fav-btn--active': currentFolderFavorited }"
-                :title="
-                  currentFolderFavorited
-                    ? 'Remove from Favorites'
-                    : 'Add to Favorites'
-                "
-                :aria-label="
-                  currentFolderFavorited
-                    ? 'Remove from Favorites'
-                    : 'Add to Favorites'
-                "
-                :aria-pressed="currentFolderFavorited"
-                @click.stop="onCurrentFolderFavToggle"
+                <span>Folder</span>
+                <button
+                  v-if="parentFolderUrl"
+                  type="button"
+                  class="parent-up-btn"
+                  :title="`Go to parent folder${parentFolderName ? ` (${parentFolderName})` : ''}`"
+                  :aria-label="`Go to parent folder${parentFolderName ? ` (${parentFolderName})` : ''}`"
+                  @click.stop="goToParentFolder"
+                >
+                  <Icon name="arrow-up" :size="11" :stroke-width="2.2" />
+                </button>
+                <button
+                  v-if="fileStore.req?.isDir && currentFolderPath"
+                  type="button"
+                  class="current-fav-btn"
+                  :class="{ 'current-fav-btn--active': currentFolderFavorited }"
+                  :title="
+                    currentFolderFavorited
+                      ? 'Remove from Favorites'
+                      : 'Add to Favorites'
+                  "
+                  :aria-label="
+                    currentFolderFavorited
+                      ? 'Remove from Favorites'
+                      : 'Add to Favorites'
+                  "
+                  :aria-pressed="currentFolderFavorited"
+                  @click.stop="onCurrentFolderFavToggle"
+                >
+                  <Icon
+                    name="star"
+                    :size="11"
+                    :stroke-width="currentFolderFavorited ? 0 : 2"
+                    :fill="currentFolderFavorited ? 'currentColor' : 'none'"
+                  />
+                </button>
+              </div>
+              <input
+                v-if="isRenamingCurrentFolder"
+                ref="folderRenameInputEl"
+                v-model.trim="folderRenameValue"
+                class="folder-rename-input text-[22px] font-semibold text-ink-1 leading-tight truncate max-md:text-[18px]"
+                type="text"
+                autocomplete="off"
+                spellcheck="false"
+                @keydown.enter.prevent="submitFolderRename"
+                @keydown.esc.prevent="cancelFolderRename"
+                @blur="onFolderRenameBlur"
+              />
+              <h1
+                v-else
+                class="text-[22px] font-semibold leading-tight truncate max-md:text-[18px]"
+                :class="{ 'headline-gradient': !currentFolderAlias }"
               >
-                <Icon
-                  name="star"
-                  :size="11"
-                  :stroke-width="currentFolderFavorited ? 0 : 2"
-                  :fill="currentFolderFavorited ? 'currentColor' : 'none'"
-                />
-              </button>
-            </div>
-            <!-- Inline rename for the current folder: when the user picks
-                 "Rename folder" from the ⋯ menu, swap the h1 for an input
-                 that commits on Enter / blur and cancels on Esc. Same UX
-                 as ListingItem's row rename so the affordance feels
-                 consistent across the app. -->
-            <input
-              v-if="isRenamingCurrentFolder"
-              ref="folderRenameInputEl"
-              v-model.trim="folderRenameValue"
-              class="folder-rename-input text-[22px] font-semibold text-ink-1 leading-tight truncate max-md:text-[18px]"
-              type="text"
-              autocomplete="off"
-              spellcheck="false"
-              @keydown.enter.prevent="submitFolderRename"
-              @keydown.esc.prevent="cancelFolderRename"
-              @blur="onFolderRenameBlur"
-            />
-            <h1
-              v-else
-              class="text-[22px] font-semibold leading-tight truncate max-md:text-[18px]"
-              :class="{ 'headline-gradient': !currentFolderAlias }"
-            >
-              <span :class="{ 'headline-gradient': currentFolderAlias }">{{
-                folderTitle
-              }}</span
-              ><span
-                v-if="currentFolderAlias"
-                class="folder-alias"
-                :title="`Favorite display name: ${currentFolderAlias}`"
-                >({{ currentFolderAlias }})</span
+                <span :class="{ 'headline-gradient': currentFolderAlias }">{{
+                  folderTitle
+                }}</span
+                ><span
+                  v-if="currentFolderAlias"
+                  class="folder-alias"
+                  :title="`Favorite display name: ${currentFolderAlias}`"
+                  >({{ currentFolderAlias }})</span
+                >
+              </h1>
+              <div
+                class="mt-1 text-[13px] text-ink-3 tabular max-md:text-[12px]"
               >
-            </h1>
-            <div class="mt-1 text-[13px] text-ink-3 tabular max-md:text-[12px]">
-              {{ folderMeta }}
+                {{ folderMeta }}
+              </div>
             </div>
           </div>
-          <div class="flex items-center gap-1.5 shrink-0">
-            <button
-              v-if="headerButtons.share"
-              class="h-7 px-2 max-md:w-7 max-md:px-0 max-md:justify-center rounded-md border border-line bg-surface hover:bg-elevated text-[13px] text-ink-2 flex items-center gap-1.5 transition"
-              @click="layoutStore.showHover('share')"
-              :title="t('buttons.share')"
-              :aria-label="t('buttons.share')"
+          <div v-else class="fb-hero__title"></div>
+
+          <!-- Control cluster — single adaptive row. Share + Download collapse
+               into the ⋯ More menu to save space (V2-J). -->
+          <div class="fb-hero__cluster">
+            <search />
+            <div class="w-px h-5 bg-line mx-1 max-md:hidden"></div>
+            <div
+              class="h-7 p-0.5 rounded-md border border-line bg-surface flex items-center"
             >
-              <Icon name="share" :size="14" />
-              <span class="max-md:hidden">{{ t("buttons.share") }}</span>
+              <button
+                @click="setView('list')"
+                :class="[
+                  'h-6 w-7 rounded flex items-center justify-center transition',
+                  viewMode === 'list'
+                    ? 'bg-elevated text-[var(--c-blue)] shadow-sm'
+                    : 'text-ink-3 hover:text-ink-1',
+                ]"
+                title="List"
+                aria-label="List view"
+              >
+                <Icon name="list" :size="14" />
+              </button>
+              <button
+                @click="setView('mosaic')"
+                :class="[
+                  'h-6 w-7 rounded flex items-center justify-center transition',
+                  viewMode === 'mosaic'
+                    ? 'bg-elevated text-[var(--c-blue)] shadow-sm'
+                    : 'text-ink-3 hover:text-ink-1',
+                ]"
+                title="Grid"
+                aria-label="Grid view"
+              >
+                <Icon name="layout-grid" :size="14" />
+              </button>
+              <button
+                @click="setView('mosaic gallery')"
+                :class="[
+                  'h-6 w-7 rounded flex items-center justify-center transition',
+                  viewMode === 'mosaic gallery'
+                    ? 'bg-elevated text-[var(--c-blue)] shadow-sm'
+                    : 'text-ink-3 hover:text-ink-1',
+                ]"
+                title="Gallery"
+                aria-label="Gallery view"
+              >
+                <Icon name="image" :size="14" />
+              </button>
+            </div>
+            <button
+              class="h-7 px-2 min-w-[110px] max-md:min-w-0 max-md:w-7 max-md:h-7 max-md:px-0 max-md:justify-center rounded-md border border-line bg-surface hover:bg-elevated inline-flex items-center justify-center gap-1.5 text-[13px] text-ink-2 transition"
+              @click.stop="openSortMenu"
+              :title="`Sort: ${sortLabel}`"
+              :aria-label="`Sort: ${sortLabel}`"
+            >
+              <Icon
+                name="arrow-up-down"
+                :size="14"
+                class="text-[var(--c-green)]"
+              />
+              <span class="max-md:hidden">{{ sortLabel }}</span>
+            </button>
+            <context-menu
+              :show="sortMenuShow"
+              :pos="sortMenuPos"
+              :items="sortMenuItems"
+              @hide="sortMenuShow = false"
+            />
+            <button
+              class="h-7 w-7 rounded-md border border-line bg-surface hover:bg-elevated inline-flex items-center justify-center transition"
+              @click="toggleSortDirection"
+              :title="`Sort direction: ${sortDirLabel}`"
+              :aria-label="`Sort direction: ${sortDirLabel}`"
+            >
+              <Icon
+                :name="sortDirIcon"
+                :size="14"
+                class="text-[var(--c-blue)]"
+              />
             </button>
             <button
-              v-if="headerButtons.download"
-              class="listing-download h-7 px-2 max-md:w-7 max-md:px-0 max-md:justify-center rounded-md border text-[13px] flex items-center gap-1.5 transition"
-              @click="download"
-              :title="t('buttons.download')"
-              :aria-label="t('buttons.download')"
+              v-if="headerButtons.upload && isTouchDevice"
+              class="h-7 w-7 rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 inline-flex items-center justify-center transition"
+              @click="photoInput?.click()"
+              title="Add photos or videos"
+              aria-label="Add photos or videos"
             >
-              <Icon name="download" :size="14" />
-              <span class="max-md:hidden">{{ t("buttons.download") }}</span>
+              <Icon name="image-plus" :size="14" />
+            </button>
+            <input
+              ref="photoInput"
+              style="display: none"
+              type="file"
+              accept="image/*,video/*"
+              multiple
+              @change="uploadInput($event)"
+            />
+            <button
+              v-if="headerButtons.upload"
+              class="h-7 px-2.5 max-md:w-7 max-md:h-7 max-md:px-0 max-md:justify-center rounded-md btn-accent-gradient text-white text-[13px] font-medium flex items-center gap-1.5 shadow-sm transition"
+              @click="uploadFunc"
+              :title="t('buttons.upload')"
+              :aria-label="t('buttons.upload')"
+            >
+              <Icon name="upload" :size="14" />
+              <span class="max-md:hidden">{{ t("buttons.upload") }}</span>
             </button>
             <button
               class="w-7 h-7 rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 flex items-center justify-center transition"
@@ -346,27 +223,114 @@
             </button>
           </div>
         </div>
+        <section
+          ref="scrollSection"
+          class="flex-1 flex flex-col min-w-0 min-h-0 overflow-y-auto ptr-host"
+          :class="{ 'scroll-section--virtual': isListVirtual }"
+        >
+          <!-- S7-1: pull-to-refresh indicator. Only visible during a pull
+             or while refreshing; pinned at the visible top (scrollTop is
+             held at 0 throughout the gesture, so absolute top:0 = top of
+             the viewport). -->
+          <div
+            v-if="ptrActive"
+            class="ptr-indicator"
+            :class="{ 'ptr-indicator--pulling': ptrPulling }"
+            :style="{
+              transform: `translate(-50%, ${ptrOffset}px)`,
+              opacity: ptrOpacity,
+            }"
+            aria-hidden="true"
+          >
+            <div class="ptr-indicator__pill">
+              <Icon
+                name="loader-circle"
+                :size="18"
+                class="ptr-indicator__spin"
+                :class="{ 'ptr-indicator__spin--active': ptrRefreshing }"
+                :style="
+                  ptrRefreshing
+                    ? undefined
+                    : { transform: `rotate(${ptrRotation}deg)` }
+                "
+              />
+            </div>
+          </div>
 
-        <!-- Section title "More" dropdown.
+          <div
+            v-if="isMobile && fileStore.selectedCount > 0"
+            id="file-selection"
+            :class="{
+              'file-selection-margin-bottom': fileStore.multiple,
+            }"
+          >
+            <span>
+              {{ t("prompts.filesSelected", fileStore.selectedCount) }}
+            </span>
+            <!-- Opt-in details toggle (mobile). The InfoPane sheet no longer
+               pops on its own when an item is selected; the user expands it
+               here when they actually want metadata. -->
+            <button
+              type="button"
+              class="action"
+              title="Details"
+              aria-label="Details"
+              @click="layoutStore.mobileDetailsOpen = true"
+            >
+              <Icon name="info" :size="18" />
+            </button>
+            <action
+              v-if="headerButtons.share"
+              icon="share"
+              :label="t('buttons.share')"
+              show="share"
+            />
+            <action
+              v-if="headerButtons.rename"
+              icon="pencil"
+              :label="t('buttons.rename')"
+              show="rename"
+            />
+            <action
+              v-if="headerButtons.copy"
+              icon="copy"
+              :label="t('buttons.copyFile')"
+              show="copy"
+            />
+            <action
+              v-if="headerButtons.move"
+              icon="forward"
+              :label="t('buttons.moveFile')"
+              show="move"
+            />
+            <action
+              v-if="headerButtons.delete"
+              icon="trash-2"
+              :label="t('buttons.delete')"
+              show="delete"
+            />
+          </div>
+
+          <!-- Section title "More" dropdown.
              Migrated to the items-based ContextMenu API (v1.3.0 S1-3) —
              keyboard nav, type-ahead, separators all come along for
              free. The action array below is built in the script. -->
-        <context-menu
-          :show="sectionMoreShow"
-          :pos="sectionMorePos"
-          :items="sectionMoreItems"
-          @hide="hideSectionMore"
-        />
+          <context-menu
+            :show="sectionMoreShow"
+            :pos="sectionMorePos"
+            :items="sectionMoreItems"
+            @hide="hideSectionMore"
+          />
 
-        <!-- Loading: skeleton rows matching the current view mode. Mirrors
+          <!-- Loading: skeleton rows matching the current view mode. Mirrors
          the real ListingItem layout so the page doesn't reflow on load. -->
-        <ListingSkeleton
-          v-if="layoutStore.loading"
-          :mode="viewMode === 'list' ? 'list' : 'mosaic'"
-          :count="viewMode === 'list' ? 10 : 12"
-        />
-        <template v-else>
-          <!-- Empty state vs. listing chrome. Critical detail (H6):
+          <ListingSkeleton
+            v-if="layoutStore.loading"
+            :mode="viewMode === 'list' ? 'list' : 'mosaic'"
+            :count="viewMode === 'list' ? 10 : 12"
+          />
+          <template v-else>
+            <!-- Empty state vs. listing chrome. Critical detail (H6):
                when the user is mid-creation (`inlineNewKind` is set)
                we MUST render the listing branch even on an empty
                folder — otherwise the InlineNewItem (which only lives
@@ -374,130 +338,134 @@
                "New Folder" silently no-ops. The listing's header +
                inline input form a clean "creating in empty folder"
                surface; EmptyState comes back when the prompt closes. -->
-          <div
-            v-if="
-              (fileStore.req?.numDirs ?? 0) + (fileStore.req?.numFiles ?? 0) ==
-                0 && !inlineNewKind
-            "
-          >
-            <EmptyState
-              icon="folder-open"
-              :title="
-                folderTitle ? `${folderTitle} is empty` : t('files.lonely')
+            <div
+              v-if="
+                (fileStore.req?.numDirs ?? 0) +
+                  (fileStore.req?.numFiles ?? 0) ==
+                  0 && !inlineNewKind
               "
-              hint="Drop files here or use the Upload button to add content."
             >
-              <button
-                v-if="headerButtons.upload"
-                type="button"
-                class="empty-cta"
-                @click="uploadFunc"
+              <EmptyState
+                icon="folder-open"
+                :title="
+                  folderTitle ? `${folderTitle} is empty` : t('files.lonely')
+                "
+                hint="Drop files here or use the Upload button to add content."
               >
-                <Icon name="upload" :size="13" />
-                <span>{{ t("buttons.upload") }}</span>
-              </button>
-            </EmptyState>
-            <input
-              style="display: none"
-              type="file"
-              id="upload-input"
-              @change="uploadInput($event)"
-              multiple
-            />
-            <input
-              style="display: none"
-              type="file"
-              id="upload-folder-input"
-              @change="uploadInput($event)"
-              webkitdirectory
-              multiple
-            />
-          </div>
-          <div
-            v-else
-            id="listing"
-            ref="listing"
-            class="file-icons"
-            data-clear-on-click="true"
-            :data-drop-url="currentFolderUrl || undefined"
-            :class="[
-              viewMode,
-              { 'listing--virtual': isListVirtual, 'is-touch': isTouchDevice },
-            ]"
-            @click="handleEmptyAreaClick"
-            @contextmenu="onListingContextMenu"
-            @mousedown="dragSelect.onMouseDown"
-          >
-            <div>
-              <div class="item header">
-                <div class="item__select">
-                  <div
-                    :class="[
-                      'item__checkbox',
-                      allSelected && 'item__checkbox--checked',
-                    ]"
-                    role="checkbox"
-                    :aria-checked="allSelected"
-                    tabindex="0"
-                    @click.stop="toggleSelectAll"
-                    :title="allSelected ? 'Deselect all' : 'Select all'"
-                  >
-                    <Icon
-                      v-if="allSelected"
-                      name="check"
-                      :size="11"
-                      :stroke-width="3.5"
-                      style="color: white"
-                    />
+                <button
+                  v-if="headerButtons.upload"
+                  type="button"
+                  class="empty-cta"
+                  @click="uploadFunc"
+                >
+                  <Icon name="upload" :size="13" />
+                  <span>{{ t("buttons.upload") }}</span>
+                </button>
+              </EmptyState>
+              <input
+                style="display: none"
+                type="file"
+                id="upload-input"
+                @change="uploadInput($event)"
+                multiple
+              />
+              <input
+                style="display: none"
+                type="file"
+                id="upload-folder-input"
+                @change="uploadInput($event)"
+                webkitdirectory
+                multiple
+              />
+            </div>
+            <div
+              v-else
+              id="listing"
+              ref="listing"
+              class="file-icons"
+              data-clear-on-click="true"
+              :data-drop-url="currentFolderUrl || undefined"
+              :class="[
+                viewMode,
+                {
+                  'listing--virtual': isListVirtual,
+                  'is-touch': isTouchDevice,
+                },
+              ]"
+              @click="handleEmptyAreaClick"
+              @contextmenu="onListingContextMenu"
+              @mousedown="dragSelect.onMouseDown"
+            >
+              <div>
+                <div class="item header">
+                  <div class="item__select">
+                    <div
+                      :class="[
+                        'item__checkbox',
+                        allSelected && 'item__checkbox--checked',
+                      ]"
+                      role="checkbox"
+                      :aria-checked="allSelected"
+                      tabindex="0"
+                      @click.stop="toggleSelectAll"
+                      :title="allSelected ? 'Deselect all' : 'Select all'"
+                    >
+                      <Icon
+                        v-if="allSelected"
+                        name="check"
+                        :size="11"
+                        :stroke-width="3.5"
+                        style="color: white"
+                      />
+                    </div>
                   </div>
+                  <p
+                    :class="{ active: nameSorted }"
+                    class="name"
+                    role="button"
+                    tabindex="0"
+                    @click="sort('name')"
+                    :title="t('files.sortByName')"
+                    :aria-label="t('files.sortByName')"
+                  >
+                    <span>{{ t("files.name") }}</span>
+                    <Icon :name="nameIcon" />
+                  </p>
+                  <p
+                    :class="{ active: modifiedSorted }"
+                    class="modified"
+                    role="button"
+                    tabindex="0"
+                    @click="sort('modified')"
+                    :title="t('files.sortByLastModified')"
+                    :aria-label="t('files.sortByLastModified')"
+                  >
+                    <span>Modified</span>
+                    <Icon :name="modifiedIcon" />
+                  </p>
+                  <p
+                    :class="{ active: sizeSorted }"
+                    class="size"
+                    role="button"
+                    tabindex="0"
+                    @click="sort('size')"
+                    :title="t('files.sortBySize')"
+                    :aria-label="t('files.sortBySize')"
+                  >
+                    <span>{{ t("files.size") }}</span>
+                    <Icon :name="sizeIcon" />
+                  </p>
+                  <div class="header__actions"></div>
                 </div>
-                <p
-                  :class="{ active: nameSorted }"
-                  class="name"
-                  role="button"
-                  tabindex="0"
-                  @click="sort('name')"
-                  :title="t('files.sortByName')"
-                  :aria-label="t('files.sortByName')"
-                >
-                  <span>{{ t("files.name") }}</span>
-                  <Icon :name="nameIcon" />
-                </p>
-                <p
-                  :class="{ active: modifiedSorted }"
-                  class="modified"
-                  role="button"
-                  tabindex="0"
-                  @click="sort('modified')"
-                  :title="t('files.sortByLastModified')"
-                  :aria-label="t('files.sortByLastModified')"
-                >
-                  <span>Modified</span>
-                  <Icon :name="modifiedIcon" />
-                </p>
-                <p
-                  :class="{ active: sizeSorted }"
-                  class="size"
-                  role="button"
-                  tabindex="0"
-                  @click="sort('size')"
-                  :title="t('files.sortBySize')"
-                  :aria-label="t('files.sortBySize')"
-                >
-                  <span>{{ t("files.size") }}</span>
-                  <Icon :name="sizeIcon" />
-                </p>
-                <div class="header__actions"></div>
               </div>
-            </div>
 
-            <!-- Inline new folder / new file row (Stage 8). Replaces the legacy
+              <!-- Inline new folder / new file row (Stage 8). Replaces the legacy
              modal: appears at the top of the listing with a focused input. -->
-            <div v-if="inlineNewKind" @click.stop>
-              <InlineNewItem :kind="inlineNewKind" />
-            </div>
+              <div v-if="inlineNewKind" @click.stop>
+                <InlineNewItem :kind="inlineNewKind" />
+              </div>
 
-            <!-- v1.3 S6-1: the LIST view is virtualized with
+              <!-- v1.3 S6-1: the LIST view is virtualized with
                  RecycleScroller (fixed 44px rows) so a 10k-file folder
                  only ever mounts the visible window + a small buffer.
                  dirs → divider → files are flattened into `listRows`;
@@ -506,271 +474,283 @@
                  incremental `showLimit` windowing in the v-else branch —
                  their tiles wrap to variable heights, so list-first per
                  the locked Stage 6 plan. -->
-            <RecycleScroller
-              v-if="isListVirtual"
-              ref="listScroller"
-              class="listing-virtual"
-              :items="listRows"
-              :item-size="44"
-              key-field="id"
-              :buffer="320"
-              data-clear-on-click="true"
-              v-slot="{ item: row }"
-            >
-              <div
-                v-if="row.divider"
-                class="folder-file-divider"
+              <RecycleScroller
+                v-if="isListVirtual"
+                ref="listScroller"
+                class="listing-virtual"
+                :items="listRows"
+                :item-size="44"
+                key-field="id"
+                :buffer="320"
                 data-clear-on-click="true"
-              ></div>
-              <item
-                v-else-if="row.item"
-                v-bind:index="row.item.index"
-                v-bind:name="row.item.name"
-                v-bind:isDir="row.item.isDir"
-                v-bind:url="row.item.url"
-                v-bind:modified="row.item.modified"
-                v-bind:type="row.item.type"
-                v-bind:size="row.item.size"
-                v-bind:path="row.item.path"
-                @rowIntoZone="onRowIntoZone"
-                @dropAlongside="onItemDropAlongside"
-                @rowPointerDown="onItemPointerDown"
+                v-slot="{ item: row }"
               >
-              </item>
-            </RecycleScroller>
+                <div
+                  v-if="row.divider"
+                  class="folder-file-divider"
+                  data-clear-on-click="true"
+                ></div>
+                <item
+                  v-else-if="row.item"
+                  v-bind:index="row.item.index"
+                  v-bind:name="row.item.name"
+                  v-bind:isDir="row.item.isDir"
+                  v-bind:url="row.item.url"
+                  v-bind:modified="row.item.modified"
+                  v-bind:type="row.item.type"
+                  v-bind:size="row.item.size"
+                  v-bind:path="row.item.path"
+                  @rowIntoZone="onRowIntoZone"
+                  @dropAlongside="onItemDropAlongside"
+                  @rowPointerDown="onItemPointerDown"
+                >
+                </item>
+              </RecycleScroller>
 
-            <template v-else>
-              <!-- CH-1: the folders + files grids are windowed — only the
+              <template v-else>
+                <!-- CH-1: the folders + files grids are windowed — only the
                    tiles near the viewport mount. The top/bottom spacer
                    blocks stand in for the rows scrolled out of view so the
                    scroll height + position stay exact. Spacers are block
                    siblings of the grid (not grid cells), so there's no gap
                    math to get wrong, and each section's total height stays
                    constant as you scroll. -->
-              <div
-                v-if="(fileStore.req?.numDirs ?? 0) > 0"
-                ref="dirsSectionRef"
-                class="listing-section-pad"
-                data-clear-on-click="true"
-              >
                 <div
-                  class="grid-pad"
-                  data-clear-on-click="true"
-                  :style="{ height: dirsWin.topPad + 'px' }"
-                ></div>
-                <div
-                  class="listing-section listing-section--dirs"
+                  v-if="(fileStore.req?.numDirs ?? 0) > 0"
+                  ref="dirsSectionRef"
+                  class="listing-section-pad"
                   data-clear-on-click="true"
                 >
-                  <item
-                    v-for="item in dirs"
-                    :key="base64(item.name)"
-                    v-bind:index="item.index"
-                    v-bind:name="item.name"
-                    v-bind:isDir="item.isDir"
-                    v-bind:url="item.url"
-                    v-bind:modified="item.modified"
-                    v-bind:type="item.type"
-                    v-bind:size="item.size"
-                    v-bind:path="item.path"
-                    @rowIntoZone="onRowIntoZone"
-                    @dropAlongside="onItemDropAlongside"
-                    @rowPointerDown="onItemPointerDown"
+                  <div
+                    class="grid-pad"
+                    data-clear-on-click="true"
+                    :style="{ height: dirsWin.topPad + 'px' }"
+                  ></div>
+                  <div
+                    class="listing-section listing-section--dirs"
+                    data-clear-on-click="true"
                   >
-                  </item>
+                    <item
+                      v-for="item in dirs"
+                      :key="base64(item.name)"
+                      v-bind:index="item.index"
+                      v-bind:name="item.name"
+                      v-bind:isDir="item.isDir"
+                      v-bind:url="item.url"
+                      v-bind:modified="item.modified"
+                      v-bind:type="item.type"
+                      v-bind:size="item.size"
+                      v-bind:path="item.path"
+                      @rowIntoZone="onRowIntoZone"
+                      @dropAlongside="onItemDropAlongside"
+                      @rowPointerDown="onItemPointerDown"
+                    >
+                    </item>
+                  </div>
+                  <div
+                    class="grid-pad"
+                    data-clear-on-click="true"
+                    :style="{ height: dirsWin.botPad + 'px' }"
+                  ></div>
                 </div>
-                <div
-                  class="grid-pad"
-                  data-clear-on-click="true"
-                  :style="{ height: dirsWin.botPad + 'px' }"
-                ></div>
-              </div>
 
-              <div
-                v-if="
-                  (fileStore.req?.numDirs ?? 0) > 0 &&
-                  (fileStore.req?.numFiles ?? 0) > 0
-                "
-                class="folder-file-divider"
-                data-clear-on-click="true"
-              ></div>
-
-              <div
-                v-if="(fileStore.req?.numFiles ?? 0) > 0"
-                ref="filesSectionRef"
-                class="listing-section-pad"
-                data-clear-on-click="true"
-              >
                 <div
-                  class="grid-pad"
+                  v-if="
+                    (fileStore.req?.numDirs ?? 0) > 0 &&
+                    (fileStore.req?.numFiles ?? 0) > 0
+                  "
+                  class="folder-file-divider"
                   data-clear-on-click="true"
-                  :style="{ height: filesWin.topPad + 'px' }"
                 ></div>
-                <div class="listing-section" data-clear-on-click="true">
-                  <item
-                    v-for="item in files"
-                    :key="base64(item.name)"
-                    v-bind:index="item.index"
-                    v-bind:name="item.name"
-                    v-bind:isDir="item.isDir"
-                    v-bind:url="item.url"
-                    v-bind:modified="item.modified"
-                    v-bind:type="item.type"
-                    v-bind:size="item.size"
-                    v-bind:path="item.path"
-                    @rowIntoZone="onRowIntoZone"
-                    @dropAlongside="onItemDropAlongside"
-                    @rowPointerDown="onItemPointerDown"
-                  >
-                  </item>
+
+                <div
+                  v-if="(fileStore.req?.numFiles ?? 0) > 0"
+                  ref="filesSectionRef"
+                  class="listing-section-pad"
+                  data-clear-on-click="true"
+                >
+                  <div
+                    class="grid-pad"
+                    data-clear-on-click="true"
+                    :style="{ height: filesWin.topPad + 'px' }"
+                  ></div>
+                  <div class="listing-section" data-clear-on-click="true">
+                    <item
+                      v-for="item in files"
+                      :key="base64(item.name)"
+                      v-bind:index="item.index"
+                      v-bind:name="item.name"
+                      v-bind:isDir="item.isDir"
+                      v-bind:url="item.url"
+                      v-bind:modified="item.modified"
+                      v-bind:type="item.type"
+                      v-bind:size="item.size"
+                      v-bind:path="item.path"
+                      @rowIntoZone="onRowIntoZone"
+                      @dropAlongside="onItemDropAlongside"
+                      @rowPointerDown="onItemPointerDown"
+                    >
+                    </item>
+                  </div>
+                  <div
+                    class="grid-pad"
+                    data-clear-on-click="true"
+                    :style="{ height: filesWin.botPad + 'px' }"
+                  ></div>
                 </div>
-                <div
-                  class="grid-pad"
-                  data-clear-on-click="true"
-                  :style="{ height: filesWin.botPad + 'px' }"
-                ></div>
-              </div>
-            </template>
+              </template>
 
-            <!-- v1.3 H11: "Drop into current folder" target.
+              <!-- v1.3 H11: "Drop into current folder" target.
                  Renders only during an internal drag whose items don't
                  already live in this folder. Sits beneath the last row
                  with generous vertical reach so folder-heavy listings
                  still give the user a tolerant safe area to drop INTO
                  the current directory — without having to land in the
                  gaps between rows or aim at a non-folder. -->
-            <div
-              v-if="currentFolderDropZoneVisible"
-              class="current-folder-dropzone"
-              :class="{
-                'current-folder-dropzone--active': listingDropActive,
-              }"
-              @dragenter="onListingDropEnter"
-              @dragover="onListingDropOver"
-              @dragleave="onListingDropLeave"
-              @drop="onListingDrop"
-            >
-              <div class="current-folder-dropzone__inner">
-                <Icon name="folder-open" :size="16" :stroke-width="1.8" />
-                <span>
-                  Drop to move into
-                  <strong>{{ folderTitle || "this folder" }}</strong>
-                </span>
+              <div
+                v-if="currentFolderDropZoneVisible"
+                class="current-folder-dropzone"
+                :class="{
+                  'current-folder-dropzone--active': listingDropActive,
+                }"
+                @dragenter="onListingDropEnter"
+                @dragover="onListingDropOver"
+                @dragleave="onListingDropLeave"
+                @drop="onListingDrop"
+              >
+                <div class="current-folder-dropzone__inner">
+                  <Icon name="folder-open" :size="16" :stroke-width="1.8" />
+                  <span>
+                    Drop to move into
+                    <strong>{{ folderTitle || "this folder" }}</strong>
+                  </span>
+                </div>
               </div>
-            </div>
 
-            <!-- S4-1: items-based context menu. The same `<context-menu>`
+              <!-- S4-1: items-based context menu. The same `<context-menu>`
                  instance serves both right-click on a row (rowMenuItems)
                  and right-click on empty listing space (background-
                  MenuItems) — `onListingContextMenu` decides which to
                  hand it based on event.target. ContextMenu handles
                  keyboard nav, type-ahead, smart positioning. -->
-            <context-menu
-              :show="isContextMenuVisible"
-              :pos="contextMenuPos"
-              :items="contextMenuItems"
-              @hide="hideContextMenu"
-            />
+              <context-menu
+                :show="isContextMenuVisible"
+                :pos="contextMenuPos"
+                :items="contextMenuItems"
+                @hide="hideContextMenu"
+              />
 
-            <input
-              style="display: none"
-              type="file"
-              id="upload-input"
-              @change="uploadInput($event)"
-              multiple
-            />
-            <input
-              style="display: none"
-              type="file"
-              id="upload-folder-input"
-              @change="uploadInput($event)"
-              webkitdirectory
-              multiple
-            />
+              <input
+                style="display: none"
+                type="file"
+                id="upload-input"
+                @change="uploadInput($event)"
+                multiple
+              />
+              <input
+                style="display: none"
+                type="file"
+                id="upload-folder-input"
+                @change="uploadInput($event)"
+                webkitdirectory
+                multiple
+              />
 
-            <div
-              :class="{ active: showBulkPill }"
-              id="multiple-selection"
-              @click.stop
-            >
-              <span class="multiple-selection__count">
-                {{ fileStore.selectedCount }} selected
-              </span>
-
-              <div class="multiple-selection__divider"></div>
-
-              <button
-                v-if="headerButtons.download"
-                @click="download"
-                :title="t('buttons.download')"
+              <div
+                :class="{ active: showBulkPill }"
+                id="multiple-selection"
+                @click.stop
               >
-                <Icon name="download" :size="14" />
-                <span>{{ t("buttons.download") }}</span>
-              </button>
-              <button
-                v-if="headerButtons.copy"
-                @click="layoutStore.showHover('copy')"
-                :title="t('buttons.copyFiles')"
-              >
-                <Icon name="copy" :size="14" />
-                <span>{{ t("buttons.copyFiles") }}</span>
-              </button>
-              <button
-                v-if="headerButtons.move"
-                @click="layoutStore.showHover('move')"
-                :title="t('buttons.moveFiles')"
-              >
-                <Icon name="forward" :size="14" />
-                <span>{{ t("buttons.moveFiles") }}</span>
-              </button>
-              <!-- v1.3 S4-2: Bulk rename pill button. Only renders for
+                <span class="multiple-selection__count">
+                  {{ fileStore.selectedCount }} selected
+                </span>
+
+                <div class="multiple-selection__divider"></div>
+
+                <button
+                  v-if="headerButtons.download"
+                  @click="download"
+                  :title="t('buttons.download')"
+                >
+                  <!-- V3-C #24: colorful action icons on the dark pill (labels
+                       stay white). Bright 300/400 hues read well on the inverse
+                       surface in both themes. -->
+                  <Icon name="download" :size="14" class="text-sky-400" />
+                  <span>{{ t("buttons.download") }}</span>
+                </button>
+                <button
+                  v-if="headerButtons.copy"
+                  @click="layoutStore.showHover('copy')"
+                  :title="t('buttons.copyFiles')"
+                >
+                  <Icon name="copy" :size="14" class="text-teal-300" />
+                  <span>{{ t("buttons.copyFiles") }}</span>
+                </button>
+                <button
+                  v-if="headerButtons.move"
+                  @click="layoutStore.showHover('move')"
+                  :title="t('buttons.moveFiles')"
+                >
+                  <Icon name="forward" :size="14" class="text-indigo-300" />
+                  <span>{{ t("buttons.moveFiles") }}</span>
+                </button>
+                <!-- v1.3 S4-2: Bulk rename pill button. Only renders for
                    multi-select (single-select uses inline rename in
                    ListingItem). Gated on perm.rename. -->
-              <button
-                v-if="
-                  fileStore.selectedCount > 1 && authStore.user?.perm.rename
-                "
-                @click="bulkRename.open"
-                title="Bulk rename"
-              >
-                <Icon name="pencil" :size="14" />
-                <span>Rename</span>
-              </button>
-              <!-- 1.6.0: batch-edit ID3/Vorbis tags across the audio files in
+                <button
+                  v-if="
+                    fileStore.selectedCount > 1 && authStore.user?.perm.rename
+                  "
+                  @click="bulkRename.open"
+                  title="Bulk rename"
+                >
+                  <Icon name="pencil" :size="14" class="text-amber-400" />
+                  <span>Rename</span>
+                </button>
+                <!-- 1.6.0: batch-edit ID3/Vorbis tags across the audio files in
                    the selection. Only fields changed in the editor are applied
                    to all of them. -->
-              <button
-                v-if="canBulkEditTags"
-                @click="layoutStore.showHover('audio-tags')"
-                :title="`Edit tags on ${bulkAudioCount} audio files`"
-              >
-                <Icon name="music" :size="14" />
-                <span>Edit tags</span>
-              </button>
-              <button
-                v-if="headerButtons.delete"
-                @click="layoutStore.showHover('delete')"
-                class="multiple-selection__danger"
-                :title="t('buttons.delete')"
-              >
-                <Icon name="trash-2" :size="14" />
-                <span>{{ t("buttons.delete") }}</span>
-              </button>
+                <button
+                  v-if="canBulkEditTags"
+                  @click="layoutStore.showHover('audio-tags')"
+                  :title="`Edit tags on ${bulkAudioCount} audio files`"
+                >
+                  <Icon name="music" :size="14" class="text-fuchsia-300" />
+                  <span>Edit tags</span>
+                </button>
+                <button
+                  v-if="headerButtons.delete"
+                  @click="layoutStore.showHover('delete')"
+                  class="multiple-selection__danger"
+                  :title="t('buttons.delete')"
+                >
+                  <Icon name="trash-2" :size="14" class="text-rose-400" />
+                  <span>{{ t("buttons.delete") }}</span>
+                </button>
 
-              <div class="multiple-selection__divider"></div>
+                <div class="multiple-selection__divider"></div>
 
-              <button
-                @click="clearSelection"
-                class="multiple-selection__close"
-                :title="t('buttons.clear')"
-                :aria-label="t('buttons.clear')"
-              >
-                <Icon name="x" :size="14" />
-              </button>
+                <button
+                  @click="clearSelection"
+                  class="multiple-selection__close"
+                  :title="t('buttons.clear')"
+                  :aria-label="t('buttons.clear')"
+                >
+                  <Icon name="x" :size="14" />
+                </button>
+              </div>
             </div>
+          </template>
+        </section>
+        <!-- V2-J: directory breadcrumb path — bottom of the primary column,
+             left-aligned, border/background hugging the path text only (no
+             item count). Listing pages only (absent on preview + settings). -->
+        <div class="fb-breadcrumb-bar">
+          <div class="fb-breadcrumb-bar__crumbs">
+            <breadcrumbs base="/files" />
           </div>
-        </template>
-      </section>
+        </div>
+      </div>
       <InfoPane />
     </div>
 
@@ -849,11 +829,13 @@ import { useTagsStore } from "@/stores/tags";
 import { useFavorites } from "@/composables/useFavorites";
 import { useRootLabel } from "@/composables/useRootLabel";
 import { usePreferences } from "@/composables/usePreferences";
+import { useFolderScrollMemory } from "@/composables/useFolderScrollMemory";
 import { useTagPicker } from "@/composables/useTagPicker";
 import { useFavoriteTitleDialog } from "@/composables/useFavoriteTitleDialog";
 import { useBulkRename } from "@/composables/useBulkRename";
 import { useDragSelect } from "@/composables/useDragSelect";
 import { useListingGrid } from "@/composables/useListingGrid";
+import { useListingNavigation } from "@/composables/useListingNavigation";
 import { useTouchDevice } from "@/composables/useTouchDevice";
 import { usePullToRefresh } from "@/composables/usePullToRefresh";
 import { copy } from "@/utils/clipboard";
@@ -863,6 +845,8 @@ import { users, files as api } from "@/api";
 import { enableExec, unzipEnabled } from "@/utils/constants";
 import { isExtractable } from "@/utils/archive";
 import { isAudioTaggable } from "@/utils/audio";
+import { TypeaheadSession } from "@/utils/typeahead";
+import { moveDragBadge, endDragBadge } from "@/utils/dragCopyMoveBadge";
 import * as upload from "@/utils/upload";
 import { throttle } from "lodash-es";
 import { Base64 } from "js-base64";
@@ -871,7 +855,7 @@ import dayjs from "dayjs";
 import { RecycleScroller } from "vue-virtual-scroller";
 import "vue-virtual-scroller/dist/vue-virtual-scroller.css";
 
-import HeaderBar from "@/components/header/HeaderBar.vue";
+import { useMobileNav } from "@/composables/useMobileNav";
 import Breadcrumbs from "@/components/Breadcrumbs.vue";
 import Action from "@/components/header/Action.vue";
 import Search from "@/components/Search.vue";
@@ -890,7 +874,6 @@ import SharePanel from "@/components/files/SharePanel.vue";
 import { useToast } from "vue-toastification";
 import { usePendingDelete } from "@/composables/usePendingDelete";
 import ContextMenu, { type MenuItem } from "@/components/ContextMenu.vue";
-import { useShortcuts } from "@/composables/useShortcuts";
 import { useDropTarget } from "@/composables/useDropTarget";
 import { useTouchDrag } from "@/composables/useTouchDrag";
 import {
@@ -922,6 +905,8 @@ const fileStore = useFileStore();
 const layoutStore = useLayoutStore();
 const tagsStore = useTagsStore();
 const prefs = usePreferences();
+// V2-J: the mobile hamburger lives in the hero now (no top header bar).
+const mobileNav = useMobileNav();
 // S4-1: shared open-state for the TagPickerSheet so the row context
 // menu can open it from outside InfoPane.
 const tagPicker = useTagPicker();
@@ -953,79 +938,10 @@ watch(
 
 const { req } = storeToRefs(fileStore);
 
-// ── Stage 11g: view-scoped keyboard shortcuts ────────────────────────
-// Registered through the global dispatcher so they show up in the
-// `?` cheat sheet automatically. They unregister when this component
-// unmounts (i.e. when the user leaves the file listing for a viewer or
-// the settings page), which means they only fire where they make sense.
-const { register: registerShortcut } = useShortcuts();
-registerShortcut({
-  id: "files:view-list",
-  keys: "1",
-  label: "List view",
-  group: "view",
-  handler: () => setView("list"),
-});
-registerShortcut({
-  id: "files:view-grid",
-  keys: "2",
-  label: "Grid view",
-  group: "view",
-  handler: () => setView("mosaic"),
-});
-registerShortcut({
-  id: "files:view-gallery",
-  keys: "3",
-  label: "Gallery view",
-  group: "view",
-  handler: () => setView("mosaic gallery"),
-});
-registerShortcut({
-  id: "files:new-folder",
-  keys: "n",
-  label: "New folder",
-  group: "files",
-  handler: () => {
-    if (authStore.user?.perm.create) layoutStore.showHover("newDir");
-  },
-});
-registerShortcut({
-  id: "files:upload",
-  keys: "u",
-  label: "Upload",
-  group: "files",
-  handler: () => {
-    if (authStore.user?.perm.create) layoutStore.showHover("upload");
-  },
-});
-registerShortcut({
-  // Auto-appears in the `?` cheat-sheet via the registry. Handler reuses
-  // the same `showHover("extract")` intercept the menus + palette use,
-  // so any guard regressions only have to be fixed in one place.
-  id: "files:extract",
-  keys: "e",
-  label: "Extract zip",
-  group: "files",
-  handler: () => {
-    if (!unzipEnabled) return;
-    if (!authStore.user?.perm.create) return;
-    if (fileStore.selectedCount !== 1) return;
-    const item = fileStore.req?.items[fileStore.selected[0]];
-    if (!item || !isExtractable(item.name)) return;
-    layoutStore.showHover("extract");
-  },
-});
-// G3: `r` to refresh the current folder. Same action that the ⋯ menu's
-// Refresh entry triggers — handy when an external process (rsync, an
-// `arr` app) drops files in but the listing is stale. Dispatcher skips
-// when typing in inputs, so `r` in the rename field is safe.
-registerShortcut({
-  id: "files:refresh",
-  keys: "r",
-  label: "Refresh folder",
-  group: "files",
-  handler: () => refresh(),
-});
+// WS10: the bare-key view/action shortcuts (1 / 2 / 3 / n / u / e / r) were
+// removed. Those actions now live in the command palette (⌘K) and the ⋯ menu.
+// The listing keeps only the Finder-style navigation keys, handled directly in
+// `keyEvent` below (arrows, Home/End, type-ahead, Enter, ⌘A, Esc).
 
 const route = useRoute();
 onBeforeRouteUpdate(() => {
@@ -1060,18 +976,7 @@ const listScroller = ref<{ scrollToItem: (index: number) => void } | null>(
   null
 );
 
-// ── Preserve scroll position across same-directory reloads ──────────────
-// When an action completes (e.g. an upload into the current folder), the store
-// flips `reload` → Files.vue re-fetches → `layoutStore.loading` swaps the rows
-// for the skeleton, which shrinks the scroll container so the browser zeroes
-// scrollTop. We snapshot the position just before that swap (the loading
-// watcher runs pre-render, while the rows are still mounted) and restore it
-// once the rows are back — but ONLY when the directory is unchanged. On a real
-// navigation to a different folder the paths differ, so we (correctly) leave
-// the user at the top.
-let savedScrollTop = 0;
-let savedScrollPath: string | null = null;
-
+// ── Remember scroll position across navigations (per-user pref) ─────────
 // The scrolling element differs by view: the list view uses RecycleScroller's
 // own scroller; grid/gallery scroll `scrollSection`. Capture/restore both —
 // writing scrollTop to the non-scrolling one is a harmless no-op.
@@ -1083,31 +988,28 @@ const scrollEls = (): HTMLElement[] => {
   return els;
 };
 
+// Per-user "remember position when navigating back" preference (default on).
+// When enabled, returning to a folder you were recently in — even across a
+// sideways jump to an unrelated directory — restores its scroll position, and a
+// same-folder reload (e.g. after an upload finishes) keeps your place instead
+// of snapping to the top. A per-folder memory (not a single slot) so either
+// side of an A → B → A round trip restores. We record the leaving folder's
+// position pre-render (rows still mounted) and restore it on arrival (the `req`
+// watcher below).
+const rememberParentScroll = computed<boolean>(() =>
+  prefs.get<boolean>("nav.rememberParentScroll", true)
+);
+const folderScroll = useFolderScrollMemory(() => rememberParentScroll.value);
+
 watch(
   () => layoutStore.loading,
   (loading) => {
-    if (loading) {
-      // Pre-render: rows still mounted, scrollTop still valid.
-      savedScrollPath = fileStore.req?.path ?? null;
-      savedScrollTop = Math.max(0, ...scrollEls().map((e) => e.scrollTop));
-    } else if (
-      savedScrollTop > 0 &&
-      fileStore.req?.path != null &&
-      fileStore.req.path === savedScrollPath
-    ) {
-      // Same directory came back (a refresh, not a navigation) — restore.
-      const top = savedScrollTop;
-      void nextTick(() => {
-        requestAnimationFrame(() => {
-          for (const el of scrollEls()) el.scrollTop = top;
-        });
-      });
-      savedScrollTop = 0;
-      savedScrollPath = null;
-    } else {
-      savedScrollTop = 0;
-      savedScrollPath = null;
-    }
+    // A listing fetch is starting → snapshot the folder we're leaving while its
+    // rows are still mounted (so scrollTop is valid). This also captures the
+    // position before a same-folder reload. Restoration happens on arrival.
+    if (!loading) return;
+    const top = Math.max(0, ...scrollEls().map((e) => e.scrollTop));
+    folderScroll.record(fileStore.req?.path ?? null, top);
   }
 );
 
@@ -1135,6 +1037,85 @@ const listingGrid = useListingGrid({
 });
 const { dirsWin, filesWin } = listingGrid;
 const scheduleGridUpdate = throttle(() => listingGrid.update(), 60);
+
+// ── Finder-style keyboard navigation (arrows / type-ahead / Enter). Wired into
+//    `keyEvent` below. WS10 removed Quick Look (Space) entirely. ───────────────
+
+// Full visual order (folders then files). Mirrors what the user sees; each item
+// carries its `req.items` index, which is what `selected`/`activeIndex` store.
+const orderedItems = computed<ResourceItem[]>(() => [
+  ...items.value.dirs,
+  ...items.value.files,
+]);
+
+// Scroll the row/tile with the given req-index into view across all three
+// virtualized views (list recycler / windowed grid + gallery).
+const scrollActiveIntoView = (reqIndex: number) => {
+  void nextTick(() => {
+    const sc = scrollSection.value;
+    if (!sc) return;
+    const sel = `[data-index="${reqIndex}"]`;
+    const found = sc.querySelector(sel) as HTMLElement | null;
+    if (found) {
+      found.scrollIntoView({ block: "nearest" });
+      return;
+    }
+    if (viewMode.value === "list") {
+      const pos = listRows.value.findIndex((r) => r.item?.index === reqIndex);
+      if (pos >= 0) listScroller.value?.scrollToItem(pos);
+      return;
+    }
+    // Grid/gallery target windowed-out of the DOM: jump proportionally, then
+    // settle precisely once the freshly-rendered tile exists.
+    const order = orderedItems.value;
+    const vpos = order.findIndex((it) => it.index === reqIndex);
+    if (vpos < 0) return;
+    const frac = order.length > 1 ? vpos / (order.length - 1) : 0;
+    sc.scrollTop = frac * Math.max(0, sc.scrollHeight - sc.clientHeight);
+    requestAnimationFrame(() => {
+      (sc.querySelector(sel) as HTMLElement | null)?.scrollIntoView({
+        block: "nearest",
+      });
+    });
+  });
+};
+
+const listingNav = useListingNavigation({
+  ordered: () => orderedItems.value,
+  columnsFor: (it) =>
+    it.isDir ? listingGrid.dirsCols.value : listingGrid.filesCols.value,
+  grid: () => viewMode.value !== "list",
+  reveal: scrollActiveIntoView,
+});
+
+// Enter → open the focused item (folder navigates in, file opens its preview).
+// Falls back to the first selected item so Enter works after a plain click too.
+const openActiveItem = () => {
+  let idx = fileStore.activeIndex;
+  if (idx < 0 && fileStore.selected.length > 0) idx = fileStore.selected[0];
+  const it = idx >= 0 ? fileStore.req?.items[idx] : null;
+  if (it) void router.push({ path: it.url });
+};
+
+// Type-ahead select: printable keys jump the selection to a matching name.
+// Tapping one letter repeatedly cycles through same-prefixed siblings; mixing
+// letters builds a prefix that refines in place; the session resets after a
+// short idle. All the matching/cycle logic lives in (and is unit-tested via)
+// utils/typeahead — a timestamp-guarded session, so a missed timer can never
+// silently reset the prefix mid-typing.
+const typeahead = new TypeaheadSession();
+const typeaheadPush = (ch: string) => {
+  const matchIndex = typeahead.push(
+    ch,
+    orderedItems.value,
+    fileStore.activeIndex
+  );
+  if (matchIndex < 0) return;
+  fileStore.selected = [matchIndex];
+  fileStore.activeIndex = matchIndex;
+  fileStore.anchorIndex = matchIndex;
+  scrollActiveIntoView(matchIndex);
+};
 
 // ── S4-3 drag-select lasso (grid + gallery only) ───────────────────
 // Rubber-band selection bound to #listing's @mousedown. `enabled`
@@ -1790,7 +1771,27 @@ const isMobile = computed(() => {
 });
 
 watch(req, () => {
+  // New folder data → abandon any in-progress type-ahead prefix.
+  typeahead.reset();
   nextTick(() => {
+    // "Remember position" (pref): if we have a remembered scroll position for
+    // the folder we just arrived at (a return visit, or a same-folder reload),
+    // restore it — this supersedes the centering reveal below. Null otherwise.
+    const restoreTop = folderScroll.recall(fileStore.req?.path ?? null);
+    if (restoreTop !== null) {
+      // Grid/gallery: measure first so tile heights (and thus the pixel
+      // offset) are valid before we set scrollTop.
+      if (!isListVirtual.value) {
+        listingGrid.measure();
+        listingGrid.update();
+      }
+      requestAnimationFrame(() => {
+        for (const el of scrollEls()) el.scrollTop = restoreTop;
+        if (!isListVirtual.value) listingGrid.update();
+      });
+      return;
+    }
+
     // S6-1: the list view virtualizes, so there's no window to fill —
     // just scroll a previously-opened item back into view if any.
     if (isListVirtual.value) {
@@ -1844,9 +1845,17 @@ onMounted(() => {
 
   if (!authStore.user?.perm.create) return;
   document.addEventListener("dragover", preventDefault);
+  document.addEventListener("dragover", onDragScrollOver);
   document.addEventListener("dragenter", dragEnter);
   document.addEventListener("dragleave", dragLeave);
   document.addEventListener("drop", drop);
+  document.addEventListener("drop", stopDragScroll);
+  document.addEventListener("dragend", stopDragScroll);
+  // Safety net for the Copy/Move badge: the source row's dragend normally
+  // tears it down, but spring-load navigation can unmount that row mid-drag,
+  // so end it at the document level too (idempotent).
+  document.addEventListener("drop", endDragBadge);
+  document.addEventListener("dragend", endDragBadge);
 });
 
 onBeforeUnmount(() => {
@@ -1862,9 +1871,16 @@ onBeforeUnmount(() => {
 
   if (authStore.user && !authStore.user?.perm.create) return;
   document.removeEventListener("dragover", preventDefault);
+  document.removeEventListener("dragover", onDragScrollOver);
   document.removeEventListener("dragenter", dragEnter);
   document.removeEventListener("dragleave", dragLeave);
   document.removeEventListener("drop", drop);
+  document.removeEventListener("drop", stopDragScroll);
+  document.removeEventListener("dragend", stopDragScroll);
+  document.removeEventListener("drop", endDragBadge);
+  document.removeEventListener("dragend", endDragBadge);
+  stopDragScroll();
+  endDragBadge();
 });
 
 const base64 = (name: string) => Base64.encodeURI(name);
@@ -1876,41 +1892,84 @@ const keyEvent = (event: KeyboardEvent) => {
   }
 
   if (event.key === "Escape") {
-    // Reset files selection.
+    // Reset files selection + keyboard cursor.
     fileStore.selected = [];
+    fileStore.activeIndex = -1;
+    fileStore.anchorIndex = -1;
+    typeahead.reset();
   }
 
-  // v1.3 S4-5: Delete / Backspace remove the current selection.
-  //   • Backspace is the macOS Finder convention; aliased to Delete.
-  //   • bare Delete / Backspace  → ConfirmDialog (the default safe path)
-  //   • Shift + Delete/Backspace → skip the dialog, straight to the
-  //     optimistic delete + 10s undo toast (power-user escape hatch).
-  //   • Cmd/Ctrl + Delete        → same as bare Delete (confirm); this
-  //     branch sits above the modifier guard below so it still fires.
-  // Guarded against text-entry targets: Backspace is heavily used while
-  // typing (search box, inline rename, bulk-rename inputs), and without
-  // this check it would silently delete the selected files instead.
-  if (event.key === "Delete" || event.key === "Backspace") {
-    const t = event.target as HTMLElement | null;
-    const tg = t?.tagName?.toLowerCase();
-    if (tg === "input" || tg === "textarea" || t?.isContentEditable) {
-      return;
+  // ── Finder-style keyboard navigation (arrows / Home / End / Enter /
+  //    type-ahead). WS10 removed the bare-key Delete/F2/Space actions + the
+  //    global dispatcher shortcuts; these navigation keys are the only ones the
+  //    listing still owns. Non-modifier keys, handled BEFORE the ctrl/meta
+  //    guard below, and skipped while typing in a field. ────────────────────
+  {
+    const navTarget = event.target as HTMLElement | null;
+    const navTag = navTarget?.tagName?.toLowerCase();
+    const typing =
+      navTag === "input" ||
+      navTag === "textarea" ||
+      navTarget?.isContentEditable === true;
+    const noChord = !event.metaKey && !event.ctrlKey && !event.altKey;
+    if (!typing && noChord) {
+      switch (event.key) {
+        case "ArrowDown":
+          event.preventDefault();
+          listingNav.move("down", event.shiftKey);
+          return;
+        case "ArrowUp":
+          event.preventDefault();
+          listingNav.move("up", event.shiftKey);
+          return;
+        case "ArrowRight":
+          event.preventDefault();
+          listingNav.move("right", event.shiftKey);
+          return;
+        case "ArrowLeft":
+          event.preventDefault();
+          listingNav.move("left", event.shiftKey);
+          return;
+        case "Home":
+          event.preventDefault();
+          listingNav.move("home", event.shiftKey);
+          return;
+        case "End":
+          event.preventDefault();
+          listingNav.move("end", event.shiftKey);
+          return;
+        case "Enter":
+          event.preventDefault();
+          openActiveItem();
+          return;
+        case "/":
+          // V2 #3: "/" reloads the current folder (was the "R" shortcut). Sits
+          // before the type-ahead default so it isn't swallowed as a search key.
+          event.preventDefault();
+          fileStore.reload = true;
+          return;
+        default:
+          // Type-ahead — printable single chars only, and not when the global
+          // shortcut dispatcher already claimed the key (it ran first and
+          // called preventDefault()).
+          //
+          // V3-C #25: a space joins the prefix ONLY mid-session (a name like
+          // "My Doc" needs it), never as the first key — a leading space
+          // matches nothing and Space owns no other bare-key action here
+          // (WS10 removed Quick Look). `/\S/` still admits every printable
+          // non-space char as a session starter.
+          if (
+            !event.defaultPrevented &&
+            event.key.length === 1 &&
+            (/\S/.test(event.key) ||
+              (event.key === " " && typeahead.isActive()))
+          ) {
+            event.preventDefault();
+            typeaheadPush(event.key);
+            return;
+          }
+      }
     }
-    if (!authStore.user?.perm.delete || fileStore.selectedCount === 0) return;
-    event.preventDefault();
-    if (event.shiftKey) {
-      triggerImmediateDelete();
-    } else {
-      layoutStore.showHover("delete");
-    }
-    return;
-  }
-
-  if (event.key === "F2") {
-    if (!authStore.user?.perm.rename || fileStore.selectedCount !== 1) return;
-
-    // Show rename prompt.
-    layoutStore.showHover("rename");
   }
 
   // Ctrl is pressed
@@ -1968,6 +2027,80 @@ const keyEvent = (event: KeyboardEvent) => {
 const preventDefault = (event: Event) => {
   // Wrapper around prevent default.
   event.preventDefault();
+  // Trail the live Copy/Move badge with the cursor during a listing drag
+  // (the badge element itself is created by the source row's dragstart). The
+  // drop's copy/move decision reads the same ctrl/meta, so they stay in sync.
+  if (fileStore.draggedItems.length > 0) {
+    const e = event as DragEvent;
+    moveDragBadge(e.ctrlKey || e.metaKey, e.clientX, e.clientY);
+  }
+};
+
+// HTML5 (mouse) drag edge auto-scroll. Touch drag already auto-scrolls via
+// useTouchDrag; this brings the same behavior to mouse dragging so that
+// dragging a row (or OS files) toward the top/bottom edge gently scrolls the
+// listing — making deep drops reachable without letting go. Targets the real
+// scroll container (the recycler in list view, the <section> in grid/gallery)
+// via ptrScrollEl, matching the touch path. Speed is intentionally gentler
+// than touch ("not too quickly").
+const DRAG_EDGE = 56; // px from an edge where auto-scroll engages
+const DRAG_EDGE_SPEED = 8; // max px/frame (vs touch's 12)
+let dragScrollY = 0; // latest pointer Y during a drag
+let dragScrollDir = 0; // -1 = up, +1 = down, 0 = idle
+let dragScrollRaf: number | null = null;
+
+const dragScrollTick = () => {
+  dragScrollRaf = null;
+  const el = ptrScrollEl.value;
+  if (!el || dragScrollDir === 0) return;
+  const rect = el.getBoundingClientRect();
+  // How far the pointer is *into* the edge band → proportional speed ramp,
+  // so it eases in near the boundary and tops out at DRAG_EDGE_SPEED.
+  // Clamp the "into the band" depth to DRAG_EDGE so the speed never exceeds
+  // DRAG_EDGE_SPEED — the pointer can sit *past* the edge (over the header
+  // above the list / a bar below it), which would otherwise ramp dy beyond the
+  // cap and scroll faster than the intended gentle pace.
+  let dy = 0;
+  if (dragScrollDir < 0) {
+    const into = Math.min(DRAG_EDGE, DRAG_EDGE - (dragScrollY - rect.top));
+    if (into > 0) dy = -Math.ceil((into / DRAG_EDGE) * DRAG_EDGE_SPEED);
+  } else {
+    const into = Math.min(DRAG_EDGE, DRAG_EDGE - (rect.bottom - dragScrollY));
+    if (into > 0) dy = Math.ceil((into / DRAG_EDGE) * DRAG_EDGE_SPEED);
+  }
+  if (dy !== 0) {
+    el.scrollTop += dy;
+    dragScrollRaf = requestAnimationFrame(dragScrollTick);
+  } else {
+    dragScrollDir = 0;
+  }
+};
+
+const onDragScrollOver = (event: DragEvent) => {
+  const el = ptrScrollEl.value;
+  if (!el) return;
+  const rect = el.getBoundingClientRect();
+  dragScrollY = event.clientY;
+  // Only engage when the pointer is horizontally over the scroll area, so a
+  // drag across the sidebar/info-pane doesn't scroll the listing.
+  const insideX = event.clientX >= rect.left && event.clientX <= rect.right;
+  let dir = 0;
+  if (insideX) {
+    if (dragScrollY < rect.top + DRAG_EDGE) dir = -1;
+    else if (dragScrollY > rect.bottom - DRAG_EDGE) dir = 1;
+  }
+  dragScrollDir = dir;
+  if (dir !== 0 && dragScrollRaf === null) {
+    dragScrollRaf = requestAnimationFrame(dragScrollTick);
+  }
+};
+
+const stopDragScroll = () => {
+  dragScrollDir = 0;
+  if (dragScrollRaf !== null) {
+    cancelAnimationFrame(dragScrollRaf);
+    dragScrollRaf = null;
+  }
 };
 
 const copyCut = (event: Event | KeyboardEvent): void => {
@@ -2113,6 +2246,14 @@ const dragEnter = () => {
   const items = document.getElementsByClassName("item");
 
   Array.from(items).forEach((file: Element) => {
+    // V3-B #4: never re-dim the active drop target. dragenter fires on every
+    // child element the cursor crosses, so this runs repeatedly during a drag.
+    // ListingItem.enterIntoZone set the hovered folder to opacity:1 and its
+    // `inIntoZone` guard won't re-assert — so re-dimming it here is exactly
+    // what made the highlighted folder flicker bright→dim. Skipping rows that
+    // carry `item--drop-into` lets the highlight and the spring-load ring
+    // coexist, while rows virtualized in mid-drag still get dimmed.
+    if (file.classList.contains("item--drop-into")) return;
     (file as HTMLElement).style.opacity = "0.5";
   });
 };
@@ -2122,6 +2263,10 @@ const dragLeave = () => {
 
   if (dragCounter.value == 0) {
     resetOpacity();
+    // The drag fully left the document. An OS-file drag that exits the window
+    // without dropping fires neither `drop` nor `dragend` on us, so this is the
+    // only signal to halt the edge auto-scroll rAF (otherwise it busy-loops).
+    stopDragScroll();
   }
 };
 
@@ -2567,17 +2712,6 @@ const collectSelectedDeleteItems = (): { url: string; name: string }[] => {
     .map((i) => ({ url: i.url, name: i.name }));
 };
 
-// v1.3 S4-5: Shift+Delete / Shift+Backspace bypass the ConfirmDialog
-// and go straight to the optimistic delete + 10s undo flow. The undo
-// toast IS the safety net here — confirmation is the cost a power user
-// opts out of. Still listing-scoped + selection-gated.
-const triggerImmediateDelete = () => {
-  if (!fileStore.isListing) return;
-  const items = collectSelectedDeleteItems();
-  if (items.length === 0) return;
-  startUndoDelete(items);
-};
-
 // ── Stage 8: Move / Copy / Share slide-overs ──────────────────────────
 // Same intercept pattern as delete: when one of these prompts fires from
 // the listing context, snapshot what we need, dismiss the prompt, and
@@ -2774,7 +2908,22 @@ const sectionMoreItems = computed<MenuItem[]>(() => {
           action: () => favTitleDialog.open(currentFolderPath.value),
         }
       : null,
-    { label: "Refresh", icon: "rotate-ccw", action: refresh, kbd: "R" },
+    // V2-J: Share + Download moved off the hero cluster into ⋯ to declutter.
+    headerButtons.value.share
+      ? {
+          label: t("buttons.share"),
+          icon: "share",
+          action: () => layoutStore.showHover("share"),
+        }
+      : null,
+    headerButtons.value.download
+      ? {
+          label: t("buttons.download"),
+          icon: "download",
+          action: download,
+        }
+      : null,
+    { label: "Refresh", icon: "rotate-ccw", action: refresh, kbd: "/" },
     {
       label: t("buttons.info"),
       icon: "info",
@@ -2899,6 +3048,13 @@ const sortMenuShow = ref(false);
 const sortMenuPos = ref<{ x: number; y: number }>({ x: 0, y: 0 });
 
 const openSortMenu = (event: MouseEvent) => {
+  // V3-C #7: clicking the trigger again closes an open menu (toggle) instead of
+  // forcing a click outside. `.stop` on the trigger hides this click from
+  // ContextMenu's outside-click listener, so we have to toggle explicitly.
+  if (sortMenuShow.value) {
+    sortMenuShow.value = false;
+    return;
+  }
   const target = event.currentTarget as HTMLElement;
   const rect = target.getBoundingClientRect();
   // Anchor the popover to the bottom-left corner of the button so it
@@ -3449,7 +3605,15 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
 </script>
 <style scoped>
 #listing {
-  min-height: calc(100vh - 8rem);
+  /* 2.1 #1: fill the scroll section (now min-h-0-bounded) as a flex child,
+     instead of a wrong `100vh - 8rem` constant. That constant predated the
+     bottom breadcrumb bar and oversized the listing so its last rows ran under
+     the bar; flex-fill leaves only the intended ~5px gap above the bar and lets
+     the section's overflow scroll engage. Grid/gallery grow with content and
+     the section scrolls; list view's RecycleScroller (.listing--virtual) keeps
+     its own identical flex sizing below. */
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 /* Colorful download button in the folder header toolbar — blue-tinted so the
@@ -3483,6 +3647,15 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
      can actually shrink to its flex track and hand the recycler a
      bounded height to virtualize against. */
   min-height: 0;
+  /* The global `#listing { padding: 0 1rem 1rem }` adds a 1rem bottom pad that
+     suits grid/gallery (a margin under the last tile). But here #listing is a
+     flex COLUMN whose RecycleScroller child flex-fills — so that bottom pad
+     lands BELOW the scroller, shrinking its viewport and lifting the clip point
+     ~16px off the breadcrumb (a persistent dead strip above the bar). Zero it
+     so the scroller reaches the section's bottom edge; the breadcrumb bar's own
+     5px top padding supplies the intended slim gap. Side padding is untouched
+     (rows keep their 1rem inset). */
+  padding-bottom: 0;
 }
 
 .listing-virtual {
@@ -3672,6 +3845,76 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
 .section-title--drop {
   background: var(--color-accent-soft, rgba(94, 106, 210, 0.08));
   box-shadow: inset 0 0 0 2px var(--color-accent, #5e6ad2);
+}
+
+/* ── V2-J unified hero (title + control cluster) ─────────────────────────
+   Replaces the dissolved top header bar. No border/box — it flows straight
+   off the top of the primary column so the sidebar → primary → details rail
+   read as one continuous surface. */
+.fb-hero {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 20px 12px;
+  flex-shrink: 0;
+}
+@media (max-width: 768px) {
+  .fb-hero {
+    padding: 12px 16px 10px;
+    flex-wrap: wrap;
+  }
+}
+.fb-hero__menu {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-ink-2, #52525b);
+  flex-shrink: 0;
+  margin-left: -4px;
+  transition: background-color var(--dur-base) ease;
+}
+.fb-hero__menu:hover {
+  background: var(--color-hover, rgba(24, 24, 27, 0.045));
+}
+/* `.section-title` already supplies the drop-target radius/transition; the
+   hero title just needs to flex + truncate. */
+.fb-hero__title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.fb-hero__cluster {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* ── V2-J bottom breadcrumb bar (listing pages only) ─────────────────────
+   The chrome (border + tint) hugs the path text only; the rest of the strip
+   stays transparent so it doesn't read as a boxed footer. */
+.fb-breadcrumb-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  /* V3-C #8 (revised): keep the original ~10px distance from the bottom of the
+     screen, and make the gap ABOVE the bar — between the end of the listing
+     area and the crumbs pill — a slim ~5px. */
+  padding: 5px 16px 10px;
+  min-width: 0;
+}
+.fb-breadcrumb-bar__crumbs {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  padding: 4px 10px;
+  border: 1px solid var(--color-line, #ececec);
+  border-radius: 8px;
+  background: var(--color-surface, #fff);
 }
 
 /* Favorite display-name shown beside the real folder name in the header,

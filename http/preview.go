@@ -83,6 +83,11 @@ func previewHandler(imgSvc ImgService, fileCache FileCache, enableThumbnails, re
 			if strings.EqualFold(file.Extension, ".epub") {
 				return handleEpubPreview(w, r, imgSvc, fileCache, file, previewSize, enableThumbnails)
 			}
+			// V2 #6: .cbr (RAR) comic cover = its first image. .cbz is
+			// intentionally excluded (per the locked decision).
+			if strings.EqualFold(file.Extension, ".cbr") {
+				return handleComicPreview(w, r, imgSvc, fileCache, file, previewSize, enableThumbnails, d.server.MaxZipFileEntries)
+			}
 			return http.StatusNotImplemented, fmt.Errorf("can't create preview for %s type", file.Type)
 		}
 	})

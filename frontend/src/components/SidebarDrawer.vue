@@ -338,10 +338,14 @@ const fetchUsage = async () => {
     usageAbort?.abort();
     usageAbort = new AbortController();
     const u = await api.usage(path, usageAbort.signal);
+    // Guard against total=0 (quota unavailable / network mount) → NaN%.
+    const used = Number(u.used) || 0;
+    const total = Number(u.total) || 0;
+    const pct = total > 0 ? Math.round((used / total) * 100) : 0;
     Object.assign(usage, {
-      used: prettyBytes(u.used, { binary: true }),
-      total: prettyBytes(u.total, { binary: true }),
-      usedPercentage: Math.round((u.used / u.total) * 100),
+      used: prettyBytes(used, { binary: true }),
+      total: prettyBytes(total, { binary: true }),
+      usedPercentage: Math.min(100, Math.max(0, pct)),
     });
   } catch {
     /* ignored — keep last known values */

@@ -4,7 +4,7 @@
 
 # filebrowser pretty
 
-[![Version](https://img.shields.io/badge/version-1.6.4-5e6ad2?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-1.7.0-5e6ad2?style=flat-square)](#)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
 [![Vue](https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js&logoColor=white)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
@@ -179,7 +179,7 @@ Or skip Docker entirely and run the binary directly: `./filebrowser` — opens o
 | PDF | **pdfjs-dist 6** |
 | Video | **video.js 8** + **ffmpeg** thumbnails |
 | Audio metadata (read) | **music-metadata 11** |
-| Audio tags (read/write) | **id3v2 + go-flac** (MP3 / FLAC) |
+| Audio tags (read/write) | **id3v2 + go-flac** (MP3 / FLAC) · **TagLib**/Wasm (M4A / OGG) |
 | Archives | **mholt/archives** (zip / 7z / rar / tar) |
 | EPUB | **vue-reader + epub.js** |
 | Code / text edit | **native `<textarea>`** |
@@ -196,7 +196,7 @@ This project began as a fork of [filebrowser/filebrowser](https://github.com/fil
 
 ## License
 
-Apache License 2.0. See [LICENSE](LICENSE).
+Apache License 2.0. See [LICENSE](LICENSE). Third-party components bundled in the binary — notably **TagLib** (LGPL-2.1), used for M4A / OGG tag editing — are listed in [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 
 ---
 

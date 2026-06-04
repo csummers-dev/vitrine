@@ -37,9 +37,10 @@ defineProps<{
 
 <style scoped>
 .settings-page {
-  max-width: 720px;
+  /* V3-A #3: wider content so settings use the reclaimed header space. */
+  max-width: 960px;
   margin: 0 auto;
-  padding: 32px 32px 80px;
+  padding: 28px 32px 80px;
 }
 
 .settings-page__header {

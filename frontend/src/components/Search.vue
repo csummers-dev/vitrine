@@ -9,9 +9,7 @@
       :aria-label="$t('search.search')"
     >
       <Icon name="search" :size="14" />
-      <span class="search-trigger__label"
-        >Search files, folders, or actions…</span
-      >
+      <span class="search-trigger__label">Search</span>
       <kbd class="search-kbd">⌘K</kbd>
     </button>
 

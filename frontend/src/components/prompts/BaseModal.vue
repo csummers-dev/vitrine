@@ -1,9 +1,18 @@
 <template>
-  <div id="modal-background" @click="backgroundClick">
-    <div ref="modalContainer">
-      <slot></slot>
+  <!-- Teleport to <body> so the modal escapes the .app-shell stacking
+       context (it sets `isolation: isolate`). Without this, a modal rendered
+       inside the shell — even at z-index 10000 — is trapped below anything
+       teleported to <body> at a lower z-index, e.g. an open SlideOver scrim
+       (z-index 1001). That made prompts shown over a slide-over (like the
+       move/copy conflict dialog) paint behind the blurred scrim and become
+       un-clickable. At body level, z-index 10000 wins as intended. -->
+  <Teleport to="body">
+    <div id="modal-background" @click="backgroundClick">
+      <div ref="modalContainer">
+        <slot></slot>
+      </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">

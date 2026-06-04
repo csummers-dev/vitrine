@@ -123,7 +123,13 @@
       <div
         v-if="canMove || canCopy || !item.isDir"
         class="pb-4 grid gap-1.5"
-        :class="!item.isDir ? 'px-4 grid-cols-3' : 'grid-cols-2 w-2/3 mx-auto'"
+        :class="
+          !item.isDir
+            ? canEditTags
+              ? 'px-4 grid-cols-4'
+              : 'px-4 grid-cols-3'
+            : 'grid-cols-2 w-2/3 mx-auto'
+        "
       >
         <button
           v-if="canMove"
@@ -142,6 +148,17 @@
         >
           <Icon name="copy" :size="14" />
           <span>Copy</span>
+        </button>
+        <!-- V2 #5: edit-tags joins the action row (between Copy and Preview),
+             mirroring the preview details panel, instead of a separate button. -->
+        <button
+          v-if="canEditTags"
+          @click="action('audio-tags')"
+          class="info-action info-action--tags"
+          title="Edit tags"
+        >
+          <Icon name="music" :size="14" />
+          <span>Edit tags</span>
         </button>
         <button
           v-if="!item.isDir && canExtract"
@@ -188,6 +205,29 @@
             <dt class="text-ink-3">Extension</dt>
             <dd class="text-ink-1 font-mono text-[11px]">
               {{ item.extension }}
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <!-- WS7 #8: read-only audio tags for a single selected music file.
+           Non-empty fields only; refreshes after an edit (watch keys on
+           modified). Distinct from the v1.3 user "Tags" section below. -->
+      <div v-if="audioTagRows.length > 0" class="px-4 py-3">
+        <div
+          class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] mb-2"
+        >
+          Audio tags
+        </div>
+        <dl class="text-[12px] space-y-1.5">
+          <div
+            v-for="row in audioTagRows"
+            :key="row.label"
+            class="flex justify-between gap-3"
+          >
+            <dt class="text-ink-3 shrink-0">{{ row.label }}</dt>
+            <dd class="text-ink-1 text-right break-words min-w-0">
+              {{ row.value }}
             </dd>
           </div>
         </dl>
@@ -369,7 +409,8 @@ import {
   unzipEnabled,
 } from "@/utils/constants";
 import { isExtractable } from "@/utils/archive";
-import { files as api } from "@/api";
+import { isAudioTaggable } from "@/utils/audio";
+import { files as api, audiotags as audioTagsApi } from "@/api";
 import type { Book } from "epubjs";
 import dayjs from "dayjs";
 import { computed, inject, onMounted, onUnmounted, ref, watch } from "vue";
@@ -503,10 +544,13 @@ const selectionSizeLabel = computed(() => {
 
 // Tag list for the currently-selected item. Reads from the same
 // byPath cache the listing rows use → no extra HTTP, and the chip
-// set stays consistent between the row + the info pane.
+// set stays consistent between the row + the info pane. V2 #23: ordered
+// alphabetically by name, matching the left-to-right order of the row dots.
 const itemTags = computed<Tag[]>(() => {
   if (!item.value) return [];
-  return tagsStore.forPath(item.value.url);
+  return [...tagsStore.forPath(item.value.url)].sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
 });
 
 const iconName = computed(() =>
@@ -539,6 +583,11 @@ const hasThumbnail = computed(() => {
   if (t === "image") return true;
   if (t === "video") return enableVideoThumbs;
   if (t === "pdf") return enablePdfThumbs;
+  // V3-E #20: .cbr comics get a server-extracted cover (first page) — the same
+  // thumbnail the row icon shows. Mirror the listing's showThumbnail gate so
+  // the details frame shows the cover instead of the generic color tile.
+  // (.cbz is intentionally excluded here too.)
+  if ((item.value.name || "").toLowerCase().endsWith(".cbr")) return true;
   return false;
 });
 
@@ -563,7 +612,11 @@ const albumArtUrl = ref<string>("");
 let albumArtRevocable: string | null = null;
 let albumArtToken = 0;
 let albumArtAbort: AbortController | null = null;
-const AUDIO_META_RANGE = 512 * 1024; // 512 KB — comfortable for ID3v2 + APIC
+// V3-E #17: match AudioViewer — 512 KB sliced large OGG covers in half (the
+// Vorbis-comment picture is base64-inflated and overruns the header window).
+// 2 MB captures the full cover; the fetch is aborted the moment the selection
+// moves on, so browsing isn't slowed by the larger window.
+const AUDIO_META_RANGE = 2 * 1024 * 1024; // 2 MB
 
 const isAudio = computed(
   () => !!item.value && !item.value.isDir && item.value.type === "audio"
@@ -624,6 +677,75 @@ watch(
 );
 
 onUnmounted(clearAlbumArt);
+
+// ── WS7 #6 + #8: audio tag entry point + read-only tag display ──────
+// A single selected MP3/FLAC/… file. #6 surfaces an "Edit tags" button
+// (gated on perm.modify); #8 lists its non-empty tags read-only (no perm
+// needed — reading is harmless and useful even without edit rights).
+const isTaggableAudioFile = computed(
+  () => !!item.value && !item.value.isDir && isAudioTaggable(item.value.name)
+);
+const canEditTags = computed(
+  () => isTaggableAudioFile.value && !!authStore.user?.perm.modify
+);
+
+const audioTagRows = ref<Array<{ label: string; value: string }>>([]);
+let audioTagsToken = 0;
+const AUDIO_TAG_FIELDS: Array<{ key: string; label: string }> = [
+  { key: "title", label: "Title" },
+  { key: "artist", label: "Artist" },
+  { key: "album", label: "Album" },
+  { key: "albumArtist", label: "Album artist" },
+  { key: "year", label: "Year" },
+  { key: "track", label: "Track" },
+  { key: "disc", label: "Disc" },
+  { key: "genres", label: "Genre" },
+  { key: "composer", label: "Composer" },
+];
+
+const clearAudioTags = () => {
+  audioTagsToken++;
+  audioTagRows.value = [];
+};
+
+const loadAudioTags = async (resource: ResourceItem) => {
+  const token = ++audioTagsToken;
+  audioTagRows.value = [];
+  const path = resource.path || resource.url;
+  if (!path) return;
+  try {
+    const results = await audioTagsApi.read([path]);
+    if (token !== audioTagsToken) return;
+    const tags = results[0]?.tags;
+    if (!tags) return;
+    const rows: Array<{ label: string; value: string }> = [];
+    for (const f of AUDIO_TAG_FIELDS) {
+      const raw =
+        f.key === "genres"
+          ? (tags.genres ?? []).join(", ")
+          : ((tags as unknown as Record<string, string>)[f.key] ?? "");
+      if (raw && raw.trim()) rows.push({ label: f.label, value: raw });
+    }
+    audioTagRows.value = rows;
+  } catch {
+    /* read failed (corrupt / unsupported) — show nothing */
+  }
+};
+
+// Re-read when the selected taggable audio file changes OR its modified time
+// bumps (a tag save), so the read-only list never goes stale after an edit.
+watch(
+  () =>
+    isTaggableAudioFile.value
+      ? `${item.value?.url ?? ""}#${item.value?.modified ?? ""}`
+      : null,
+  (key) => {
+    if (key && item.value) void loadAudioTags(item.value as ResourceItem);
+    else clearAudioTags();
+  },
+  { immediate: true }
+);
+onUnmounted(clearAudioTags);
 
 // ── Embedded cover art for a selected EPUB (batch #4) ───────────────
 // The Preview pane shows the cover because it mounts EpubViewer, which
@@ -965,14 +1087,6 @@ html.dark .preview-mesh {
     color var(--dur-base) ease;
 }
 
-.info-action--wide {
-  flex-direction: row;
-  width: 100%;
-  padding: 10px;
-  font-size: 12px;
-  gap: 6px;
-}
-
 /* Per-action accent hue (matches the command-palette icon colors) so each
    action is recognizable at a glance. */
 .info-action--share {
@@ -994,6 +1108,9 @@ html.dark .preview-mesh {
   --action-hue: var(--c-green);
 }
 .info-action--preview {
+  --action-hue: var(--c-lilac);
+}
+.info-action--tags {
   --action-hue: var(--c-lilac);
 }
 .info-action--danger {
