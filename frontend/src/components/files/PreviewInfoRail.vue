@@ -219,6 +219,13 @@ defineEmits<{
   margin-bottom: 12px;
 }
 
+/* V3-E #13: match the list/grid `.item__icon` EXACTLY. The per-type Tailwind
+   class passed via :class (from fileIconColor — e.g. `bg-violet-600 text-white`)
+   paints a saturated background-color + white glyph; this sheen overlays it for
+   the same "app icon" gradient + lift. The base intentionally sets NO
+   background-color or color (scoped specificity would otherwise beat the
+   utility), so the rail icon is now identical to the row icon — not the old
+   dim translucent --tint-* chip. */
 .preview-info__icon {
   width: 40px;
   height: 40px;
@@ -227,44 +234,14 @@ defineEmits<{
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-2, #52525b);
-}
-
-/* Same per-type squircle tints as the toolbar — shared --tint-*-bg/fg tokens
-   (tokens.css) that flip in dark mode, so there's no per-component dark block
-   and the rail can't drift from the toolbar. */
-.preview-info__icon.is-image {
-  background: var(--tint-image-bg);
-  color: var(--tint-image-fg);
-}
-.preview-info__icon.is-video {
-  background: var(--tint-video-bg);
-  color: var(--tint-video-fg);
-}
-.preview-info__icon.is-audio {
-  background: var(--tint-audio-bg);
-  color: var(--tint-audio-fg);
-}
-.preview-info__icon.is-pdf {
-  background: var(--tint-pdf-bg);
-  color: var(--tint-pdf-fg);
-}
-.preview-info__icon.is-text {
-  background: var(--tint-text-bg);
-  color: var(--tint-text-fg);
-}
-.preview-info__icon.is-archive {
-  background: var(--tint-archive-bg);
-  color: var(--tint-archive-fg);
-}
-.preview-info__icon.is-epub {
-  background: var(--tint-epub-bg);
-  color: var(--tint-epub-fg);
-}
-.preview-info__icon.is-csv {
-  background: var(--tint-csv-bg);
-  color: var(--tint-csv-fg);
+  position: relative;
+  overflow: hidden;
+  background-image: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.3),
+    rgba(255, 255, 255, 0) 60%
+  );
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
 }
 
 .preview-info__header-text {

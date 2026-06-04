@@ -154,9 +154,12 @@ func TestIsSupported(t *testing.T) {
 	cases := map[string]bool{
 		"song.mp3":  true,
 		"song.FLAC": true,
-		"song.m4a":  false,
-		"song.ogg":  false,
+		"song.m4a":  true,
+		"song.ogg":  true,
+		"song.OGA":  true,
+		"song.opus": true,
 		"song.wav":  false,
+		"song.aiff": false,
 		"folder":    false,
 	}
 	for name, want := range cases {
@@ -167,11 +170,11 @@ func TestIsSupported(t *testing.T) {
 }
 
 func TestUnsupportedFormat(t *testing.T) {
-	if _, err := Read("nope.ogg"); err != ErrUnsupportedFormat {
-		t.Errorf("Read(.ogg) err = %v, want ErrUnsupportedFormat", err)
+	if _, err := Read("nope.wav"); err != ErrUnsupportedFormat {
+		t.Errorf("Read(.wav) err = %v, want ErrUnsupportedFormat", err)
 	}
-	if err := Write("nope.ogg", Changes{}); err != ErrUnsupportedFormat {
-		t.Errorf("Write(.ogg) err = %v, want ErrUnsupportedFormat", err)
+	if err := Write("nope.wav", Changes{}); err != ErrUnsupportedFormat {
+		t.Errorf("Write(.wav) err = %v, want ErrUnsupportedFormat", err)
 	}
 }
 

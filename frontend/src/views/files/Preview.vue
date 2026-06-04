@@ -1,71 +1,18 @@
 <template>
   <PreviewShell
     :name="name"
-    :icon-name="iconName"
-    :icon-color-class="iconColorClass"
-    :type-label="typeLabel"
-    :position-label="positionLabel"
-    :has-previous="hasPrevious"
-    :has-next="hasNext"
     :info-open="infoOpen"
-    :can-download="!!authStore.user?.perm.download"
-    :can-share="!!authStore.user?.perm.share && !!authStore.user?.perm.download"
+    :fade-chrome="isComic || isPdf"
     @close="close"
-    @prev="prev"
-    @next="next"
-    @download="download"
-    @share="share"
     @toggle-info="infoOpen = !infoOpen"
     @user-activity="toggleNavigation"
   >
     <!-- ── Toolbar: format-specific controls ──────────────────────── -->
     <template #toolbar-format>
-      <!-- Text: soft-wrap toggle + edit-as-text -->
-      <template
-        v-if="
-          fileStore.req?.type === 'text' ||
-          fileStore.req?.type === 'textImmutable'
-        "
-      >
-        <!-- Markdown: Rendered / Raw toggle (S5-2). Only for .md files. -->
-        <button
-          v-if="isMarkdownFile"
-          type="button"
-          class="preview-fit__btn"
-          :class="{ 'is-active': textRenderMarkdown }"
-          :title="textRenderMarkdown ? 'Show raw source' : 'Show rendered'"
-          :aria-label="textRenderMarkdown ? 'Show raw source' : 'Show rendered'"
-          :aria-pressed="textRenderMarkdown"
-          @click="textRenderMarkdown = !textRenderMarkdown"
-        >
-          <Icon :name="textRenderMarkdown ? 'code' : 'book-open'" :size="14" />
-        </button>
-        <!-- Soft-wrap toggle — irrelevant in rendered markdown (which
-             wraps naturally), so hide it there. -->
-        <button
-          v-if="!(isMarkdownFile && textRenderMarkdown)"
-          type="button"
-          class="preview-fit__btn"
-          :class="{ 'is-active': textSoftWrap }"
-          :title="textSoftWrap ? 'No wrap' : 'Soft wrap'"
-          :aria-label="textSoftWrap ? 'No wrap' : 'Soft wrap'"
-          :aria-pressed="textSoftWrap"
-          @click="textSoftWrap = !textSoftWrap"
-        >
-          <Icon :name="textSoftWrap ? 'wrap-text' : 'pilcrow'" :size="14" />
-        </button>
-        <button
-          v-if="fileStore.req?.type === 'text'"
-          type="button"
-          class="preview-toolbar-format__btn"
-          title="Edit as text"
-          aria-label="Edit as text"
-          @click="editAsText"
-        >
-          <Icon name="file-pen-line" :size="14" />
-          <span class="max-md:hidden">Edit</span>
-        </button>
-      </template>
+      <!-- 2.1 #3: text controls (Rendered/Raw · Soft-wrap · Edit) moved OUT of
+           this floating pill into the details rail (see the #info slot's "Text"
+           section), so the main reading area stays clear and the Exit float
+           can't overlap the text. -->
 
       <!-- PDF: page counter input + zoom controls -->
       <template v-if="isPdf">
@@ -107,25 +54,9 @@
         </div>
       </template>
 
-      <!-- EPUB: book dark-mode toggle. Independent of the app theme and
-           remembered — follows the app theme until the reader flips it. -->
-      <template v-if="isEpub">
-        <button
-          type="button"
-          class="preview-fit__btn"
-          :class="{ 'is-active': epubDark }"
-          :title="epubDark ? 'Light book theme' : 'Dark book theme'"
-          :aria-label="
-            epubDark
-              ? 'Switch book to light theme'
-              : 'Switch book to dark theme'
-          "
-          :aria-pressed="epubDark"
-          @click="toggleEpubDark"
-        >
-          <Icon :name="epubDark ? 'sun' : 'moon'" :size="14" />
-        </button>
-      </template>
+      <!-- V3-D #21: the EPUB book light/dark toggle moved OUT of this floating
+           bottom pill (it overlapped the reading area) into the details rail —
+           see the #info slot's epub "Reading" control below. -->
 
       <!-- Image: zoom + fit toggle -->
       <template v-if="fileStore.req?.type === 'image'">
@@ -158,12 +89,18 @@
           type="button"
           class="preview-fit__btn"
           :class="{ 'is-active': fitToScreen }"
-          :title="fitToScreen ? 'Actual size' : 'Fit to screen'"
-          :aria-label="fitToScreen ? 'Actual size' : 'Fit to screen'"
+          :title="fitToScreen ? 'Actual' : 'Fit to screen'"
+          :aria-label="fitToScreen ? 'Actual' : 'Fit to screen'"
           :aria-pressed="fitToScreen"
           @click="toggleFit"
         >
-          <Icon :name="fitToScreen ? 'maximize-2' : 'maximize'" :size="14" />
+          <!-- V2 #12: distinct colour from the Edit icon next to it (was lilac,
+               same as Edit). Teal reads as the "size/fit" control. -->
+          <Icon
+            :name="fitToScreen ? 'maximize-2' : 'maximize'"
+            :size="14"
+            class="text-[var(--c-teal)]"
+          />
         </button>
         <!-- Edit (S5-4) — opens the canvas image editor. Needs create
              permission since saving writes a new file. -->
@@ -175,7 +112,8 @@
           aria-label="Edit image"
           @click="imageEditorOpen = true"
         >
-          <Icon name="pencil-ruler" :size="14" class="text-[var(--c-lilac)]" />
+          <!-- V2 #13: colourful (orange) edit icon, not the whole button. -->
+          <Icon name="pencil-ruler" :size="14" class="text-[#fb923c]" />
           <span class="max-md:hidden">Edit</span>
         </button>
       </template>
@@ -218,6 +156,18 @@
             @cover="onEpubCover"
           />
 
+          <!-- Comic (CBZ/CBR paged image reader). It owns its own arrow-key
+               paging; at the first/last page it forwards @navigate-prev/-next
+               so file-to-file nav still works (same contract as EpubViewer). -->
+          <ComicViewer
+            v-else-if="isComic"
+            :path="fileStore.req?.path ?? ''"
+            :modified="fileStore.req?.modified ?? ''"
+            :name="name"
+            @navigate-prev="prev"
+            @navigate-next="next"
+          />
+
           <!-- CSV -->
           <CsvViewer
             v-else-if="isCsv"
@@ -225,26 +175,28 @@
             :error="csvError"
           />
 
-          <!-- Image (P2: ImageViewer with zoom / fit / film strip) -->
+          <!-- Image (P2: ImageViewer with zoom / fit). WS10 removed the film
+               strip (sibling-image navigation). -->
           <ImageViewer
             v-else-if="fileStore.req?.type == 'image'"
             :src="previewUrl"
             :alt="name"
             :zoom-percent="zoomPercent"
             :fit-to-screen="fitToScreen"
-            :strip="previewStrip"
-            :current-url="currentItemUrl"
-            @navigate="(u: string) => router.replace({ path: u })"
           />
 
           <!-- Audio (P4: AudioViewer = album card + plain scrubber +
                custom transport. Centered play-pause icon with the
                asymmetric-triangle nudge per design feedback. ID3 APIC
                artwork + tag parsing emit via @metadata — E2). -->
+          <!-- WS10: the audio player's own previous/next-TRACK transport stays
+               (a media-player convention, distinct from the preview ‹ › arrows
+               which were removed). -->
           <AudioViewer
             v-else-if="fileStore.req?.type == 'audio'"
-            :src="previewUrl"
+            :src="audioSrc"
             :name="name"
+            :cover-fallback-url="audioCoverUrl"
             :has-previous="hasPrevious"
             :has-next="hasNext"
             @prev="prev"
@@ -286,10 +238,7 @@
                via the "Edit as text" action (writes ?edit=true into
                the route; see Files.vue). -->
           <TextViewer
-            v-else-if="
-              fileStore.req?.type === 'text' ||
-              fileStore.req?.type === 'textImmutable'
-            "
+            v-else-if="isTextView"
             :content="textContent"
             :soft-wrap="textSoftWrap"
             :is-markdown="isMarkdownFile"
@@ -395,7 +344,8 @@
             videoMeta ||
             audioMeta ||
             imageExif ||
-            (isEpub && (epubToc.length > 0 || !!epubCoverUrl))
+            isEpub ||
+            isTextView
           "
           #format-section
         >
@@ -568,6 +518,76 @@
             </dl>
           </template>
 
+          <!-- 2.1 #3: text view controls, relocated here from the floating pill
+               so the reading area stays clear and Exit can't overlap the text.
+               Colorful icons; full-width rail buttons. -->
+          <template v-if="isTextView">
+            <div class="preview-info__label">Text</div>
+            <div class="preview-text-controls">
+              <button
+                v-if="isMarkdownFile"
+                type="button"
+                class="preview-text-btn"
+                :class="{ 'is-active': textRenderMarkdown }"
+                :aria-pressed="textRenderMarkdown"
+                @click="textRenderMarkdown = !textRenderMarkdown"
+              >
+                <Icon
+                  :name="textRenderMarkdown ? 'code' : 'book-open'"
+                  :size="14"
+                  class="text-[var(--c-lilac)]"
+                />
+                <span>{{
+                  textRenderMarkdown ? "Raw source" : "Rendered"
+                }}</span>
+              </button>
+              <button
+                v-if="!(isMarkdownFile && textRenderMarkdown)"
+                type="button"
+                class="preview-text-btn"
+                :class="{ 'is-active': textSoftWrap }"
+                :aria-pressed="textSoftWrap"
+                @click="textSoftWrap = !textSoftWrap"
+              >
+                <Icon
+                  :name="textSoftWrap ? 'wrap-text' : 'pilcrow'"
+                  :size="14"
+                  class="text-[var(--c-teal)]"
+                />
+                <span>{{ textSoftWrap ? "Soft wrap" : "No wrap" }}</span>
+              </button>
+              <button
+                v-if="fileStore.req?.type === 'text'"
+                type="button"
+                class="preview-text-btn"
+                @click="editAsText"
+              >
+                <Icon name="file-pen-line" :size="14" class="text-[#fb923c]" />
+                <span>Edit as text</span>
+              </button>
+            </div>
+          </template>
+
+          <!-- V3-D #21: book light/dark reading-theme toggle, relocated here
+               from the floating bottom pill (it overlapped the page). A
+               centred, thin, medium-length button keeps the same sun/moon
+               icons and is the first epub control in the rail. -->
+          <template v-if="isEpub">
+            <div class="preview-info__label">Reading</div>
+            <button
+              type="button"
+              class="preview-epub-theme-btn"
+              :class="{ 'is-active': epubDark }"
+              :aria-pressed="epubDark"
+              @click="toggleEpubDark"
+            >
+              <Icon :name="epubDark ? 'sun' : 'moon'" :size="14" />
+              <span>{{
+                epubDark ? "Light book theme" : "Dark book theme"
+              }}</span>
+            </button>
+          </template>
+
           <!-- EPUB cover art — shown in the details rail when the book
                declares a cover image (emitted by EpubViewer once metadata
                resolves). -->
@@ -601,18 +621,6 @@
               </button>
             </nav>
           </template>
-        </template>
-
-        <template #keyboard-hints>
-          <span>
-            <kbd>←</kbd>
-            <kbd>→</kbd>
-            navigate
-          </span>
-          <span>
-            <kbd>Esc</kbd>
-            close
-          </span>
         </template>
       </PreviewInfoRail>
     </template>
@@ -651,8 +659,9 @@ import {
   unzipEnabled,
   transcodeEnabled,
 } from "@/utils/constants";
-import { isExtractable } from "@/utils/archive";
+import { isComic as isComicFile, isExtractable } from "@/utils/archive";
 import { isAudioTaggable } from "@/utils/audio";
+import { fileIcon, fileIconColor } from "@/utils/fileIcon";
 import url from "@/utils/url";
 import { throttle } from "lodash-es";
 import { filesize } from "@/utils";
@@ -707,6 +716,9 @@ const PdfViewer = defineAsyncComponent(
 );
 const EpubViewer = defineAsyncComponent(
   () => import("@/components/files/EpubViewer.vue")
+);
+const ComicViewer = defineAsyncComponent(
+  () => import("@/components/files/ComicViewer.vue")
 );
 const TextViewer = defineAsyncComponent(
   () => import("@/components/files/TextViewer.vue")
@@ -1129,14 +1141,52 @@ const previewUrl = computed(() => {
   return api.getDownloadURL(fileStore.req, true);
 });
 
+// WS7 #4: the audio source with a cache-bust keyed on the file's modified time.
+// After a tag save the raw bytes change but the path is identical, so the
+// browser would serve the stale cover/tags from cache. The post-save refetch
+// (fileStore.reload → Files.fetchData) bumps `modified`; folding it into the URL
+// forces AudioViewer to re-fetch + re-parse the new ID3/Vorbis tags + cover.
+const audioSrc = computed(() => {
+  const base = previewUrl.value;
+  if (!base) return "";
+  const k = Date.parse(fileStore.req?.modified ?? "") || 0;
+  return `${base}${base.includes("?") ? "&" : "?"}k=${k}`;
+});
+
+// 2.1 #2: server-side cover thumbnail for audio, handed to AudioViewer as a
+// fallback for when the client-side music-metadata parse yields no artwork
+// (e.g. .opus, where it throws on the embedded picture). The backend extracts
+// the cover reliably for every audio format.
+const audioCoverUrl = computed(() =>
+  fileStore.req && fileStore.req.type === "audio"
+    ? api.getPreviewURL(fileStore.req, "thumb")
+    : ""
+);
+
 const isPdf = computed(() => fileStore.req?.extension.toLowerCase() == ".pdf");
 const isEpub = computed(
   () => fileStore.req?.extension.toLowerCase() == ".epub"
 );
+const isComic = computed(() => isComicFile(fileStore.req?.name ?? ""));
 const isCsv = computed(
   () =>
     fileStore.req?.extension.toLowerCase() == ".csv" &&
     fileStore.req.size <= CSV_MAX_SIZE
+);
+
+// True only when the plain-text/code viewer is the body's active viewer — the
+// file is text-typed AND not already claimed by an earlier, extension-based
+// viewer in the body's v-else-if chain (epub / comic / csv / pdf). The header's
+// text-only controls (soft-wrap, edit-as-text) gate on this, so a comic or epub
+// the backend happens to type as "text" no longer shows text-editor chrome (WS5).
+const isTextView = computed(
+  () =>
+    (fileStore.req?.type === "text" ||
+      fileStore.req?.type === "textImmutable") &&
+    !isEpub.value &&
+    !isComic.value &&
+    !isCsv.value &&
+    !isPdf.value
 );
 
 // A supported archive in the blob (no-preview) state lights up the Extract
@@ -1213,44 +1263,23 @@ const ext = computed(
   () => fileStore.req?.extension?.toLowerCase().replace(/^\./, "") ?? ""
 );
 
-const iconName = computed(() => {
-  if (isPdf.value) return "file-text";
-  if (isEpub.value) return "book-open";
-  if (isCsv.value) return "table-2";
-  switch (fileType.value) {
-    case "image":
-      return "image";
-    case "video":
-      return "video";
-    case "audio":
-      return "music";
-    default:
-      return "file";
-  }
-});
-
-const iconColorClass = computed(() => {
-  if (isPdf.value) return "is-pdf";
-  if (isEpub.value) return "is-epub";
-  if (isCsv.value) return "is-csv";
-  switch (fileType.value) {
-    case "image":
-      return "is-image";
-    case "video":
-      return "is-video";
-    case "audio":
-      return "is-audio";
-    case "text":
-    case "textImmutable":
-      return "is-text";
-    default:
-      return "";
-  }
-});
+// V3-E #13: the details-rail file icon must match the list/grid row icon
+// EXACTLY (same glyph, same solid colour, same gradient sheen) — not the dim
+// translucent --tint-* chip it used before. Route through the shared
+// fileIcon / fileIconColor helpers with the SAME inputs ListingItem uses, so
+// the two surfaces can never drift.
+const iconBasis = computed(() => ({
+  isDir: fileStore.req?.isDir ?? false,
+  type: fileStore.req?.type,
+  name: fileStore.req?.name ?? name.value,
+}));
+const iconName = computed(() => fileIcon(iconBasis.value));
+const iconColorClass = computed(() => fileIconColor(iconBasis.value));
 
 const typeLabel = computed(() => {
   if (isPdf.value) return "Document · PDF";
   if (isEpub.value) return "Book · EPUB";
+  if (isComic.value) return "Comic";
   if (isCsv.value) return "Spreadsheet · CSV";
   switch (fileType.value) {
     case "image":
@@ -1283,46 +1312,14 @@ const extensionLabel = computed(() => fileStore.req?.extension ?? "");
 
 const pathLabel = computed(() => fileStore.req?.path ?? "");
 
-const positionLabel = computed(() => {
-  if (!listing.value) return "";
-  // Index of the currently-previewed file among siblings the preview
-  // can navigate to. Same predicate updatePreview uses to wire prev/next.
-  const eligibles = listing.value.filter((it) => isPreviewable(it));
-  if (eligibles.length === 0) return "";
-  const idx = eligibles.findIndex((it) => it.name === name.value);
-  if (idx === -1) return "";
-  return `${idx + 1} of ${eligibles.length}`;
-});
-
 const canOpenDirect = computed(
   () =>
     ["image", "audio", "video"].includes(fileStore.req?.type ?? "") &&
     !!authStore.user?.perm.download
 );
 
-// ── Film strip: EVERY previewable sibling (in source order), matching the
-// ←/→ navigation set — images render as thumbnails, everything else as a
-// type-icon tile. The strip only ever renders inside ImageViewer, so it's
-// shown only on image previews while still listing the whole set (e.g.
-// photo → text → photo shows three tiles, with the text one as an icon).
-const previewStrip = computed(() => {
-  if (!listing.value) return [];
-  return listing.value
-    .filter((it) => !it.isDir)
-    .map((it) => ({
-      name: it.name,
-      url: it.url,
-      path: it.path,
-      type: it.type,
-      isImage: it.type === "image",
-    }));
-});
-
-const currentItemUrl = computed(() => {
-  if (!listing.value) return "";
-  const item = listing.value.find((it) => it.name === name.value);
-  return item?.url ?? "";
-});
+// WS10 removed the image film strip (sibling-image navigation), so the
+// previewStrip + currentItemUrl computeds that fed it are gone.
 
 // ── Route + lifecycle ────────────────────────────────────────────────
 watch(route, () => {
@@ -1426,33 +1423,37 @@ const isTextEntry = (el: HTMLElement | null): boolean => {
 };
 
 /**
- * ←/→ neighbor-file navigation, bound in the CAPTURE phase on window.
+ * WS10: ←/→ now turn PAGES (not files) for paginated docs, bound in the CAPTURE
+ * phase so they beat controls that would swallow the arrows. Physical direction:
+ * Left = previous page, Right = next page — always, regardless of the document's
+ * reading direction (V2 #29 removed the per-PDF RTL toggle; the comic reader is
+ * the only place that still flips, and it owns its own keys).
  *
- * Capture runs before the focused element's own bubble-phase handlers, so
- * we beat controls that would otherwise swallow the arrows — notably
- * video.js's seek / volume sliders, which stopPropagation on arrow keys
- * when focused (the "arrows occasionally dead in video" bug). We
- * stopPropagation after navigating so the underlying control doesn't ALSO
- * act on the key.
- *
- * EPUB is handled separately: its book lives in an iframe whose keydowns
- * never reach this window, so EpubViewer forwards them via
- * @navigate-prev / @navigate-next instead.
+ * The comic reader owns ←/→ internally. EPUB pages live in an iframe whose
+ * keydowns never reach this window; EpubViewer forwards them via
+ * @navigate-prev / @navigate-next, but this also covers the focus-outside case.
  */
 const navKey = (event: KeyboardEvent) => {
   if (layoutStore.currentPrompt !== null) return;
   if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
   if (event.defaultPrevented) return;
   if (isTextEntry(event.target as HTMLElement | null)) return;
+  if (isComic.value) return; // ComicViewer owns ←/→
 
-  if (event.key === "ArrowRight" && hasNext.value) {
+  const isRight = event.key === "ArrowRight";
+  if (isPdf.value) {
     event.preventDefault();
     event.stopPropagation();
-    next();
-  } else if (event.key === "ArrowLeft" && hasPrevious.value) {
+    if (isRight) {
+      if (pdfPage.value < pdfTotalPages.value) pdfPage.value++;
+    } else if (pdfPage.value > 1) {
+      pdfPage.value--;
+    }
+  } else if (isEpub.value) {
     event.preventDefault();
     event.stopPropagation();
-    prev();
+    if (isRight) epubViewer.value?.nextPage();
+    else epubViewer.value?.prevPage();
   }
 };
 
@@ -1469,35 +1470,10 @@ const key = (event: KeyboardEvent) => {
 
   const k = event.key;
 
-  // Enter is intentionally a no-op in preview (RC-11): it used to jump to
-  // the next file, but the focus trap now lands focus on the dialog
-  // container (not the close button), so Enter does nothing at all rather
-  // than unexpectedly closing the preview.
-  //
-  // ←/→ neighbor-file navigation lives in navKey (capture phase) so it can
-  // beat child handlers that swallow the arrows (notably video.js's slider
-  // controls). ↑/↓ stay page-nav for paginated docs here, and volume for
-  // video (handled by video.js).
-  if (k === "ArrowDown") {
-    // ↓ = next PAGE in paginated docs (←/→ stay file nav). For EPUB the
-    // book is usually focused in its iframe, where EpubViewer handles the
-    // key directly; this covers the case where focus is outside the iframe.
-    if (isPdf.value) {
-      event.preventDefault();
-      if (pdfPage.value < pdfTotalPages.value) pdfPage.value++;
-    } else if (isEpub.value) {
-      event.preventDefault();
-      epubViewer.value?.nextPage();
-    }
-  } else if (k === "ArrowUp") {
-    if (isPdf.value) {
-      event.preventDefault();
-      if (pdfPage.value > 1) pdfPage.value--;
-    } else if (isEpub.value) {
-      event.preventDefault();
-      epubViewer.value?.prevPage();
-    }
-  } else if (k === "Escape") {
+  // Enter is intentionally a no-op in preview (RC-11). WS10: ↑/↓ paging was
+  // removed — page-turn is now ←/→ (handled in navKey). The only key left here
+  // is Escape (close). Natural media keys stay with the <audio>/<video> element.
+  if (k === "Escape") {
     close();
   }
 };
@@ -1628,15 +1604,6 @@ const close = () => {
 const stageEl = ref<HTMLElement | null>(null);
 const isTouchDevice = useTouchDevice();
 
-// Horizontal nav: not on video/audio (their own transport gestures own
-// horizontal drags), and not while an image or PDF is zoomed in (then a
-// horizontal drag is a pan). `fitToScreen` is only ever turned off by the
-// image/PDF zoom controls, so it doubles as the "not zoomed" signal.
-const canSwipeNavigate = computed(() => {
-  const t = fileStore.req?.type;
-  if (t === "video" || t === "audio") return false;
-  return fitToScreen.value;
-});
 // Swipe-down-to-close only on a fit image — every other viewer either
 // scrolls (text / PDF / CSV / EPUB) or owns its own gestures, where a
 // downward fling must not be hijacked into a dismiss.
@@ -1649,11 +1616,9 @@ const { lengthY } = useSwipe(stageEl, {
   onSwipeEnd(_e, direction) {
     if (!isTouchDevice.value || layoutStore.currentPrompt !== null) return;
 
-    if (direction === "left" || direction === "right") {
-      if (!canSwipeNavigate.value) return;
-      if (direction === "left" && hasNext.value) next();
-      else if (direction === "right" && hasPrevious.value) prev();
-    } else if (direction === "down" && canSwipeClose.value) {
+    // WS10: left/right swipe file-navigation removed. Swipe-DOWN to dismiss an
+    // image is kept — it's a close gesture, not file nav.
+    if (direction === "down" && canSwipeClose.value) {
       // Require a deliberate downward fling so a small drag doesn't close.
       if (Math.abs(lengthY.value) > 90) close();
     }
@@ -1969,6 +1934,76 @@ html.dark .preview-info__artwork {
 /* ── EPUB cover art ──────────────────────────────────────────────────
    Shown above the chapter list in the details rail. Constrained so a
    tall cover doesn't dominate the rail; soft card chrome to match. */
+/* V3-D #21: book reading-theme toggle in the details rail. A thin, centred,
+   medium-length pill (not full-width) with the sun/moon glyph + label. */
+.preview-epub-theme-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 70%;
+  max-width: 220px;
+  margin: 0 auto 16px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface, #fff);
+  color: var(--color-ink-2, #52525b);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease,
+    border-color var(--dur-base) ease;
+}
+.preview-epub-theme-btn:hover {
+  background: var(--color-elevated, #f4f4f5);
+  color: var(--color-ink-1, #18181b);
+}
+.preview-epub-theme-btn.is-active {
+  background: var(--color-selected, rgba(94, 106, 210, 0.08));
+  border-color: transparent;
+  color: var(--color-accent-ink, #5e6ad2);
+}
+
+/* 2.1 #3: text-view controls in the details rail — full-width stacked buttons
+   with colorful glyphs, mirroring the rail's other action chrome. */
+.preview-text-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.preview-text-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface, #fff);
+  color: var(--color-ink-1, #18181b);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-base) ease,
+    border-color var(--dur-base) ease;
+}
+.preview-text-btn:hover {
+  background: var(--color-elevated, #f4f4f5);
+}
+.preview-text-btn.is-active {
+  background: var(--color-selected, rgba(94, 106, 210, 0.08));
+  border-color: transparent;
+}
+
 .preview-epub-cover-wrap {
   display: flex;
   justify-content: center;

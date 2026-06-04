@@ -106,6 +106,10 @@ const BY_EXT: Record<string, string> = {
   // Markdown
   ".md": "file-pen-line",
   ".markdown": "file-pen-line",
+
+  // Comic books
+  ".cbz": "book-open",
+  ".cbr": "book-open",
 };
 
 // Tailwind class pairs (bg + text) — written as literals so the v4 scanner picks them up.
@@ -216,6 +220,10 @@ const COLOR_BY_EXT: Record<string, string> = {
   // Markdown
   ".md": "bg-slate-600 text-white",
   ".markdown": "bg-slate-600 text-white",
+
+  // Comic books (violet, distinct from the orange archives)
+  ".cbz": "bg-violet-600 text-white",
+  ".cbr": "bg-violet-600 text-white",
 };
 
 function getExt(name: string): string | null {

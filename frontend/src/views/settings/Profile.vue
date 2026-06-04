@@ -49,18 +49,25 @@
           @update:model-value="onShowTagsChange"
         />
       </SettingsRow>
-    </SettingsSection>
-
-    <!-- ── Language ─────────────────────────────────────────────────── -->
-    <SettingsSection
-      :title="t('settings.language')"
-      description="Interface language. Changes save automatically."
-    >
-      <SettingsRow stacked label="">
-        <Languages
-          class="settings-select"
-          v-model:locale="locale"
-          @update:locale="autoSave"
+      <SettingsRow
+        label="Remember position when navigating back"
+        description="Returning to a folder you were recently in — even across directories — restores your scroll position, and in-place refreshes (like a finished upload) keep your place instead of jumping to the top."
+      >
+        <Toggle
+          v-model="rememberParentScroll"
+          @update:model-value="onRememberParentScrollChange"
+        />
+      </SettingsRow>
+      <!-- WS8: show/hide file extensions in the listing. When off, rows show
+           the base name and renaming edits the base + re-appends the original
+           extension. Folders + dotfiles are unaffected. -->
+      <SettingsRow
+        label="Show file extensions"
+        description="When off, file rows show the name without its extension. Renaming edits the base name and keeps the original extension."
+      >
+        <Toggle
+          v-model="showExtensions"
+          @update:model-value="onShowExtensionsChange"
         />
       </SettingsRow>
     </SettingsSection>
@@ -191,7 +198,6 @@ import SettingsPage from "@/components/settings/SettingsPage.vue";
 import SettingsSection from "@/components/settings/SettingsSection.vue";
 import SettingsRow from "@/components/settings/SettingsRow.vue";
 import Toggle from "@/components/settings/Toggle.vue";
-import Languages from "@/components/settings/Languages.vue";
 import SegmentedControl from "@/components/SegmentedControl.vue";
 import Icon from "@/components/Icon.vue";
 import {
@@ -216,7 +222,6 @@ const hideDotfiles = ref(false);
 const singleClick = ref(false);
 const redirectAfterCopyMove = ref(false);
 const dateFormat = ref(false);
-const locale = ref<string>("");
 
 // v1.3 S2-5: inline tag visibility on file rows. Persists via the
 // usePreferences composable rather than the legacy users.update path
@@ -229,6 +234,23 @@ const showTagsOnRows = ref<boolean>(
 
 const onShowTagsChange = (val: boolean) => {
   void prefs.set("tags.showOnRows", val);
+};
+
+// Remember-scroll-position-on-back preference (default on). Persisted in the
+// prefs bag; consumed by FileListing's useFolderScrollMemory.
+const rememberParentScroll = ref<boolean>(
+  prefs.get<boolean>("nav.rememberParentScroll", true)
+);
+const onRememberParentScrollChange = (val: boolean) => {
+  void prefs.set("nav.rememberParentScroll", val);
+};
+
+// WS8: show/hide file extensions in the listing (default on).
+const showExtensions = ref<boolean>(
+  prefs.get<boolean>("nav.showExtensions", true)
+);
+const onShowExtensionsChange = (val: boolean) => {
+  void prefs.set("nav.showExtensions", val);
 };
 
 // ── Appearance (theme preference) ────────────────────────────────────
@@ -311,7 +333,6 @@ const canSubmitPassword = computed(() => {
 onMounted(() => {
   layoutStore.loading = true;
   if (authStore.user) {
-    locale.value = authStore.user.locale;
     hideDotfiles.value = authStore.user.hideDotfiles;
     singleClick.value = authStore.user.singleClick;
     redirectAfterCopyMove.value = authStore.user.redirectAfterCopyMove;
@@ -323,7 +344,6 @@ onMounted(() => {
 
 // ── Auto-save (debounced) ────────────────────────────────────────────
 const PREF_KEYS = [
-  "locale",
   "hideDotfiles",
   "singleClick",
   "redirectAfterCopyMove",
@@ -342,7 +362,6 @@ const autoSave = () => {
       const data = {
         ...authStore.user!,
         id: authStore.user!.id,
-        locale: locale.value,
         hideDotfiles: hideDotfiles.value,
         singleClick: singleClick.value,
         redirectAfterCopyMove: redirectAfterCopyMove.value,
@@ -383,20 +402,6 @@ const updatePassword = async () => {
 </script>
 
 <style scoped>
-/* No-op layout helper for the Languages select. The chrome (height,
-   padding, border, chevron, appearance:none) lives in global
-   `.fb-select` (frontend/src/css/styles.css) which the select
-   already applies via class="fb-select".
-   Previously this rule re-declared a `background: var(...)` shorthand
-   that *erased* `.fb-select`'s background-image (the chevron) and
-   reduced the right padding, causing the native select to render
-   without its open-on-click chrome on some browsers and stacking
-   option text over the visible value. Now we just guarantee full
-   width and let the global treatment win. */
-.settings-select {
-  width: 100%;
-}
-
 .settings-input {
   width: 100%;
   height: 34px;

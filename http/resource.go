@@ -519,10 +519,11 @@ var diskUsage = withUser(func(w http.ResponseWriter, r *http.Request, d *data) (
 	}
 	fPath := file.RealPath()
 	if !file.IsDir {
-		return renderJSON(w, r, &DiskUsageResponse{
-			Total: 0,
-			Used:  0,
-		})
+		// V3-G #19: disk usage is volume-level, so a file path (e.g. while a
+		// file preview is open) used to return 0/0 — collapsing the sidebar
+		// storage bar to "0 B, 0%". Report the usage of the file's containing
+		// directory instead so the figure stays correct on preview routes.
+		fPath = filepath.Dir(fPath)
 	}
 
 	usage, err := disk.UsageWithContext(r.Context(), fPath)

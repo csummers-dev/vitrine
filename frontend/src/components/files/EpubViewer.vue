@@ -292,8 +292,85 @@ const wireIframes = () => {
 
 let iframeObserver: MutationObserver | null = null;
 
+/**
+ * Repair self-closing raw-text tags in an epub's spine documents so epub.js can
+ * render them. Archived epubs (we always load with `openAs:'epub'`) read each
+ * section from the zip via `book.archive.request`, which ignores the Book-level
+ * `requestMethod` — so this is the one interception point that covers them. We
+ * wrap it and, for CONTENT documents only, fetch the raw text and close any
+ * self-closing raw-text element (`<script/>`, `<style/>`, `<title/>`, …) before
+ * the text/html parse that would otherwise swallow the whole body.
+ *
+ * Strictly scoped:
+ *  - Only `.html`/`.htm` documents — the sole entries epub.js parses as
+ *    text/html (where the bug lives). `.xhtml` (parsed as application/xhtml+xml,
+ *    where self-closing tags are valid — e.g. the EPUB3 nav/TOC document) and
+ *    the OPF / NCX / container XML are left entirely on epub.js's native path;
+ *    reparsing any of those as HTML would be wrong (and breaks book opening).
+ *  - Only raw-text elements (script/style/title/textarea/iframe/noscript/
+ *    noframes/xmp), whose self-closing form is the catastrophic case; void tags
+ *    (`<br/>`, `<img/>`) are left alone.
+ *  - Idempotent (guarded), and applied to every epub: the rewrite is always
+ *    valid HTML, it's a no-op for books that don't use self-closing tags, and a
+ *    Kobo file renamed to plain ".epub" still needs it (filename sniffing is
+ *    unreliable — a `.kepub.epub` and its `.epub` copy can be byte-identical).
+ */
+const RAW_TEXT_SELF_CLOSING =
+  /<(script|style|title|textarea|iframe|noscript|noframes|xmp)\b([^>]*?)\s*\/>/gi;
+
+type EpubArchive = {
+  __fbScriptFixPatched?: boolean;
+  request: (url: string, type?: string | null) => Promise<unknown>;
+  getText: (url: string, encoding?: string) => Promise<string>;
+};
+
+const patchEpubArchive = (book: unknown) => {
+  const arch = (book as { archive?: EpubArchive } | null)?.archive;
+  if (!arch || arch.__fbScriptFixPatched) return;
+  arch.__fbScriptFixPatched = true;
+  const original = arch.request.bind(arch);
+  arch.request = (url: string, type?: string | null) => {
+    // ONLY ".html"/".htm" documents. epub.js derives the parse mode from the
+    // entry's extension: ".html"/".htm" → text/html (where a self-closing
+    // <script/> is invalid and swallows the body — the bug), but ".xhtml" →
+    // application/xhtml+xml (where it's valid and renders fine). So ".xhtml"
+    // content — including the navigation/TOC document present in virtually
+    // every EPUB3 — must be left on epub.js's native path, untouched.
+    const isBrokenHtmlDoc =
+      type === "html" ||
+      type === "htm" ||
+      ((type === undefined || type === null) && /\.html?(\?|#|$)/i.test(url));
+    if (!isBrokenHtmlDoc) return original(url, type);
+    return arch.getText(url).then((text) => {
+      const fixed = text.replace(RAW_TEXT_SELF_CLOSING, "<$1$2></$1>");
+      return new DOMParser().parseFromString(fixed, "text/html");
+    });
+  };
+};
+
 const captureRendition = (r: Rendition) => {
   rendition.value = r;
+
+  // Kobo ".kepub.epub" fix. Kobo injects a SELF-CLOSING script tag —
+  // `<script src="kobo.js"/>` — into every chapter's <head>. epub.js parses
+  // spine documents whose href ends in ".html" as text/html, and in HTML a
+  // self-closing <script/> is NOT closed: the parser swallows everything after
+  // it (the rest of <head>, all of <body>, the entire chapter) as the script's
+  // unterminated text content, so the page renders blank. (Verified headlessly:
+  // the same chapter parsed as text/html yields 0 body chars; as XHTML, or with
+  // the script tag closed, ~70k.) The earlier scrolled-flow guess didn't help
+  // because the DOM was already empty before layout. `patchEpubArchive` closes
+  // self-closing raw-text tags before the parse — see its doc comment.
+  const bk = r.book as unknown as { opened?: Promise<unknown> };
+  patchEpubArchive(r.book);
+  // The archive may not be built yet at get-rendition time; re-apply once the
+  // book finishes opening. Both run BEFORE the first section's content request
+  // (which display() defers until after open), so the opening chapter is fixed
+  // too. Idempotent, so the double call is safe.
+  if (bk?.opened && typeof bk.opened.then === "function") {
+    bk.opened.then(() => patchEpubArchive(r.book)).catch(() => {});
+  }
+
   applyTheme();
 
   // S5-5: surface the book's TOC to the parent once the navigation

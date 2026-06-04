@@ -38,6 +38,14 @@ var (
 	ErrUnsupportedArchive          = errors.New("this archive format isn't supported")
 	ErrMultiVolumeUnsupported      = errors.New("split or multi-volume archives of this format aren't supported")
 	ErrEncryptedArchiveUnsupported = errors.New("password-protected archives aren't supported")
+
+	// Password-protected extraction (the comic reader still uses the
+	// "unsupported" error above; extraction now accepts a password). Required
+	// = the archive is encrypted and no password was supplied; Incorrect = a
+	// password was supplied but it didn't open the archive. Both map to HTTP
+	// 422 so the frontend can prompt without tripping the 401 auto-logout.
+	ErrArchivePasswordRequired  = errors.New("this archive is password-protected")
+	ErrArchivePasswordIncorrect = errors.New("the archive password is incorrect")
 )
 
 type ErrShortPassword struct {

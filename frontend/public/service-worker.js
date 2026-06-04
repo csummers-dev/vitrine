@@ -17,7 +17,7 @@
  */
 
 // Bump the suffix to invalidate every previously-cached entry on deploy.
-const CACHE = "fbp-shell-v1";
+const CACHE = "fbp-shell-v2";
 
 // One canonical key for the shell document, so an offline navigation to
 // ANY route can fall back to it (the SPA routes client-side anyway).

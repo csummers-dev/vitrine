@@ -68,6 +68,18 @@ export function isExtractable(name: string): boolean {
  *   movie.r00           → movie
  *   noext               → noext (unchanged)
  */
+// Comic-book archives (CBZ = zip, CBR = rar of images). These get the paged
+// comic reader instead of the generic Extract affordance, so they're kept OUT
+// of EXTRACTABLE_SUFFIXES above and gated separately here.
+const COMIC_SUFFIXES = [".cbz", ".cbr"];
+
+/** True when `name` is a comic-book archive the comic reader can open. */
+export function isComic(name: string): boolean {
+  if (!name) return false;
+  const lower = name.toLowerCase();
+  return COMIC_SUFFIXES.some((s) => lower.endsWith(s));
+}
+
 export function archiveBaseName(name: string): string {
   if (!name) return name;
   // RAR multi-volume parts strip the whole volume marker.

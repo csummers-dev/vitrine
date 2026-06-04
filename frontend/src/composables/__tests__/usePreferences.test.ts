@@ -20,7 +20,6 @@ const baseUser = (): IUser => ({
   username: "u",
   password: "",
   scope: "",
-  locale: "en",
   perm: {
     admin: false,
     copy: true,

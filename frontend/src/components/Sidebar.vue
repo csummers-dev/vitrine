@@ -66,8 +66,8 @@
           @contextmenu.prevent="onMyFilesContextMenu($event)"
           :class="[
             'w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition text-left max-md:w-10 max-md:h-10 max-md:p-0 max-md:justify-center max-md:gap-0',
-            isFiles
-              ? 'bg-selected text-accent font-medium'
+            mainNavActive
+              ? 'bg-selected text-accent-ink font-medium'
               : 'hover:bg-hover text-ink-2',
           ]"
           :title="rootLabel || $t('sidebar.myFiles')"
@@ -211,16 +211,6 @@
             />
             <span>Recent</span>
           </button>
-          <button
-            v-if="
-              recents.length > RECENTS_INITIAL && !isSectionCollapsed('recent')
-            "
-            type="button"
-            class="text-[10px] font-medium text-ink-3 hover:text-accent transition"
-            @click="recentsExpanded = !recentsExpanded"
-          >
-            {{ recentsExpanded ? "Show less" : "View all" }}
-          </button>
         </div>
         <ul
           v-show="!isSectionCollapsed('recent')"
@@ -242,7 +232,7 @@
                 :style="{ color: recentHue(ri) }"
                 class="shrink-0"
               />
-              <span class="truncate flex-1">{{ r.name }}</span>
+              <span class="truncate flex-1">{{ recentLabel(r.name) }}</span>
             </router-link>
           </li>
         </ul>
@@ -402,6 +392,7 @@ import UndoToast from "@/components/UndoToast.vue";
 import ContextMenu from "@/components/ContextMenu.vue";
 import prettyBytes from "pretty-bytes";
 import { usePreferences } from "@/composables/usePreferences";
+import { displayName } from "@/utils/filename";
 import { useRecents } from "@/composables/useRecents";
 import { useFavorites } from "@/composables/useFavorites";
 import { useFavoriteTitleDialog } from "@/composables/useFavoriteTitleDialog";
@@ -420,6 +411,12 @@ export default {
     const usage = reactive(USAGE_DEFAULT);
     const prefs = usePreferences();
 
+    // V2 #27: respect the "show file extensions" pref in the Recents list
+    // (recents are files only). prefs.get is reactive, so this re-evaluates
+    // when the toggle changes.
+    const recentLabel = (filename) =>
+      displayName(filename, false, prefs.get("nav.showExtensions", true));
+
     // v1.3 S3-1 / S3-2: Recents + Favorites composables threaded into
     // the Options API via setup() so the computed below can read
     // them. RECENTS_INITIAL is exposed too so the template can show
@@ -430,7 +427,6 @@ export default {
     const rootLabelComposable = useRootLabel();
     const router = useRouter();
     const toast = useToast();
-    const recentsExpanded = ref(false);
 
     // ── Right-click context menus for the sidebar lists ───────────────
     // Favorites + Recent rows had no context menu. Wire a shared
@@ -509,9 +505,10 @@ export default {
       ]);
     };
     // "My files" quick-link: rename its label (a preferences alias — the real
-    // storage root is untouched), and reset back to the default when set.
+    // storage root is untouched). The rename dialog itself can clear the alias
+    // back to the default by submitting an empty value.
     const onMyFilesContextMenu = (event) => {
-      const items = [
+      openSidebarMenu(event, [
         {
           label: "Rename…",
           icon: "pencil",
@@ -520,18 +517,7 @@ export default {
             rootLabelComposable.openDialog();
           },
         },
-      ];
-      if (rootLabelComposable.rootLabel.value) {
-        items.push({
-          label: "Reset to default name",
-          icon: "rotate-ccw",
-          action: () => {
-            hideSidebarMenu();
-            rootLabelComposable.setRootLabel("");
-          },
-        });
-      }
-      openSidebarMenu(event, items);
+      ]);
     };
     // Recent: Open · copy path · remove from the recents log.
     const onRecentContextMenu = (recent, event) => {
@@ -751,9 +737,9 @@ export default {
       usage,
       usageAbortController: new AbortController(),
       prefs,
+      recentLabel,
       recentsComposable,
       favoritesComposable,
-      recentsExpanded,
       RECENTS_INITIAL,
       performDrop,
       draggingFavIndex,
@@ -791,6 +777,12 @@ export default {
     ...mapState(useAuthStore, ["user", "isLoggedIn"]),
     ...mapState(useFileStore, ["isFiles", "reload"]),
     ...mapState(useLayoutStore, ["currentPromptName"]),
+    // V2 #18: the "My files" row is the home anchor — keep it highlighted on
+    // the file views AND while the user is in Settings (Settings is reached via
+    // the account row, so nothing else in the nav would otherwise be lit).
+    mainNavActive() {
+      return this.isFiles || this.$route.path.startsWith("/settings");
+    },
     signup: () => signup,
     hideLoginButton: () => hideLoginButton,
     version: () => version,
@@ -821,12 +813,10 @@ export default {
       return this.favoritesComposable.favorites.value;
     },
     /** First N recents OR the full list depending on the
-     *  "View all" toggle. Cap from useRecents (50) is the upper
-     *  bound; the toggle just expands within that. */
+     *  Always capped at RECENTS_INITIAL (5) — the sidebar shows only the
+     *  5 most recent files (the store still keeps up to 50). */
     visibleRecents() {
-      return this.recentsExpanded
-        ? this.recents
-        : this.recents.slice(0, RECENTS_INITIAL);
+      return this.recents.slice(0, RECENTS_INITIAL);
     },
   },
   methods: {
@@ -859,10 +849,16 @@ export default {
         this.abortOngoingFetchUsage();
         this.usageAbortController = new AbortController();
         const usage = await api.usage(path, this.usageAbortController.signal);
+        // Guard the division: some backends/mounts report total=0 (quota
+        // unavailable, network filesystem), which made `used / total` NaN or
+        // Infinity → the bar rendered "NaN%". Fall back to 0% and clamp.
+        const used = Number(usage.used) || 0;
+        const total = Number(usage.total) || 0;
+        const pct = total > 0 ? Math.round((used / total) * 100) : 0;
         usageStats = {
-          used: prettyBytes(usage.used, { binary: true }),
-          total: prettyBytes(usage.total, { binary: true }),
-          usedPercentage: Math.round((usage.used / usage.total) * 100),
+          used: prettyBytes(used, { binary: true }),
+          total: prettyBytes(total, { binary: true }),
+          usedPercentage: Math.min(100, Math.max(0, pct)),
         };
       } finally {
         return Object.assign(this.usage, usageStats);

@@ -196,8 +196,12 @@ const close = () => {
   }
   layoutStore.showHover({
     prompt: "discardEditorChanges",
-    confirm: (event: Event) => {
-      event.preventDefault();
+    // V3-F: the DiscardEditorChanges "Discard" button calls confirm() with no
+    // event, so dereferencing it unguarded threw a TypeError *before* the close
+    // ran — the editor stayed open (Save/Cancel worked because they touch no
+    // event). Guard the optional event so Discard closes reliably.
+    confirm: (event?: Event) => {
+      event?.preventDefault();
       original.value = content.value; // mark clean so beforeunload won't fire
       finishClose();
     },

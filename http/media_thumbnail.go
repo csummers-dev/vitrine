@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"encoding/binary"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -160,9 +161,24 @@ func handleAudioPreview(w http.ResponseWriter, r *http.Request, imgSvc ImgServic
 }
 
 // extractAudioCover pulls the embedded picture (APIC / FLAC PICTURE / MP4
-// covr) out of an audio file via dhowden/tag. Reads through the afero Fs so
-// it works on any mount.
+// covr) out of an audio file. Reads through the afero Fs so it works on any
+// mount.
+//
+// dhowden/tag is the primary path (it also covers FLAC, MP4, OGG). But it
+// aborts the *entire* parse the moment it hits a single malformed frame —
+// commonly a UTF-16 text frame with an odd byte count ("invalid encoding:
+// expected even number of bytes") that real-world taggers emit — and returns
+// before it ever reaches the picture. So when it yields nothing we fall back to
+// a lenient ID3v2 scan that walks frames by their declared size (never parsing
+// their text) and lifts the cover out by hand.
 func extractAudioCover(file *files.FileInfo) ([]byte, error) {
+	if data, err := extractAudioCoverViaTag(file); err == nil {
+		return data, nil
+	}
+	return extractID3APIC(file)
+}
+
+func extractAudioCoverViaTag(file *files.FileInfo) ([]byte, error) {
 	fd, err := file.Fs.Open(file.Path)
 	if err != nil {
 		return nil, err
@@ -184,6 +200,124 @@ func extractAudioCover(file *files.FileInfo) ([]byte, error) {
 		return nil, errNoCover
 	}
 	return pic.Data, nil
+}
+
+// extractID3APIC is a lenient fallback that walks an ID3v2 tag frame-by-frame
+// looking only for the embedded picture (APIC in v2.3/v2.4, PIC in v2.2). It
+// skips every other frame by its declared size *without* decoding its content,
+// so a malformed text frame that derails dhowden/tag can't derail us. The
+// picture payload is located inside its frame by image magic bytes, which
+// sidesteps the encoding-dependent MIME + description fields. Whole-tag
+// unsynchronisation (rare) is not handled and simply yields no cover.
+func extractID3APIC(file *files.FileInfo) ([]byte, error) {
+	fd, err := file.Fs.Open(file.Path)
+	if err != nil {
+		return nil, err
+	}
+	defer fd.Close()
+
+	var hdr [10]byte
+	if _, err := io.ReadFull(fd, hdr[:]); err != nil || string(hdr[0:3]) != "ID3" {
+		return nil, errNoCover
+	}
+	major := hdr[3]
+	flags := hdr[5]
+	if flags&0x80 != 0 { // whole-tag unsynchronisation — skip
+		return nil, errNoCover
+	}
+	tagSize := synchsafe7(hdr[6:10])
+	if tagSize <= 0 || tagSize > maxCoverBytes+(1<<20) {
+		return nil, errNoCover
+	}
+	body := make([]byte, tagSize)
+	n, _ := io.ReadFull(fd, body)
+	body = body[:n]
+
+	pos := 0
+	// Skip an extended header if present (v2.3/v2.4 only; flags bit 6).
+	if major >= 3 && flags&0x40 != 0 && pos+4 <= len(body) {
+		if major == 4 {
+			pos += synchsafe7(body[pos : pos+4]) // size includes its own 4 bytes
+		} else {
+			pos += int(binary.BigEndian.Uint32(body[pos:pos+4])) + 4
+		}
+	}
+
+	for {
+		if major == 2 { // v2.2: 3-byte id + 3-byte size, no flags
+			if pos+6 > len(body) {
+				break
+			}
+			id := string(body[pos : pos+3])
+			size := int(body[pos+3])<<16 | int(body[pos+4])<<8 | int(body[pos+5])
+			pos += 6
+			if size <= 0 || pos+size > len(body) {
+				break
+			}
+			if id == "PIC" {
+				if img, ok := apicImage(body[pos : pos+size]); ok {
+					return img, nil
+				}
+			}
+			pos += size
+			continue
+		}
+		// v2.3 / v2.4: 4-byte id + 4-byte size + 2 flag bytes
+		if pos+10 > len(body) {
+			break
+		}
+		id := string(body[pos : pos+4])
+		var size int
+		if major == 4 {
+			size = synchsafe7(body[pos+4 : pos+8])
+		} else {
+			size = int(binary.BigEndian.Uint32(body[pos+4 : pos+8]))
+		}
+		pos += 10
+		if size <= 0 || pos+size > len(body) { // padding / lying size — stop
+			break
+		}
+		if id == "APIC" {
+			if img, ok := apicImage(body[pos : pos+size]); ok {
+				return img, nil
+			}
+		}
+		pos += size
+	}
+
+	// Last resort: some encoders write wrong frame sizes (the classic v2.3
+	// "synchsafe" bug), derailing the walk. Scan the whole tag for the first
+	// image magic — almost certainly the cover.
+	if img, ok := apicImage(body); ok {
+		return img, nil
+	}
+	return nil, errNoCover
+}
+
+// apicImage returns the embedded image inside an APIC/PIC frame body, located
+// by its magic bytes (JPEG / PNG / GIF), from the magic to the end of the
+// frame. Image decoders stop at their own end-marker, so trailing frame bytes
+// are harmless.
+func apicImage(frame []byte) ([]byte, bool) {
+	for i := 0; i+4 <= len(frame); i++ {
+		switch {
+		case frame[i] == 0xFF && frame[i+1] == 0xD8 && frame[i+2] == 0xFF, // JPEG
+			frame[i] == 0x89 && frame[i+1] == 'P' && frame[i+2] == 'N' && frame[i+3] == 'G', // PNG
+			frame[i] == 'G' && frame[i+1] == 'I' && frame[i+2] == 'F' && frame[i+3] == '8': // GIF
+			data := frame[i:]
+			if len(data) == 0 || len(data) > maxCoverBytes {
+				return nil, false
+			}
+			return data, true
+		}
+	}
+	return nil, false
+}
+
+// synchsafe7 decodes a 4-byte synchsafe integer (7 significant bits per byte),
+// as used by the ID3v2 tag header and v2.4 frame sizes.
+func synchsafe7(b []byte) int {
+	return int(b[0]&0x7f)<<21 | int(b[1]&0x7f)<<14 | int(b[2]&0x7f)<<7 | int(b[3]&0x7f)
 }
 
 // ── EPUB ────────────────────────────────────────────────────────────────
@@ -341,6 +475,47 @@ func findEpubCoverHref(pkg *epubPackage) string {
 		}
 	}
 	return ""
+}
+
+// ── Comic (CBR only) ──────────────────────────────────────────────────────
+
+// handleComicPreview serves a `.cbr` (RAR) comic's cover — its first image, in
+// natural-sort order — resized + cached like the other media covers. It reuses
+// the comic reader's page cache (comicPages / comicPageBytes keyed by realPath +
+// mtime), so the thumbnail and the in-app reader share the same extracted bytes.
+// Any failure (no images, encrypted, oversize, decode error) returns 501 → the
+// generic icon, never a 500. `.cbz` is intentionally NOT routed here (V2 #6).
+func handleComicPreview(w http.ResponseWriter, r *http.Request, imgSvc ImgService,
+	fileCache FileCache, file *files.FileInfo, previewSize PreviewSize, enableThumbnails bool, maxEntries int) (int, error) {
+	if previewSize != PreviewSizeThumb || !enableThumbnails {
+		return http.StatusNotImplemented, nil
+	}
+
+	cacheKey := mediaThumbCacheKey(file, "comic")
+	thumb, ok, err := fileCache.Load(r.Context(), cacheKey)
+	if err != nil {
+		return errToStatus(err), err
+	}
+	if !ok {
+		realPath := file.RealPath()
+		names, _, pErr := comicPages(r.Context(), fileCache, realPath, file.ModTime, maxEntries)
+		if pErr != nil || len(names) == 0 {
+			return http.StatusNotImplemented, nil
+		}
+		raw, _, bErr := comicPageBytes(r.Context(), fileCache, realPath, file.ModTime, names[0], maxCoverBytes)
+		if bErr != nil {
+			return http.StatusNotImplemented, nil
+		}
+		thumb, err = resizeCoverThumb(imgSvc, raw)
+		if err != nil {
+			log.Printf("comic thumbnail resize %q: %v", file.Name, err)
+			return http.StatusNotImplemented, nil
+		}
+		storeThumbAsync(fileCache, cacheKey, thumb)
+	}
+
+	serveThumbJPEG(w, r, file, thumb)
+	return 0, nil
 }
 
 // ── PDF ─────────────────────────────────────────────────────────────────

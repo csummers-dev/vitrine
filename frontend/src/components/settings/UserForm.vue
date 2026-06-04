@@ -70,17 +70,6 @@
       </SettingsRow>
     </SettingsSection>
 
-    <!-- ── Language ────────────────────────────────────────────────── -->
-    <SettingsSection :title="t('settings.language')">
-      <SettingsRow stacked label="">
-        <Languages
-          id="locale"
-          class="settings-select"
-          v-model:locale="user.locale"
-        />
-      </SettingsRow>
-    </SettingsSection>
-
     <!-- ── Permissions ─────────────────────────────────────────────── -->
     <SettingsSection
       :title="t('settings.permissions')"
@@ -140,7 +129,6 @@ import { useI18n } from "vue-i18n";
 import SettingsSection from "@/components/settings/SettingsSection.vue";
 import SettingsRow from "@/components/settings/SettingsRow.vue";
 import Toggle from "@/components/settings/Toggle.vue";
-import Languages from "./Languages.vue";
 import Rules from "./Rules.vue";
 import Commands from "./Commands.vue";
 import { enableExec } from "@/utils/constants";
@@ -358,12 +346,6 @@ watch(createUserDirData, () => {
 
 .settings-helper--error {
   color: #dc2626;
-}
-
-/* See note in Profile.vue — keep this minimal so .fb-select chrome
-   (chevron, appearance:none, padding) isn't clobbered. */
-.settings-select {
-  width: 100%;
 }
 
 /* Legacy slot for Commands/Rules until those components are rebuilt. Keep

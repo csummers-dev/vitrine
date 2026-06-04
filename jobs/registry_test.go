@@ -1,0 +1,221 @@
+package jobs
+
+import (
+	"context"
+	"errors"
+	"sync"
+	"testing"
+	"time"
+)
+
+func sampleItems() []Item {
+	return []Item{{From: "/src/a", To: "/dst/a"}}
+}
+
+// waitStatus polls until the job reaches want, or fails the test.
+func waitStatus(t *testing.T, r *Registry, id string, uid uint, want Status) JobView {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if v, ok := r.Get(id, uid); ok && v.Status == want {
+			return v
+		}
+		time.Sleep(time.Millisecond)
+	}
+	if v, ok := r.Get(id, uid); ok {
+		t.Fatalf("job %s: want status %q, still %q", id, want, v.Status)
+	} else {
+		t.Fatalf("job %s: want status %q, but job is gone", id, want)
+	}
+	return JobView{}
+}
+
+func TestEnqueueCompletesWithProgress(t *testing.T) {
+	r := New(func(_ context.Context, j *Job) error {
+		j.SetTotals(100, 1)
+		j.StartFile("a", "/dst/a")
+		j.AddBytes(60)
+		j.AddBytes(40)
+		j.FinishFile()
+		return nil
+	})
+	defer r.Close()
+
+	j := r.Enqueue(1, KindCopy, sampleItems(), nil)
+	v := waitStatus(t, r, j.ID(), 1, StatusCompleted)
+
+	if v.TotalBytes != 100 || v.DoneBytes != 100 {
+		t.Fatalf("bytes: want 100/100, got %d/%d", v.DoneBytes, v.TotalBytes)
+	}
+	if v.FileCount != 1 || v.FilesDone != 1 {
+		t.Fatalf("files: want 1/1, got %d/%d", v.FilesDone, v.FileCount)
+	}
+	if v.Name != "a" || v.Dest != "/dst" {
+		t.Fatalf("label/dest: want a //dst, got %q / %q", v.Name, v.Dest)
+	}
+	if v.FinishedAt.IsZero() || v.StartedAt.IsZero() {
+		t.Fatalf("timestamps not set: started=%v finished=%v", v.StartedAt, v.FinishedAt)
+	}
+}
+
+func TestSequentialOneAtATime(t *testing.T) {
+	started := make(chan string, 8)
+	release := make(chan struct{})
+	r := New(func(_ context.Context, j *Job) error {
+		started <- j.ID()
+		<-release
+		return nil
+	})
+	defer r.Close()
+	defer close(release) // unblock any straggler on teardown
+
+	a := r.Enqueue(1, KindCopy, sampleItems(), nil)
+	b := r.Enqueue(1, KindCopy, sampleItems(), nil)
+
+	// A runs first.
+	if id := <-started; id != a.ID() {
+		t.Fatalf("expected A to start first, got %s", id)
+	}
+	// B must still be queued (worker is busy with A).
+	if v, _ := r.Get(b.ID(), 1); v.Status != StatusQueued {
+		t.Fatalf("B should be queued while A runs, got %q", v.Status)
+	}
+
+	release <- struct{}{} // finish A → B starts
+	if id := <-started; id != b.ID() {
+		t.Fatalf("expected B to start after A, got %s", id)
+	}
+	release <- struct{}{} // finish B
+	waitStatus(t, r, b.ID(), 1, StatusCompleted)
+	waitStatus(t, r, a.ID(), 1, StatusCompleted)
+}
+
+func TestCancelRunning(t *testing.T) {
+	r := New(func(ctx context.Context, _ *Job) error {
+		<-ctx.Done() // block until canceled
+		return ctx.Err()
+	})
+	defer r.Close()
+
+	j := r.Enqueue(1, KindMove, sampleItems(), nil)
+	waitStatus(t, r, j.ID(), 1, StatusRunning)
+
+	if !r.Cancel(j.ID(), 1) {
+		t.Fatal("Cancel of a running job should return true")
+	}
+	waitStatus(t, r, j.ID(), 1, StatusCanceled)
+}
+
+func TestCancelQueuedSkipsExecutor(t *testing.T) {
+	started := make(chan string, 8)
+	release := make(chan struct{})
+	var ran sync.Map
+	r := New(func(_ context.Context, j *Job) error {
+		ran.Store(j.ID(), true)
+		started <- j.ID()
+		<-release
+		return nil
+	})
+	defer r.Close()
+
+	r.Enqueue(1, KindCopy, sampleItems(), nil) // A — blocks the worker
+	b := r.Enqueue(1, KindCopy, sampleItems(), nil)
+
+	<-started // A running, B queued
+	if !r.Cancel(b.ID(), 1) {
+		t.Fatal("Cancel of a queued job should return true")
+	}
+	release <- struct{}{} // finish A → worker reaches B, sees canceled, skips exec
+
+	waitStatus(t, r, b.ID(), 1, StatusCanceled)
+	if _, ok := ran.Load(b.ID()); ok {
+		t.Fatal("executor must not run for a job canceled while queued")
+	}
+}
+
+func TestFailedReportsError(t *testing.T) {
+	r := New(func(_ context.Context, _ *Job) error {
+		return errors.New("disk full")
+	})
+	defer r.Close()
+
+	j := r.Enqueue(1, KindCopy, sampleItems(), nil)
+	v := waitStatus(t, r, j.ID(), 1, StatusFailed)
+	if v.Error != "disk full" {
+		t.Fatalf("want error %q, got %q", "disk full", v.Error)
+	}
+}
+
+func TestPerUserIsolation(t *testing.T) {
+	r := New(func(_ context.Context, _ *Job) error { return nil })
+	defer r.Close()
+
+	a := r.Enqueue(1, KindCopy, sampleItems(), nil)
+	b := r.Enqueue(2, KindCopy, sampleItems(), nil)
+	waitStatus(t, r, a.ID(), 1, StatusCompleted)
+	waitStatus(t, r, b.ID(), 2, StatusCompleted)
+
+	if got := r.List(1); len(got) != 1 || got[0].ID != a.ID() {
+		t.Fatalf("List(1) should contain only user 1's job, got %+v", got)
+	}
+	if _, ok := r.Get(b.ID(), 1); ok {
+		t.Fatal("user 1 should not Get user 2's job")
+	}
+	if r.Dismiss(b.ID(), 1) {
+		t.Fatal("user 1 should not Dismiss user 2's job")
+	}
+}
+
+func TestDismiss(t *testing.T) {
+	r := New(func(_ context.Context, _ *Job) error { return nil })
+	defer r.Close()
+
+	a := r.Enqueue(1, KindCopy, sampleItems(), nil)
+	waitStatus(t, r, a.ID(), 1, StatusCompleted)
+	if !r.Dismiss(a.ID(), 1) {
+		t.Fatal("Dismiss of a completed job should return true")
+	}
+	if _, ok := r.Get(a.ID(), 1); ok {
+		t.Fatal("dismissed job should be gone")
+	}
+
+	// A running job is not dismissable.
+	release := make(chan struct{})
+	r2 := New(func(_ context.Context, _ *Job) error { <-release; return nil })
+	defer r2.Close()
+	b := r2.Enqueue(1, KindCopy, sampleItems(), nil)
+	waitStatus(t, r2, b.ID(), 1, StatusRunning)
+	if r2.Dismiss(b.ID(), 1) {
+		t.Fatal("a running job must not be dismissable")
+	}
+	close(release)
+}
+
+func TestSweepDropsOldTerminalJobs(t *testing.T) {
+	r := New(func(_ context.Context, _ *Job) error { return nil })
+	defer r.Close()
+
+	a := r.Enqueue(1, KindCopy, sampleItems(), nil)
+	waitStatus(t, r, a.ID(), 1, StatusCompleted)
+
+	// Fast-forward past the retain window and sweep synchronously. (The
+	// background sweeper ticks once a minute, so it can't race this in-test.)
+	r.now = func() time.Time { return time.Now().Add(10 * time.Minute) }
+	r.sweep()
+
+	if _, ok := r.Get(a.ID(), 1); ok {
+		t.Fatal("a terminal job past the retain window should be swept")
+	}
+}
+
+func TestLabelAndDest(t *testing.T) {
+	if got := label([]Item{{From: "/Movies/The Matrix/", To: "/x"}}); got != "The Matrix" {
+		t.Fatalf("single-item label: got %q", got)
+	}
+	if got := label([]Item{{From: "/a", To: "/x"}, {From: "/b", To: "/y"}}); got != "" {
+		t.Fatalf("multi-item label should be empty, got %q", got)
+	}
+	if got := destDir([]Item{{From: "/a", To: "/Movies/The Matrix"}}); got != "/Movies" {
+		t.Fatalf("dest dir: got %q", got)
+	}
+}

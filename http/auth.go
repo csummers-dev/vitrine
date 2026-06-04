@@ -26,7 +26,6 @@ const (
 
 type userInfo struct {
 	ID                    uint                       `json:"id"`
-	Locale                string                     `json:"locale"`
 	ViewMode              users.ViewMode             `json:"viewMode"`
 	SingleClick           bool                       `json:"singleClick"`
 	RedirectAfterCopyMove bool                       `json:"redirectAfterCopyMove"`
@@ -246,7 +245,6 @@ func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.Use
 	claims := &authToken{
 		User: userInfo{
 			ID:                    user.ID,
-			Locale:                user.Locale,
 			ViewMode:              user.ViewMode,
 			SingleClick:           user.SingleClick,
 			RedirectAfterCopyMove: user.RedirectAfterCopyMove,

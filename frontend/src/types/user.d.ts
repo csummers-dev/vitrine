@@ -3,7 +3,6 @@ interface IUser {
   username: string;
   password: string;
   scope: string;
-  locale: string;
   perm: UserPermissions;
   commands: string[];
   rules: IRule[];
@@ -39,7 +38,6 @@ interface IUserForm {
   username?: string;
   password?: string;
   scope?: string;
-  locale?: string;
   perm?: UserPermissions;
   commands?: string[];
   rules?: IRule[];

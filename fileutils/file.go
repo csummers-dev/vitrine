@@ -1,6 +1,7 @@
 package fileutils
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -31,20 +32,32 @@ func ignorableMetaErr(err error) bool {
 // By default the rename filesystem system call is used. If src and dst point to different volumes
 // the file copy is used as a fallback
 func MoveFile(afs afero.Fs, src, dst string, fileMode, dirMode fs.FileMode) error {
+	return MoveFileWithProgress(context.Background(), afs, src, dst, fileMode, dirMode, nil)
+}
+
+// MoveFileWithProgress is MoveFile with cancellation + progress. A same-volume
+// move stays an instant rename (no progress, not cancelable — it's atomic). A
+// cross-volume move copies (with progress, cancelable) then removes the source
+// ONLY on full success. On any copy error — including cancellation — the
+// partially-written destination is removed and the source is left untouched, so
+// nothing is ever lost.
+func MoveFileWithProgress(ctx context.Context, afs afero.Fs, src, dst string, fileMode, dirMode fs.FileMode, p Progress) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	if afs.Rename(src, dst) == nil {
 		return nil
 	}
-	// Rename failed — most commonly EXDEV when src and dst live on
-	// different mounts. Separate Docker bind mounts count as different
-	// mounts even when they're backed by the same underlying filesystem,
-	// so cross-folder moves on a multi-volume setup always land here.
-	// Fall back to a deep copy + delete.
-	if err := Copy(afs, src, dst, fileMode, dirMode); err != nil {
-		// Clean up whatever the copy managed to write. RemoveAll (not
-		// Remove) so a partially-copied DIRECTORY isn't stranded at the
-		// destination — Remove can't delete a non-empty dir, which used
-		// to leave half-moved folders behind on any copy error. The
-		// source is left untouched so nothing is lost.
+	// Rename failed — most commonly EXDEV when src and dst live on different
+	// mounts. Separate Docker bind mounts count as different mounts even when
+	// backed by the same underlying filesystem, so cross-folder moves on a
+	// multi-volume setup always land here. Fall back to a deep copy + delete.
+	if err := CopyWithProgress(ctx, afs, src, dst, fileMode, dirMode, p); err != nil {
+		// Clean up whatever the copy managed to write. RemoveAll (not Remove)
+		// so a partially-copied DIRECTORY isn't stranded at the destination —
+		// Remove can't delete a non-empty dir. This is also the cancellation
+		// rollback: the source is left untouched so nothing is lost.
 		_ = afs.RemoveAll(dst)
 		return fmt.Errorf("move %q -> %q: copy fallback failed: %w", src, dst, err)
 	}
@@ -58,6 +71,14 @@ func MoveFile(afs afero.Fs, src, dst string, fileMode, dirMode fs.FileMode) erro
 // an error if any. Errors are wrapped with the failing operation + path
 // so a failed move surfaces exactly which file (and which syscall) broke.
 func CopyFile(afs afero.Fs, source, dest string, fileMode, dirMode fs.FileMode) error {
+	return copyFile(context.Background(), afs, source, dest, fileMode, dirMode, nopProgress{})
+}
+
+func copyFile(ctx context.Context, afs afero.Fs, source, dest string, fileMode, dirMode fs.FileMode, p Progress) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	// Open the source file.
 	src, err := afs.Open(source)
 	if err != nil {
@@ -79,9 +100,11 @@ func CopyFile(afs afero.Fs, source, dest string, fileMode, dirMode fs.FileMode) 
 	}
 	defer dst.Close()
 
-	// Copy the contents of the file.
-	_, err = io.Copy(dst, src)
-	if err != nil {
+	p.StartFile(path.Base(source), dest)
+
+	// Copy the contents through a progressWriter, so each chunk advances the
+	// transfer's byte count and a canceled context aborts the copy mid-file.
+	if _, err = io.Copy(&progressWriter{w: dst, ctx: ctx, p: p}, src); err != nil {
 		return fmt.Errorf("copy bytes to %q: %w", dest, err)
 	}
 
@@ -97,7 +120,29 @@ func CopyFile(afs afero.Fs, source, dest string, fileMode, dirMode fs.FileMode) 
 		return fmt.Errorf("chmod dest %q: %w", dest, err)
 	}
 
+	p.FinishFile()
 	return nil
+}
+
+// progressWriter forwards writes to w, reports the written byte count to p, and
+// aborts (returns ctx.Err()) when the context is canceled. The cancel check is
+// once per chunk — io.Copy uses 32 KiB chunks — which is responsive without
+// per-byte overhead.
+type progressWriter struct {
+	w   io.Writer
+	ctx context.Context
+	p   Progress
+}
+
+func (pw *progressWriter) Write(b []byte) (int, error) {
+	if err := pw.ctx.Err(); err != nil {
+		return 0, err
+	}
+	n, err := pw.w.Write(b)
+	if n > 0 {
+		pw.p.AddBytes(int64(n))
+	}
+	return n, err
 }
 
 // CommonPrefix returns common directory path of provided files

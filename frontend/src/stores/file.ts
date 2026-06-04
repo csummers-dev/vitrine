@@ -7,6 +7,15 @@ export const useFileStore = defineStore("file", {
     oldReq: Resource | null;
     reload: boolean;
     selected: number[];
+    /**
+     * Keyboard-navigation cursor (Finder-style). `activeIndex` is the
+     * `req.items` index of the focused row — the moving end of the selection;
+     * `anchorIndex` is the fixed end for Shift+Arrow range extension. Both are
+     * -1 when there's no keyboard cursor. Driven by `useListingNavigation`;
+     * reset on each listing change (a fresh `req` has a fresh cursor).
+     */
+    activeIndex: number;
+    anchorIndex: number;
     multiple: boolean;
     isFiles: boolean;
     /**
@@ -50,6 +59,8 @@ export const useFileStore = defineStore("file", {
     oldReq: null,
     reload: false,
     selected: [],
+    activeIndex: -1,
+    anchorIndex: -1,
     multiple: false,
     isFiles: false,
     preselect: [],
@@ -80,6 +91,9 @@ export const useFileStore = defineStore("file", {
       this.oldReq = this.req;
       this.req = value;
 
+      // A new listing resets the keyboard-nav cursor.
+      this.activeIndex = -1;
+      this.anchorIndex = -1;
       this.selected = [];
 
       if (!this.req?.items) return;

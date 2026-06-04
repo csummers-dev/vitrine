@@ -52,6 +52,22 @@
   },
   "files": {
     "files": "Files",
+    "comic": {
+      "loading": "Loading comic…",
+      "empty": "This archive has no images to read.",
+      "error": "Couldn't open this comic.",
+      "encrypted": "This comic is password-protected, which isn't supported.",
+      "pageError": "Couldn't load this page.",
+      "previous": "Previous page",
+      "next": "Next page",
+      "fit": "Fit",
+      "fitWidth": "Width",
+      "fitHeight": "Height",
+      "original": "Actual",
+      "dynamic": "Dynamic",
+      "readingDirection": "Reading direction",
+      "fullscreen": "Fullscreen"
+    },
     "home": "Home",
     "loading": "Loading...",
     "lonely": "It feels lonely here...",
@@ -111,15 +127,29 @@
     "replaceOrSkip": "Replace or skip files",
     "resolveConflict": "Which files do you want to keep?",
     "singleConflictResolve": "If you select both versions, a number will be added to the name of the copied file.",
-    "fastConflictResolve": "The destination folder there are {count} files with same name.",
+    "fastConflictResolve": "The destination folder has {count} {noun} with the same name.",
     "uploadingFiles": "Uploading files",
     "filesInOrigin": "Files in origin",
     "filesInDest": "Files in destination",
     "currentPassword": "Your password",
-    "currentPasswordMessage": "Enter your password to validate this action."
+    "currentPasswordMessage": "Enter your password to validate this action.",
+    "archivePassword": {
+      "title": "Password required",
+      "message": "This archive is password-protected. Enter the password to extract it.",
+      "placeholder": "Archive password",
+      "incorrect": "Incorrect password — try again.",
+      "unlock": "Extract",
+      "show": "Show password",
+      "hide": "Hide password"
+    }
   },
   "search": {
     "search": "Search..."
+  },
+  "quicklook": {
+    "open": "Open",
+    "openFolder": "Open folder",
+    "folder": "Folder"
   },
   "settings": {
     "admin": "Admin",

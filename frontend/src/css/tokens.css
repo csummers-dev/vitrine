@@ -2,6 +2,10 @@
 
 @theme {
   --color-accent: #5e6ad2;
+  /* Accent used as TEXT on a tinted/selected surface. In light mode the base
+     accent reads fine on the pale selection fill; on the dark canvas #5e6ad2 is
+     too dark to read (V2 #17), so html.dark lifts this to a light lilac. */
+  --color-accent-ink: var(--color-accent);
   --color-accent-strong: #4f5ac4;
   --color-accent-soft: rgba(94, 106, 210, 0.1);
   --color-accent-ring: rgba(94, 106, 210, 0.3);
@@ -96,6 +100,12 @@
   --tint-epub-fg: #0f766e;
   --tint-csv-bg: rgba(34, 197, 94, 0.16);
   --tint-csv-fg: #15803d;
+  /* V2 #10: comics get the violet identity they have in the listing. */
+  --tint-comic-bg: rgba(139, 92, 246, 0.16);
+  --tint-comic-fg: #6d28d9;
+  /* V2 #11: generic fallback — coloured (slate), never flat grey. */
+  --tint-file-bg: rgba(100, 116, 139, 0.14);
+  --tint-file-fg: #475569;
 }
 
 /* ── Accent gradients ────────────────────────────────────────────────────
@@ -150,6 +160,8 @@
 html.dark {
   --color-accent-soft: rgba(94, 106, 210, 0.16);
   --color-accent-ring: rgba(94, 106, 210, 0.45);
+  /* Light lilac so accent-colored TEXT stays legible on the dark canvas. */
+  --color-accent-ink: #c7ccfb;
 
   /* Colorful UI palette — lilac primary stays #5e6ad2; the rest lift for the
      dark canvas. (Per the design rule: lilac is the only hue that keeps its
@@ -178,6 +190,10 @@ html.dark {
   --tint-epub-fg: #99f6e4;
   --tint-csv-bg: rgba(74, 222, 128, 0.2);
   --tint-csv-fg: #bbf7d0;
+  --tint-comic-bg: rgba(167, 139, 250, 0.22);
+  --tint-comic-fg: #ddd6fe;
+  --tint-file-bg: rgba(148, 163, 184, 0.2);
+  --tint-file-fg: #e2e8f0;
 
   --color-canvas: #0e0e10;
   --color-surface: #18181b;

@@ -20,6 +20,7 @@ import * as auth from "@/utils/auth";
 import { unzipEnabled } from "@/utils/constants";
 import { isExtractable } from "@/utils/archive";
 import { useBulkRename } from "@/composables/useBulkRename";
+import { useShortcutsOverlay } from "@/composables/useShortcutsOverlay";
 
 export type CommandGroup =
   | "quickActions"
@@ -147,7 +148,7 @@ export function buildStaticCommands(ctx: CommandContext): Command[] {
       id: "action.refresh",
       group: "actions",
       label: "Refresh",
-      hint: "R",
+      hint: "/",
       icon: "rotate-ccw",
       keywords: ["reload", "fetch"],
       run: () => {
@@ -353,6 +354,17 @@ export function buildStaticCommands(ctx: CommandContext): Command[] {
       run: () => void router.push("/settings/users"),
     });
   }
+
+  // WS10: the `?` key was removed, so the keyboard cheat-sheet is opened from
+  // the palette instead.
+  cmds.push({
+    id: "action.shortcuts",
+    group: "actions",
+    label: "Keyboard shortcuts",
+    icon: "keyboard",
+    keywords: ["help", "keys", "cheat sheet", "hotkeys"],
+    run: () => useShortcutsOverlay().open(),
+  });
 
   cmds.push({
     id: "action.logout",

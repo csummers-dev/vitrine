@@ -18,19 +18,18 @@
               ? isUploadAction
                 ? "Pick a resolution for each file."
                 : $t("prompts.singleConflictResolve")
-              : $t("prompts.fastConflictResolve", { count: conflict.length })
+              : $t("prompts.fastConflictResolve", {
+                  count: conflict.length,
+                  noun: conflict.length === 1 ? "file" : "files",
+                })
           }}
         </p>
         <!-- Source → destination context line. Only renders when the
              caller supplied `from`/`to`; the legacy upload path supplies
-             only `to` (origin is the user's local filesystem). -->
+             only `to` (origin is the user's local filesystem). V2 #25: the
+             leading arrow icon was removed — the "→" already lives inside the
+             text between source and destination. -->
         <p v-if="contextLine" class="rc-prompt__context">
-          <Icon
-            name="arrow-right"
-            :size="11"
-            :stroke-width="2"
-            aria-hidden="true"
-          />
           <span v-text="contextLine"></span>
         </p>
         <!-- Inline filename preview so users in the quick-action view
@@ -106,7 +105,11 @@
       <!-- Quick-action buttons -->
       <div v-else class="rc-quick">
         <button class="rc-quick__btn" @click="(e) => resolve(e, ['origin'])">
-          <Icon name="check-check" :size="14" />
+          <Icon
+            name="check-check"
+            :size="14"
+            :style="{ color: 'var(--c-blue)' }"
+          />
           <span>{{ $t("buttons.overrideAll") }}</span>
         </button>
         <button
@@ -114,11 +117,11 @@
           class="rc-quick__btn"
           @click="(e) => resolve(e, ['origin', 'dest'])"
         >
-          <Icon name="copy" :size="14" />
+          <Icon name="copy" :size="14" :style="{ color: 'var(--c-teal)' }" />
           <span>{{ $t("buttons.renameAll") }}</span>
         </button>
         <button class="rc-quick__btn" @click="(e) => resolve(e, ['dest'])">
-          <Icon name="undo-2" :size="14" />
+          <Icon name="undo-2" :size="14" :style="{ color: 'var(--c-green)' }" />
           <span>{{ $t("buttons.skipAll") }}</span>
         </button>
         <!-- Resume is upload-specific (H9). The isSmallerOnServer
@@ -132,7 +135,11 @@
           class="rc-quick__btn"
           @click="(e) => resume(e)"
         >
-          <Icon name="rotate-ccw" :size="14" />
+          <Icon
+            name="rotate-ccw"
+            :size="14"
+            :style="{ color: 'var(--c-lilac)' }"
+          />
           <span>{{ $t("buttons.resumeTransfer") }}</span>
           <span
             class="rc-quick__tip"
@@ -190,10 +197,14 @@
 import Icon from "@/components/Icon.vue";
 import { computed, ref } from "vue";
 import { useLayoutStore } from "@/stores/layout";
+import { useRootLabel } from "@/composables/useRootLabel";
 import { filesize } from "@/utils";
 import dayjs from "dayjs";
 
 const layoutStore = useLayoutStore();
+// V2 #25: show the user's custom root label (e.g. "My files") instead of the
+// generic "Root" when a conflict path resolves to the storage root.
+const { rootLabel } = useRootLabel();
 const { currentPrompt } = layoutStore;
 
 const conflict = ref<ConflictingResource[]>(currentPrompt?.props.conflict);
@@ -220,7 +231,7 @@ const friendlyPath = (raw: string): string => {
     .replace(/^\/files\//, "")
     .replace(/^\/api\/resources\//, "")
     .replace(/\/$/, "");
-  if (!trimmed) return "Root";
+  if (!trimmed) return rootLabel.value || "My files";
   const segments = trimmed.split("/");
   const tail = segments.slice(-2).join("/");
   try {
@@ -343,8 +354,9 @@ const toogleCheckAll = (e: Event) => {
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.1));
-  color: var(--color-accent, #5e6ad2);
+  /* V2 #26: a conflict needs attention → amber, not the neutral lilac accent. */
+  background: color-mix(in srgb, var(--c-amber) 16%, transparent);
+  color: var(--c-amber);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -549,14 +561,36 @@ const toogleCheckAll = (e: Event) => {
   background: var(--color-elevated, #f4f4f5);
 }
 
+/* The "Decide for each" CTA — a solid GREEN fill ("go / take action") that
+   reads on either theme. The previous amber darkened on the light surface to an
+   unpleasant brown; green keeps the positive-action read at full contrast.
+   - Light: the green token deepened (toward black) so the WHITE label clears
+     AA contrast (#fff on ~#12823b ≈ 4.9:1).
+   - Dark: the bright green token with a NEAR-BLACK label (white-on-bright-green
+     would fail), giving a high-contrast "primary green button" look.
+   Each :hover RE-DECLARES its own background: the generic `.rc-quick__btn:hover`
+   rule (class + pseudo) out-specifies the `.rc-quick__btn--accent` base class
+   and fills near-white, so without an explicit accent-hover background the
+   button would wash out to an unreadable white on hover (the old bug). */
 .rc-quick__btn--accent {
-  border-color: var(--color-line, #ececec);
-  color: var(--color-accent, #5e6ad2);
+  background: color-mix(in srgb, var(--c-green) 80%, #000);
+  border-color: color-mix(in srgb, var(--c-green) 80%, #000);
+  color: #fff;
+  font-weight: 600;
+}
+html.dark .rc-quick__btn--accent {
+  background: var(--c-green);
+  border-color: var(--c-green);
+  color: #06281a;
 }
 
 .rc-quick__btn--accent:hover {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.08));
-  border-color: var(--color-accent, #5e6ad2);
+  background: color-mix(in srgb, var(--c-green) 70%, #000);
+  border-color: color-mix(in srgb, var(--c-green) 70%, #000);
+}
+html.dark .rc-quick__btn--accent:hover {
+  background: color-mix(in srgb, var(--c-green) 82%, #fff);
+  border-color: color-mix(in srgb, var(--c-green) 82%, #fff);
 }
 
 .rc-quick__btn :deep(svg) {
@@ -564,8 +598,13 @@ const toogleCheckAll = (e: Event) => {
   flex-shrink: 0;
 }
 
+/* The Decide button's icon matches its label colour (white on light, near-black
+   on dark) — placed AFTER the generic grey rule so it wins on source order. */
 .rc-quick__btn--accent :deep(svg) {
-  color: var(--color-accent, #5e6ad2);
+  color: #fff;
+}
+html.dark .rc-quick__btn--accent :deep(svg) {
+  color: #06281a;
 }
 
 .rc-quick__tip {

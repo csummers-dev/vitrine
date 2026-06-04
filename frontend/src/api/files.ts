@@ -256,16 +256,35 @@ export function copy(items: any[], overwrite = false, rename = false) {
 export async function unzip(
   zipFilePath: string,
   destPath: string,
-  overwrite = false
+  overwrite = false,
+  password?: string
 ): Promise<void> {
   const from = removePrefix(zipFilePath);
   const to = encodeURIComponent(removePrefix(destPath));
   const url = `${from}?destination=${to}&override=${overwrite}`;
-  const res = await fetchURL(`/api/unzip${url}`, { method: "POST" });
+  // The archive password rides in a header (never the URL, so it can't land in
+  // an access log or the audit trail) and is base64(UTF-8)-encoded so non-ASCII
+  // passwords stay valid as an HTTP header value. A wrong/missing password comes
+  // back as 422 (see useExtractIndicator's prompt-and-retry loop).
+  const headers = password
+    ? { "X-Archive-Password": encodePasswordHeader(password) }
+    : undefined;
+  const res = await fetchURL(`/api/unzip${url}`, { method: "POST", headers });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new StatusError(body || res.statusText, res.status);
   }
+}
+
+// Base64(UTF-8) for the X-Archive-Password header. btoa can't take code points
+// above 0xFF directly, so encode to UTF-8 bytes first. Built with a loop rather
+// than String.fromCharCode(...bytes) so a long password can't blow the call
+// stack via argument spread.
+function encodePasswordHeader(password: string): string {
+  const bytes = new TextEncoder().encode(password);
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
 }
 
 export async function checksum(url: string, algo: ChecksumAlg) {
@@ -309,6 +328,35 @@ export function getPreviewURL(file: ResourceItem, size: string) {
   };
 
   return createURL("api/preview/" + size + file.path, params);
+}
+
+// Comic reader (CBZ/CBR): the page count, then a per-page image URL. `<img>`
+// can't send the X-Auth header, so the page URL carries ?auth (like the other
+// media URLs); `key` (file mtime) busts the cache when the comic changes.
+export async function getComicPageCount(path: string): Promise<number> {
+  // NOTE: this module exports its own `fetch`, so call the global explicitly.
+  const res = await window.fetch(
+    createURL("api/comic/list" + path, authParam())
+  );
+  if (res.status < 200 || res.status > 299) {
+    throw new StatusError(
+      (await res.text()) || `${res.status} ${res.statusText}`,
+      res.status
+    );
+  }
+  const body = (await res.json()) as { pages?: number };
+  return body.pages ?? 0;
+}
+
+export function getComicPageURL(
+  path: string,
+  modified: string,
+  index: number
+): string {
+  return createURL("api/comic/page/" + index + path, {
+    key: Date.parse(modified),
+    ...authParam(),
+  });
 }
 
 export function getSubtitlesURL(file: ResourceItem) {

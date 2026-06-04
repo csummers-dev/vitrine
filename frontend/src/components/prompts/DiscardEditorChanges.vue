@@ -23,7 +23,7 @@
         id="focus-prompt"
         type="button"
         class="confirm-prompt__btn confirm-prompt__btn--danger"
-        @click="layoutStore.currentPrompt?.confirm?.()"
+        @click="layoutStore.currentPrompt?.confirm?.($event)"
       >
         {{ $t("buttons.discardChanges") }}
       </button>

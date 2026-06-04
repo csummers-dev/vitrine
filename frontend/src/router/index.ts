@@ -16,7 +16,7 @@ import Webhooks from "@/views/settings/Webhooks.vue";
 import Errors from "@/views/Errors.vue";
 import { useAuthStore } from "@/stores/auth";
 import { useUploadStore } from "@/stores/upload";
-import { baseURL, name } from "@/utils/constants";
+import { baseURL, brand } from "@/utils/constants";
 import i18n from "@/i18n";
 import { recaptcha, loginPage } from "@/utils/constants";
 import { login, validateLogin } from "@/utils/auth";
@@ -256,7 +256,7 @@ router.beforeResolve(async (to, from) => {
   // broke the Sessions/Audit/Webhooks routes). Fall back to the bare app
   // name so a missing key degrades gracefully instead of dead-ending.
   const titleKey = titles[to.name as keyof typeof titles];
-  document.title = titleKey ? i18n.global.t(titleKey) + " - " + name : name;
+  document.title = titleKey ? i18n.global.t(titleKey) + " - " + brand : brand;
 
   const authStore = useAuthStore();
 

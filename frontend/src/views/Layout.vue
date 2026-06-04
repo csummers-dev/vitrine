@@ -46,6 +46,7 @@
 
     <prompts />
     <upload-files />
+    <TransferDock />
   </div>
 </template>
 
@@ -59,6 +60,7 @@ import SidebarDrawer from "@/components/SidebarDrawer.vue";
 import Prompts from "@/components/prompts/Prompts.vue";
 import Shell from "@/components/Shell.vue";
 import UploadFiles from "@/components/prompts/UploadFiles.vue";
+import TransferDock from "@/components/files/TransferDock.vue";
 import Drawer from "@/components/Drawer.vue";
 import { useMobileNav } from "@/composables/useMobileNav";
 import { enableExec } from "@/utils/constants";

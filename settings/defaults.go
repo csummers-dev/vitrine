@@ -9,7 +9,6 @@ import (
 // for some fields on User.
 type UserDefaults struct {
 	Scope                 string            `json:"scope"`
-	Locale                string            `json:"locale"`
 	ViewMode              users.ViewMode    `json:"viewMode"`
 	SingleClick           bool              `json:"singleClick"`
 	RedirectAfterCopyMove bool              `json:"redirectAfterCopyMove"`
@@ -23,7 +22,6 @@ type UserDefaults struct {
 // Apply applies the default options to a user.
 func (d *UserDefaults) Apply(u *users.User) {
 	u.Scope = d.Scope
-	u.Locale = d.Locale
 	u.ViewMode = d.ViewMode
 	u.SingleClick = d.SingleClick
 	u.RedirectAfterCopyMove = d.RedirectAfterCopyMove

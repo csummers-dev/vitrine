@@ -43,9 +43,17 @@
     <!-- Name cell: icon squircle + name (inline) -->
     <div class="item__name">
       <div class="item__icon" :class="iconColorClass">
+        <!-- Native lazy load (not v-lazy): vue-lazyload swaps the failing URL
+             for its own error placeholder and never re-dispatches the native
+             `error` event, so a 501 (e.g. audio with no embedded cover) left an
+             empty tile instead of falling back to the icon. A plain <img> with
+             `loading="lazy"` fires the real error event → onThumbError. Rows are
+             already virtualized, so the <img> only mounts when near-visible. -->
         <img
           v-if="showThumbnail"
-          v-lazy="thumbnailUrl"
+          :src="thumbnailUrl"
+          loading="lazy"
+          decoding="async"
           class="item__thumb"
           @error="onThumbError"
         />
@@ -56,7 +64,9 @@
         </div>
         <!-- Spring-load progress ring (F6): renders only while a drag is
              hovering this folder, fills clockwise over 3s, then we
-             navigate into the folder. -->
+             navigate into the folder. V2: ONLY the filling arc is drawn —
+             the full scrim disc + track circle are gone (they read as a dark
+             ring sitting over the folder icon). -->
         <svg
           v-if="springProgress > 0"
           class="item__spring-ring"
@@ -64,20 +74,12 @@
           aria-hidden="true"
         >
           <circle
-            class="item__spring-ring-track"
-            cx="18"
-            cy="18"
-            r="16"
-            fill="none"
-            stroke-width="2"
-          />
-          <circle
             class="item__spring-ring-fill"
             cx="18"
             cy="18"
             r="16"
             fill="none"
-            stroke-width="2"
+            stroke-width="3"
             stroke-linecap="round"
             :stroke-dasharray="100.53"
             :stroke-dashoffset="100.53 * (1 - springProgress)"
@@ -102,35 +104,29 @@
           @keydown.esc.prevent.stop="cancelRename"
           @blur="onRenameBlur"
         />
-        <span v-else class="item__name-text name">{{ name }}</span>
+        <span v-else class="item__name-text name">{{ displayedName }}</span>
         <div class="item__name-compact-meta">
           <time :datetime="modified">{{ humanTime() }}</time>
           <span v-if="!isDir"> · {{ humanSize() }}</span>
         </div>
-        <!-- Inline tag chips (v1.3 S2-5). Capped at 2 visible + a "+N"
-             overflow chip per locked decision. Tags come from the
-             pre-batched listing fetch in FileListing.vue so this is a
-             pure prop read — no per-row API call. Hidden when the user
-             has opted out via the "Show tags on rows" Profile toggle. -->
-        <div
-          v-if="inlineTags.length > 0 && showTagsOnRows"
-          class="item__tags"
-          aria-label="Tags"
-        >
-          <TagChip
-            v-for="t in visibleTags"
-            :key="t.id"
-            :tag="t"
-            size="sm"
-            :focusable="false"
-          />
-          <span
-            v-if="overflowTagCount > 0"
-            class="item__tags-overflow"
-            :title="overflowTagNames"
-            >+{{ overflowTagCount }}</span
-          >
-        </div>
+      </div>
+      <!-- V2 #23: tags render as colour dots (not inline chips), right-aligned
+           against the Modified column, ordered alphabetically by name; hovering
+           a dot shows the tag name. Tags come from the pre-batched listing
+           fetch in FileListing.vue, so this is a pure prop read. Hidden when the
+           user opts out via the "Show tags on rows" Profile toggle. -->
+      <div
+        v-if="sortedTags.length > 0 && showTagsOnRows"
+        class="item__tag-dots"
+        aria-label="Tags"
+      >
+        <span
+          v-for="t in sortedTags"
+          :key="t.id"
+          class="item__tag-dot"
+          :style="{ background: `var(--tag-color-${t.color}-fg)` }"
+          :title="t.name"
+        ></span>
       </div>
     </div>
 
@@ -176,7 +172,6 @@
 
 <script setup lang="ts">
 import Icon from "@/components/Icon.vue";
-import TagChip from "@/components/TagChip.vue";
 import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
@@ -184,7 +179,7 @@ import { useTagsStore } from "@/stores/tags";
 import { usePreferences } from "@/composables/usePreferences";
 import { useFavorites } from "@/composables/useFavorites";
 import { useImageHoverPreview } from "@/composables/useImageHoverPreview";
-import { useTransferIndicator } from "@/composables/useTransferIndicator";
+import { startTransfer } from "@/utils/transfers";
 import { useTouchDevice } from "@/composables/useTouchDevice";
 
 import {
@@ -193,9 +188,11 @@ import {
   enablePdfThumbs,
 } from "@/utils/constants";
 import { filesize } from "@/utils";
+import { displayName, splitExtension } from "@/utils/filename";
 import { isSelfOrDescendantTarget } from "@/utils/dragdrop";
 import { fileIcon, fileIconColor } from "@/utils/fileIcon";
 import { setDragGhost } from "@/utils/dragGhost";
+import { startDragBadge, endDragBadge } from "@/utils/dragCopyMoveBadge";
 import dayjs from "dayjs";
 import { files as api } from "@/api";
 import { removePrefix } from "@/api/utils";
@@ -208,7 +205,6 @@ const touches = ref<number>(0);
 
 const $showError = inject<IToastError>("$showError")!;
 const router = useRouter();
-const { runTransfer } = useTransferIndicator();
 
 const props = defineProps<{
   name: string;
@@ -250,6 +246,25 @@ const tagsStore = useTagsStore();
 const prefs = usePreferences();
 const favorites = useFavorites();
 
+// WS8: show/hide file extensions (per-user, default on). Reactive via the
+// preferences store so toggling in Settings updates the listing live.
+const showExtensions = computed<boolean>(() =>
+  prefs.get<boolean>("nav.showExtensions", true)
+);
+// The name shown on the row: folders + dotfiles unchanged; with extensions
+// hidden, files show only their base.
+const displayedName = computed(() =>
+  displayName(props.name, props.isDir, showExtensions.value)
+);
+// True when this row should hide its extension (a file, pref off, and it
+// actually has a splittable extension). Drives the rename base/ext handling.
+const hideExtension = computed(
+  () =>
+    !props.isDir &&
+    !showExtensions.value &&
+    splitExtension(props.name).ext !== ""
+);
+
 // ── Favorites star (v1.3 S3-2) ──────────────────────────────────────
 // Folder-only affordance: pin frequently-visited folders to the
 // sidebar for one-click navigation. The button only renders when
@@ -264,30 +279,17 @@ const onFavoriteToggle = () => {
   favorites.toggle(props.url);
 };
 
-// ── Inline tag chips (v1.3 S2-5) ────────────────────────────────────
+// ── Inline tag dots (v1.3 S2-5; V2 #23) ─────────────────────────────
 // Tags come from the pre-batched listing fetch (FileListing fires a
 // single tagsApi.batchForFiles call after each directory load). This
-// computed is a pure store read — no per-row HTTP. Cap-2 + overflow
-// per the locked Stage 2 decision; can be hidden entirely via the
-// "Show tags on file rows" Profile toggle.
-const MAX_VISIBLE_TAGS = 2;
+// computed is a pure store read — no per-row HTTP. Rendered as colour
+// dots ordered alphabetically by name (V2 #23); can be hidden entirely
+// via the "Show tags on file rows" Profile toggle.
 const showTagsOnRows = computed<boolean>(() =>
   prefs.get<boolean>("tags.showOnRows", true)
 );
-const inlineTags = computed<Tag[]>(() => tagsStore.forPath(props.url));
-const visibleTags = computed<Tag[]>(() =>
-  inlineTags.value.slice(0, MAX_VISIBLE_TAGS)
-);
-const overflowTagCount = computed<number>(() =>
-  Math.max(0, inlineTags.value.length - MAX_VISIBLE_TAGS)
-);
-// Tooltip lists the tags hidden in the "+N" chip so users can see
-// what's there without opening the picker.
-const overflowTagNames = computed<string>(() =>
-  inlineTags.value
-    .slice(MAX_VISIBLE_TAGS)
-    .map((t) => t.name)
-    .join(", ")
+const sortedTags = computed<Tag[]>(() =>
+  [...tagsStore.forPath(props.url)].sort((a, b) => a.name.localeCompare(b.name))
 );
 
 const isTouchDevice = useTouchDevice();
@@ -349,32 +351,71 @@ const canDrop = computed(() => {
 // entirely.
 const canForwardDrop = computed(() => !props.readOnly);
 
-// v1.3 H12 geometry helper. Computes whether the cursor is currently
-// over this row's "drop INTO this folder" zone, which is tighter than
-// the full row:
-//   • List view  → bounding rect of `.item__name` (icon + name stack)
-//                  expanded by 12px horizontally and 8px vertically
-//                  for forgiving targeting.
-//   • Mosaic     → bounding rect of `.item__icon` only (the central
-//   /  Gallery     squircle / thumbnail dominates the tile so the
-//                  surrounding padding feels naturally "alongside").
-// Returning false for non-folder rows means file rows always treat
-// hovers as alongside, which is correct: files aren't drop targets.
+// v1.3 H12 geometry helper. Computes whether the cursor is currently over
+// this folder's "drop INTO this folder" zone — the UNION of the folder
+// icon/thumbnail (`.item__icon`) and its name (`.item__name-text`), plus a
+// small 3px forgiving margin (WS6: tightened from 6px so the zone hugs the
+// icon+name and "alongside" is even easier to hit). Kept tight across views so
+// drop *alongside* (into the current directory) in a folder full of folders:
+//   • List view      → the empty cell / meta columns to the right of the name
+//                      read as "alongside".
+//   • Grid / gallery → the gap / padding around the card reads as "alongside".
+// Returning false for non-folder rows means file rows always treat hovers as
+// alongside, which is correct: files aren't drop targets.
+// Forgiving grab margin past the last glyph of the folder name — small enough
+// that the empty column after the name still reads as "alongside" (V3-B #6).
+const DROP_ZONE_GRAB_PX = 16;
+
+// Width of the actually-rendered text inside `.item__name-text`, not its flex
+// box. A Range over the text node returns the glyph run's bounding box, which
+// is the only reliable signal when the element is `flex: 1` (its scroll/client
+// width is the whole column). Falls back to scrollWidth when there's no text
+// node (e.g. the rename <input> swapped in for the same class).
+const measureTextWidth = (el: HTMLElement): number => {
+  const node = el.firstChild;
+  if (node && node.nodeType === Node.TEXT_NODE) {
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    const w = range.getBoundingClientRect().width;
+    if (w > 0) return w;
+  }
+  return el.scrollWidth;
+};
+
 const isInIntoZone = (event: DragEvent, rowEl: HTMLElement): boolean => {
   if (!props.isDir) return false;
-  const listingEl = rowEl.closest("#listing");
-  const isMosaic = listingEl?.classList.contains("mosaic") ?? false;
-  const selector = isMosaic ? ".item__icon" : ".item__name";
-  const target = rowEl.querySelector(selector) as HTMLElement | null;
-  if (!target) return false;
-  const rect = target.getBoundingClientRect();
-  const padX = isMosaic ? 0 : 12;
-  const padY = isMosaic ? 0 : 8;
+  // Hold Alt/Option to force EVERY drop "alongside" (into the current
+  // directory), even directly over a folder's icon or name. Returning false
+  // here means no folder highlights or spring-loads while Alt is down — which
+  // is also the cue that the drop will land in the current folder. Lets you
+  // drop into a folder full of folders without ever landing inside one.
+  if (event.altKey) return false;
+  const iconEl = rowEl.querySelector(".item__icon");
+  const nameEl = rowEl.querySelector(".item__name-text");
+  if (!(nameEl instanceof HTMLElement)) return false;
+  const nameRect = nameEl.getBoundingClientRect();
+  const rects: DOMRect[] = [nameRect];
+  if (iconEl instanceof HTMLElement) rects.push(iconEl.getBoundingClientRect());
+
+  const pad = 3;
+  const left = Math.min(...rects.map((r) => r.left)) - pad;
+  const top = Math.min(...rects.map((r) => r.top)) - pad;
+  const bottom = Math.max(...rects.map((r) => r.bottom)) + pad;
+  // V3-B #6: `.item__name-text` is `flex: 1`, so its *box* stretches across the
+  // whole name column. The previous `scrollWidth` bound failed because a name
+  // that doesn't overflow has `scrollWidth === clientWidth === full column`, so
+  // the zone still covered the empty space after the name (the red bar in the
+  // report). Measure the ACTUAL rendered glyph run with a Range over the text
+  // node, then cap at the box width (truncated names) so the right edge hugs
+  // the visible characters plus a small grab margin.
+  const glyphWidth = measureTextWidth(nameEl);
+  const textWidth = Math.min(glyphWidth, nameRect.width);
+  const right = nameRect.left + textWidth + DROP_ZONE_GRAB_PX;
   return (
-    event.clientX >= rect.left - padX &&
-    event.clientX <= rect.right + padX &&
-    event.clientY >= rect.top - padY &&
-    event.clientY <= rect.bottom + padY
+    event.clientX >= left &&
+    event.clientX <= right &&
+    event.clientY >= top &&
+    event.clientY <= bottom
   );
 };
 
@@ -446,6 +487,9 @@ const showThumbnail = computed(() => {
   if (props.type === "audio") return enableThumbs;
   if (props.type === "pdf") return enableThumbs && enablePdfThumbs;
   if (ext === ".epub") return enableThumbs;
+  // V2 #6: .cbr (RAR) comics get a server-extracted cover (first page).
+  // .cbz is intentionally excluded.
+  if (ext === ".cbr") return enableThumbs;
   return false;
 });
 
@@ -497,15 +541,24 @@ watch(isRenaming, async (active) => {
     mouseDownInsideInput = false;
     return;
   }
-  renameValue.value = props.name;
+  // WS8: with extensions hidden, edit the BASE name only — the original
+  // extension is re-appended on submit. Otherwise edit the full name.
+  renameValue.value = hideExtension.value
+    ? splitExtension(props.name).base
+    : props.name;
   renameSubmitting = false;
   await nextTick();
   const el = renameInputEl.value;
   if (!el) return;
   el.focus();
-  // Select the filename stem (everything before the last "." for files)
-  const dot = !props.isDir ? props.name.lastIndexOf(".") : -1;
-  el.setSelectionRange(0, dot > 0 ? dot : props.name.length);
+  // With the extension hidden the field is already just the base, so select it
+  // all; otherwise select the filename stem (everything before the last ".").
+  if (hideExtension.value) {
+    el.setSelectionRange(0, renameValue.value.length);
+  } else {
+    const dot = !props.isDir ? props.name.lastIndexOf(".") : -1;
+    el.setSelectionRange(0, dot > 0 ? dot : props.name.length);
+  }
 
   // Install a document-level mouseup so we can clear the flag after
   // any drag-release, no matter where it lands. setTimeout(0) gives the
@@ -522,10 +575,48 @@ const onRenameMouseDown = () => {
   mouseDownInsideInput = true;
 };
 
+// Slow-double-click-to-rename: "click to select, pause, click the name" opens
+// an inline rename (the Finder/Explorer gesture). Desktop + double-click-open
+// mode only; deferred by one double-click window so a genuine double-click
+// opens instead — the open() path cancels the pending timer. Wired in click().
+const RENAME_GESTURE_MS = 350;
+let renameGestureTimer = 0;
+
+const cancelRenameGesture = () => {
+  if (renameGestureTimer) {
+    clearTimeout(renameGestureTimer);
+    renameGestureTimer = 0;
+  }
+};
+
+const nameRenameEligible = (event: Event | KeyboardEvent): boolean => {
+  const me = event as MouseEvent;
+  const target = event.target as HTMLElement | null;
+  return (
+    !props.readOnly &&
+    !!authStore.user?.perm.rename &&
+    !isTouchDevice.value &&
+    !openOnSingleClick.value &&
+    !me.ctrlKey &&
+    !me.metaKey &&
+    !me.shiftKey &&
+    fileStore.selectedCount === 1 &&
+    !!target?.closest?.(".item__name-text")
+  );
+};
+
+const startRename = () => {
+  // Mirrors FileListing's F2 handler: the gesture guarantees this row is the
+  // sole selection, so showing the rename prompt targets it.
+  if (!authStore.user?.perm.rename || fileStore.selectedCount !== 1) return;
+  layoutStore.showHover("rename");
+};
+
 // Safety net: tear down the document listener if the row unmounts
 // mid-rename (e.g. user navigates away during edit). The watch handles
 // the normal close path; this catches the edge case.
 onBeforeUnmount(() => {
+  cancelRenameGesture();
   if (docMouseUpHandler) {
     document.removeEventListener("mouseup", docMouseUpHandler);
     docMouseUpHandler = null;
@@ -571,7 +662,14 @@ const onRenameBlur = () => {
 
 const submitRename = async () => {
   if (renameSubmitting) return;
-  const next = renameValue.value.trim();
+  const typed = renameValue.value.trim();
+  // WS8: the field holds only the base name when extensions are hidden — stitch
+  // the original extension back on so the file keeps its type. An empty base is
+  // treated as a no-op (you can't rename a file to just its extension).
+  const next =
+    hideExtension.value && typed !== ""
+      ? typed + splitExtension(props.name).ext
+      : typed;
   if (next === "" || next === props.name) {
     cancelRename();
     return;
@@ -643,6 +741,11 @@ const dragStart = (event: DragEvent) => {
     name: props.name,
     count,
   });
+
+  // Live "Copy"/"Move" pill that trails the cursor (FileListing's dragover
+  // repositions it; ⌘/Ctrl flips it). The static drag image above can't show
+  // this because setDragImage() is a one-shot bitmap.
+  startDragBadge(event.ctrlKey || event.metaKey, event.clientX, event.clientY);
 };
 
 // ── Touch drag-and-drop ─────────────────────────────────────────────────
@@ -663,6 +766,7 @@ const dragEnd = () => {
   // Browsers fire dragend on the source after drop/cancel — always.
   // Use it as the canonical "drag is over" signal to clear the snapshot.
   fileStore.draggedItems = [];
+  endDragBadge();
 };
 
 const dragOver = (event: DragEvent) => {
@@ -676,6 +780,13 @@ const dragOver = (event: DragEvent) => {
 
   const rowEl = event.currentTarget as HTMLElement;
   if (canDrop.value && isInIntoZone(event, rowEl)) {
+    // 2.1 #8: re-assert the un-dim on EVERY dragover frame, not just the
+    // guarded enter transition. The document-wide drag dim fires on `dragenter`
+    // while the brighten fired once on `dragover`, so depending on which row
+    // edge / child you crossed first (i.e. your approach direction) the dim
+    // could land last and stick. dragover fires continuously while hovering, so
+    // setting opacity here keeps the highlight from any direction.
+    rowEl.style.opacity = "1";
     enterIntoZone(rowEl);
   } else {
     leaveIntoZone(rowEl);
@@ -834,12 +945,12 @@ const drop = async (event: DragEvent) => {
 
   // DragEvent inherits ctrlKey/metaKey from MouseEvent — no cast needed.
   const isCopy = event.ctrlKey || event.metaKey;
-  const action = (overwrite?: boolean, rename?: boolean) => {
-    // runTransfer shows a delayed "Moving…/Copying…" toast, reloads the
-    // listing + confirms on success, and surfaces errors — so a slow
-    // drag-drop move isn't silent (RC).
-    const op = isCopy ? api.copy : api.move;
-    void runTransfer(() => op(items, overwrite, rename), isCopy, items);
+  const action = () => {
+    // Start a background job — progress + result are shown by the floating
+    // transfer dock, which refreshes the listing when the move/copy settles.
+    // Items already carry their per-item overwrite/rename flags (default false,
+    // or set during conflict resolution below).
+    void startTransfer(isCopy ? "copy" : "move", items);
   };
 
   const conflict = await upload.checkMoveConflict(items, path);
@@ -878,7 +989,7 @@ const drop = async (event: DragEvent) => {
     return;
   }
 
-  action(false, false);
+  action();
 };
 
 const itemClick = (event: Event | KeyboardEvent) => {
@@ -886,6 +997,13 @@ const itemClick = (event: Event | KeyboardEvent) => {
   // suppress window is set by the listing-level touch-drag onEnd (shared
   // via the file store) so every recycled row honors it.
   if (Date.now() < fileStore.suppressClicksUntil) return;
+
+  // Bug fix: while THIS row is the active inline-rename target, swallow stray
+  // row clicks. Dragging a text selection inside the rename input and releasing
+  // over the row (outside the input) synthesizes a click on the row element;
+  // without this it fell through to click() → deselected the item → which
+  // dropped `isRenaming` to false and tore the rename down mid-edit.
+  if (isRenaming.value) return;
 
   // Clicking a DIFFERENT row while an inline rename is open cancels it.
   // The rename prompt targets the single selected item, so without this the
@@ -941,11 +1059,27 @@ const click = (event: Event | KeyboardEvent) => {
 
   touches.value++;
   if (touches.value > 1) {
+    // A fast double-click opens — and cancels any pending slow-click rename
+    // armed by the first click (see the re-click branch below).
+    cancelRenameGesture();
     open();
   }
 
   if (fileStore.selected.indexOf(props.index) !== -1) {
-    // Clicking an already-selected item deselects it (toggle behavior)
+    // Re-clicking an already-selected item. A SLOW second click on the NAME
+    // text (not the fast second half of a double-click → open, handled above)
+    // arms an inline rename — the familiar "click, pause, click the name"
+    // gesture. It's deferred by one double-click window so a genuine
+    // double-click opens instead (open() above cancels the timer). Anything
+    // else still toggles the selection off.
+    if (touches.value === 1 && nameRenameEligible(event)) {
+      cancelRenameGesture();
+      renameGestureTimer = window.setTimeout(() => {
+        renameGestureTimer = 0;
+        startRename();
+      }, RENAME_GESTURE_MS);
+      return;
+    }
     fileStore.removeSelected(props.index);
     return;
   }

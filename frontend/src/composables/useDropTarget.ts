@@ -1,10 +1,9 @@
 import { useToast } from "vue-toastification";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
-import { files as api } from "@/api";
 import * as upload from "@/utils/upload";
 import { isSelfOrDescendantTarget, isNoopMove } from "@/utils/dragdrop";
-import { useTransferIndicator } from "@/composables/useTransferIndicator";
+import { startTransfer } from "@/utils/transfers";
 
 /**
  * Drop-handler shared by anything in the file UI that can receive a
@@ -24,7 +23,6 @@ export function useDropTarget() {
   const fileStore = useFileStore();
   const layoutStore = useLayoutStore();
   const toast = useToast();
-  const { runTransfer } = useTransferIndicator();
 
   const performDrop = async (event: DragEvent, targetUrl: string) => {
     event.preventDefault();
@@ -89,12 +87,14 @@ export function useDropTarget() {
     if (items.length === 0) return;
 
     const isCopy = event.ctrlKey || event.metaKey;
-    const action = (overwrite?: boolean, rename?: boolean) => {
-      // runTransfer shows a delayed "Moving…/Copying…" toast, reloads the
-      // listing + confirms on success, and surfaces errors (RC: drag-drop
-      // moves used to give no in-progress indication).
-      const op = isCopy ? api.copy : api.move;
-      void runTransfer(() => op(items, overwrite, rename), isCopy, items);
+    const action = () => {
+      // The drag items already carry their per-item overwrite/rename flags
+      // (set during conflict resolution; default false). Start a background
+      // job — the floating transfer dock shows progress + result and refreshes
+      // the listing when it settles.
+      void startTransfer(isCopy ? "copy" : "move", items).catch((e) =>
+        toast.error((e as Error)?.message || "Transfer failed")
+      );
     };
 
     const conflict = await upload.checkMoveConflict(items, targetUrl);

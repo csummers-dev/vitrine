@@ -509,7 +509,6 @@ func quickSetup(v *viper.Viper, s *storage.Storage) error {
 		UserHomeBasePath:      settings.DefaultUsersHomeBasePath,
 		Defaults: settings.UserDefaults{
 			Scope:                 ".",
-			Locale:                "en",
 			SingleClick:           false,
 			RedirectAfterCopyMove: true,
 			Perm: users.Permissions{

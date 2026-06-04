@@ -1,5 +1,5 @@
 import path from "node:path";
-import { defineConfig } from "vite";
+import { defineConfig, createLogger } from "vite";
 import vue from "@vitejs/plugin-vue";
 import VueI18nPlugin from "@intlify/unplugin-vue-i18n/vite";
 import legacy from "@vitejs/plugin-legacy";
@@ -26,12 +26,32 @@ const resolve = {
   },
 };
 
+// Custom logger that drops one benign, non-actionable build warning: Vite's
+// HTML parser flags the reCAPTCHA <script> in index.html as "can't be bundled"
+// because its `src` is a server-side Go template placeholder
+// (`[{[ .ReCaptchaHost ]}]`) — which is intentional (it's filled in at serve
+// time, only when reCAPTCHA is enabled, and must NOT be bundled). This warning
+// comes from Vite's logger, not the Rolldown onLog pipeline, so it's filtered
+// here. Every other warning passes through untouched.
+const logger = createLogger();
+const baseWarn = logger.warn.bind(logger);
+const baseWarnOnce = logger.warnOnce.bind(logger);
+const isRecaptchaNoise = (msg: unknown): boolean =>
+  typeof msg === "string" && msg.includes("recaptcha/api.js");
+logger.warn = (msg, opts) => {
+  if (!isRecaptchaNoise(msg)) baseWarn(msg, opts);
+};
+logger.warnOnce = (msg, opts) => {
+  if (!isRecaptchaNoise(msg)) baseWarnOnce(msg, opts);
+};
+
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
   if (command === "serve") {
     return {
       plugins,
       resolve,
+      customLogger: logger,
       server: {
         proxy: {
           "/api/command": {
@@ -47,6 +67,7 @@ export default defineConfig(({ command }) => {
     return {
       plugins,
       resolve,
+      customLogger: logger,
       base: "",
       build: {
         // The few chunks that exceed this are intentional and acceptable:
@@ -57,11 +78,32 @@ export default defineConfig(({ command }) => {
         //     EpubViewer, TextViewer) are only fetched when a user actually
         //     opens that file type, so they don't affect cold-start weight.
         // Raising the limit keeps the build output honest (warnings flag real
-        // regressions) without crying wolf over these known-large chunks.
-        chunkSizeWarningLimit: 800,
+        // regressions) without crying wolf over these known-large chunks. Set
+        // just above the largest intentional chunk — the lazy-loaded pdf.js
+        // worker (~1.25 MB), only fetched when a PDF is opened.
+        chunkSizeWarningLimit: 1300,
         rollupOptions: {
           input: {
             index: path.resolve(__dirname, "./public/index.html"),
+          },
+          // Quiet non-actionable build noise so real warnings stand out:
+          //   - INVALID_ANNOTATION: a `/* #__PURE__ */` hint Rolldown can't read
+          //     due to its position — emitted from inside @vueuse/core (a
+          //     dependency we can't edit). Scoped to node_modules so our own
+          //     code would still surface it.
+          //   - PLUGIN_TIMINGS: an informational per-plugin timing breakdown.
+          //   - The reCAPTCHA <script> in index.html carries a server-side Go
+          //     template host placeholder and is intentionally left unbundled.
+          onLog(level, log, defaultHandler) {
+            const msg = log.message ?? "";
+            if (
+              log.code === "INVALID_ANNOTATION" &&
+              msg.includes("node_modules")
+            )
+              return;
+            if (log.code === "PLUGIN_TIMINGS") return;
+            if (msg.includes("recaptcha/api.js")) return;
+            defaultHandler(level, log);
           },
           output: {
             manualChunks: (id) => {

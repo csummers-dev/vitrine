@@ -56,9 +56,10 @@ import { useRoute, useRouter } from "vue-router";
 import FileListing from "@/views/files/FileListing.vue";
 import AudioTagEditor from "@/components/files/AudioTagEditor.vue";
 import { StatusError } from "@/api/utils";
-import { name } from "../utils/constants";
+import { brand } from "../utils/constants";
 import { useShortcutsOverlay } from "@/composables/useShortcutsOverlay";
 import { useFavorites } from "@/composables/useFavorites";
+import { useRootLabel } from "@/composables/useRootLabel";
 
 const Editor = defineAsyncComponent(() => import("@/views/files/Editor.vue"));
 const Preview = defineAsyncComponent(() => import("@/views/files/Preview.vue"));
@@ -72,8 +73,20 @@ const { reload } = storeToRefs(fileStore);
 const route = useRoute();
 const router = useRouter();
 const favorites = useFavorites();
+const { rootLabel } = useRootLabel();
 
 const { t } = useI18n({});
+
+// Keep the browser-tab title in sync when the user renames their root label
+// while sitting at the storage root. The title is otherwise only refreshed on
+// navigation (fetchData); the sidebar / listing header already react on their
+// own. A non-empty req.name means we're in a subfolder, where the folder name
+// — not the root label — drives the title, so we leave it alone.
+watch(rootLabel, () => {
+  if (!fileStore.req?.name) {
+    document.title = `${rootLabel.value || t("sidebar.myFiles")} - ${brand}`;
+  }
+});
 
 // Audio tag editor (1.6.0). Driven by the shared prompt name so both the
 // listing row context menu and the preview details rail can open it via
@@ -84,6 +97,14 @@ const audioTagsOpen = computed(
 const closeAudioTags = () => layoutStore.closeHovers();
 
 let fetchDataController = new AbortController();
+// Monotonic id for fetchData calls. Only the LATEST call may mutate the shared
+// view state (req / loading / error) when it settles, so a superseded call
+// (whose in-flight request we aborted) can't stomp the newer result — and,
+// crucially, the loading spinner is always reconciled by whichever call is
+// latest when it settles, even on cancellation. Without this, a canceled fetch
+// returned early and left `loading` stuck true (endless skeleton) — e.g. a
+// background move's reload racing a navigation fetch.
+let fetchSeq = 0;
 
 const error = ref<StatusError | null>(null);
 
@@ -207,6 +228,8 @@ const applyPreSelection = () => {
 };
 
 const fetchData = async () => {
+  const seq = ++fetchSeq;
+
   // Reset view information.
   fileStore.reload = false;
   fileStore.selected = [];
@@ -226,26 +249,42 @@ const fetchData = async () => {
   fetchDataController = new AbortController();
   try {
     const res = await api.fetch(url, fetchDataController.signal);
+    // A newer fetchData superseded this one — it now owns the view.
+    if (seq !== fetchSeq) return;
     fileStore.updateRequest(res);
-    document.title = `${res.name || t("sidebar.myFiles")} - ${t("files.files")} - ${name}`;
+    // Title format: "<folder | root label | My files> - filebrowser pretty".
+    // At the storage root the listing has no folder name, so fall back to the
+    // user's custom root label (nav.rootLabel pref) and finally "My files" —
+    // mirroring the sidebar quick-link and the listing header.
+    document.title = `${res.name || rootLabel.value || t("sidebar.myFiles")} - ${brand}`;
     layoutStore.loading = false;
 
     // Selects the post-reload target item or the previously visited child folder
     applyPreSelection();
   } catch (err) {
-    if (err instanceof StatusError && err.is_canceled) {
-      return;
-    }
-    if (err instanceof Error) {
-      error.value = err;
-    }
-    // A 404 (deleted/renamed) or 403 (now inaccessible) on a path that's still
-    // pinned → flag it so the error card offers to clear the dead favorite.
-    if (
-      err instanceof StatusError &&
-      (err.status === 404 || err.status === 403)
-    ) {
-      brokenFavorite.value = findBrokenFavorite();
+    // Superseded by a newer fetchData: that call now owns `loading` / `req` /
+    // `error`, so this stale (usually aborted) call must stay out of its way —
+    // clearing the spinner here would yank it from under the live fetch.
+    if (seq !== fetchSeq) return;
+    // We're the latest fetch. Unlike before, we do NOT early-return on a bare
+    // cancellation: if the latest request is aborted with no successor (a
+    // teardown, or a reload that raced another fetch), nothing else would ever
+    // clear the spinner and the skeleton would spin until a full reload. So we
+    // fall through and always reset `loading`. A genuine error still surfaces
+    // the error card; a plain cancel just stops the spinner.
+    if (!(err instanceof StatusError && err.is_canceled)) {
+      if (err instanceof Error) {
+        error.value = err;
+      }
+      // A 404 (deleted/renamed) or 403 (now inaccessible) on a path that's
+      // still pinned → flag it so the error card offers to clear the dead
+      // favorite.
+      if (
+        err instanceof StatusError &&
+        (err.status === 404 || err.status === 403)
+      ) {
+        brokenFavorite.value = findBrokenFavorite();
+      }
     }
     layoutStore.loading = false;
   }

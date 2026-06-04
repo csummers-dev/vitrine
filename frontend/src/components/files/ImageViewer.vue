@@ -21,57 +21,11 @@
         draggable="false"
       />
     </div>
-
-    <!-- ── Film strip (shown only on image previews, hidden at < md) ──
-         Lists ALL previewable siblings: images as thumbnails, everything
-         else as a type-icon tile, so the user sees the whole nav set. -->
-    <div v-if="strip.length > 1" ref="stripEl" class="image-viewer__strip">
-      <button
-        v-for="item in strip"
-        :key="item.url"
-        type="button"
-        class="image-viewer__thumb"
-        :class="{
-          'is-active': item.url === currentUrl,
-          'image-viewer__thumb--doc': !item.isImage,
-        }"
-        :style="item.isImage ? thumbStyle(item) : undefined"
-        :title="item.name"
-        :aria-label="item.name"
-        :aria-current="item.url === currentUrl ? 'true' : undefined"
-        @click="$emit('navigate', item.url)"
-      >
-        <Icon
-          v-if="!item.isImage"
-          :name="
-            fileIcon({ isDir: false, type: item.type ?? '', name: item.name })
-          "
-          :size="20"
-          :stroke-width="1.6"
-        />
-      </button>
-      <div class="image-viewer__strip-count">
-        {{ currentIndex + 1 }} of {{ strip.length }}
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
-import { files as api } from "@/api";
-import Icon from "@/components/Icon.vue";
-import { fileIcon } from "@/utils/fileIcon";
-
-interface StripItem {
-  name: string;
-  url: string;
-  path: string;
-  /** Backend file type (image/video/audio/pdf/text/blob…). */
-  type?: string;
-  /** True for image siblings (thumbnail tile); false → type-icon tile. */
-  isImage?: boolean;
-}
+import { computed, ref, watch } from "vue";
 
 const props = withDefaults(
   defineProps<{
@@ -81,47 +35,13 @@ const props = withDefaults(
     zoomPercent: number;
     /** When true, the image fits the stage; zoomPercent is overridden. */
     fitToScreen: boolean;
-    /** Strip of sibling images for the bottom rail. Empty disables it. */
-    strip?: StripItem[];
-    /** URL of the currently-active image (for strip is-active state). */
-    currentUrl?: string;
   }>(),
-  { alt: "", strip: () => [], currentUrl: "" }
+  { alt: "" }
 );
-
-defineEmits<{
-  (e: "navigate", url: string): void;
-}>();
 
 const imgEl = ref<HTMLImageElement | null>(null);
-const stripEl = ref<HTMLElement | null>(null);
 const naturalWidth = ref<number>(0);
 const naturalHeight = ref<number>(0);
-
-// v1.3 S5-3: keep the active thumbnail centered in the horizontal
-// strip as the user navigates (arrow keys or clicking a far-off thumb).
-// Without this the active thumb can sit off-screen in a long strip.
-// Scoped to the strip element's own scrollLeft — no `scrollIntoView`,
-// which would also scroll ancestor containers. Respects reduced-motion.
-const centerActiveThumb = () => {
-  const parent = stripEl.value;
-  if (!parent) return;
-  const active = parent.querySelector<HTMLElement>(".is-active");
-  if (!active) return;
-  const target =
-    active.offsetLeft - parent.clientWidth / 2 + active.clientWidth / 2;
-  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  parent.scrollTo({
-    left: Math.max(0, target),
-    behavior: reduce ? "auto" : "smooth",
-  });
-};
-
-watch(
-  () => props.currentUrl,
-  () => nextTick(centerActiveThumb)
-);
-onMounted(() => nextTick(centerActiveThumb));
 
 const onLoad = () => {
   if (!imgEl.value) return;
@@ -152,19 +72,6 @@ const imgStyle = computed(() => {
     maxHeight: "none",
   } as const;
 });
-
-const currentIndex = computed(() =>
-  props.strip.findIndex((it) => it.url === props.currentUrl)
-);
-
-const thumbStyle = (item: StripItem) => {
-  // Use the small preview thumbnail endpoint for the strip — same one
-  // the file listing uses for icon thumbnails. Cheap to load, already
-  // cached if the user came from the listing.
-  const resource = { url: item.url, path: item.path } as any;
-  const url = api.getPreviewURL(resource, "thumb");
-  return { backgroundImage: `url('${url}')` } as const;
-};
 
 // Reset natural dimensions when the src changes so a smaller image
 // doesn't briefly show at the previous image's zoomed size.
@@ -240,75 +147,5 @@ html.dark .image-viewer__img {
     linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.06) 75%) -8px
       0 / 16px 16px,
     var(--color-surface);
-}
-
-/* ── Film strip ──────────────────────────────────────────────────── */
-.image-viewer__strip {
-  border-top: 1px solid var(--color-line, #ececec);
-  background: var(--color-canvas, #fafaf9);
-  padding: 10px 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  flex-shrink: 0;
-}
-
-.image-viewer__thumb {
-  width: 56px;
-  height: 56px;
-  border-radius: 8px;
-  border: 1px solid var(--color-line, #ececec);
-  overflow: hidden;
-  flex-shrink: 0;
-  background-size: cover;
-  background-position: center;
-  background-color: var(--color-elevated, #f4f4f5);
-  cursor: pointer;
-  transition:
-    border-color var(--dur-base) ease,
-    transform var(--dur-base) ease,
-    box-shadow var(--dur-base) ease;
-  padding: 0;
-}
-.image-viewer__thumb:hover {
-  border-color: var(--color-line-strong, #d4d4d8);
-  transform: translateY(-2px);
-}
-/* Non-image sibling: a neutral tile with the file's type icon centered. */
-.image-viewer__thumb--doc {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-ink-3, #a1a1aa);
-}
-.image-viewer__thumb--doc:hover {
-  color: var(--color-ink-1, #18181b);
-}
-.image-viewer__thumb.is-active {
-  border-color: var(--color-accent, #5e6ad2);
-  box-shadow: 0 0 0 3px var(--color-accent-soft, rgba(94, 106, 210, 0.1));
-}
-.image-viewer__thumb:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
-  outline-offset: 2px;
-}
-
-.image-viewer__strip-count {
-  margin-left: auto;
-  padding-left: 12px;
-  font-size: 11px;
-  color: var(--color-ink-3, #a1a1aa);
-  font-variant-numeric: tabular-nums;
-  flex-shrink: 0;
-}
-
-@media (max-width: 767px) {
-  /* Hide the strip on mobile — the user navigates via swipe / keyboard
-     and stage area is too tight to lose 80 px to a horizontal rail. */
-  .image-viewer__strip {
-    display: none;
-  }
 }
 </style>

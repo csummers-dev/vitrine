@@ -1,7 +1,6 @@
 import { disableExternal, baseURL } from "@/utils/constants";
 import { createApp } from "vue";
 import VueNumberInput from "@chenfengyuan/vue-number-input";
-import VueLazyload from "vue-lazyload";
 import Toast, { POSITION, useToast } from "vue-toastification";
 import type {
   ToastOptions,
@@ -9,7 +8,7 @@ import type {
 } from "vue-toastification/dist/types/types";
 import createPinia from "@/stores";
 import router from "@/router";
-import i18n, { isRtl, ensureInitialLocale } from "@/i18n";
+import i18n from "@/i18n";
 import App from "@/App.vue";
 import CustomToast from "@/components/CustomToast.vue";
 
@@ -30,18 +29,17 @@ const pinia = createPinia(router);
 const app = createApp(App);
 
 app.component(VueNumberInput.name || "vue-number-input", VueNumberInput);
-app.use(VueLazyload);
 app.use(Toast, {
   transition: "Vue-Toastification__bounce",
   maxToasts: 10,
-  // Newest stacks on top, oldest below (bottom-center container grows upward).
+  // Newest stacks on top, oldest below (top-right container grows downward).
   newestOnTop: true,
-  // One consistent placement for EVERY toast. Previously `position` was
-  // omitted here, so toasts raised via the bare `toast()` API fell back to
-  // vue-toastification's top-right default while the $showError/$showSuccess
-  // helpers used bottom-center — that mismatch is what produced toasts in
-  // three different corners.
-  position: POSITION.BOTTOM_CENTER,
+  // One consistent placement for EVERY toast. `position` must be set both here
+  // (the plugin default for the bare `toast()` API) and in `toastConfig` below
+  // (the $showError/$showSuccess helpers) — if they diverge, toasts land in
+  // different corners. Top-right keeps move/copy + result toasts clear of the
+  // bottom-left transfer dock and bottom-center selection pill.
+  position: POSITION.TOP_RIGHT,
   timeout: 4000,
   closeOnClick: true,
   pauseOnFocusLoss: true,
@@ -74,7 +72,7 @@ app.directive("focus", {
 });
 
 const toastConfig = {
-  position: POSITION.BOTTOM_CENTER,
+  position: POSITION.TOP_RIGHT,
   timeout: 4000,
   closeOnClick: true,
   pauseOnFocusLoss: true,
@@ -100,7 +98,7 @@ app.provide("$showSuccess", (message: string) => {
         message: message,
       },
     },
-    { ...toastConfig, timeout: 5000, rtl: isRtl() }
+    { ...toastConfig, timeout: 5000, rtl: false }
   );
 });
 
@@ -119,17 +117,14 @@ app.provide("$showError", (error: Error | string, displayReport = true) => {
     {
       ...toastConfig,
       timeout: 0,
-      rtl: isRtl(),
+      rtl: false,
     }
   );
 });
 
-// Locale messages are now lazy-loaded per language. Preload the fallback
-// ("en") + the active locale before mounting so the first paint is fully
-// translated; only then wait for the router and mount.
-ensureInitialLocale()
-  .then(() => router.isReady())
-  .then(() => app.mount("#app"));
+// English is the only language and its messages are bundled eagerly, so we
+// just wait for the router before mounting.
+router.isReady().then(() => app.mount("#app"));
 
 // v1.3 S6-4: register the offline-shell service worker. Production only —
 // in dev the Vite HMR client must own the page, and a worker caching the
