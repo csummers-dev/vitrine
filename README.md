@@ -4,7 +4,7 @@
 
 # filebrowser pretty
 
-[![Version](https://img.shields.io/badge/version-2.1.1-5e6ad2?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-2.1.2-5e6ad2?style=flat-square)](#)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
 [![Vue](https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js&logoColor=white)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
@@ -139,27 +139,29 @@ Or skip Docker entirely and run the binary directly: `./filebrowser` — opens o
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│  Browser                                                     │
-│  ┌────────────────────────────────────────────────────────┐  │
-│  │  Vue 3 + TypeScript + Pinia                            │  │
-│  │  • Composition API, <script setup>                     │  │
-│  │  • Tailwind v4 design tokens                           │  │
-│  │  • Composables for shortcuts, drag, focus, theme       │  │
-│  │  • Format-specific viewers: pdfjs / videojs /          │  │
-│  │    vue-reader (EPUB) / music-metadata / exifr          │  │
-│  └────────────────────────────────────────────────────────┘  │
-│                            │ HTTP / WebSocket                │
-│                            ▼                                 │
-│  ┌────────────────────────────────────────────────────────┐  │
-│  │  Go backend                                            │  │
-│  │  • Gorilla mux router                                  │  │
-│  │  • Storm/BoltDB for users + shares + settings          │  │
-│  │  • afero filesystem abstraction                        │  │
-│  │  • JWT auth (or proxy / noauth / hooks)                │  │
-│  │  • Embedded frontend assets (one binary deploys)       │  │
-│  └────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────┐
+│  Browser                                                       │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  Vue 3 + TypeScript + Pinia                              │  │
+│  │  • Composition API, <script setup>                       │  │
+│  │  • Tailwind v4 design tokens                             │  │
+│  │  • Composables for shortcuts, drag, focus, theme         │  │
+│  │  • Format viewers: pdfjs / videojs / vue-reader (EPUB) / │  │
+│  │    comic (CBZ·CBR) / marked (Markdown) /                 │  │
+│  │    music-metadata / exifr                                │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                       │ HTTP / WebSocket                       │
+│                               ▼                                │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  Go backend                                              │  │
+│  │  • Gorilla mux router                                    │  │
+│  │  • Storm v3 / bbolt — users · shares · settings ·        │  │
+│  │    tags · audit · webhooks · sessions                    │  │
+│  │  • afero filesystem abstraction                          │  │
+│  │  • JWT auth (or proxy / noauth / hooks)                  │  │
+│  │  • Embedded frontend assets (one binary deploys)         │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────────────┘
 ```
 
 ### Tech stack
@@ -167,7 +169,7 @@ Or skip Docker entirely and run the binary directly: `./filebrowser` — opens o
 | Layer | Choice |
 | --- | --- |
 | Backend | **Go 1.25** |
-| DB | **Storm/BoltDB** |
+| DB | **Storm v3 / bbolt** |
 | Frontend | **Vue 3 + TypeScript** |
 | State | **Pinia** |
 | Styling | **Tailwind v4** |
@@ -180,7 +182,7 @@ Or skip Docker entirely and run the binary directly: `./filebrowser` — opens o
 | Video | **video.js 8** + **ffmpeg** thumbnails |
 | Audio metadata (read) | **music-metadata 11** |
 | Audio tags (read/write) | **id3v2 + go-flac** (MP3 / FLAC) · **TagLib**/Wasm (M4A / OGG) |
-| Archives | **mholt/archives** (zip / 7z / rar / tar) |
+| Archives | **mholt/archives** (zip / 7z / rar / tar) · **yeka/zip** (password-protected ZIP) |
 | EPUB | **vue-reader + epub.js** |
 | Code / text edit | **native `<textarea>`** |
 | Markdown | **marked + KaTeX** |
