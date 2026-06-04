@@ -891,6 +891,7 @@ import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
 import { removePrefix } from "@/api/utils";
 import { startTransfer } from "@/utils/transfers";
+import { isPointInRowIntoZone } from "@/utils/dropZone";
 
 const dragCounter = ref<number>(0);
 const width = ref<number>(window.innerWidth);
@@ -1403,6 +1404,13 @@ const onItemDropAlongside = (event: DragEvent) => {
 let touchHighlightEl: HTMLElement | null = null;
 let touchSpringUrl: string | null = null;
 let touchSpringTimer: number | null = null;
+// Destination the in-flight touch drop will resolve to, cached on every
+// onMove so onDrop matches EXACTLY what was highlighted (the same robustness as
+// the desktop cached-into-zone fix). A folder url when over a folder's tight
+// into-zone (or a dedicated breadcrumb / current-folder target); the current
+// folder ("alongside") when over a folder row OUTSIDE its into-zone; null when
+// over nothing droppable (→ no-op drop).
+let touchDropUrl: string | null = null;
 
 const clearTouchHighlight = () => {
   if (touchHighlightEl) {
@@ -1436,53 +1444,78 @@ const listingTouchDrag = useTouchDrag<{ index: number }>({
   // resolved by ptrScrollEl — rather than #listing, which isn't the scroller.
   scrollEl: () => ptrScrollEl.value,
   onStart: (p) => fileStore.snapshotDragSelection(p.index),
-  onMove: (_p, _x, _y, el) => {
-    const target = resolveDropEl(el);
-    if (target !== touchHighlightEl) {
+  onMove: (_p, x, y, el) => {
+    const raw = resolveDropEl(el);
+    const isFolderRow =
+      !!raw &&
+      raw.classList.contains("item") &&
+      raw.getAttribute("data-dir") === "true";
+    // Parity with desktop: a folder ROW is an into-folder target ONLY when the
+    // finger is in its tight icon+name into-zone. Outside that the drop goes
+    // "alongside" into the current folder, so don't highlight/spring the folder.
+    // Dedicated drop targets (breadcrumb segments, the current-folder area)
+    // aren't `.item` rows and keep their whole-element target.
+    const inIntoZone = isFolderRow && isPointInRowIntoZone(raw!, x, y);
+    const highlightEl = isFolderRow ? (inIntoZone ? raw : null) : raw;
+
+    if (highlightEl !== touchHighlightEl) {
       clearTouchHighlight();
-      if (target) {
-        target.style.outline = "2px solid var(--color-accent, #5e6ad2)";
-        target.style.outlineOffset = "-2px";
-        touchHighlightEl = target;
+      if (highlightEl) {
+        highlightEl.style.outline = "2px solid var(--color-accent, #5e6ad2)";
+        highlightEl.style.outlineOffset = "-2px";
+        touchHighlightEl = highlightEl;
       }
     }
-    // Spring-load: hovering a *folder row* (not the current-folder area)
+
+    // Cache where this drop resolves: the highlighted target's url, else the
+    // current folder for a folder row we're not "into" ("alongside"), else null.
+    if (highlightEl) {
+      touchDropUrl = highlightEl.dataset.dropUrl ?? null;
+    } else if (isFolderRow) {
+      touchDropUrl = currentFolderUrl.value || null;
+    } else {
+      touchDropUrl = null;
+    }
+
+    // Spring-load: hovering a folder row's into-zone (not the current folder)
     // for 2s drills into it so nested drops are possible (F6 parity).
-    const url = target?.dataset.dropUrl ?? null;
-    const isFolderRow =
-      !!target &&
-      target.classList.contains("item") &&
-      target.getAttribute("data-dir") === "true";
-    if (isFolderRow && url && url !== fileStore.req?.url) {
-      if (touchSpringUrl !== url) {
+    const springUrl = inIntoZone ? (raw!.dataset.dropUrl ?? null) : null;
+    if (springUrl && springUrl !== fileStore.req?.url) {
+      if (touchSpringUrl !== springUrl) {
         cancelTouchSpring();
-        touchSpringUrl = url;
+        touchSpringUrl = springUrl;
         touchSpringTimer = window.setTimeout(() => {
           touchSpringTimer = null;
-          void router.push({ path: url });
+          void router.push({ path: springUrl });
         }, 2000);
       }
     } else {
       cancelTouchSpring();
     }
   },
-  onDrop: (_p, _x, _y, el) => {
+  onDrop: () => {
     cancelTouchSpring();
     clearTouchHighlight();
-    const url = resolveDropEl(el)?.dataset.dropUrl;
-    if (!url) return;
+    // Use the destination cached during onMove so the drop lands exactly where
+    // it was highlighted (no fresh recompute). null = released over nothing
+    // droppable → no-op.
+    const dest = touchDropUrl;
+    touchDropUrl = null;
+    if (!dest) return;
     // Touch has no Ctrl/Cmd → always a move. performParentDrop reads the
-    // snapshot from fileStore.draggedItems and applies all the usual guards.
+    // snapshot from fileStore.draggedItems and applies all the usual guards
+    // (incl. the from===to short-circuit, so an "alongside" drop is a no-op).
     const synthetic = {
       preventDefault: () => {},
       ctrlKey: false,
       metaKey: false,
     } as unknown as DragEvent;
-    void performParentDrop(synthetic, url);
+    void performParentDrop(synthetic, dest);
   },
   onEnd: () => {
     cancelTouchSpring();
     clearTouchHighlight();
+    touchDropUrl = null;
     fileStore.draggedItems = [];
     // Swallow the synthetic click the browser fires on the drop row.
     fileStore.suppressClicksUntil = Date.now() + 350;

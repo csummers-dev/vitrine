@@ -2,6 +2,10 @@
 
 All notable changes to **filebrowser pretty**.
 
+## v2.1.2 — Drag-drop into-folder precision
+
+- **Dropping a file "into" a folder now requires the exact spot that highlights — on mouse *and* touch** — a file dropped anywhere over a folder's name could land *inside* that folder even when the row never highlighted, because the drop re-measured the target zone and the glyph-width measurement is unreliable during the drop event (it fell back to the full name column). The drop now reuses the same state that drives the highlight + spring-load countdown, so a folder only receives the drop where it actually lit up; releasing anywhere else drops alongside, into the current folder. Desktop and touch drag now share one drop-zone definition, so the tightening behaves identically across phone, tablet, and desktop
+
 ## v2.1.1 — Sidebar & move/paste fixes
 
 - **Search bar no longer shoves the header around** — opening the search used to expand it inside the toolbar row, squeezing the folder title and meta into a tiny column. It now floats as a compact, centered overlay above the header while it's the active element instead of displacing anything; closing it restores the row untouched

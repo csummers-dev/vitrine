@@ -190,6 +190,7 @@ import {
 import { filesize } from "@/utils";
 import { displayName, splitExtension } from "@/utils/filename";
 import { isSelfOrDescendantTarget } from "@/utils/dragdrop";
+import { isPointInRowIntoZone } from "@/utils/dropZone";
 import { fileIcon, fileIconColor } from "@/utils/fileIcon";
 import { setDragGhost } from "@/utils/dragGhost";
 import { startDragBadge, endDragBadge } from "@/utils/dragCopyMoveBadge";
@@ -351,72 +352,19 @@ const canDrop = computed(() => {
 // entirely.
 const canForwardDrop = computed(() => !props.readOnly);
 
-// v1.3 H12 geometry helper. Computes whether the cursor is currently over
-// this folder's "drop INTO this folder" zone — the UNION of the folder
-// icon/thumbnail (`.item__icon`) and its name (`.item__name-text`), plus a
-// small 3px forgiving margin (WS6: tightened from 6px so the zone hugs the
-// icon+name and "alongside" is even easier to hit). Kept tight across views so
-// drop *alongside* (into the current directory) in a folder full of folders:
-//   • List view      → the empty cell / meta columns to the right of the name
-//                      read as "alongside".
-//   • Grid / gallery → the gap / padding around the card reads as "alongside".
-// Returning false for non-folder rows means file rows always treat hovers as
-// alongside, which is correct: files aren't drop targets.
-// Forgiving grab margin past the last glyph of the folder name — small enough
-// that the empty column after the name still reads as "alongside" (V3-B #6).
-const DROP_ZONE_GRAB_PX = 16;
-
-// Width of the actually-rendered text inside `.item__name-text`, not its flex
-// box. A Range over the text node returns the glyph run's bounding box, which
-// is the only reliable signal when the element is `flex: 1` (its scroll/client
-// width is the whole column). Falls back to scrollWidth when there's no text
-// node (e.g. the rename <input> swapped in for the same class).
-const measureTextWidth = (el: HTMLElement): number => {
-  const node = el.firstChild;
-  if (node && node.nodeType === Node.TEXT_NODE) {
-    const range = document.createRange();
-    range.selectNodeContents(node);
-    const w = range.getBoundingClientRect().width;
-    if (w > 0) return w;
-  }
-  return el.scrollWidth;
-};
-
+// v1.3 H12 geometry helper → whether the cursor is over this folder's "drop
+// INTO this folder" zone (icon + rendered name + a small grab margin). The
+// hit-test lives in `@/utils/dropZone` so the desktop drag path (here) and the
+// touch drag path (FileListing) share ONE definition — see isPointInRowIntoZone.
+// Non-folder rows and Alt-held drags always read as "alongside" (drop into the
+// current directory), so a folder full of folders stays easy to drop into.
 const isInIntoZone = (event: DragEvent, rowEl: HTMLElement): boolean => {
   if (!props.isDir) return false;
-  // Hold Alt/Option to force EVERY drop "alongside" (into the current
-  // directory), even directly over a folder's icon or name. Returning false
-  // here means no folder highlights or spring-loads while Alt is down — which
-  // is also the cue that the drop will land in the current folder. Lets you
-  // drop into a folder full of folders without ever landing inside one.
+  // Hold Alt/Option to force EVERY drop "alongside": no folder highlights or
+  // spring-loads while it's down, so you can drop into a folder full of folders
+  // without ever landing inside one.
   if (event.altKey) return false;
-  const iconEl = rowEl.querySelector(".item__icon");
-  const nameEl = rowEl.querySelector(".item__name-text");
-  if (!(nameEl instanceof HTMLElement)) return false;
-  const nameRect = nameEl.getBoundingClientRect();
-  const rects: DOMRect[] = [nameRect];
-  if (iconEl instanceof HTMLElement) rects.push(iconEl.getBoundingClientRect());
-
-  const pad = 3;
-  const left = Math.min(...rects.map((r) => r.left)) - pad;
-  const top = Math.min(...rects.map((r) => r.top)) - pad;
-  const bottom = Math.max(...rects.map((r) => r.bottom)) + pad;
-  // V3-B #6: `.item__name-text` is `flex: 1`, so its *box* stretches across the
-  // whole name column. The previous `scrollWidth` bound failed because a name
-  // that doesn't overflow has `scrollWidth === clientWidth === full column`, so
-  // the zone still covered the empty space after the name (the red bar in the
-  // report). Measure the ACTUAL rendered glyph run with a Range over the text
-  // node, then cap at the box width (truncated names) so the right edge hugs
-  // the visible characters plus a small grab margin.
-  const glyphWidth = measureTextWidth(nameEl);
-  const textWidth = Math.min(glyphWidth, nameRect.width);
-  const right = nameRect.left + textWidth + DROP_ZONE_GRAB_PX;
-  return (
-    event.clientX >= left &&
-    event.clientX <= right &&
-    event.clientY >= top &&
-    event.clientY <= bottom
-  );
+  return isPointInRowIntoZone(rowEl, event.clientX, event.clientY);
 };
 
 // Track in-zone state with a plain let — nothing in the template
@@ -876,14 +824,23 @@ const drop = async (event: DragEvent) => {
   if (!canForwardDrop.value) return;
   event.preventDefault();
 
-  // v1.3 H12: geometry decides which destination this drop resolves to.
-  //   • In the into-zone of a droppable folder → drop INTO that folder
-  //     (existing behavior below this guard).
-  //   • Anywhere else on the row (alongside, or any drop on a file row,
-  //     or a self-drop folder row) → forward to FileListing, which
-  //     routes the move to the CURRENT folder.
+  // The CACHED into-zone state decides where this drop resolves — not a fresh
+  // geometry recompute:
+  //   • The highlight + spring-load countdown were active at release
+  //     (`inIntoZone` true) on a droppable folder → drop INTO that folder.
+  //   • Anywhere else on the row (no highlight, a file row, or a self-drop
+  //     folder row) → forward to FileListing, which routes the move to the
+  //     CURRENT folder ("alongside").
+  // Why cached, not recomputed via isInIntoZone(): that helper measures the
+  // rendered glyph run with a Range, and Range.getBoundingClientRect() is
+  // unreliable during the TERMINATING `drop` event — it can return empty, so
+  // measureTextWidth falls back to the full flex name-column width. That
+  // silently widened the target to the whole name cell at drop time, dropping
+  // INTO the folder even where the (dragover-driven) highlight never showed.
+  // Reusing the dragover-set state makes "drops into" exactly match
+  // "was highlighted + counting down."
   const rowEl = event.currentTarget as HTMLElement;
-  const intoZone = canDrop.value && isInIntoZone(event, rowEl);
+  const intoZone = inIntoZone && canDrop.value;
 
   // Always clear into-state on drop (it ends the hover regardless of
   // which branch we take).
