@@ -116,6 +116,7 @@ const fileStore = useFileStore();
 const layoutStore = useLayoutStore();
 // Shared floating transfer indicator (same one drag-drop moves use).
 const $showError = inject<IToastError>("$showError");
+const $showSuccess = inject<IToastSuccess>("$showSuccess");
 
 const pickerRef = ref<InstanceType<typeof FolderPicker> | null>(null);
 const destPath = ref<string>("");
@@ -291,6 +292,15 @@ const onSubmit = async () => {
           }
         }
         if (items.length > 0) runInBackground();
+        // Every conflicting item was skipped — nothing left to transfer. Tell
+        // the user, otherwise the dialog closes silently with no indication of
+        // what happened.
+        else
+          $showSuccess?.(
+            `All conflicting items were skipped — nothing was ${
+              props.mode === "copy" ? "copied" : "moved"
+            }.`
+          );
       },
     });
     return;

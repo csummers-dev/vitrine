@@ -114,8 +114,24 @@ header .action .counter {
   width: auto;
   max-width: 380px;
 }
+/* When the search is the active element it floats as an absolute overlay
+   CENTERED over the header row (anchored to .fb-hero's positioning context)
+   instead of expanding IN FLOW. In flow it grew the right-aligned toolbar
+   cluster and squeezed the folder title into a sliver (the reported bug). A
+   centered ~40%-width overlay reads as a focused search field rather than a
+   jarring full-width bar; it sits above the title + toolbar while open and
+   leaves their layout untouched, and closing it (blur / Esc) restores the row.
+   width is clamped so it stays usable on narrow viewports and doesn't sprawl on
+   ultra-wide ones. The result dropdown anchors to #search, so it follows along.
+   (Height stays 32px from the base #search rule.) */
 #search.active {
-  width: 340px;
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: clamp(280px, 40%, 480px);
+  max-width: calc(100% - 32px);
+  z-index: 30;
 }
 
 /* Responsive: shrink search at narrower viewports */
@@ -147,21 +163,8 @@ header .action .counter {
     padding: 0;
     justify-content: center;
   }
-
-  /* When active at narrow widths, the 36px container has no room to render the
-     input form. Float the active state across the full header width as an
-     overlay (header has `sticky top-0` which provides the positioning context).
-     The result dropdown anchors to #search, so it follows along automatically. */
-  #search.active {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    right: 8px;
-    width: auto;
-    max-width: none;
-    height: 32px;
-    z-index: 30;
-  }
+  /* The active-state overlay is now handled by the base `#search.active` rule
+     above (it floats at every width), so no narrow-only override is needed. */
 }
 
 /* Inactive: button-shaped trigger */

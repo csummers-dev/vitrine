@@ -94,149 +94,163 @@
              duplicate of the same destination. -->
       </nav>
 
-      <!-- Favorites (v1.3 S3-2). Pinned folders from useFavorites.
-           Hidden in icon-rail mode. Empty list is suppressed entirely
-           (no "None yet" filler) — the sidebar only shows the section
-           when there's content, so first-time users aren't presented
-           with empty scaffolding. -->
-      <nav
-        v-if="isLoggedIn && favorites.length > 0"
-        ref="favListEl"
-        class="px-2 pt-4 max-md:hidden"
+      <!-- Scrollable middle region. ONLY Favorites + Recents live here, so
+           they're the only thing that scrolls when the pinned / recent lists
+           grow tall. Everything above (header, primary actions, the main
+           folder link) stays fixed at the top; the storage card and the
+           user/logout row stay fixed at the bottom. `flex-1 min-h-0` lets this
+           region absorb the leftover height and scroll internally instead of
+           pushing the sidebar past the bottom of the viewport (the bug). In
+           icon-rail mode its children are hidden, so it collapses to an empty
+           flex spacer — which still correctly pins the user row to the bottom. -->
+      <div
+        class="sidebar-scroll flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
       >
-        <div class="px-2 pb-1.5">
-          <button
-            type="button"
-            class="flex items-center gap-1 text-[10px] font-semibold text-ink-3 uppercase tracking-[0.06em] hover:text-ink-2 transition"
-            :aria-expanded="!isSectionCollapsed('favorites')"
-            @click="toggleSection('favorites')"
-          >
-            <Icon
-              name="chevron-down"
-              :size="11"
-              :stroke-width="2.4"
-              class="transition-transform shrink-0"
-              :class="isSectionCollapsed('favorites') ? '-rotate-90' : ''"
-            />
-            <span>Favorites</span>
-          </button>
-        </div>
-        <ul
-          v-show="!isSectionCollapsed('favorites')"
-          class="list-none m-0 p-0 space-y-0.5"
+        <!-- Favorites (v1.3 S3-2). Pinned folders from useFavorites.
+             Hidden in icon-rail mode. Empty list is suppressed entirely
+             (no "None yet" filler) — the sidebar only shows the section
+             when there's content, so first-time users aren't presented
+             with empty scaffolding. -->
+        <nav
+          v-if="isLoggedIn && favorites.length > 0"
+          ref="favListEl"
+          class="px-2 pt-4 max-md:hidden"
         >
-          <li
-            v-for="(path, index) in favorites"
-            :key="path"
-            draggable="true"
-            class="rounded-md transition"
-            :class="[
-              // File dragged FROM the listing onto a favorite = move-into:
-              // keep the solid 'drop here' ring. (draggingFavIndex is null.)
-              favDragOverIndex === index && draggingFavIndex === null
-                ? 'ring-2 ring-accent ring-inset bg-selected'
-                : '',
-              // Reordering one favorite among the others = show an insertion
-              // line, NOT the move-into ring (clarity fix). The line renders
-              // on the row's top edge for a 'before' drop, or its bottom edge
-              // for an 'after' drop (so end-of-list drops are visible too).
-              // Never drawn on the row being dragged (it has its own style).
-              favDragOverIndex === index &&
-              draggingFavIndex !== null &&
-              draggingFavIndex !== index &&
-              !favDropAfter
-                ? 'fav-reorder-target'
-                : '',
-              favDragOverIndex === index &&
-              draggingFavIndex !== null &&
-              draggingFavIndex !== index &&
-              favDropAfter
-                ? 'fav-reorder-target--after'
-                : '',
-              draggingFavIndex === index ? 'fav-dragging' : '',
-            ]"
-            @dragstart="onFavDragStart(index, $event)"
-            @dragover="onFavDragOver(index, $event)"
-            @dragleave="onFavDragLeave(index)"
-            @drop="onFavDrop(index, path, $event)"
-            @dragend="onFavDragEnd"
-            @contextmenu="onFavoriteContextMenu(path, $event)"
+          <div class="px-2 pb-1.5">
+            <button
+              type="button"
+              class="flex items-center gap-1 text-[10px] font-semibold text-ink-3 uppercase tracking-[0.06em] hover:text-ink-2 transition"
+              :aria-expanded="!isSectionCollapsed('favorites')"
+              @click="toggleSection('favorites')"
+            >
+              <Icon
+                name="chevron-down"
+                :size="11"
+                :stroke-width="2.4"
+                class="transition-transform shrink-0"
+                :class="isSectionCollapsed('favorites') ? '-rotate-90' : ''"
+              />
+              <span>Favorites</span>
+            </button>
+          </div>
+          <ul
+            v-show="!isSectionCollapsed('favorites')"
+            class="list-none m-0 p-0 space-y-0.5"
           >
-            <!-- Plain div (not a router-link): a real <a> has special
+            <li
+              v-for="(path, index) in favorites"
+              :key="path"
+              draggable="true"
+              class="rounded-md transition"
+              :class="[
+                // File dragged FROM the listing onto a favorite = move-into:
+                // keep the solid 'drop here' ring. (draggingFavIndex is null.)
+                favDragOverIndex === index && draggingFavIndex === null
+                  ? 'ring-2 ring-accent ring-inset bg-selected'
+                  : '',
+                // Reordering one favorite among the others = show an insertion
+                // line, NOT the move-into ring (clarity fix). The line renders
+                // on the row's top edge for a 'before' drop, or its bottom edge
+                // for an 'after' drop (so end-of-list drops are visible too).
+                // Never drawn on the row being dragged (it has its own style).
+                favDragOverIndex === index &&
+                draggingFavIndex !== null &&
+                draggingFavIndex !== index &&
+                !favDropAfter
+                  ? 'fav-reorder-target'
+                  : '',
+                favDragOverIndex === index &&
+                draggingFavIndex !== null &&
+                draggingFavIndex !== index &&
+                favDropAfter
+                  ? 'fav-reorder-target--after'
+                  : '',
+                draggingFavIndex === index ? 'fav-dragging' : '',
+              ]"
+              @dragstart="onFavDragStart(index, $event)"
+              @dragover="onFavDragOver(index, $event)"
+              @dragleave="onFavDragLeave(index)"
+              @drop="onFavDrop(index, path, $event)"
+              @dragend="onFavDragEnd"
+              @contextmenu="onFavoriteContextMenu(path, $event)"
+            >
+              <!-- Plain div (not a router-link): a real <a> has special
                  browser drag handling that fights the parent <li>'s HTML5
                  drag (reorder/remove never starts). Navigate on click
                  instead — mirrors the listing rows, which drag reliably. -->
-            <div
-              class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] hover:bg-hover text-ink-2 transition cursor-pointer"
-              role="link"
-              tabindex="0"
-              :title="path"
-              @click="navigateFavorite(path)"
-              @keydown.enter="navigateFavorite(path)"
-            >
-              <Icon
-                name="star"
-                :size="12"
-                :stroke-width="0"
-                fill="currentColor"
-                class="text-amber-500 shrink-0"
-              />
-              <span class="truncate flex-1">{{ favoriteName(path) }}</span>
-            </div>
-          </li>
-        </ul>
-      </nav>
+              <div
+                class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] hover:bg-hover text-ink-2 transition cursor-pointer"
+                role="link"
+                tabindex="0"
+                :title="path"
+                @click="navigateFavorite(path)"
+                @keydown.enter="navigateFavorite(path)"
+              >
+                <Icon
+                  name="star"
+                  :size="12"
+                  :stroke-width="0"
+                  fill="currentColor"
+                  class="text-amber-500 shrink-0"
+                />
+                <span class="truncate flex-1">{{ favoriteName(path) }}</span>
+              </div>
+            </li>
+          </ul>
+        </nav>
 
-      <!-- Recent (v1.3 S3-1). MRU log of recently-previewed files.
+        <!-- Recent (v1.3 S3-1). MRU log of recently-previewed files.
            Capped at 5 visible; "View all" disclosure expands the rest
            (up to the 50-cap from the store). Click opens preview by
            routing to the file's URL. -->
-      <nav
-        v-if="isLoggedIn && recents.length > 0"
-        class="px-2 pt-4 max-md:hidden"
-      >
-        <div class="px-2 pb-1.5 flex items-center justify-between gap-2">
-          <button
-            type="button"
-            class="flex items-center gap-1 text-[10px] font-semibold text-ink-3 uppercase tracking-[0.06em] hover:text-ink-2 transition"
-            :aria-expanded="!isSectionCollapsed('recent')"
-            @click="toggleSection('recent')"
-          >
-            <Icon
-              name="chevron-down"
-              :size="11"
-              :stroke-width="2.4"
-              class="transition-transform shrink-0"
-              :class="isSectionCollapsed('recent') ? '-rotate-90' : ''"
-            />
-            <span>Recent</span>
-          </button>
-        </div>
-        <ul
-          v-show="!isSectionCollapsed('recent')"
-          class="list-none m-0 p-0 space-y-0.5"
+        <nav
+          v-if="isLoggedIn && recents.length > 0"
+          class="px-2 pt-4 max-md:hidden"
         >
-          <li
-            v-for="(r, ri) in visibleRecents"
-            :key="r.path"
-            @contextmenu="onRecentContextMenu(r, $event)"
-          >
-            <router-link
-              :to="`/files${r.path}`"
-              class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] hover:bg-hover text-ink-2 transition"
-              :title="r.path"
+          <div class="px-2 pb-1.5 flex items-center justify-between gap-2">
+            <button
+              type="button"
+              class="flex items-center gap-1 text-[10px] font-semibold text-ink-3 uppercase tracking-[0.06em] hover:text-ink-2 transition"
+              :aria-expanded="!isSectionCollapsed('recent')"
+              @click="toggleSection('recent')"
             >
               <Icon
-                name="file"
-                :size="12"
-                :style="{ color: recentHue(ri) }"
-                class="shrink-0"
+                name="chevron-down"
+                :size="11"
+                :stroke-width="2.4"
+                class="transition-transform shrink-0"
+                :class="isSectionCollapsed('recent') ? '-rotate-90' : ''"
               />
-              <span class="truncate flex-1">{{ recentLabel(r.name) }}</span>
-            </router-link>
-          </li>
-        </ul>
-      </nav>
+              <span>Recent</span>
+            </button>
+          </div>
+          <ul
+            v-show="!isSectionCollapsed('recent')"
+            class="list-none m-0 p-0 space-y-0.5"
+          >
+            <li
+              v-for="(r, ri) in visibleRecents"
+              :key="r.path"
+              @contextmenu="onRecentContextMenu(r, $event)"
+            >
+              <router-link
+                :to="`/files${r.path}`"
+                class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] hover:bg-hover text-ink-2 transition"
+                :title="r.path"
+              >
+                <Icon
+                  name="file"
+                  :size="12"
+                  :style="{ color: recentHue(ri) }"
+                  class="shrink-0"
+                />
+                <span class="truncate flex-1">{{ recentLabel(r.name) }}</span>
+              </router-link>
+            </li>
+          </ul>
+        </nav>
+      </div>
+      <!-- /sidebar-scroll -->
     </template>
 
     <template v-else>
@@ -267,7 +281,12 @@
       </nav>
     </template>
 
-    <div class="flex-1"></div>
+    <!-- Logged-OUT spacer only. Logged-in uses the scrollable Favorites/Recents
+         region above as its flex-1, so a second flex-1 sibling here would split
+         the height 50/50 and unstick the bottom rows. (Storage + the user row
+         are logged-in only, so logged-out just needs the login links pinned to
+         the top.) -->
+    <div v-if="!isLoggedIn" class="flex-1"></div>
 
     <!-- Storage card (hidden in icon-rail) -->
     <div
