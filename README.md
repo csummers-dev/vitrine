@@ -4,7 +4,7 @@
 
 # filebrowser pretty
 
-[![Version](https://img.shields.io/badge/version-2.1.0-5e6ad2?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-2.1.1-5e6ad2?style=flat-square)](#)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
 [![Vue](https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js&logoColor=white)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)

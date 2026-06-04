@@ -890,6 +890,7 @@ import url from "@/utils/url";
 import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
 import { removePrefix } from "@/api/utils";
+import { startTransfer } from "@/utils/transfers";
 
 const dragCounter = ref<number>(0);
 const width = ref<number>(window.innerWidth);
@@ -2154,34 +2155,31 @@ const paste = async (event: Event) => {
     return;
   }
 
-  // Re-select EVERY pasted item in the destination, not just items[0]
-  // (the previous single-string behavior dropped N-1 selections on a
-  // multi-item paste). items[].name is already decoded.
-  const destPathPrefix = removePrefix(route.path);
-  const preselectPaths = items.map((it) => destPathPrefix + it.name);
+  const isMove = clipboardStore.key === "x";
+  const kind: "move" | "copy" = isMove ? "move" : "copy";
 
-  let action = (overwrite?: boolean, rename?: boolean) => {
-    api
-      .copy(items, overwrite, rename)
+  // Run the paste through the SHARED background transfer — the same path the
+  // move/copy tool and drag-drop use. The floating transfer dock then (a) shows
+  // the progress notification the user expects and (b) refreshes the listing
+  // when the job settles, so the pasted file becomes visible without a manual
+  // reload. (Previously paste called api.move/api.copy directly: no dock, and
+  // the refresh hung on a one-off `fileStore.reload` flag.) Per-item overwrite /
+  // rename flags set during conflict resolution are carried through by
+  // `startTransfer` → `toTransferItems`.
+  const run = () => {
+    if (items.length === 0) return;
+    // Re-select EVERY pasted item in the destination (names are already
+    // decoded) so the selection survives the post-transfer refresh.
+    const destPathPrefix = removePrefix(route.path);
+    fileStore.setPreselect(items.map((it) => destPathPrefix + it.name));
+    void startTransfer(kind, items)
       .then(() => {
-        fileStore.setPreselect(preselectPaths);
-        fileStore.reload = true;
+        // A cut+paste consumes the clipboard; a copy+paste keeps it so the
+        // user can paste again somewhere else.
+        if (isMove) clipboardStore.resetClipboard();
       })
       .catch($showError);
   };
-
-  if (clipboardStore.key === "x") {
-    action = (overwrite, rename) => {
-      api
-        .move(items, overwrite, rename)
-        .then(() => {
-          clipboardStore.resetClipboard();
-          fileStore.setPreselect(preselectPaths);
-          fileStore.reload = true;
-        })
-        .catch($showError);
-    };
-  }
 
   const path = route.path.endsWith("/") ? route.path : route.path + "/";
   const conflict = await upload.checkMoveConflict(items, path);
@@ -2197,8 +2195,8 @@ const paste = async (event: Event) => {
         from: clipboardStore.path,
         to: path,
       },
-      confirm: (event: Event, result: Array<ConflictingResource>) => {
-        event.preventDefault();
+      confirm: (ev: Event, result: Array<ConflictingResource>) => {
+        ev.preventDefault();
         layoutStore.closeHovers();
         for (let i = result.length - 1; i >= 0; i--) {
           const item = result[i];
@@ -2207,11 +2205,22 @@ const paste = async (event: Event) => {
           } else if (item.checked.length == 1 && item.checked[0] == "origin") {
             items[item.index].overwrite = true;
           } else {
+            // Skipped (this is what "Skip all conflicting files" produces for
+            // every row) — drop it from the batch.
             items.splice(item.index, 1);
           }
         }
         if (items.length > 0) {
-          action();
+          run();
+        } else {
+          // Every conflicting item was skipped, so there's nothing left to
+          // transfer. Without this the dialog just closed silently and the
+          // user had no idea whether anything happened (the reported bug).
+          $showSuccess(
+            `All conflicting items were skipped — nothing was ${
+              isMove ? "moved" : "copied"
+            }.`
+          );
         }
       },
     });
@@ -2219,7 +2228,7 @@ const paste = async (event: Event) => {
     return;
   }
 
-  action(false, false);
+  run();
 };
 
 const columnsResize = () => {
@@ -3857,6 +3866,10 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   gap: 12px;
   padding: 16px 20px 12px;
   flex-shrink: 0;
+  /* Positioning context for the active search overlay (#search.active in
+     header.css), so when the search expands it floats over this header row
+     instead of pushing the title + toolbar. */
+  position: relative;
 }
 @media (max-width: 768px) {
   .fb-hero {

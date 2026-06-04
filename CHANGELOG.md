@@ -2,6 +2,13 @@
 
 All notable changes to **filebrowser pretty**.
 
+## v2.1.1 — Sidebar & move/paste fixes
+
+- **Search bar no longer shoves the header around** — opening the search used to expand it inside the toolbar row, squeezing the folder title and meta into a tiny column. It now floats as a compact, centered overlay above the header while it's the active element instead of displacing anything; closing it restores the row untouched
+- **Sidebar no longer overflows the page** — with enough pinned Favorites (or Recents), the sidebar used to grow past the bottom of the window, pushing the storage meter and the account/logout row off-screen. The header and the main folder link now stay fixed at the top, the storage card and the user/logout row stay fixed at the bottom, and only the Favorites + Recents lists scroll when they run long
+- **Cmd+V paste now shows progress and refreshes** — pasting a cut/copied file ran silently through a different code path than the move/copy tool: no progress indicator, and the listing didn't refresh so the pasted file wasn't visible. Paste now uses the same background transfer as the move tool and drag-and-drop, so the floating transfer dock shows progress and the listing refreshes the moment the job finishes
+- **Conflict dialog "Skip all" gives feedback** — when a move/copy/paste hit a name conflict and you chose **Skip all conflicting files**, the dialog just closed with no indication of what happened. It now shows a toast ("All conflicting items were skipped — nothing was moved/copied.") so it's clear the action completed with nothing to do — in both the paste flow and the move/copy tool
+
 ## v2.1.0 — Listing, drag & preview polish
 
 - **Listing no longer hides behind the breadcrumb bar** — the bottom breadcrumb strip was sitting under an oversized scroll area, so the last rows/tiles could disappear behind it. The listing now fills its scroll section as a proper flex child (the section gained the missing `min-height: 0` so its overflow actually scrolls), leaving just the intended slim gap above the bar. The virtualized list view also shed a stray 1rem bottom padding that was lifting its scroll viewport off the breadcrumb, so list rows now run all the way down to the bar
