@@ -143,13 +143,14 @@
             min="0"
             max="100"
             step="1"
-            :value="muted ? 0 : Math.round(volume * 100)"
+            :value="volumePct"
+            :style="{ '--volume-fill': `${volumePct}%` }"
             aria-label="Volume"
             class="audio-viewer__volume-bar"
             @input="onVolumeInput"
           />
           <span class="audio-viewer__volume-pct tabular">
-            {{ muted ? 0 : Math.round(volume * 100) }}%
+            {{ volumePct }}%
           </span>
         </div>
       </div>
@@ -248,6 +249,12 @@ const progressPct = computed(() => {
   if (!duration.value) return 0;
   return Math.min(100, (currentTime.value / duration.value) * 100);
 });
+
+// Volume as a 0–100 integer; muted reads as 0. Drives both the displayed %
+// and the lilac fill of the volume slider (see --volume-fill in the CSS).
+const volumePct = computed(() =>
+  muted.value ? 0 : Math.round(volume.value * 100)
+);
 
 // Displayed values: parsed ID3 wins, then prop, then filename. Lets the
 // parent (Preview.vue) keep passing the filename as a fallback while
@@ -828,16 +835,34 @@ html.dark .audio-viewer__art--fallback {
   color: var(--color-ink-1, #18181b);
 }
 
-/* Native range input theming — same accent fill as the scrubber. */
+/* Native range input theming — same lilac fill as the scrubber.
+   Range inputs don't paint the value region on their own, so the filled
+   portion is drawn here: WebKit/Blink get a hard-stop gradient driven by
+   --volume-fill (set inline from volumePct); Firefox uses ::-moz-range-progress
+   below. Beyond the thumb the track falls back to the neutral elevated color. */
 .audio-viewer__volume-bar {
   flex: 1;
   appearance: none;
   -webkit-appearance: none;
   height: 6px;
   border-radius: 999px;
-  background: var(--color-elevated, #f4f4f5);
+  background: linear-gradient(
+    to right,
+    var(--color-accent, #5e6ad2) var(--volume-fill, 0%),
+    var(--color-elevated, #f4f4f5) var(--volume-fill, 0%)
+  );
   cursor: pointer;
   outline: none;
+}
+.audio-viewer__volume-bar::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-elevated, #f4f4f5);
+}
+.audio-viewer__volume-bar::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-accent, #5e6ad2);
 }
 .audio-viewer__volume-bar::-webkit-slider-thumb {
   appearance: none;
