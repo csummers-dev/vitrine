@@ -4,7 +4,46 @@
 
 # filebrowser pretty
 
-[![Version](https://img.shields.io/badge/version-2.1.2-5e6ad2?style=flat-square)](#)
+Self-hosted file management.
+
+- **List view** — Dense, scannable, color-coded.
+- **Grid + Gallery** — Comfortable file listings with previews.
+- **Image + EXIF** — Pixel-perfect previews with EXIF details.
+- **Image** editor — Crop, rotate, and flip.
+- **Video** — Streams with tracks and subtitles.
+- **Audio** — Album art, embedded tags and artwork.
+- **ID3 tag editor** — Edit id3tag metadata, one track or a whole album at once.
+- **PDF** — Page through PDFs with thumbnail previews and sharp rendering.
+- **EPUB** — Read EPUBs with a live chapter list and location remembered.
+- **Comic** reader — Read CBZ and CBR, optionally read manga right-to-left.
+- **Text** - Read and edit text files.
+- **Markdown** — Markdown, renderedor raw.
+- **Command palette** — ⌘K to open command palette, navigate files, folders, and actions.
+- **Search-as-you-type** — Results the moment you start typing.
+- **Breadcrumb navigation** — Move between folders without backtracking.
+- **Context menu** — Context-aware ight-click options throughout.
+- **Favorites** + Recents — Pin favorites, rename them, track recent files.
+- **Drag & drop** — Drag to move. Folders spring open, quick access to parent directory.
+- **Multi-select + lasso** — Select in bulk, click through or lasso a whole region.
+- **Move/Copy + transfer dock** — Moves and copies run in the background.
+- **Bulk rename** — Rename multiple files at once with a live preview.
+- **Conflict resolution** — File and folder conflicts handled. Keep, replace, or skip.
+- **Tagging** — Tag anything in color. Persistent across moves.
+- **Extract** — Extract ZIP, 7z, and RAR files in-app.
+- **Password-protected archive** — Support for extracting password-protected archives.
+- **Upload dock** — Displays per-file progress, and resumes if the connection drops.
+- **Themes** — Hand-crafted light and dark themes.
+- **User Management** — Manage users and permissions.
+- **Settings** — Global and per-user settings.
+- **Audit log** — Actions taken in-app recorded to an audit log available to administrators.
+- **Webhooks** — Fire a webhook on any file event.
+- **Sessions** — View active sessions and sign out everywhere.
+- **Shares** — Share a link in seconds.
+- **Mobile** — Mobile design prioritized.
+- **Mobile upload / pull-to-refresh** — Upload from your camera roll; pull to refresh.
+
+
+[![Version](https://img.shields.io/badge/version-2.1.3-5e6ad2?style=flat-square)](#)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
 [![Vue](https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js&logoColor=white)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
@@ -13,71 +52,92 @@
 </div>
 
 <p align="center">
-  <img src="docs/screenshots/listing-list.png" width="80%" alt="List view with file-icon system and inline meta" />
-  <br/><em>List view with file-icon system and inline meta</em>
+  <img src="docs/screenshots/hero.png" width="100%" alt="filebrowser pretty" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/listing-grid.png" width="49%" alt="Grid view" />
-  <img src="docs/screenshots/listing-gallery.png" width="49%" alt="Gallery view with image thumbnails" />
-  <br/><em>Grid and gallery views with file-icon system and inline meta</em>
+  <img src="docs/screenshots/listing-list-light.png" width="49%" alt="List view (light)" />
+  <img src="docs/screenshots/listing-list-dark.png" width="49%" alt="List view (dark)" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/preview-image.png" width="80%" alt="Image preview with EXIF info" />
-  <br/><em>Image preview with EXIF info</em>
+  <img src="docs/screenshots/listing-grid-light.png" width="49%" alt="Grid view (light)" />
+  <img src="docs/screenshots/listing-grid-dark.png" width="49%" alt="Grid view (dark)" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/preview-video.png" width="80%" alt="Video preview and playback with media info" />
-  <br/><em>Video preview and playback with media info</em>
+  <img src="docs/screenshots/listing-gallery-light.png" width="49%" alt="Gallery view (light)" />
+  <img src="docs/screenshots/listing-gallery-dark.png" width="49%" alt="Gallery view (dark)" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/preview-audio.png" width="80%" alt="Audio preview and playback with album art and custom transport" />
-  <br/><em>Audio preview and playback with album art and custom transport</em>
+  <img src="docs/screenshots/command-palette.png" width="80%" alt="Command palette" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/preview-pdf.png" width="80%" alt="PDF preview with thumbnail" />
-  <br/><em>PDF preview with thumbnail</em>
+  <img src="docs/screenshots/lasso-grab.png" width="80%" alt="Lasso multi-select" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/preview-image.png" width="80%" alt="Image preview" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/preview-video.png" width="80%" alt="Video preview" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/preview-audio.png" width="80%" alt="Audio preview" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/preview-pdf.png" width="80%" alt="PDF preview" />
 </p>
 
 <p align="center">
   <img src="docs/screenshots/preview-epub.png" width="80%" alt="EPUB preview" />
-  <br/><em>EPUB preview</em>
-</p>
-
-<table>
-  <tr>
-    <th align="center" width="50%">Light theme</th>
-    <th align="center" width="50%">Dark theme</th>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/light-listing.png" alt="Light mode listing" /></td>
-    <td><img src="docs/screenshots/dark-listing.png" alt="Dark mode listing" /></td>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/light-preview.png" alt="Light mode preview" /></td>
-    <td><img src="docs/screenshots/dark-preview.png" alt="Dark mode preview" /></td>
-  </tr>
-</table>
-
-<p align="center">
-  <img src="docs/screenshots/command-palette.png" width="70%" alt="⌘K command palette with file search" />
-  <br/><em>⌘K command palette with file search</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/mobile-drawer.png" width="32%" alt="Mobile sidebar drawer" />
-  <img src="docs/screenshots/mobile-listing.png" width="32%" alt="Mobile file listing" />
-  <img src="docs/screenshots/mobile-preview.png" width="32%" alt="Mobile preview" />
-  <br/><em>Mobile-friendly design principles</em>
+  <img src="docs/screenshots/preview-comic.png" width="80%" alt="Comic preview" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/settings-profile.png" width="80%" alt="Global and per-user pofile settings" />
-  <br/><em>Global and per-user pofile settings</em>
+  <img src="docs/screenshots/preview-text.png" width="80%" alt="Text preview" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/preview-markdown.png" width="80%" alt="Markdown preview" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/edit-image.png" width="80%" alt="Image editor" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/edit-markdown.png" width="80%" alt="Markdown editor" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/edit-tags.png" width="80%" alt="Tag editor" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/mobile-list-view.png" width="32%" alt="Mobile list view" />
+  <img src="docs/screenshots/mobile-grid-view.png" width="32%" alt="Mobile grid view" />
+  <img src="docs/screenshots/mobile-gallery-view.png" width="32%" alt="Mobile gallery view" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/user-settings.png" width="80%" alt="User settings" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/global-settings.png" width="80%" alt="Global settings" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/login.png" width="80%" alt="Login" />
 </p>
 
 ---
