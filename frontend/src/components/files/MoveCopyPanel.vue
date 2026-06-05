@@ -91,7 +91,6 @@ import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 import { users } from "@/api";
-import { removePrefix } from "@/api/utils";
 import * as upload from "@/utils/upload";
 import { startTransfer } from "@/utils/transfers";
 import SlideOver from "@/components/SlideOver.vue";
@@ -256,13 +255,13 @@ const onSubmit = async () => {
     // refreshes the listing when the job settles.
     emit("done");
 
-    // Re-select the moved/copied items in the destination so the selection
-    // survives the post-transfer refresh (decode — items[].to is URL-encoded).
-    fileStore.setPreselect(
-      items.map((i) => decodeURIComponent(removePrefix(i.to)))
-    );
     if (goToDest) router.push({ path: dest });
 
+    // Selecting the moved/copied items at their destination is handled
+    // centrally when the job settles (TransferDock), using the server's
+    // resolved destination names — so it works whether you stay here or use
+    // "open destination" to land in the target folder (where the new files
+    // don't exist until the copy actually finishes).
     void startTransfer(isCopy ? "copy" : "move", items).catch((e) =>
       $showError?.(e as Error)
     );

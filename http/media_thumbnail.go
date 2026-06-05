@@ -303,7 +303,7 @@ func apicImage(frame []byte) ([]byte, bool) {
 		switch {
 		case frame[i] == 0xFF && frame[i+1] == 0xD8 && frame[i+2] == 0xFF, // JPEG
 			frame[i] == 0x89 && frame[i+1] == 'P' && frame[i+2] == 'N' && frame[i+3] == 'G', // PNG
-			frame[i] == 'G' && frame[i+1] == 'I' && frame[i+2] == 'F' && frame[i+3] == '8': // GIF
+			frame[i] == 'G' && frame[i+1] == 'I' && frame[i+2] == 'F' && frame[i+3] == '8':  // GIF
 			data := frame[i:]
 			if len(data) == 0 || len(data) > maxCoverBytes {
 				return nil, false

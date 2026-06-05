@@ -25,7 +25,7 @@ const norm = (p: string): string => {
 };
 
 /** Convert listing-shaped items into job items (scope-relative + decoded). */
-export function toTransferItems(items: RawItem[]): TransferItem[] {
+function toTransferItems(items: RawItem[]): TransferItem[] {
   return items.map((it) => ({
     from: norm(it.from),
     to: norm(it.to),
@@ -41,4 +41,42 @@ export function startTransfer(
   items: RawItem[]
 ): Promise<TransferJob> {
   return useTransfers().start(kind, toTransferItems(items));
+}
+
+/** Don't reveal a transfer row until it has lasted this long — so an instant
+ *  (same-volume) rename, which finishes near-instantly, never flashes a row. */
+export const TRANSFER_REVEAL_MS = 350;
+
+type RevealJob = Pick<TransferJob, "status" | "createdAt" | "finishedAt">;
+
+/**
+ * Whether a transfer row should be visible in the floating dock.
+ *
+ *   - failed / canceled → always (an error must never be silently hidden);
+ *   - finished (completed) → reveal once its SERVER-measured span
+ *     (`createdAt`→`finishedAt`, a single clock) clears the threshold — so an
+ *     instant same-volume rename, which spans ~0ms, still doesn't flash;
+ *   - running → reveal once it has been observed on THIS client long enough,
+ *     measured from `firstSeenAt` (the browser's own clock) — NEVER the
+ *     server's `createdAt`. Mixing the two breaks under server/client clock
+ *     skew (common on self-hosted setups): when the server runs ahead the
+ *     elapsed time reads as under-threshold and the dock stays hidden for a
+ *     whole long transfer (e.g. a cross-volume move). `undefined` firstSeenAt
+ *     means "not recorded yet" → not visible this tick.
+ */
+export function isTransferRowVisible(
+  job: RevealJob,
+  firstSeenAt: number | undefined,
+  now: number,
+  revealMs: number = TRANSFER_REVEAL_MS
+): boolean {
+  if (job.status === "failed" || job.status === "canceled") return true;
+  if (job.finishedAt) {
+    const created = Date.parse(job.createdAt);
+    const finished = Date.parse(job.finishedAt);
+    if (Number.isNaN(created) || Number.isNaN(finished)) return true;
+    return finished - created >= revealMs;
+  }
+  if (firstSeenAt === undefined) return false;
+  return now - firstSeenAt >= revealMs;
 }

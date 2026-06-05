@@ -56,6 +56,7 @@ import { useRoute, useRouter } from "vue-router";
 import FileListing from "@/views/files/FileListing.vue";
 import AudioTagEditor from "@/components/files/AudioTagEditor.vue";
 import { StatusError } from "@/api/utils";
+import { resolveListingSelection } from "@/utils/listingSelection";
 import { brand } from "../utils/constants";
 import { useShortcutsOverlay } from "@/composables/useShortcutsOverlay";
 import { useFavorites } from "@/composables/useFavorites";
@@ -191,44 +192,40 @@ watch(reload, (newValue) => {
 
 // Define functions
 
-const applyPreSelection = () => {
-  // Drain the queue immediately so a re-entrant fetch doesn't double-
-  // apply. Snapshot first, then clear.
+const applyPreSelection = (priorSelection: string[] = []) => {
+  // Drain the queue immediately so a re-entrant fetch doesn't double-apply.
   const preselect = fileStore.preselect;
   fileStore.preselect = [];
 
-  if (!fileStore.req?.isDir || fileStore.oldReq === null) return;
+  const req = fileStore.req;
+  if (!req) return;
 
-  if (preselect.length > 0) {
-    // Re-select every queued path that exists in the new listing.
-    // Preselect paths are decoded (per setPreselect's contract);
-    // item.path is also decoded — direct equality is correct.
-    // Missing paths are silently skipped (e.g., a moved-then-deleted
-    // file should just drop out of the selection).
-    for (const path of preselect) {
-      const idx = fileStore.req.items.findIndex((item) => item.path === path);
-      if (idx !== -1) fileStore.selected.push(idx);
-    }
-    return;
-  }
-
-  // Fallback: navigating UP a level (parent breadcrumb, browser back)
-  // selects the child folder we just came from. Only fires when no
-  // explicit preselect was queued.
-  if (fileStore.oldReq.path.startsWith(fileStore.req.path)) {
-    const name = fileStore.oldReq.path
-      .substring(fileStore.req.path.length)
-      .split("/")
-      .shift();
-    const index = fileStore.req.items.findIndex(
-      (val) => val.path == fileStore.req!.path + name
-    );
-    if (index !== -1) fileStore.selected.push(index);
-  }
+  // resolveListingSelection owns the branch order (preselect → same-folder
+  // restore → navigate-up); see its docs. Decoded paths throughout, so direct
+  // equality against item.path is correct.
+  const indices = resolveListingSelection({
+    oldPath: fileStore.oldReq?.path ?? null,
+    newPath: req.path,
+    isDir: !!req.isDir,
+    items: req.items ?? [],
+    preselect,
+    priorSelection,
+  });
+  for (const idx of indices) fileStore.selected.push(idx);
 };
 
 const fetchData = async () => {
   const seq = ++fetchSeq;
+
+  // Snapshot the selected items' paths BEFORE clearing, so a refresh that lands
+  // back in the same folder can restore the selection (see applyPreSelection).
+  // Decoded paths survive the reload even though the row indices won't.
+  const priorSelection =
+    fileStore.selected.length > 0
+      ? fileStore.selected
+          .map((i) => fileStore.req?.items[i]?.path)
+          .filter((p): p is string => p !== undefined)
+      : [];
 
   // Reset view information.
   fileStore.reload = false;
@@ -259,8 +256,9 @@ const fetchData = async () => {
     document.title = `${res.name || rootLabel.value || t("sidebar.myFiles")} - ${brand}`;
     layoutStore.loading = false;
 
-    // Selects the post-reload target item or the previously visited child folder
-    applyPreSelection();
+    // Restores selection (preselect queue, same-folder refresh, or the
+    // previously visited child folder on up-navigation).
+    applyPreSelection(priorSelection);
   } catch (err) {
     // Superseded by a newer fetchData: that call now owns `loading` / `req` /
     // `error`, so this stale (usually aborted) call must stay out of its way —

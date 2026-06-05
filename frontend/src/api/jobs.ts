@@ -22,6 +22,9 @@ export interface TransferJob {
   name: string;
   /** Destination directory shared by the items (for the "→ /Movies" hint). */
   dest: string;
+  /** Resolved destination paths (scope-relative, decoded), with any "(1)"
+   *  version suffix already applied — used to select the actual new copies. */
+  toPaths?: string[];
   itemCount: number;
   totalBytes: number;
   doneBytes: number;
@@ -59,11 +62,6 @@ export async function startJob(
 /** This user's active + recently-finished transfers (for reload rehydration). */
 export async function listJobs(): Promise<TransferJob[]> {
   return fetchJSON<TransferJob[]>("/api/jobs");
-}
-
-/** One transfer's current snapshot (the poll target). */
-export async function getJob(id: string): Promise<TransferJob> {
-  return fetchJSON<TransferJob>(`/api/jobs/${encodeURIComponent(id)}`);
 }
 
 // DELETE cancels an active transfer or dismisses a finished one — the server

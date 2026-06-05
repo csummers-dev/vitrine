@@ -3,7 +3,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 vi.mock("@/api/jobs", () => ({
   startJob: vi.fn(),
   listJobs: vi.fn(),
-  getJob: vi.fn(),
   cancelJob: vi.fn(),
   dismissJob: vi.fn(),
 }));

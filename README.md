@@ -4,12 +4,6 @@
 
 # filebrowser pretty
 
-[![Version](https://img.shields.io/badge/version-2.1.3-5e6ad2?style=flat-square)](#)
-[![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
-[![Vue](https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js&logoColor=white)](#)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
-[![License](https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square)](LICENSE)
-
 Self-hosted file management.
 
 </div>
@@ -49,6 +43,14 @@ Self-hosted file management.
 - **Shares** — Share a link in seconds.
 - **Mobile** — Mobile design prioritized.
 - **Mobile upload / pull-to-refresh** — Upload from your camera roll; pull to refresh.
+
+[![Version](https://img.shields.io/badge/version-2.1.4-5e6ad2?style=flat-square)](#)
+[![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
+[![Vue](https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js&logoColor=white)](#)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
+[![License](https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square)](LICENSE)
+
+</div>
 
 <p align="center">
   <img src="docs/screenshots/hero.png" width="100%" alt="filebrowser pretty" />

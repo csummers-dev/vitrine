@@ -25,7 +25,7 @@ import { usePreferences } from "@/composables/usePreferences";
 export type BgIntensity = "off" | "whisper" | "subtle" | "bold";
 
 /** Options for the Profile SegmentedControl (and the canonical value list). */
-export const BG_INTENSITIES: { value: BgIntensity; label: string }[] = [
+const BG_INTENSITIES: { value: BgIntensity; label: string }[] = [
   { value: "off", label: "Off" },
   { value: "whisper", label: "Whisper" },
   { value: "subtle", label: "Subtle" },
