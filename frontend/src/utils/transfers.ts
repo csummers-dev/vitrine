@@ -25,7 +25,7 @@ const norm = (p: string): string => {
 };
 
 /** Convert listing-shaped items into job items (scope-relative + decoded). */
-export function toTransferItems(items: RawItem[]): TransferItem[] {
+function toTransferItems(items: RawItem[]): TransferItem[] {
   return items.map((it) => ({
     from: norm(it.from),
     to: norm(it.to),

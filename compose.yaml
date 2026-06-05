@@ -1,32 +1,55 @@
+# filebrowser pretty — a modern, polished File Browser fork.
+#
+# A "just works" single-instance setup using named volumes, so you can
+#   docker compose up -d
+# and reach it at http://localhost:8080 (watch the logs for the random
+# admin password on first run).
+#
+# For production — mounting your real media folders into /srv, running it
+# behind a reverse proxy, time zones, etc. — see the Docker section of the
+# README.
+
 services:
-  filebrowser:
-    container_name: filebrowser
-    image: filebrowser/filebrowser:latest
-    networks:
-      - filebrowser
+  filebrowser-pretty:
+    image: ghcr.io/csummers-dev/filebrowser-pretty:latest
+    container_name: filebrowser-pretty
+    restart: unless-stopped
+
+    # Run as the image's built-in non-root user (uid:gid 1000:1000). When you
+    # mount real host directories into /srv, set this to the user that OWNS
+    # them (and mount user-owned subdirectories, not whole NAS volume roots) —
+    # the app writes as this uid, so a mismatch shows up as 403s on upload.
+    user: "1000:1000"
+
     ports:
-      - 8000:80
+      - "8080:80"
+
     volumes:
-      - filebrowser:/flux/vault
+      # Served files. Replace this named volume with your real data in
+      # production, e.g.  - /mnt/storage/Movies:/srv/Movies
+      - srv:/srv
+      # The app's own state — keep these to preserve users, shares, and
+      # settings across restarts and image updates.
+      - config:/config # app configuration
+      - database:/database # embedded bbolt DB (users / shares / tags / sessions)
+
     environment:
-      - FB_REDIS_CACHE_URL=redis://default:filebrowser@redis:6379 # Use rediss:// for ssl
+      # Set your local time zone so timestamps + logs read correctly.
+      TZ: Etc/UTC
 
-  redis:
-    container_name: redis
-    image: redis:latest
-    networks:
-      - filebrowser
-    command:
-      - sh
-      - -c
-      - |
-        cat > /tmp/users.acl <<EOF
-        user default on >filebrowser ~* +@all
-        EOF
-        redis-server --aclfile /tmp/users.acl
+    # The image ships its own healthcheck; this mirrors it explicitly.
+    healthcheck:
+      test: ["CMD", "/healthcheck.sh"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
-networks:
-  filebrowser:
+# Multi-instance / HA only: point every instance at a shared Redis so upload
+# state is consistent across them, via the `redisCacheUrl` setting (env
+# FB_REDIS_CACHE_URL=redis://user:pass@host:port). Single-instance deployments
+# use the built-in in-memory cache and need no Redis.
 
 volumes:
-  filebrowser:
+  srv:
+  config:
+  database:

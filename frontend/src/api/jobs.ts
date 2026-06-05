@@ -64,11 +64,6 @@ export async function listJobs(): Promise<TransferJob[]> {
   return fetchJSON<TransferJob[]>("/api/jobs");
 }
 
-/** One transfer's current snapshot (the poll target). */
-export async function getJob(id: string): Promise<TransferJob> {
-  return fetchJSON<TransferJob>(`/api/jobs/${encodeURIComponent(id)}`);
-}
-
 // DELETE cancels an active transfer or dismisses a finished one — the server
 // picks based on the job's state, so cancel + dismiss are the same call.
 async function deleteJob(id: string): Promise<void> {

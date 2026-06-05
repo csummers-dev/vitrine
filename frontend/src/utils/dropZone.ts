@@ -13,7 +13,7 @@
  */
 
 /** Forgiving grab margin (px) past the last glyph of the folder name. */
-export const DROP_ZONE_GRAB_PX = 16;
+const DROP_ZONE_GRAB_PX = 16;
 
 /** Padding (px) added around the icon + name union so the edges aren't razor-thin. */
 const ZONE_PAD_PX = 3;

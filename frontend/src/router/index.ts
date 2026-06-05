@@ -314,4 +314,6 @@ router.afterEach((to) => {
   }
 });
 
-export { router, router as default };
+// Default export consumed by `main.ts` (app.use(router)) and `utils/auth.ts`.
+// Not a duplicate of any named export — `router` is exported only here.
+export default router;

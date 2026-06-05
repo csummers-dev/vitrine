@@ -26,7 +26,7 @@ const MAX_ENTRIES = 12;
 /** How many MRU rows the palette renders in the "Quick actions" group
  *  when the user opens it with an empty query. Mirrors the spec's
  *  "5 starter commands for first-time users." */
-export const SURFACE_COUNT = 5;
+const SURFACE_COUNT = 5;
 
 /**
  * One MRU entry. Lean shape — we only need the command id to look up
