@@ -22,6 +22,9 @@ export interface TransferJob {
   name: string;
   /** Destination directory shared by the items (for the "→ /Movies" hint). */
   dest: string;
+  /** Resolved destination paths (scope-relative, decoded), with any "(1)"
+   *  version suffix already applied — used to select the actual new copies. */
+  toPaths?: string[];
   itemCount: number;
   totalBytes: number;
   doneBytes: number;

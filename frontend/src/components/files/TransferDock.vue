@@ -106,6 +106,7 @@ import Icon from "@/components/Icon.vue";
 import { filesize } from "@/utils";
 import { transferPercent, type TransferJob } from "@/api/jobs";
 import { useTransfers } from "@/composables/useTransfers";
+import { isTransferRowVisible } from "@/utils/transfers";
 import { useFileStore } from "@/stores/file";
 
 const { jobs, bootstrap, cancel, dismiss } = useTransfers();
@@ -114,26 +115,37 @@ const collapsed = ref(false);
 
 onMounted(() => void bootstrap());
 
-// Don't reveal a row until the transfer has lasted this long — so an instant
-// (same-volume) rename, which finishes near-instantly, never flashes a row.
-const REVEAL_MS = 350;
-
 const isActive = (j: TransferJob): boolean =>
   j.status === "queued" || j.status === "running";
 const isTerminal = (s: TransferJob["status"]): boolean =>
   s === "completed" || s === "failed" || s === "canceled";
 
-// Visible rows: errors always show; everything else only once it has outlived
-// the reveal threshold (measured at finish time for a terminal job, else now).
-const visibleJobs = computed(() =>
-  jobs.value.filter((j) => {
-    if (j.status === "failed" || j.status === "canceled") return true;
-    const created = Date.parse(j.createdAt);
-    if (Number.isNaN(created)) return true;
-    const anchor = j.finishedAt ? Date.parse(j.finishedAt) : Date.now();
-    return anchor - created >= REVEAL_MS;
-  })
+// When THIS client first observed each job, by the browser's own clock — the
+// reveal gate for a running transfer is measured against this (see
+// isTransferRowVisible), never the server's `createdAt`, so it's immune to
+// server/client clock skew. Pruned as jobs leave the list so it can't grow.
+const firstSeenAt = new Map<string, number>();
+watch(
+  jobs,
+  (list) => {
+    const now = Date.now();
+    const live = new Set(list.map((j) => j.id));
+    for (const id of firstSeenAt.keys()) {
+      if (!live.has(id)) firstSeenAt.delete(id);
+    }
+    for (const j of list) {
+      if (!firstSeenAt.has(j.id)) firstSeenAt.set(j.id, now);
+    }
+  },
+  { immediate: true, deep: true }
 );
+
+const visibleJobs = computed(() => {
+  const now = Date.now();
+  return jobs.value.filter((j) =>
+    isTransferRowVisible(j, firstSeenAt.get(j.id), now)
+  );
+});
 
 const activeCount = computed(() => visibleJobs.value.filter(isActive).length);
 const allDone = computed(
@@ -212,9 +224,19 @@ watch(
   (list) => {
     for (const j of list) {
       const prev = prevStatus.get(j.id);
-      // A job that just reached a terminal state moved/copied files — refresh
-      // the current listing so the change settles (source + destination).
       if (prev !== undefined && !isTerminal(prev) && isTerminal(j.status)) {
+        // Select the items this transfer produced (its resolved destinations)
+        // so a completed copy/move selects the new files the moment it settles
+        // — whether you stayed put, used "open destination", or navigated to
+        // the target folder and pasted. Queued via setPreselect; the reload
+        // below consumes it. If you're viewing a different folder none of the
+        // paths match and the current selection is left intact (see
+        // applyPreSelection). Only a SUCCESSFUL transfer produced files.
+        if (j.status === "completed" && j.toPaths?.length) {
+          fileStore.setPreselect(j.toPaths);
+        }
+        // A job that just reached a terminal state moved/copied files — refresh
+        // the current listing so the change settles (source + destination).
         fileStore.reload = true;
       }
       prevStatus.set(j.id, j.status);

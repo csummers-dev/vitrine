@@ -2201,14 +2201,14 @@ const paste = async (event: Event) => {
   // `startTransfer` → `toTransferItems`.
   const run = () => {
     if (items.length === 0) return;
-    // Re-select EVERY pasted item in the destination (names are already
-    // decoded) so the selection survives the post-transfer refresh.
-    const destPathPrefix = removePrefix(route.path);
-    fileStore.setPreselect(items.map((it) => destPathPrefix + it.name));
     void startTransfer(kind, items)
       .then(() => {
-        // A cut+paste consumes the clipboard; a copy+paste keeps it so the
-        // user can paste again somewhere else.
+        // Selecting the pasted items in the destination is handled centrally
+        // when the job settles (TransferDock), using the server's resolved
+        // destination names — so it works whether you paste in place (the new
+        // copies get a "(1)" suffix and the originals drop out) or after
+        // navigating to another folder. A cut+paste consumes the clipboard; a
+        // copy+paste keeps it so you can paste again elsewhere.
         if (isMove) clipboardStore.resetClipboard();
       })
       .catch($showError);

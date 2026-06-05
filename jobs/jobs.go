@@ -59,8 +59,8 @@ type Item struct {
 
 // Job is a single transfer: a batch of items moved or copied together.
 type Job struct {
-	id     string
-	userID uint
+	id      string
+	userID  uint
 	kind    Kind
 	items   []Item
 	name    string // display label: single item's base name, else "" (UI shows "N items")
@@ -146,11 +146,15 @@ func (j *Job) Canceled() bool {
 
 // JobView is the JSON-safe, lock-free snapshot returned over HTTP / to tests.
 type JobView struct {
-	ID          string    `json:"id"`
-	Kind        Kind      `json:"kind"`
-	Status      Status    `json:"status"`
-	Name        string    `json:"name"`
-	Dest        string    `json:"dest"`
+	ID     string `json:"id"`
+	Kind   Kind   `json:"kind"`
+	Status Status `json:"status"`
+	Name   string `json:"name"`
+	Dest   string `json:"dest"`
+	// ToPaths are the items' RESOLVED destination paths (scope-relative), with
+	// any "(1)" version suffix already applied for same-folder copies — so the
+	// UI can select the actual new copies, not the originals.
+	ToPaths     []string  `json:"toPaths"`
 	ItemCount   int       `json:"itemCount"`
 	TotalBytes  int64     `json:"totalBytes"`
 	DoneBytes   int64     `json:"doneBytes"`
@@ -168,12 +172,17 @@ type JobView struct {
 func (j *Job) Snapshot() JobView {
 	j.mu.Lock()
 	defer j.mu.Unlock()
+	toPaths := make([]string, len(j.items))
+	for i, it := range j.items {
+		toPaths[i] = it.To
+	}
 	return JobView{
 		ID:          j.id,
 		Kind:        j.kind,
 		Status:      j.status,
 		Name:        j.name,
 		Dest:        j.dest,
+		ToPaths:     toPaths,
 		ItemCount:   len(j.items),
 		TotalBytes:  j.totalBytes,
 		DoneBytes:   atomic.LoadInt64(&j.doneBytes),
