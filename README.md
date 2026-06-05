@@ -6,6 +6,8 @@
 
 Self-hosted file management.
 
+</div>
+
 - **List view** — Dense, scannable, color-coded.
 - **Grid + Gallery** — Comfortable file listings with previews.
 - **Image + EXIF** — Pixel-perfect previews with EXIF details.
@@ -41,7 +43,6 @@ Self-hosted file management.
 - **Shares** — Share a link in seconds.
 - **Mobile** — Mobile design prioritized.
 - **Mobile upload / pull-to-refresh** — Upload from your camera roll; pull to refresh.
-
 
 [![Version](https://img.shields.io/badge/version-2.1.4-5e6ad2?style=flat-square)](#)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
