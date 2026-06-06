@@ -82,6 +82,83 @@
   flex: 1;
 }
 
+/* "Being moved" shimmer — while an item is part of an in-flight MOVE (the
+   moved item itself, or anything inside a moved folder — see isPathInMove),
+   its name fills with a colourful accent gradient that sweeps left→right,
+   telegraphing that a move is underway. This is the always-visible cue for
+   drag-and-drop moves, which don't reliably pop the floating transfer dock; it
+   also lights up a moved folder's whole subtree once you browse into it. The
+   class is removed the instant the job settles, restoring the normal name
+   colour (and for a completed move the row vanishes on reload anyway).
+
+   The gradient is a colourful highlight band sitting on a baseline of the
+   NORMAL name colour (var(--color-ink-1), which auto-adapts to each theme), so
+   between sweeps the name reads as its ordinary text colour — never blank. A
+   FIXED-px tile + repeat-x guarantees the background always covers the glyphs
+   (the old percentage no-repeat scroll slid off the text at the cycle ends,
+   leaving the transparent-clipped glyphs invisible) and makes the loop seamless
+   when shifted by exactly one tile. Only the band colours differ per theme —
+   600-level on light for contrast on white, lighter on the dark canvas. */
+#listing .item .item__name-text.is-moving,
+#listing .item .name.is-moving {
+  background-image: linear-gradient(
+    100deg,
+    var(--color-ink-1, var(--textSecondary)) 0%,
+    var(--color-ink-1, var(--textSecondary)) 40%,
+    #5e6ad2 46%,
+    #7c3aed 50%,
+    #2563eb 54%,
+    var(--color-ink-1, var(--textSecondary)) 60%,
+    var(--color-ink-1, var(--textSecondary)) 100%
+  );
+  background-size: 300px 100%;
+  background-repeat: repeat-x;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: listing-name-moving 2.2s linear infinite;
+}
+
+html.dark #listing .item .item__name-text.is-moving,
+html.dark #listing .item .name.is-moving {
+  background-image: linear-gradient(
+    100deg,
+    var(--color-ink-1, var(--textSecondary)) 0%,
+    var(--color-ink-1, var(--textSecondary)) 40%,
+    #a5b0ff 46%,
+    #c4b5fd 50%,
+    #93c5fd 54%,
+    var(--color-ink-1, var(--textSecondary)) 60%,
+    var(--color-ink-1, var(--textSecondary)) 100%
+  );
+}
+
+@keyframes listing-name-moving {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 300px 0;
+  }
+}
+
+/* Reduced-motion: keep the in-progress cue but drop the sweep — a steady
+   accent-tinted name instead of an animated gradient. */
+@media (prefers-reduced-motion: reduce) {
+  #listing .item .item__name-text.is-moving,
+  #listing .item .name.is-moving {
+    animation: none;
+    background-image: none;
+    -webkit-text-fill-color: currentColor;
+    color: var(--color-accent, #5e6ad2);
+  }
+  html.dark #listing .item .item__name-text.is-moving,
+  html.dark #listing .item .name.is-moving {
+    color: #a5b0ff;
+  }
+}
+
 /* Stack wrapper around the name text + compact meta. Transparent by default;
    the compact meta line is hidden in normal layouts and only revealed when
    the list view collapses to 3 columns at very narrow widths. */

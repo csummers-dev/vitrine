@@ -23,10 +23,14 @@ func TestSnapshotToPaths(t *testing.T) {
 	}
 	job := reg.Enqueue(7, jobs.KindCopy, items, nil)
 
-	got := job.Snapshot().ToPaths
-	want := []string{"/a/report(1).txt", "/b/notes"}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("ToPaths = %#v, want %#v", got, want)
+	snap := job.Snapshot()
+	if want := []string{"/a/report(1).txt", "/b/notes"}; !reflect.DeepEqual(snap.ToPaths, want) {
+		t.Fatalf("ToPaths = %#v, want %#v", snap.ToPaths, want)
+	}
+	// FromPaths mirrors the items' sources, so the UI can tell whether the user
+	// is still on those files or has moved on mid-transfer.
+	if want := []string{"/a/report.txt", "/a/notes"}; !reflect.DeepEqual(snap.FromPaths, want) {
+		t.Fatalf("FromPaths = %#v, want %#v", snap.FromPaths, want)
 	}
 }
 

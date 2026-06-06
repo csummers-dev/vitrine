@@ -104,7 +104,12 @@
           @keydown.esc.prevent.stop="cancelRename"
           @blur="onRenameBlur"
         />
-        <span v-else class="item__name-text name">{{ displayedName }}</span>
+        <span
+          v-else
+          class="item__name-text name"
+          :class="{ 'is-moving': isMoving }"
+          >{{ displayedName }}</span
+        >
         <div class="item__name-compact-meta">
           <time :datetime="modified">{{ humanTime() }}</time>
           <span v-if="!isDir"> · {{ humanSize() }}</span>
@@ -179,7 +184,8 @@ import { useTagsStore } from "@/stores/tags";
 import { usePreferences } from "@/composables/usePreferences";
 import { useFavorites } from "@/composables/useFavorites";
 import { useImageHoverPreview } from "@/composables/useImageHoverPreview";
-import { startTransfer } from "@/utils/transfers";
+import { startTransfer, isPathInMove } from "@/utils/transfers";
+import { useTransfers } from "@/composables/useTransfers";
 import { useTouchDevice } from "@/composables/useTouchDevice";
 
 import {
@@ -246,6 +252,19 @@ const layoutStore = useLayoutStore();
 const tagsStore = useTagsStore();
 const prefs = usePreferences();
 const favorites = useFavorites();
+const { movingPaths } = useTransfers();
+
+// True while this item is part of an in-flight MOVE (the floating transfer dock
+// tracks the same jobs). Drives the animated "being moved" shimmer on the name
+// text — a cue for drag-and-drop moves, which don't always surface the dock.
+// Matches on the decoded scope-relative path (item.path), the same key the move
+// job reports as `fromPaths`: an EXACT match flags a moved file or the moved
+// folder's own row, and a descendant match (isPathInMove) lights up everything
+// inside a moved folder, so browsing INTO a folder mid-move shows its whole
+// subtree shimmering.
+const isMoving = computed<boolean>(
+  () => !!props.path && isPathInMove(props.path, movingPaths.value)
+);
 
 // WS8: show/hide file extensions (per-user, default on). Reactive via the
 // preferences store so toggling in Settings updates the listing live.

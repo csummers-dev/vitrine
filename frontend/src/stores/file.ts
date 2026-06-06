@@ -54,6 +54,14 @@ export const useFileStore = defineStore("file", {
      * lifted touch-drag instance can signal every row.
      */
     suppressClicksUntil: number;
+    /**
+     * True while the user is in an inline edit that a background refresh must
+     * not interrupt and that isn't already reflected in a layout prompt — namely
+     * the current-folder (hero title) rename. Row rename, new-folder and
+     * new-file all run through `layoutStore.currentPromptName`; this covers the
+     * one editing flow that doesn't. Set by FileListing.
+     */
+    inlineEditing: boolean;
   } => ({
     req: null,
     oldReq: null,
@@ -66,6 +74,7 @@ export const useFileStore = defineStore("file", {
     preselect: [],
     draggedItems: [],
     suppressClicksUntil: 0,
+    inlineEditing: false,
   }),
   getters: {
     selectedCount: (state) => state.selected.length,

@@ -313,6 +313,18 @@ html[dir="rtl"] .card.floating .card-content .file-list {
   background: #3f3f46 !important;
 }
 
+/* Delete / Undo toast — dark orange so a destructive-but-reversible action
+   reads distinctly from neutral toasts (it used to share the grey `default`
+   skin). The body is forced to allow its child to shrink so a long file name
+   wraps inside the toast instead of widening it off-screen (UndoToast caps the
+   name at two lines). */
+.Vue-Toastification__toast.toast--undo {
+  background: #c2410c !important;
+}
+.Vue-Toastification__toast.toast--undo .Vue-Toastification__toast-body {
+  min-width: 0 !important;
+}
+
 .Vue-Toastification__toast-body {
   padding: 0 !important;
   font-family: inherit !important;

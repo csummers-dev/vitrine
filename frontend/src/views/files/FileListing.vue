@@ -1540,6 +1540,14 @@ const folderRenameValue = ref<string>("");
 const folderRenameInputEl = ref<HTMLInputElement | null>(null);
 let folderRenameSubmitting = false;
 
+// Mirror the current-folder rename into the shared store flag so a background
+// listing refresh (e.g. a transfer's incremental reload) defers instead of
+// interrupting the rename mid-edit (see Files.vue's reload gate). Row rename /
+// new-folder / new-file already surface via layoutStore.currentPromptName.
+watch(isRenamingCurrentFolder, (active) => {
+  fileStore.inlineEditing = active;
+});
+
 const canRenameCurrentFolder = computed<boolean>(() => {
   if (!authStore.user?.perm.rename) return false;
   const req = fileStore.req;
@@ -1897,6 +1905,10 @@ onBeforeUnmount(() => {
   window.removeEventListener("keydown", keyEvent);
   window.removeEventListener("scroll", scrollEvent);
   window.removeEventListener("resize", windowsResize);
+
+  // Don't leave the shared inline-edit flag stuck on if we unmount mid-rename
+  // (e.g. navigation), which would otherwise defer every future refresh.
+  fileStore.inlineEditing = false;
 
   scrollSection.value?.removeEventListener("scroll", scheduleGridUpdate);
   scheduleGridUpdate.cancel();
@@ -2720,7 +2732,15 @@ const startUndoDelete = (items: { url: string; name: string }[]) => {
       component: UndoToast,
       props: { message, onClick: () => pendingDelete.undo() },
     },
-    { timeout: UNDO_WINDOW_MS, closeOnClick: false, icon: false }
+    {
+      timeout: UNDO_WINDOW_MS,
+      closeOnClick: false,
+      icon: false,
+      // Dedicated class so the delete toast gets its own dark-orange skin +
+      // width clamp (see .Vue-Toastification__toast.toast--undo in styles.css),
+      // distinct from the neutral grey of generic toasts.
+      toastClassName: "toast--undo",
+    }
   );
 
   pendingDelete.queue(items, UNDO_WINDOW_MS).then((didUndo) => {

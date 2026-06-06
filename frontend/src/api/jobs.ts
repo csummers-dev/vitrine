@@ -25,6 +25,9 @@ export interface TransferJob {
   /** Resolved destination paths (scope-relative, decoded), with any "(1)"
    *  version suffix already applied — used to select the actual new copies. */
   toPaths?: string[];
+  /** Source paths (scope-relative, decoded) — compared against the current
+   *  selection to detect the user moved on to other files mid-transfer. */
+  fromPaths?: string[];
   itemCount: number;
   totalBytes: number;
   doneBytes: number;
