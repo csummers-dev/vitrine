@@ -114,4 +114,50 @@ describe("useTransfers", () => {
     expect(jobsApi.cancelJob).toHaveBeenCalledWith("j1");
     expect(jobsApi.listJobs).toHaveBeenCalled();
   });
+
+  describe("movingPaths (in-listing move shimmer)", () => {
+    it("collects fromPaths of in-flight MOVE jobs", async () => {
+      vi.mocked(jobsApi.listJobs).mockResolvedValue([
+        job({
+          id: "m",
+          kind: "move",
+          status: "running",
+          fromPaths: ["/a/x.txt", "/a/y"],
+        }),
+      ]);
+      const t = useTransfers();
+      await t.bootstrap();
+      expect([...t.movingPaths.value].sort()).toEqual(["/a/x.txt", "/a/y"]);
+    });
+
+    it("excludes COPY jobs (a copy's source isn't being moved away)", async () => {
+      vi.mocked(jobsApi.listJobs).mockResolvedValue([
+        job({ id: "c", kind: "copy", status: "running", fromPaths: ["/a/x"] }),
+      ]);
+      const t = useTransfers();
+      await t.bootstrap();
+      expect(t.movingPaths.value.size).toBe(0);
+    });
+
+    it("drops a move's paths once it settles (shimmer stops on completion)", async () => {
+      vi.mocked(jobsApi.listJobs)
+        .mockResolvedValueOnce([
+          job({ id: "m", kind: "move", status: "running", fromPaths: ["/a"] }),
+        ])
+        .mockResolvedValue([
+          job({
+            id: "m",
+            kind: "move",
+            status: "completed",
+            fromPaths: ["/a"],
+          }),
+        ]);
+      const t = useTransfers();
+      await t.bootstrap();
+      expect(t.movingPaths.value.has("/a")).toBe(true);
+
+      await vi.advanceTimersByTimeAsync(1000); // poll → completed
+      expect(t.movingPaths.value.has("/a")).toBe(false);
+    });
+  });
 });

@@ -3,6 +3,7 @@
     <section
       v-if="visibleJobs.length > 0"
       class="transfer-dock"
+      :style="{ bottom: dockBottom + 'px' }"
       role="region"
       aria-label="File transfers"
     >
@@ -101,19 +102,66 @@
  * rehydrate from the server. Sits bottom-LEFT to avoid the upload dock
  * (bottom-right) and the multi-select pill (bottom-center).
  */
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import Icon from "@/components/Icon.vue";
 import { filesize } from "@/utils";
 import { transferPercent, type TransferJob } from "@/api/jobs";
 import { useTransfers } from "@/composables/useTransfers";
-import { isTransferRowVisible } from "@/utils/transfers";
+import {
+  isTransferRowVisible,
+  shouldAutoSelectTransfer,
+  transferTouchesFolder,
+} from "@/utils/transfers";
 import { useFileStore } from "@/stores/file";
+import { useUploadStore } from "@/stores/upload";
 
 const { jobs, bootstrap, cancel, dismiss } = useTransfers();
 const fileStore = useFileStore();
+const uploadStore = useUploadStore();
 const collapsed = ref(false);
 
 onMounted(() => void bootstrap());
+
+// Both this dock and the upload dock anchor to the bottom-right corner. When an
+// upload is in progress, sit ABOVE the upload dock (measured from its real
+// height — it grows with the number of files — plus a small gap) so the two
+// never overlap. No upload → the normal corner offset.
+const GAP = 12;
+const BASE_BOTTOM = 20;
+const dockBottom = ref(BASE_BOTTOM);
+let uploadResize: ResizeObserver | null = null;
+
+const measureUploadOffset = () => {
+  const el = document.querySelector<HTMLElement>(".upload-dock");
+  dockBottom.value = el ? BASE_BOTTOM + el.offsetHeight + GAP : BASE_BOTTOM;
+};
+
+watch(
+  () => uploadStore.activeUploads.size > 0,
+  async (uploading) => {
+    uploadResize?.disconnect();
+    uploadResize = null;
+    if (!uploading) {
+      dockBottom.value = BASE_BOTTOM;
+      return;
+    }
+    await nextTick();
+    measureUploadOffset();
+    const el = document.querySelector<HTMLElement>(".upload-dock");
+    if (el && typeof ResizeObserver !== "undefined") {
+      uploadResize = new ResizeObserver(measureUploadOffset);
+      uploadResize.observe(el);
+    }
+  },
+  { immediate: true }
+);
 
 const isActive = (j: TransferJob): boolean =>
   j.status === "queued" || j.status === "running";
@@ -140,12 +188,38 @@ watch(
   { immediate: true, deep: true }
 );
 
-const visibleJobs = computed(() => {
-  const now = Date.now();
-  return jobs.value.filter((j) =>
-    isTransferRowVisible(j, firstSeenAt.get(j.id), now)
-  );
-});
+// Re-evaluate the reveal gate on a FAST cadence while a transfer is active —
+// `visibleJobs` only recomputes when its reactive deps change, and the data
+// poll is a full second apart, which would delay a real transfer's row by up to
+// a poll. This ticking `now` makes the row appear within ~a reveal-threshold of
+// the transfer starting (effectively immediately). It runs only while something
+// is active, so an idle dock costs nothing.
+const now = ref(Date.now());
+let revealTick: number | null = null;
+const stopRevealTick = () => {
+  if (revealTick !== null) {
+    clearInterval(revealTick);
+    revealTick = null;
+  }
+};
+watch(
+  () => jobs.value.some(isActive),
+  (active) => {
+    if (active && revealTick === null) {
+      now.value = Date.now();
+      revealTick = window.setInterval(() => (now.value = Date.now()), 120);
+    } else if (!active) {
+      stopRevealTick();
+    }
+  },
+  { immediate: true }
+);
+
+const visibleJobs = computed(() =>
+  jobs.value.filter((j) =>
+    isTransferRowVisible(j, firstSeenAt.get(j.id), now.value)
+  )
+);
 
 const activeCount = computed(() => visibleJobs.value.filter(isActive).length);
 const allDone = computed(
@@ -219,9 +293,54 @@ const rowClass = (j: TransferJob) => ({
 const prevStatus = new Map<string, TransferJob["status"]>();
 const scheduled = new Set<string>();
 const timers: number[] = [];
+
+// Per-job completed-file counter + a throttle, so a long transfer refreshes the
+// listing each time it finishes another file — items appear/disappear as the
+// batch progresses instead of all at once when the whole job ends (the pain
+// point when moving/copying many large files). Covers BOTH the source folder
+// (a move empties it) and the destination folder (move OR copy fills it). The
+// throttle is a single shared timestamp, which is correct because the jobs
+// worker is sequential — only one transfer is ever active at a time.
+const prevFilesDone = new Map<string, number>();
+let lastTransferReloadAt = 0;
+const TRANSFER_RELOAD_THROTTLE_MS = 900;
+
+// The folder currently on screen, in the decoded scope-relative namespace the
+// transfer paths use. Derive it from a visible row when possible (exact same
+// namespace as toPaths/fromPaths); fall back to req.path (normalized) for an
+// empty folder — e.g. a fresh destination folder receiving its first file.
+const currentFolderPath = (): string | null => {
+  const sample = (fileStore.req?.items ?? []).find((it) => !!it.path)?.path;
+  if (sample) {
+    const i = sample.lastIndexOf("/");
+    return i <= 0 ? "/" : sample.slice(0, i);
+  }
+  const p = fileStore.req?.path;
+  if (typeof p !== "string" || p === "") return null;
+  let s = p;
+  try {
+    s = decodeURIComponent(p);
+  } catch {
+    /* malformed escape — use the raw value */
+  }
+  if (!s.startsWith("/")) s = "/" + s;
+  return s.length > 1 && s.endsWith("/") ? s.slice(0, -1) : s;
+};
 watch(
   jobs,
   (list) => {
+    // Drop bookkeeping for jobs that have left the list (dismissed / swept) so
+    // these maps can't grow across a session. firstSeenAt is pruned in its own
+    // watcher; a failed/canceled row the user dismisses manually never reaches
+    // the completed-auto-dismiss path below, so prune both maps here.
+    const live = new Set(list.map((j) => j.id));
+    for (const id of prevStatus.keys()) {
+      if (!live.has(id)) {
+        prevStatus.delete(id);
+        prevFilesDone.delete(id);
+      }
+    }
+
     for (const j of list) {
       const prev = prevStatus.get(j.id);
       if (prev !== undefined && !isTerminal(prev) && isTerminal(j.status)) {
@@ -229,17 +348,57 @@ watch(
         // so a completed copy/move selects the new files the moment it settles
         // — whether you stayed put, used "open destination", or navigated to
         // the target folder and pasted. Queued via setPreselect; the reload
-        // below consumes it. If you're viewing a different folder none of the
-        // paths match and the current selection is left intact (see
-        // applyPreSelection). Only a SUCCESSFUL transfer produced files.
+        // below consumes it. Only a SUCCESSFUL transfer produced files.
+        //
+        // Auto-select is gated by two conditions, both handled by
+        // shouldAutoSelectTransfer (+ applyPreSelection):
+        //  1. You must be VIEWING THE DESTINATION. If you're looking at a
+        //     different folder none of the produced toPaths match the listing,
+        //     so applyPreSelection selects nothing and your current selection is
+        //     left intact. This covers a cross-volume copy you kicked off and
+        //     then navigated away from — the new copies land unselected.
+        //  2. You must NOT have MOVED ON — i.e. selected different file(s) while
+        //     the transfer ran. Yanking that away mid-task is the disruption
+        //     we're avoiding. "Moved on" = a non-empty current selection that
+        //     isn't the transfer's own source items (fromPaths).
         if (j.status === "completed" && j.toPaths?.length) {
-          fileStore.setPreselect(j.toPaths);
+          const curSel = fileStore.selected
+            .map((i) => fileStore.req?.items[i]?.path)
+            .filter((p): p is string => !!p);
+          if (shouldAutoSelectTransfer(j, curSel)) {
+            fileStore.setPreselect(j.toPaths);
+          }
         }
         // A job that just reached a terminal state moved/copied files — refresh
         // the current listing so the change settles (source + destination).
         fileStore.reload = true;
       }
       prevStatus.set(j.id, j.status);
+
+      // Incremental refresh: while a transfer is still running, each time it
+      // finishes another file the current folder may have changed — a moved item
+      // left its source folder, or a new copy/move landed in the destination
+      // folder we're viewing. Reload so rows appear/disappear as the batch
+      // progresses, but ONLY when this transfer actually touches the folder on
+      // screen (transferTouchesFolder), so an unrelated folder isn't churned;
+      // throttled so a folder of many small files can't trigger a reload storm.
+      // Scroll position is preserved across the reload (folder scroll memory) and
+      // the refresh is silent + deferred while the user is mid-action (Files.vue).
+      // The final state is covered by the terminal reload above.
+      const seenDone = prevFilesDone.get(j.id) ?? 0;
+      if (!isTerminal(j.status) && j.filesDone > seenDone) {
+        const nowMs = Date.now();
+        const folder = currentFolderPath();
+        if (
+          folder !== null &&
+          transferTouchesFolder(j, folder) &&
+          nowMs - lastTransferReloadAt >= TRANSFER_RELOAD_THROTTLE_MS
+        ) {
+          lastTransferReloadAt = nowMs;
+          fileStore.reload = true;
+        }
+      }
+      prevFilesDone.set(j.id, j.filesDone);
 
       if (j.status === "completed" && !scheduled.has(j.id)) {
         scheduled.add(j.id);
@@ -248,6 +407,7 @@ watch(
             void dismiss(j.id);
             scheduled.delete(j.id);
             prevStatus.delete(j.id);
+            prevFilesDone.delete(j.id);
           }, 4000)
         );
       }
@@ -258,14 +418,20 @@ watch(
 
 onBeforeUnmount(() => {
   for (const t of timers) window.clearTimeout(t);
+  stopRevealTick();
+  uploadResize?.disconnect();
 });
 </script>
 
 <style scoped>
 .transfer-dock {
   position: fixed;
-  left: 20px;
+  /* Anchored bottom-RIGHT so it never overlaps the left sidebar (favorites,
+     storage meter, account row). `bottom` is set inline and slides up to sit
+     above the upload dock when an upload is in progress. */
+  right: 20px;
   bottom: 20px;
+  transition: bottom 0.16s ease;
   z-index: 1000;
   width: min(340px, calc(100vw - 40px));
   background: var(--color-surface, #fff);

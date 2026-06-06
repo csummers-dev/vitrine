@@ -183,11 +183,47 @@ onUnmounted(() => {
   fetchDataController.abort();
 });
 
+// A background refresh must never interrupt the user mid-action. We treat these
+// as "busy": any open prompt / panel / inline-row edit (rename, new folder/file,
+// move, copy, share, conflict, …, all surfaced via currentPromptName), the
+// current-folder rename (fileStore.inlineEditing), and an active drag. While
+// busy a requested refresh is remembered, not run; it fires the moment they're
+// done — so a long transfer can keep refreshing without yanking focus out of a
+// rename or closing a panel.
+const userBusy = computed(
+  () =>
+    layoutStore.currentPromptName != null ||
+    fileStore.inlineEditing ||
+    fileStore.draggedItems.length > 0
+);
+const pendingReload = ref(false);
+
 watch(route, () => {
+  // An explicit navigation supersedes any deferred background refresh.
+  pendingReload.value = false;
   fetchData();
 });
+
 watch(reload, (newValue) => {
-  newValue && fetchData();
+  if (!newValue) return;
+  if (userBusy.value) {
+    // Defer: remember the intent but drop the flag, so the next true edge still
+    // fires this watcher (and so the flag doesn't linger as permanently true).
+    pendingReload.value = true;
+    fileStore.reload = false;
+    return;
+  }
+  // Refresh the current folder in place (no loading skeleton), so background
+  // refreshes — transfer source/destination updates, uploads, tag edits — don't
+  // flash the listing.
+  void fetchData({ silent: true });
+});
+
+watch(userBusy, (busy) => {
+  if (!busy && pendingReload.value) {
+    pendingReload.value = false;
+    void fetchData({ silent: true });
+  }
 });
 
 // Define functions
@@ -214,7 +250,14 @@ const applyPreSelection = (priorSelection: string[] = []) => {
   for (const idx of indices) fileStore.selected.push(idx);
 };
 
-const fetchData = async () => {
+const fetchData = async (opts: { silent?: boolean } = {}) => {
+  // A SILENT reload revalidates the SAME folder in place: keep the current rows
+  // on screen and skip the loading skeleton, so a background refresh (the
+  // transfer source-folder refresh, an upload finishing, a tag edit, …) doesn't
+  // blank the listing and flash on every tick. The fresh data is swapped in when
+  // it arrives — changed rows just animate in/out via the list transition.
+  // Navigation and explicit (re)loads stay non-silent and show the skeleton.
+  const silent = opts.silent === true;
   const seq = ++fetchSeq;
 
   // Snapshot the selected items' paths BEFORE clearing, so a refresh that lands
@@ -229,14 +272,17 @@ const fetchData = async () => {
 
   // Reset view information.
   fileStore.reload = false;
-  fileStore.selected = [];
-  fileStore.multiple = false;
-  layoutStore.closeHovers();
-
-  // Set loading to true and reset the error.
-  layoutStore.loading = true;
   error.value = null;
   brokenFavorite.value = null;
+  if (!silent) {
+    // Navigation / explicit load: clear the view and show the skeleton. (A
+    // silent reload defers the selection clear to the swap-in step below so the
+    // current rows + selection stay put until the new data is ready.)
+    fileStore.selected = [];
+    fileStore.multiple = false;
+    layoutStore.closeHovers();
+    layoutStore.loading = true;
+  }
 
   let url = route.path;
   if (url === "") url = "/";
@@ -248,6 +294,14 @@ const fetchData = async () => {
     const res = await api.fetch(url, fetchDataController.signal);
     // A newer fetchData superseded this one — it now owns the view.
     if (seq !== fetchSeq) return;
+    // For a silent reload the old rows stayed up the whole time; clear the
+    // (now stale-indexed) selection in the SAME synchronous step as swapping in
+    // the new data + re-resolving it, so there's no intermediate frame with the
+    // selection blanked. Non-silent already cleared it up front.
+    if (silent) {
+      fileStore.selected = [];
+      fileStore.multiple = false;
+    }
     fileStore.updateRequest(res);
     // Title format: "<folder | root label | My files> - filebrowser pretty".
     // At the storage root the listing has no folder name, so fall back to the

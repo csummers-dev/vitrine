@@ -154,7 +154,11 @@ type JobView struct {
 	// ToPaths are the items' RESOLVED destination paths (scope-relative), with
 	// any "(1)" version suffix already applied for same-folder copies — so the
 	// UI can select the actual new copies, not the originals.
-	ToPaths     []string  `json:"toPaths"`
+	ToPaths []string `json:"toPaths"`
+	// FromPaths are the items' source paths (scope-relative). The UI compares
+	// them against the current selection to detect that the user has moved on
+	// to other files mid-transfer, and then leaves their selection alone.
+	FromPaths   []string  `json:"fromPaths"`
 	ItemCount   int       `json:"itemCount"`
 	TotalBytes  int64     `json:"totalBytes"`
 	DoneBytes   int64     `json:"doneBytes"`
@@ -173,8 +177,10 @@ func (j *Job) Snapshot() JobView {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 	toPaths := make([]string, len(j.items))
+	fromPaths := make([]string, len(j.items))
 	for i, it := range j.items {
 		toPaths[i] = it.To
+		fromPaths[i] = it.From
 	}
 	return JobView{
 		ID:          j.id,
@@ -183,6 +189,7 @@ func (j *Job) Snapshot() JobView {
 		Name:        j.name,
 		Dest:        j.dest,
 		ToPaths:     toPaths,
+		FromPaths:   fromPaths,
 		ItemCount:   len(j.items),
 		TotalBytes:  j.totalBytes,
 		DoneBytes:   atomic.LoadInt64(&j.doneBytes),
