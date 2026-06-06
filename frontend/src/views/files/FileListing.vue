@@ -1816,17 +1816,29 @@ watch(req, () => {
   // New folder data → abandon any in-progress type-ahead prefix.
   typeahead.reset();
   nextTick(() => {
-    // "Remember position" (pref): if we have a remembered scroll position for
-    // the folder we just arrived at (a return visit, or a same-folder reload),
-    // restore it — this supersedes the centering reveal below. Null otherwise.
+    // Grid/gallery must always re-measure its window for the new data so the
+    // correct tiles render — independent of any scroll handling below.
+    if (!isListVirtual.value) {
+      listingGrid.measure();
+      listingGrid.update();
+    }
+
+    // A SAME-FOLDER reload (rename / transfer / upload / tag refresh — the data
+    // was revalidated in place, the path didn't change) must NOT move the
+    // scroll: the virtual scroller keeps the user's scrollTop across the data
+    // swap, so they stay exactly where they were. Touching scroll here is what
+    // snapped a just-renamed (re-selected) row to the TOP — the disruptive jump
+    // (recall() finds nothing for a silent reload, so it fell through to the
+    // returning-to-folder reveal, which scrolls selected[0] into view). The
+    // restore / reveal below is only meaningful for an actual folder change.
+    if (fileStore.oldReq && fileStore.oldReq.path === fileStore.req?.path) {
+      return;
+    }
+
+    // "Remember position" (pref): returning to a folder we have a remembered
+    // scroll position for (a round-trip visit) restores it. Null otherwise.
     const restoreTop = folderScroll.recall(fileStore.req?.path ?? null);
     if (restoreTop !== null) {
-      // Grid/gallery: measure first so tile heights (and thus the pixel
-      // offset) are valid before we set scrollTop.
-      if (!isListVirtual.value) {
-        listingGrid.measure();
-        listingGrid.update();
-      }
       requestAnimationFrame(() => {
         for (const el of scrollEls()) el.scrollTop = restoreTop;
         if (!isListVirtual.value) listingGrid.update();
@@ -1834,17 +1846,14 @@ watch(req, () => {
       return;
     }
 
-    // S6-1: the list view virtualizes, so there's no window to fill —
-    // just scroll a previously-opened item back into view if any.
+    // S6-1: the list view virtualizes — scroll a previously-opened item back
+    // into view if any (returning from a preview).
     if (isListVirtual.value) {
       revealInVirtualList();
       return;
     }
 
-    // CH-1: grid/gallery — measure + compute the initial window, then
-    // reveal a previously-opened tile if we're returning from a preview.
-    listingGrid.measure();
-    listingGrid.update();
+    // CH-1: grid/gallery — reveal a previously-opened tile if returning.
     revealPreviousItem();
   });
 });
