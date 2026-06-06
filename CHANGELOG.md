@@ -2,6 +2,10 @@
 
 All notable changes to **filebrowser pretty**.
 
+## v2.2.2 — Rename no longer jumps your scroll position
+
+- **Renaming a file keeps your place in the list** — after the in-place refresh landed in 2.2.0, renaming an item in a long folder snapped the listing so the renamed (and now re-selected) row jumped to the top, losing your scroll position — disruptive in big folders. A same-folder refresh (a rename, and likewise a move/copy completing, an upload finishing, or a tag edit) now leaves your scroll exactly where it was; the listing updates underneath you without moving. Returning to a folder you'd previously scrolled still restores your position as before — only genuine folder changes touch the scroll now
+
 ## v2.2.1 — Multi-architecture Docker image
 
 - **The Docker image is now published for both `linux/amd64` and `linux/arm64`** — only an amd64 image was being pushed, so `docker compose pull` failed with `no matching manifest for linux/arm64/v8` on Apple Silicon and other arm64 hosts (it ran only on amd64 machines like an x86 NAS). The image is now a multi-arch manifest, so it runs **natively** on arm64 and amd64 alike. The build is also fully self-contained: the Dockerfile builds the frontend and cross-compiles the Go binary for the target architecture, so the published image no longer depends on a pre-built host binary
