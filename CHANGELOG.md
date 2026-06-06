@@ -2,6 +2,10 @@
 
 All notable changes to **filebrowser pretty**.
 
+## v2.2.1 — Multi-architecture Docker image
+
+- **The Docker image is now published for both `linux/amd64` and `linux/arm64`** — only an amd64 image was being pushed, so `docker compose pull` failed with `no matching manifest for linux/arm64/v8` on Apple Silicon and other arm64 hosts (it ran only on amd64 machines like an x86 NAS). The image is now a multi-arch manifest, so it runs **natively** on arm64 and amd64 alike. The build is also fully self-contained: the Dockerfile builds the frontend and cross-compiles the Go binary for the target architecture, so the published image no longer depends on a pre-built host binary
+
 ## v2.2.0 — Transfer UX: live progress, in-place refresh & shimmer
 
 - **The transfer progress dock moved to the bottom-RIGHT** — it used to sit bottom-left, where it covered the sidebar's favorites, storage meter, and account row. It's now anchored bottom-right, and when an upload is also in progress it floats just above the upload dock (measured to its exact height) so the two never overlap
