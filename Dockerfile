@@ -1,4 +1,40 @@
-## Multistage build: First stage fetches dependencies
+# syntax=docker/dockerfile:1
+
+## Frontend builder: build the embedded SPA ONCE on the native build platform
+## (its output is architecture-independent), then reuse it for every target
+## arch. Pinned pnpm matches the repo's packageManager field.
+FROM --platform=$BUILDPLATFORM node:24-alpine AS frontend
+WORKDIR /app/frontend
+RUN npm install -g pnpm@10.34.1
+# Dependency layer first (cached until the lockfile changes), then the build.
+COPY frontend/package.json frontend/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+COPY frontend/ ./
+# → /app/frontend/dist, embedded into the Go binary via frontend/assets.go.
+RUN pnpm run build
+
+## Backend builder: cross-compile the Go binary for the requested target arch.
+## Runs on the NATIVE build platform (Go cross-compiles, so no slow emulation)
+## and emits a static, CGO-free binary for $TARGETOS/$TARGETARCH. VERSION /
+## REVISION are stamped into the version package, mirroring `task build:backend`.
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS backend
+WORKDIR /src
+ARG TARGETOS
+ARG TARGETARCH
+ARG VERSION=dev
+ARG REVISION=unknown
+# Module-download layer — only re-runs when go.mod / go.sum change.
+COPY go.mod go.sum ./
+RUN go mod download
+# Source + the prebuilt frontend assets (go:embed all:dist needs frontend/dist).
+COPY . .
+COPY --from=frontend /app/frontend/dist ./frontend/dist
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+    go build -trimpath \
+    -ldflags="-s -w -X 'github.com/filebrowser/filebrowser/v2/version.Version=${VERSION}' -X 'github.com/filebrowser/filebrowser/v2/version.CommitSHA=${REVISION}'" \
+    -o /out/filebrowser .
+
+## Fetch runtime helper files (ca-certificates, mailcap, tini-static, JSON.sh).
 FROM alpine:3.23 AS fetcher
 
 # install and copy ca-certificates, mailcap, and tini-static; download JSON.sh
@@ -13,7 +49,7 @@ RUN apk update && \
 ## absent, so this stays a convenience, never a hard dependency.
 FROM mwader/static-ffmpeg:7.1 AS ffmpeg
 
-## Second stage: lightweight Alpine runtime. Alpine (musl, like the previous
+## Final stage: lightweight Alpine runtime. Alpine (musl, like the previous
 ## BusyBox base) ships a package manager + busybox applets, so the existing
 ## init/healthcheck scripts keep working AND we can install poppler-utils for
 ## PDF cover thumbnails. pdftoppm is runtime-detected; absent → PDF rows fall
@@ -45,8 +81,9 @@ RUN apk --no-cache add poppler-utils ttf-dejavu && \
     addgroup -g $GID user && \
     adduser -D -u $UID -G user user
 
-# Copy binary, scripts, and configurations into image with proper ownership
-COPY --chown=user:user filebrowser /bin/filebrowser
+# Copy binary (cross-compiled in the `backend` stage for THIS image's arch),
+# scripts, and configurations into image with proper ownership.
+COPY --chown=user:user --from=backend /out/filebrowser /bin/filebrowser
 # S6-2: static ffmpeg → /usr/local/bin (on PATH for video-thumbnail
 # generation). If PATH ever misses it, detection just fails gracefully.
 COPY --from=ffmpeg /ffmpeg /usr/local/bin/ffmpeg

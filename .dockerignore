@@ -5,3 +5,13 @@ frontend/node_modules
 frontend/dist
 filebrowser.db
 docs/index.md
+
+# Build context hygiene for the self-contained (multi-arch) image build: the
+# frontend + Go binary are built INSIDE the Dockerfile, so none of these need to
+# be sent to the build context.
+.git
+.github
+filebrowser
+docs
+*.test
+coverage.txt

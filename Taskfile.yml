@@ -36,6 +36,45 @@ tasks:
       - task: build:frontend
       - task: build:backend
 
+  build:image:
+    desc: Build & push the multi-arch (amd64 + arm64) Docker image
+    summary: |
+      Cross-builds the self-contained image for linux/amd64 + linux/arm64 and
+      pushes it to the registry. The frontend + Go binary are built INSIDE the
+      Dockerfile, so this needs only Docker (no prior `task build`).
+
+      Prerequisites (one-time):
+        - a docker-container buildx builder (multi-platform needs it):
+            docker buildx create --name multiarch --driver docker-container --bootstrap --use
+        - registry login:
+            echo $GHCR_TOKEN | docker login ghcr.io -u csummers-dev --password-stdin
+
+      Usage:
+        task build:image VERSION=2.2.0     # explicit version → tags :2.2.0 + :latest
+        task build:image                   # version from `git describe`
+        task build:image VERSION=2.2.0 PLATFORMS=linux/arm64   # single arch
+    vars:
+      IMAGE: '{{.IMAGE | default "ghcr.io/csummers-dev/filebrowser-pretty"}}'
+      PLATFORMS: '{{.PLATFORMS | default "linux/amd64,linux/arm64"}}'
+      GIT_COMMIT:
+        sh: git rev-parse --short HEAD
+      DESCRIBED:
+        sh: git describe --tags --match=v* 2>/dev/null | cut -c 2- || echo "0.0.0-dev"
+      VERSION: '{{.VERSION | default .DESCRIBED}}'
+      CREATED:
+        sh: date -u +%Y-%m-%dT%H:%M:%SZ
+    cmds:
+      - >-
+        docker buildx build
+        --platform {{.PLATFORMS}}
+        --build-arg VERSION={{.VERSION}}
+        --build-arg REVISION={{.GIT_COMMIT}}
+        --build-arg CREATED={{.CREATED}}
+        --tag {{.IMAGE}}:{{.VERSION}}
+        --tag {{.IMAGE}}:latest
+        --push
+        .
+
   version:badge:
     desc: Sync the README version badge (defaults to the latest v* git tag)
     summary: |
