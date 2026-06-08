@@ -1,13 +1,16 @@
 // Package jobs is an in-memory registry of background transfer jobs (move /
-// copy), run one-at-a-time through a single sequential worker. It exists so a
-// large cross-volume copy can run detached from the originating HTTP request
-// while the UI polls progress and survives a browser reload.
+// copy). It exists so a large cross-volume copy can run detached from the
+// originating HTTP request while the UI polls progress and survives a browser
+// reload.
 //
 // Per docs/transfers-plan.md the design is deliberately small:
 //   - state lives in memory only (a browser reload re-queries live jobs; a
 //     server restart ends them — the transfer itself dies on restart anyway);
-//   - one worker processes jobs sequentially (parallel large copies only thrash
-//     the same disks);
+//   - two worker lanes: copies and cross-volume moves run one-at-a-time on a
+//     sequential MAIN worker (parallel large copies only thrash the same disks),
+//     while same-volume moves — instant rename() metadata ops that don't thrash
+//     disks — run on a separate FAST lane so they needn't wait behind a long
+//     copy (see Registry.EnqueueFast);
 //   - the actual filesystem work is an injected Executor, so this package has
 //     no dependency on fileutils/afero and is unit-testable with a fake.
 //

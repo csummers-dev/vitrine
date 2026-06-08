@@ -500,7 +500,6 @@
                   v-bind:type="row.item.type"
                   v-bind:size="row.item.size"
                   v-bind:path="row.item.path"
-                  @rowIntoZone="onRowIntoZone"
                   @dropAlongside="onItemDropAlongside"
                   @rowPointerDown="onItemPointerDown"
                 >
@@ -541,7 +540,6 @@
                       v-bind:type="item.type"
                       v-bind:size="item.size"
                       v-bind:path="item.path"
-                      @rowIntoZone="onRowIntoZone"
                       @dropAlongside="onItemDropAlongside"
                       @rowPointerDown="onItemPointerDown"
                     >
@@ -586,7 +584,6 @@
                       v-bind:type="item.type"
                       v-bind:size="item.size"
                       v-bind:path="item.path"
-                      @rowIntoZone="onRowIntoZone"
                       @dropAlongside="onItemDropAlongside"
                       @rowPointerDown="onItemPointerDown"
                     >
@@ -599,33 +596,6 @@
                   ></div>
                 </div>
               </template>
-
-              <!-- v1.3 H11: "Drop into current folder" target.
-                 Renders only during an internal drag whose items don't
-                 already live in this folder. Sits beneath the last row
-                 with generous vertical reach so folder-heavy listings
-                 still give the user a tolerant safe area to drop INTO
-                 the current directory — without having to land in the
-                 gaps between rows or aim at a non-folder. -->
-              <div
-                v-if="currentFolderDropZoneVisible"
-                class="current-folder-dropzone"
-                :class="{
-                  'current-folder-dropzone--active': listingDropActive,
-                }"
-                @dragenter="onListingDropEnter"
-                @dragover="onListingDropOver"
-                @dragleave="onListingDropLeave"
-                @drop="onListingDrop"
-              >
-                <div class="current-folder-dropzone__inner">
-                  <Icon name="folder-open" :size="16" :stroke-width="1.8" />
-                  <span>
-                    Drop to move into
-                    <strong>{{ folderTitle || "this folder" }}</strong>
-                  </span>
-                </div>
-              </div>
 
               <!-- S4-1: items-based context menu. The same `<context-menu>`
                  instance serves both right-click on a row (rowMenuItems)
@@ -1302,92 +1272,17 @@ const onSectionDrop = (event: DragEvent) => {
   void performParentDrop(event, parentFolderUrl.value);
 };
 
-// ── Drop-into-current-folder zone (v1.3 H11) ────────────────────────
-// Folder-heavy listings used to trap internal drops: every visible row
-// was a folder, so anywhere the user released became "move INTO that
-// child folder" — there was no tolerant "drop here = current dir"
-// target. This zone sits below the rows during an active internal
-// drag and provides one. The `performParentDrop` from `useDropTarget`
-// is target-agnostic (it just takes a destination URL), so we reuse it.
-const listingDropActive = ref<boolean>(false);
-let listingDragDepth = 0;
-
-/** URL the dropzone resolves to: the current folder. Mirrors the
- *  `url` shape ListingItem rows use (ends with "/") so the conflict
- *  prompt's `to` field matches what the user sees in the breadcrumb. */
+// `currentFolderUrl` — the current folder's url (trailing "/" like the
+// ListingItem rows, so a conflict prompt's `to` matches the breadcrumb).
+// Destination for an "alongside" drop (below) and for the touch drop path.
 const currentFolderUrl = computed<string>(() => fileStore.req?.url ?? "");
 
-/** True when every dragged item's parent directory equals the current
- *  folder — i.e. dragging from here to here. We hide the dropzone in
- *  that case because the move is a no-op (the composable short-circuits
- *  on identical from/to) and showing it would just confuse. */
-const draggedFromCurrentFolder = computed<boolean>(() => {
-  const here = currentFolderUrl.value;
-  const dragged = fileStore.draggedItems;
-  if (!here || dragged.length === 0) return false;
-  return dragged.every((it) => {
-    // Item url shape: "/files/Docs/foo.txt" → parent "/files/Docs/".
-    // Strip the trailing basename (with optional trailing slash for
-    // folder items) — that's the item's parent dir.
-    const parent = it.url.replace(/[^/]+\/?$/, "");
-    return parent === here;
-  });
-});
-
-/** Visibility gate: an internal drag is in flight AND the items
- *  aren't already in this folder AND we have a current folder URL. */
-const currentFolderDropZoneVisible = computed<boolean>(
-  () =>
-    fileStore.draggedItems.length > 0 &&
-    !!currentFolderUrl.value &&
-    !draggedFromCurrentFolder.value
-);
-
-const onListingDropEnter = (event: DragEvent) => {
-  event.preventDefault();
-  listingDragDepth++;
-  if (listingDragDepth === 1) listingDropActive.value = true;
-};
-
-const onListingDropOver = (event: DragEvent) => {
-  event.preventDefault();
-  if (event.dataTransfer) {
-    // Mirror ListingItem's modifier handling so the cursor matches
-    // the action (move by default, copy with ctrl/cmd).
-    event.dataTransfer.dropEffect =
-      event.ctrlKey || event.metaKey ? "copy" : "move";
-  }
-};
-
-const onListingDropLeave = () => {
-  listingDragDepth = Math.max(0, listingDragDepth - 1);
-  if (listingDragDepth === 0) listingDropActive.value = false;
-};
-
-const onListingDrop = (event: DragEvent) => {
-  listingDragDepth = 0;
-  listingDropActive.value = false;
-  if (!currentFolderUrl.value) return;
-  void performParentDrop(event, currentFolderUrl.value);
-};
-
-// v1.3 H12: rows broadcast which zone the cursor is in so the bottom
-// dropzone visual always tells the truth about where a release will
-// land. When `active=true`, the cursor is inside a folder's into-zone
-// — the row owns the drop, bottom zone goes neutral. When `active=false`,
-// the cursor is on a row's alongside area (or any file row) — the
-// destination is the CURRENT folder, so the bottom zone lights up
-// to advertise that.
-const onRowIntoZone = (active: boolean) => {
-  listingDropActive.value = !active;
-};
-
-// v1.3 H12: alongside drop on any row — route to current folder via
-// the same `useDropTarget.performDrop` that powers the bottom zone +
-// parent-folder shortcut. No-op if we somehow have no current folder.
+// Alongside drop on any row → move into the CURRENT folder via the shared
+// useDropTarget.performDrop (target-agnostic; it just takes a destination
+// URL). A release on a row's non-into-zone area, or on any file row, routes
+// here. No-op if we somehow have no current folder.
 const onItemDropAlongside = (event: DragEvent) => {
   if (!currentFolderUrl.value) return;
-  listingDropActive.value = false;
   void performParentDrop(event, currentFolderUrl.value);
 };
 
@@ -1907,6 +1802,16 @@ onMounted(() => {
   // so end it at the document level too (idempotent).
   document.addEventListener("drop", endDragBadge);
   document.addEventListener("dragend", endDragBadge);
+  // Same safety net for the dragged-items SNAPSHOT (fileStore.draggedItems):
+  // the source row's own dragEnd normally clears it, but spring-load navigation
+  // can unmount that row mid-drag so its handler never fires — leaking a
+  // non-empty snapshot that keeps the listing "busy" and freezes background
+  // refreshes. drop/dragend bubble to the document even when the source row is
+  // gone, and this runs in the bubble phase AFTER the row/target drop handlers
+  // have already captured their own copy of the snapshot, so clearing it here
+  // can't empty an in-flight move.
+  document.addEventListener("drop", clearDragSnapshot);
+  document.addEventListener("dragend", clearDragSnapshot);
 });
 
 onBeforeUnmount(() => {
@@ -1934,6 +1839,8 @@ onBeforeUnmount(() => {
   document.removeEventListener("dragend", stopDragScroll);
   document.removeEventListener("drop", endDragBadge);
   document.removeEventListener("dragend", endDragBadge);
+  document.removeEventListener("drop", clearDragSnapshot);
+  document.removeEventListener("dragend", clearDragSnapshot);
   stopDragScroll();
   endDragBadge();
 });
@@ -2089,6 +1996,12 @@ const preventDefault = (event: Event) => {
     const e = event as DragEvent;
     moveDragBadge(e.ctrlKey || e.metaKey, e.clientX, e.clientY);
   }
+};
+
+// Document-level fallback to clear the internal-drag snapshot once a drag ends
+// (see the drop/dragend listeners in onMounted). Idempotent.
+const clearDragSnapshot = () => {
+  if (fileStore.draggedItems.length > 0) fileStore.draggedItems = [];
 };
 
 // HTML5 (mouse) drag edge auto-scroll. Touch drag already auto-scrolls via
@@ -4002,63 +3915,6 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   letter-spacing: 0;
   color: var(--color-ink-3, #a1a1aa);
   vertical-align: baseline;
-}
-
-/* ── Current-folder drop zone (v1.3 H11) ──────────────────────────────
-   Appears beneath the rows during an active internal drag whose source
-   isn't this folder. Gives the user a generous, unmissable safe area
-   to drop INTO the current directory — especially valuable in
-   folder-heavy listings where every row above resolves to a SUBfolder.
-
-   • Default state: subtle dashed outline, muted text — visible but
-     quiet so it reads as a guide, not a CTA.
-   • Hover (--active): accent-tinted fill + solid ring + bold copy.
-   • min-height is sized so it dominates the viewport's lower half even
-     on short listings; users don't have to aim precisely. */
-.current-folder-dropzone {
-  margin: 12px 12px 24px;
-  min-height: 220px;
-  border-radius: 12px;
-  border: 1.5px dashed var(--color-line-strong, #d4d4d8);
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-ink-3, #a1a1aa);
-  font-size: 13px;
-  text-align: center;
-  padding: 16px;
-  transition:
-    background-color var(--dur-base) ease,
-    border-color var(--dur-base) ease,
-    color var(--dur-base) ease,
-    box-shadow var(--dur-base) ease;
-  /* Defensive: ensure dragenter/leave fire only on this wrapper, not
-     on its decorative children — prevents flicker as the cursor moves
-     between the icon and the label. */
-}
-.current-folder-dropzone__inner {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  pointer-events: none;
-}
-.current-folder-dropzone__inner strong {
-  color: var(--color-ink-2, #52525b);
-  font-weight: 600;
-}
-.current-folder-dropzone--active {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.08));
-  border-color: var(--color-accent, #5e6ad2);
-  border-style: solid;
-  color: var(--color-accent, #5e6ad2);
-  box-shadow: inset 0 0 0 1px var(--color-accent, #5e6ad2);
-}
-.current-folder-dropzone--active .current-folder-dropzone__inner strong {
-  color: var(--color-accent, #5e6ad2);
-}
-html.dark .current-folder-dropzone {
-  border-color: var(--color-line-strong, #3f3f46);
 }
 
 /* Parent-folder ↑ button (H5). Inline with the FOLDER eyebrow label so

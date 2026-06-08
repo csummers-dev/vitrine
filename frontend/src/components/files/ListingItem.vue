@@ -225,20 +225,11 @@ const props = defineProps<{
   path?: string;
 }>();
 
-// v1.3 H12: row drag-drop notifications so FileListing can mirror the
-// active-target state into its bottom "drop into current folder" zone.
-//   • rowIntoZone(true)  — cursor entered this folder's INTO-zone
-//                          (icon/name area, list view) or its icon
-//                          (mosaic/gallery). FileListing hides the
-//                          bottom zone's active highlight.
-//   • rowIntoZone(false) — cursor is on this row but OUTSIDE the
-//                          into-zone (the "alongside" area). FileListing
-//                          lights up the bottom zone since that's
-//                          truthfully where a drop will land.
-//   • dropAlongside(e)   — drop happened in the alongside area; ask
-//                          FileListing to route it to current folder.
+// v1.3 H12: row drag-drop notifications so FileListing can route drops.
+//   • dropAlongside(e)   — drop happened in the alongside area (outside a
+//                          folder's tight into-zone, or on a file row); ask
+//                          FileListing to route it to the current folder.
 const emit = defineEmits<{
-  rowIntoZone: [active: boolean];
   dropAlongside: [event: DragEvent];
   // Touch drag-and-drop is owned by a single useTouchDrag instance in
   // FileListing (lifted out of every row). Rows just forward their
@@ -403,7 +394,6 @@ const enterIntoZone = (rowEl: HTMLElement) => {
   // leaveIntoZone / drop, and swept by FileListing.resetOpacity on drag end.
   rowEl.classList.add("item--drop-into");
   startSpringLoad();
-  emit("rowIntoZone", true);
 };
 
 const leaveIntoZone = (rowEl: HTMLElement) => {
@@ -415,7 +405,6 @@ const leaveIntoZone = (rowEl: HTMLElement) => {
   rowEl.style.opacity = "0.5";
   rowEl.classList.remove("item--drop-into");
   cancelSpringLoad();
-  emit("rowIntoZone", false);
 };
 
 const thumbnailUrl = computed(() => {
@@ -825,10 +814,8 @@ const onDragLeave = (event: DragEvent) => {
   if (!canForwardDrop.value) return;
   dragDepth = Math.max(0, dragDepth - 1);
   if (dragDepth === 0) {
-    // Leaving the row entirely — clear into-zone state. Spring-load is
-    // cancelled inside leaveIntoZone. Note we don't emit rowIntoZone
-    // here because leaveIntoZone already emits(false) when transitioning
-    // out of the into-zone; the redundant emit would just be a no-op.
+    // Leaving the row entirely — clear into-zone state (spring-load is
+    // cancelled inside leaveIntoZone).
     const rowEl = event.currentTarget as HTMLElement;
     leaveIntoZone(rowEl);
   }
@@ -867,7 +854,6 @@ const drop = async (event: DragEvent) => {
     inIntoZone = false;
     rowEl.style.opacity = "0.5";
     rowEl.classList.remove("item--drop-into");
-    emit("rowIntoZone", false);
   }
 
   if (!intoZone) {

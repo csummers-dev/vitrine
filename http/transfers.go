@@ -181,8 +181,31 @@ func (tm *transferManager) jobsPostHandler() handleFunc {
 			dirMode:  d.settings.DirMode,
 			base:     eventBase(r, d),
 		}
-		job := tm.reg.Enqueue(d.user.ID, kind, items, pl)
-		return renderJSON(w, r, job.Snapshot())
+
+		// Route same-volume moves onto the fast lane so an instant rename doesn't
+		// wait behind a long cross-volume copy on the main worker. A move qualifies
+		// only when EVERY item's source shares a volume with its destination's
+		// parent dir; SameVolume is conservative (any stat error or unknown fs
+		// disqualifies it), so anything uncertain falls back to the ordinary queued
+		// path. Copies always take the main lane — they always write bytes.
+		fast := kind == jobs.KindMove
+		if fast {
+			for _, it := range items {
+				same, err := fileutils.SameVolume(d.user.Fs, it.From, path.Dir(it.To))
+				if err != nil || !same {
+					fast = false
+					break
+				}
+			}
+		}
+
+		var view jobs.JobView
+		if fast {
+			_, view = tm.reg.EnqueueFast(d.user.ID, kind, items, pl)
+		} else {
+			view = tm.reg.Enqueue(d.user.ID, kind, items, pl).Snapshot()
+		}
+		return renderJSON(w, r, view)
 	})
 }
 
