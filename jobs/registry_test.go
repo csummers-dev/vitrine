@@ -90,6 +90,38 @@ func TestSequentialOneAtATime(t *testing.T) {
 	waitStatus(t, r, a.ID(), 1, StatusCompleted)
 }
 
+func TestFastLaneBypassesBlockedMain(t *testing.T) {
+	started := make(chan struct{})
+	release := make(chan struct{})
+	r := New(func(_ context.Context, j *Job) error {
+		// Only the "block" job (main lane) stalls; the fast-lane move returns at
+		// once.
+		if j.Payload() == "block" {
+			started <- struct{}{}
+			<-release
+		}
+		return nil
+	})
+	defer r.Close()
+	defer close(release) // unblock the straggler on teardown
+
+	// A blocking copy occupies the single main-lane worker.
+	slow := r.Enqueue(1, KindCopy, sampleItems(), "block")
+	<-started // main worker is now stuck on slow
+
+	// A same-volume move on the fast lane must complete WITHOUT waiting for it.
+	fast, view := r.EnqueueFast(1, KindMove, sampleItems(), nil)
+	if view.Status != StatusQueued {
+		t.Fatalf("EnqueueFast initial view: want %q, got %q", StatusQueued, view.Status)
+	}
+	waitStatus(t, r, fast.ID(), 1, StatusCompleted)
+
+	// …while the main-lane job is still blocked/running.
+	if v, _ := r.Get(slow.ID(), 1); v.Status != StatusRunning {
+		t.Fatalf("main-lane job should still be running, got %q", v.Status)
+	}
+}
+
 func TestCancelRunning(t *testing.T) {
 	r := New(func(ctx context.Context, _ *Job) error {
 		<-ctx.Done() // block until canceled

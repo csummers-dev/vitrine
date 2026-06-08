@@ -21,32 +21,38 @@ const (
 	sweepEvery      = time.Minute
 )
 
-// Registry owns every transfer job and runs them through a single sequential
-// worker (one active transfer; the rest queue). All reads are scoped per-user.
+// Registry owns every transfer job and runs them through two worker lanes: a
+// MAIN sequential lane (copies + cross-volume moves — one active transfer, the
+// rest queue, so parallel large copies don't thrash the same disks) and a FAST
+// lane for same-volume moves (instant rename() metadata ops, which don't thrash
+// disks and so are safe to run alongside a copy). All reads are scoped per-user.
 type Registry struct {
 	mu    sync.Mutex
 	jobs  map[string]*Job
 	order []string // creation order, for stable listing + sweeping
 
-	queue  chan *Job
-	exec   Executor
-	retain time.Duration
-	now    func() time.Time
-	stop   chan struct{}
+	queue     chan *Job // main lane: copies + cross-volume moves (sequential)
+	fastQueue chan *Job // fast lane: same-volume moves (instant renames)
+	exec      Executor
+	retain    time.Duration
+	now       func() time.Time
+	stop      chan struct{}
 }
 
 // New creates a registry and starts its sequential worker + TTL sweeper. exec
 // runs each job's filesystem work.
 func New(exec Executor) *Registry {
 	r := &Registry{
-		jobs:   map[string]*Job{},
-		queue:  make(chan *Job, defaultQueueCap),
-		exec:   exec,
-		retain: defaultRetain,
-		now:    time.Now,
-		stop:   make(chan struct{}),
+		jobs:      map[string]*Job{},
+		queue:     make(chan *Job, defaultQueueCap),
+		fastQueue: make(chan *Job, defaultQueueCap),
+		exec:      exec,
+		retain:    defaultRetain,
+		now:       time.Now,
+		stop:      make(chan struct{}),
 	}
-	go r.worker()
+	go r.worker(r.queue)     // main lane
+	go r.worker(r.fastQueue) // fast lane (same-volume moves)
 	go r.sweeper()
 	return r
 }
@@ -61,11 +67,32 @@ func newID() string {
 	return hex.EncodeToString(b[:])
 }
 
-// Enqueue registers a new job and schedules it. Returns immediately with the
-// job (status queued, or running shortly). If the queue is somehow saturated
+// Enqueue registers a new job on the MAIN (sequential) worker lane and returns
+// it immediately (status queued, or running shortly). Copies and cross-volume
+// moves run here, one at a time.
+func (r *Registry) Enqueue(userID uint, kind Kind, items []Item, payload any) *Job {
+	j, _ := r.enqueue(r.queue, userID, kind, items, payload)
+	return j
+}
+
+// EnqueueFast registers a move on the FAST worker lane — used for same-volume
+// moves, which are instant rename() metadata ops that needn't wait behind a long
+// cross-volume copy on the main lane (a rename doesn't thrash disks, so running
+// it concurrently is safe). It returns BOTH the job and its creation-time
+// snapshot: the fast lane can finish the rename before the caller would get
+// around to calling Snapshot(), so returning the pre-scheduled (queued) view
+// guarantees a non-terminal HTTP response and lets the UI observe the normal
+// queued→completed transition via polling (see http/transfers.go).
+func (r *Registry) EnqueueFast(userID uint, kind Kind, items []Item, payload any) (*Job, JobView) {
+	return r.enqueue(r.fastQueue, userID, kind, items, payload)
+}
+
+// enqueue registers a job, captures its initial (queued) snapshot BEFORE handing
+// it to a worker — so the returned view is always non-terminal even when the
+// lane finishes instantly — then schedules it on q. If q is somehow saturated
 // the job is marked failed rather than blocking the caller. payload is opaque
 // execution context the Executor reads back via Job.Payload().
-func (r *Registry) Enqueue(userID uint, kind Kind, items []Item, payload any) *Job {
+func (r *Registry) enqueue(q chan *Job, userID uint, kind Kind, items []Item, payload any) (*Job, JobView) {
 	j := &Job{
 		id:        newID(),
 		userID:    userID,
@@ -83,16 +110,21 @@ func (r *Registry) Enqueue(userID uint, kind Kind, items []Item, payload any) *J
 	r.order = append(r.order, j.id)
 	r.mu.Unlock()
 
+	// Snapshot BEFORE scheduling: until the channel send below, no worker can
+	// hold j, so this view is guaranteed status=queued.
+	view := j.Snapshot()
+
 	select {
-	case r.queue <- j:
+	case q <- j:
 	default:
 		j.mu.Lock()
 		j.status = StatusFailed
 		j.errMsg = "transfer queue is full"
 		j.finishedAt = r.now()
 		j.mu.Unlock()
+		view = j.Snapshot()
 	}
-	return j
+	return j, view
 }
 
 // Cancel requests cancellation of a job owned by userID. Returns true if the
@@ -164,12 +196,16 @@ func (r *Registry) Get(id string, userID uint) (JobView, bool) {
 
 // ── internals ────────────────────────────────────────────────────────────────
 
-func (r *Registry) worker() {
+// worker pulls jobs off q and runs them one at a time. Two run concurrently —
+// one per lane (r.queue, r.fastQueue) — which is safe because run() touches only
+// the job's own mutex plus read-only registry fields, and a given job is only
+// ever sent to one lane.
+func (r *Registry) worker(q chan *Job) {
 	for {
 		select {
 		case <-r.stop:
 			return
-		case j := <-r.queue:
+		case j := <-q:
 			r.run(j)
 		}
 	}

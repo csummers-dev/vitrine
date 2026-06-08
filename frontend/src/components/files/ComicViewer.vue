@@ -143,7 +143,9 @@ const error = ref<string | null>(null);
 const isFullscreen = ref(false);
 
 type Fit = "width" | "height" | "original" | "dynamic";
-const fit = ref<Fit>("width");
+// Default to "dynamic" — fits each page by its own orientation (wide → width,
+// tall → height) so a comic opens at a sensible size without manual toggling.
+const fit = ref<Fit>("dynamic");
 
 // Reading direction is a global per-user preference (manga read right-to-left).
 const rtl = computed({

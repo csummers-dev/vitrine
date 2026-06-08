@@ -41,10 +41,6 @@ Dockerfile.dev
 docs/*.md
 mockups/
 
-# Local build/push helpers
-build-and-push.sh
-rc-build.sh
-
 # RC / docker image tarballs (output of rc-build.sh, e.g. `docker save`)
 # — large binaries that must never be committed (GitHub rejects >100 MB).
 fb-rc.tar.gz
