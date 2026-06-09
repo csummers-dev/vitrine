@@ -108,7 +108,7 @@
           v-else
           class="item__name-text name"
           :class="{ 'is-moving': isMoving }"
-          >{{ displayedName }}</span
+          ><span class="item__name-glyph">{{ displayedName }}</span></span
         >
         <div class="item__name-compact-meta">
           <time :datetime="modified">{{ humanTime() }}</time>
@@ -335,22 +335,19 @@ const canDrop = computed(() => {
   // A folder can't receive a folder that IS it or CONTAINS it — that would
   // move a folder into its own subtree. Check against the dragstart snapshot
   // (covers the self row AND, after spring-loading into the dragged folder,
-  // any of its descendant rows). Falls back to `selected` when no drag
-  // snapshot exists yet (the highlight still suppresses for selected rows).
+  // any of its descendant rows).
   const dragged = fileStore.draggedItems;
   if (dragged.length > 0) {
     for (const it of dragged) {
       if (isSelfOrDescendantTarget(it.url, it.isDir, props.url)) return false;
     }
-    return true;
   }
 
-  for (const i of fileStore.selected) {
-    if (fileStore.req?.items[i].url === props.url) {
-      return false;
-    }
-  }
-
+  // An empty snapshot means this is an OS-file UPLOAD drag (Finder → window),
+  // not an internal move. A SELECTED folder is still a perfectly valid upload
+  // target, so do NOT suppress it here — the previous `selected` check wrongly
+  // killed the highlight + spring-load countdown when hovering an upload over a
+  // selected folder row.
   return true;
 });
 
@@ -830,31 +827,26 @@ const drop = async (event: DragEvent) => {
   if (!canForwardDrop.value) return;
   event.preventDefault();
 
-  // The CACHED into-zone state decides where this drop resolves — not a fresh
-  // geometry recompute:
-  //   • The highlight + spring-load countdown were active at release
-  //     (`inIntoZone` true) on a droppable folder → drop INTO that folder.
-  //   • Anywhere else on the row (no highlight, a file row, or a self-drop
-  //     folder row) → forward to FileListing, which routes the move to the
-  //     CURRENT folder ("alongside").
-  // Why cached, not recomputed via isInIntoZone(): that helper measures the
-  // rendered glyph run with a Range, and Range.getBoundingClientRect() is
-  // unreliable during the TERMINATING `drop` event — it can return empty, so
-  // measureTextWidth falls back to the full flex name-column width. That
-  // silently widened the target to the whole name cell at drop time, dropping
-  // INTO the folder even where the (dragover-driven) highlight never showed.
-  // Reusing the dragover-set state makes "drops into" exactly match
-  // "was highlighted + counting down."
+  // Decide from the LIVE geometry at the drop point — the SAME hit-test that
+  // drives the highlight + spring-load countdown — so a drop goes INTO the folder
+  // ONLY where the cursor is over the icon + name (exactly where the highlight
+  // shows). Everywhere else forwards to FileListing, which routes the move to the
+  // CURRENT folder ("alongside").
+  //
+  // This used to reuse the cached `inIntoZone` flag, because the old hit-test
+  // measured the name with a Range and `Range.getBoundingClientRect()` is
+  // unreliable during the terminating `drop` event. The hit-test now reads an
+  // ELEMENT rect (the inner `.item__name-glyph` box), which STAYS correct at drop
+  // — so recomputing is both safe and necessary: the cached flag could be left
+  // stale (e.g. by spring-load navigation), dropping INTO the folder in the
+  // "alongside" area where no highlight was showing.
   const rowEl = event.currentTarget as HTMLElement;
-  const intoZone = inIntoZone && canDrop.value;
+  const intoZone = canDrop.value && isInIntoZone(event, rowEl);
 
-  // Always clear into-state on drop (it ends the hover regardless of
-  // which branch we take).
-  if (inIntoZone) {
-    inIntoZone = false;
-    rowEl.style.opacity = "0.5";
-    rowEl.classList.remove("item--drop-into");
-  }
+  // Clear any lingering hover state on drop (flag, highlight tint, dim).
+  inIntoZone = false;
+  rowEl.style.opacity = "0.5";
+  rowEl.classList.remove("item--drop-into");
 
   if (!intoZone) {
     emit("dropAlongside", event);

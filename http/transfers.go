@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"net/http"
 	"path"
@@ -163,7 +164,13 @@ func (tm *transferManager) jobsPostHandler() handleFunc {
 			}
 			if !ri.Overwrite && !ri.Rename {
 				if _, err := d.user.Fs.Stat(dst); err == nil {
-					return http.StatusConflict, nil
+					verb := "move"
+					if kind == jobs.KindCopy {
+						verb = "copy"
+					}
+					return http.StatusConflict, fmt.Errorf(
+						"can't %s %q: an item with that name already exists in the destination folder",
+						verb, path.Base(dst))
 				}
 			}
 			if ri.Rename {

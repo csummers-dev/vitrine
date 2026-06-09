@@ -82,6 +82,16 @@
   flex: 1;
 }
 
+/* Inner wrapper around the rendered name glyphs. Its element box is exactly the
+   glyph run — unlike the `flex: 1` `.item__name-text`, whose box spans the whole
+   name column — so the drag "drop INTO this folder" hit-test (utils/dropZone)
+   reads a tight name width and the zone stays scoped to the icon + name. Kept
+   plain inline so it doesn't disturb the parent's ellipsis truncation or the
+   "being moved" gradient text-clip. */
+#listing .item .item__name-glyph {
+  display: inline;
+}
+
 /* "Being moved" shimmer — while an item is part of an in-flight MOVE (the
    moved item itself, or anything inside a moved folder — see isPathInMove),
    its name fills with a colourful accent gradient that sweeps left→right,
@@ -104,11 +114,11 @@
   background-image: linear-gradient(
     100deg,
     var(--color-ink-1, var(--textSecondary)) 0%,
-    var(--color-ink-1, var(--textSecondary)) 40%,
-    #5e6ad2 46%,
+    var(--color-ink-1, var(--textSecondary)) 30%,
+    #5e6ad2 42%,
     #7c3aed 50%,
-    #2563eb 54%,
-    var(--color-ink-1, var(--textSecondary)) 60%,
+    #2563eb 58%,
+    var(--color-ink-1, var(--textSecondary)) 70%,
     var(--color-ink-1, var(--textSecondary)) 100%
   );
   background-size: 300px 100%;
@@ -125,11 +135,11 @@ html.dark #listing .item .name.is-moving {
   background-image: linear-gradient(
     100deg,
     var(--color-ink-1, var(--textSecondary)) 0%,
-    var(--color-ink-1, var(--textSecondary)) 40%,
-    #a5b0ff 46%,
+    var(--color-ink-1, var(--textSecondary)) 30%,
+    #a5b0ff 42%,
     #c4b5fd 50%,
-    #93c5fd 54%,
-    var(--color-ink-1, var(--textSecondary)) 60%,
+    #93c5fd 58%,
+    var(--color-ink-1, var(--textSecondary)) 70%,
     var(--color-ink-1, var(--textSecondary)) 100%
   );
 }
