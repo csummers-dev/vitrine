@@ -2268,7 +2268,13 @@ const drop = async (event: DragEvent) => {
   if (
     el !== null &&
     el.classList.contains("item") &&
-    el.dataset.dir === "true"
+    el.dataset.dir === "true" &&
+    // Upload INTO this folder ONLY when the cursor is over its icon + name —
+    // the SAME hit-test that draws the highlight. Anywhere else on the row (or
+    // empty space) keeps `path` as the current directory, so the file uploads
+    // "alongside", matching the internal drag-and-drop behavior. Without this
+    // the entire folder row acted as the "drop inside" target.
+    isPointInRowIntoZone(el, event.clientX, event.clientY)
   ) {
     // Get url from ListingItem instance
     // TODO: Don't know what is happening here
