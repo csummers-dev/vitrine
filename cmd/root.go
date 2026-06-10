@@ -292,7 +292,7 @@ user created with the credentials from options "username" and "password".`,
 			ticker := time.NewTicker(6 * time.Hour)
 			defer ticker.Stop()
 			purge := func() {
-				st, err := st.Storage.Settings.Get()
+				st, err := st.Settings.Get()
 				if err != nil || st.TrashRetentionDays == 0 {
 					return
 				}
