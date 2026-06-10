@@ -114,4 +114,25 @@ describe("sortListing", () => {
     );
     expect(out.map((r) => r.extension)).toEqual(["7z", "zip"]);
   });
+
+  it("treats an unparseable modified timestamp as a tie (no NaN comparator)", () => {
+    // A malformed date must not make Array.sort's order undefined: it should
+    // fall through to the stable (input) order.
+    const a = row("a", 5, "not-a-date");
+    const b = row("b", 5, "2020-01-01");
+    const out = sortListing([a, b], crit("modified", true), null);
+    expect(out.map((r) => r.name)).toEqual(["a", "b"]);
+  });
+
+  it("does not reorder for an unknown sort key (stale pref)", () => {
+    const a = row("b", 1, "x");
+    const b = row("a", 1, "y");
+    // Cast: simulate a persisted pref naming a removed sort field.
+    const out = sortListing(
+      [a, b],
+      { by: "smart" as unknown as SortKey, asc: true },
+      null
+    );
+    expect(out.map((r) => r.name)).toEqual(["b", "a"]);
+  });
 });

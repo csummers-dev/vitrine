@@ -24,7 +24,12 @@
  * the comparator this codebase shipped for the secondary axis.
  */
 
-/** Comparator producing -1/0/1 for two items by the given sort key (ascending). */
+/**
+ * Comparator producing a negative / 0 / positive number for two items by the
+ * given sort key (ascending). Returns 0 ("equal") rather than NaN/undefined for
+ * any unparseable input or unexpected key — a comparator that returns NaN makes
+ * Array.prototype.sort's order implementation-defined, so we never let one leak.
+ */
 function compareBy(a: ResourceItem, b: ResourceItem, by: SortKey): number {
   switch (by) {
     case "name":
@@ -32,19 +37,25 @@ function compareBy(a: ResourceItem, b: ResourceItem, by: SortKey): number {
         numeric: true,
         sensitivity: "base",
       });
-    case "size":
-      return a.size - b.size;
+    case "size": {
+      const d = a.size - b.size;
+      return Number.isNaN(d) ? 0 : d;
+    }
     case "modified": {
       // Modified is an ISO 8601 string. Date.parse matches the user's
-      // "time-based" mental model and is safe for ISO inputs.
-      const aT = Date.parse(a.modified);
-      const bT = Date.parse(b.modified);
-      return aT - bT;
+      // "time-based" mental model and is safe for ISO inputs; a malformed
+      // value yields NaN, which we treat as a tie.
+      const d = Date.parse(a.modified) - Date.parse(b.modified);
+      return Number.isNaN(d) ? 0 : d;
     }
     case "extension":
       return a.extension.localeCompare(b.extension, undefined, {
         sensitivity: "base",
       });
+    default:
+      // Unknown / stale sort key (e.g. a pref left over from a removed
+      // feature) — don't reorder.
+      return 0;
   }
 }
 

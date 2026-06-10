@@ -3317,6 +3317,24 @@ const sortRaw = async (by: SortKey, asc: boolean) => {
         "sorting",
       ]);
     }
+    // Race guard: a silent background refresh (transfer/upload/tag tick) that
+    // landed WHILE the PUT was in flight calls updateRequest(), which swaps in
+    // the server's PRE-update sorting and snaps the list back. The PUT has now
+    // committed our value server-side, so if the current sorting is still that
+    // stale pre-change value, re-assert ours locally (no reload) to win the
+    // race. If it's a *different* value, the user picked another sort in the
+    // meantime — leave their newer choice alone.
+    const cur = fileStore.req?.sorting;
+    if (
+      fileStore.req &&
+      cur &&
+      prev &&
+      cur.by === prev.by &&
+      cur.asc === prev.asc &&
+      (cur.by !== by || cur.asc !== asc)
+    ) {
+      fileStore.req.sorting = { by, asc };
+    }
   } catch (e: any) {
     // Roll the optimistic order back so the view doesn't show a sort the
     // server never accepted.
