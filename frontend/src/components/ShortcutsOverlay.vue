@@ -146,7 +146,26 @@ const GROUPS: Group[] = [
       { chips: ["Enter"], then: false, label: "Open the selected item" },
       { chips: ["/"], then: false, label: "Refresh the current folder" },
       { chips: [`${MOD} A`], then: false, label: "Select all" },
-      { chips: ["Esc"], then: false, label: "Clear selection" },
+      {
+        chips: [`${MOD} X`, `${MOD} C`],
+        then: false,
+        label: "Cut / copy the selection",
+      },
+      {
+        chips: [`${MOD} V`],
+        then: false,
+        label: "Paste into the current folder",
+      },
+      {
+        chips: [`${MOD} ${SHIFT} C`],
+        then: false,
+        label: "Copy the selected item's path",
+      },
+      {
+        chips: ["Esc"],
+        then: false,
+        label: "Clear selection (and disarm a pending cut)",
+      },
       { chips: [`${MOD} K`], then: false, label: "Open command palette" },
     ],
   },

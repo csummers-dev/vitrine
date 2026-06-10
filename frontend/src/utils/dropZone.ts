@@ -1,23 +1,26 @@
 /**
- * Shared "drop INTO this folder" hit-test for listing rows.
+ * Shared "drop INTO this folder vs. ALONGSIDE" decision for listing rows.
  *
- * The zone is the UNION of the folder's icon (`.item__icon`) and the rendered
- * run of its name (inner `.item__name-glyph` inside `.item__name-text`), plus a
- * small forgiving grab margin past the last glyph. Everything outside it reads as
- * "alongside" (drop into the CURRENT folder), so a folder full of folders stays
- * easy to drop *into the current directory* rather than accidentally into a child.
+ * `resolveRowDropMode(row, x, y)` is the SINGLE source of truth and the entry
+ * point every drop surface MUST call — never re-derive the "icon+name vs. rest
+ * of row" decision ad hoc, or the highlight and the drop will disagree (that's
+ * been the bug, repeatedly). It returns "into" only when the point is over a
+ * FOLDER row's icon + rendered name; everything else (the rest of a folder row,
+ * any file row) is "alongside" → drop into the CURRENT folder.
  *
- * INVARIANT — this is the SINGLE source of truth for "icon+name vs. rest of row",
- * and EVERY surface that decides it MUST call this (never re-derive it ad hoc, or
- * the highlight and the drop will disagree — that's been the bug, repeatedly).
- * The four call sites, which must stay in lockstep:
+ * INVARIANT — the four call sites that must stay in lockstep (all via
+ * resolveRowDropMode):
  *   1. HIGHLIGHT / spring-load — ListingItem.vue `dragOver` → `isInIntoZone`
  *   2. internal DESKTOP drag drop — ListingItem.vue `drop` (recomputes at release)
  *   3. internal TOUCH drag drop — FileListing.vue `useTouchDrag` onMove/onDrop
  *   4. UPLOAD drop (a file dragged in from the OS) — FileListing.vue `drop`
- * The drop sites (2–4) must resolve "into folder" with the SAME point this
- * function highlights (1); recompute it at the drop point, don't trust a cached
- * flag. If you add a fifth drop/affordance path, wire it here too.
+ * Drop sites (2–4) recompute the mode AT the release point (never trust a cached
+ * flag) and read the target folder's url from the row's `data-drop-url`. If you
+ * add a fifth drop/affordance path, route it through here too.
+ *
+ * The zone geometry itself (`isPointInRowIntoZone`) is the UNION of the folder's
+ * icon (`.item__icon`) and the rendered run of its name (inner `.item__name-glyph`
+ * inside the flex `.item__name-text`), plus a small grab margin past the last glyph.
  */
 
 /** Forgiving grab margin (px) past the last glyph of the folder name. */
@@ -74,3 +77,24 @@ export const isPointInRowIntoZone = (
     clientX >= left && clientX <= right && clientY >= top && clientY <= bottom
   );
 };
+
+/** "into" (drop into this folder) vs "alongside" (drop into the current folder). */
+export type RowDropMode = "into" | "alongside";
+
+/**
+ * THE decision (see the file-level INVARIANT): is the point over a folder row's
+ * icon+name → "into" (drop into that folder), or anywhere else → "alongside"
+ * (drop into the current folder)? Reads `data-dir` for the folder check and
+ * delegates the geometry to `isPointInRowIntoZone`; a file row, or the rest of a
+ * folder row, is always "alongside". Callers layer their own concerns on top:
+ * Alt-to-force-alongside and the self-drop guard live in the desktop handler; the
+ * "into" destination url is the row's `data-drop-url`.
+ */
+export const resolveRowDropMode = (
+  row: HTMLElement,
+  clientX: number,
+  clientY: number
+): RowDropMode =>
+  row.dataset.dir === "true" && isPointInRowIntoZone(row, clientX, clientY)
+    ? "into"
+    : "alongside";

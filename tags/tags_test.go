@@ -388,3 +388,59 @@ func equalStrings(a, b []string) bool {
 	}
 	return true
 }
+
+func TestApplyTagsBatch(t *testing.T) {
+	s := newTestStore(t)
+	work, _ := s.CreateTag(1, "Work", "blue")
+	urgent, _ := s.CreateTag(1, "Urgent", "red")
+
+	paths := []string{"/a.txt", "/b.txt", "/c.txt"}
+
+	// Add Work + Urgent to all three.
+	if err := s.ApplyTagsBatch(1, paths, []uint64{work.ID, urgent.ID}, nil); err != nil {
+		t.Fatalf("apply add: %v", err)
+	}
+	for _, p := range paths {
+		got, _ := s.TagsForFile(1, p)
+		if len(got) != 2 {
+			t.Errorf("%s: want 2 tags, got %d", p, len(got))
+		}
+	}
+
+	// Remove Urgent from all; Work remains.
+	if err := s.ApplyTagsBatch(1, paths, nil, []uint64{urgent.ID}); err != nil {
+		t.Fatalf("apply remove: %v", err)
+	}
+	got, _ := s.TagsForFile(1, "/a.txt")
+	if len(got) != 1 || got[0].ID != work.ID {
+		t.Errorf("after remove want only Work, got %+v", got)
+	}
+
+	// add wins over remove when an id is in both lists.
+	if err := s.ApplyTagsBatch(1, []string{"/a.txt"}, []uint64{urgent.ID}, []uint64{urgent.ID}); err != nil {
+		t.Fatal(err)
+	}
+	got, _ = s.TagsForFile(1, "/a.txt")
+	if len(got) != 2 {
+		t.Errorf("add-wins: want 2 tags, got %d", len(got))
+	}
+
+	// Removing the last tag deletes the path's row (TagsForFile → empty).
+	if err := s.ApplyTagsBatch(1, []string{"/c.txt"}, nil, []uint64{work.ID, urgent.ID}); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.TagsForFile(1, "/c.txt"); len(got) != 0 {
+		t.Errorf("want no tags after removing all, got %+v", got)
+	}
+}
+
+func TestApplyTagsBatchRejectsUnknownAddID(t *testing.T) {
+	s := newTestStore(t)
+	if err := s.ApplyTagsBatch(1, []string{"/a.txt"}, []uint64{999}, nil); err == nil {
+		t.Fatal("adding a nonexistent tag id should fail (ErrTagNotFound)")
+	}
+	// And nothing should have been written.
+	if got, _ := s.TagsForFile(1, "/a.txt"); len(got) != 0 {
+		t.Errorf("a rejected batch must not write anything, got %+v", got)
+	}
+}

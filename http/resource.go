@@ -23,6 +23,7 @@ import (
 	"github.com/filebrowser/filebrowser/v2/events"
 	"github.com/filebrowser/filebrowser/v2/files"
 	"github.com/filebrowser/filebrowser/v2/fileutils"
+	"github.com/filebrowser/filebrowser/v2/trash"
 )
 
 var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
@@ -85,7 +86,7 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 })
 
 func resourceDeleteHandler(fileCache FileCache) handleFunc {
-	return withUser(func(_ http.ResponseWriter, r *http.Request, d *data) (int, error) {
+	return withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 		if r.URL.Path == "/" || !d.user.Perm.Delete {
 			return http.StatusForbidden, nil
 		}
@@ -107,7 +108,41 @@ func resourceDeleteHandler(fileCache FileCache) handleFunc {
 			log.Printf("WARNING: Error(s) occurred while deleting associated shares with file: %s", err)
 		}
 
-		// delete thumbnails
+		// 2.4.0 Stage 2: deletes default to MOVE-TO-TRASH (an instant
+		// same-volume rename into the volume's .trash, recorded in the trash
+		// index). Permanent deletion happens only when explicitly requested
+		// (?permanent=true — Shift+Delete / the Trash view), when the target
+		// already lives INSIDE a trash dir (trash is never trashed), or when
+		// the trash store is unavailable.
+		absPath := d.user.FullPath(r.URL.Path)
+		permanent := r.URL.Query().Get("permanent") == "true" ||
+			trash.IsTrashPath(absPath) ||
+			d.trashStore == nil
+
+		if !permanent {
+			var entry trash.Entry
+			err = d.RunHook(func() error {
+				var trashErr error
+				entry, trashErr = d.trashStore.MoveToTrash(
+					trashOsFs, absPath, trashScope(d), d.user.Username)
+				return trashErr
+			}, "delete", r.URL.Path, "", d.user)
+			if err != nil {
+				return errToStatus(err), err
+			}
+			// Published as a MOVE (into the trash dir), not a delete — tags
+			// follow the file in and follow it back out on restore.
+			events.Publish(events.FileMoved{
+				Base: eventBase(r, d),
+				From: r.URL.Path,
+				To:   trashRel(trashScope(d), entry.TrashPath),
+			})
+			// The undo toast needs the entry id to restore.
+			return renderJSON(w, r, map[string]string{"trashId": entry.ID})
+		}
+
+		// Permanent delete — thumbnails go too (a trashed file keeps them so a
+		// restore doesn't regenerate; LRU reclaims either way).
 		err = delThumbs(r.Context(), fileCache, file)
 		if err != nil {
 			return errToStatus(err), err
@@ -233,16 +268,29 @@ var resourcePutHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 		return http.StatusNotFound, nil
 	}
 
+	var savedSize int64
 	err = d.RunHook(func() error {
 		info, writeErr := writeFile(d.user.Fs, r.URL.Path, r.Body, d.settings.FileMode, d.settings.DirMode)
 		if writeErr != nil {
 			return writeErr
 		}
 
+		savedSize = info.Size()
 		etag := fmt.Sprintf(`"%x%x"`, info.ModTime().UnixNano(), info.Size())
 		w.Header().Set("ETag", etag)
 		return nil
 	}, "save", r.URL.Path, "", d.user)
+
+	// A content edit changes the file's size without touching its parent dir's
+	// mtime, so emit FileModified so size-tracking subscribers (the folder-size
+	// cache, 2.4.0 Stage 4) can invalidate this file's ancestor folders.
+	if err == nil {
+		events.Publish(events.FileModified{
+			Base: eventBase(r, d),
+			Path: path.Clean("/" + r.URL.Path),
+			Size: savedSize,
+		})
+	}
 
 	return errToStatus(err), err
 })
@@ -289,6 +337,17 @@ func resourcePatchHandler(fileCache FileCache) handleFunc {
 			if override && !d.user.Perm.Modify {
 				return http.StatusForbidden, nil
 			}
+		}
+
+		// A copy onto itself (override path — a keep-both copy was renamed
+		// apart by addVersionSuffix above) would TRUNCATE the source while
+		// reading it: creating the destination clobbers the very file the
+		// copy is reading from. Renames are exempt — a case-only rename
+		// (a.txt → A.txt on a case-insensitive fs) legitimately has
+		// src == dst by os.SameFile and is handled above.
+		if action == "copy" && src == dst {
+			return http.StatusBadRequest, fmt.Errorf(
+				"can't copy %q onto itself", path.Base(src))
 		}
 
 		err = d.RunHook(func() error {

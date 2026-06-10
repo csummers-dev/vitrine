@@ -193,9 +193,11 @@
             <dt class="text-ink-3">Type</dt>
             <dd class="text-ink-1">{{ typeLabel }}</dd>
           </div>
-          <div v-if="!item.isDir" class="flex justify-between gap-3">
+          <div class="flex justify-between gap-3">
             <dt class="text-ink-3">Size</dt>
-            <dd class="text-ink-1 tabular">{{ sizeLabel }}</dd>
+            <dd class="text-ink-1 tabular">
+              {{ item.isDir ? folderSizeLabel : sizeLabel }}
+            </dd>
           </div>
           <div class="flex justify-between gap-3">
             <dt class="text-ink-3">Modified</dt>
@@ -416,6 +418,7 @@ import dayjs from "dayjs";
 import { computed, inject, onMounted, onUnmounted, ref, watch } from "vue";
 import { useTagPicker } from "@/composables/useTagPicker";
 import { usePreferences } from "@/composables/usePreferences";
+import { useFolderSizes } from "@/composables/useFolderSizes";
 
 const fileStore = useFileStore();
 const tagsStore = useTagsStore();
@@ -480,6 +483,26 @@ const item = computed<ResourceItem | null>(() => {
   if (!fileStore.req || fileStore.selectedCount !== 1) return null;
   const idx = fileStore.selected[0];
   return fileStore.req.items[idx] ?? null;
+});
+
+// Folder size (2.4.0 Stage 4 / E): folders have no intrinsic size, so fetch the
+// recursive total on demand when a single folder is selected and show it in the
+// Size row ("Calculating…" until it resolves). Keyed by path + mtime so a folder
+// whose contents changed re-fetches. The fetch + cache live in the composable.
+const folderSizes = useFolderSizes();
+const folderSizeKey = (it: ResourceItem) => String(it.modified ?? "");
+watch(
+  item,
+  (it) => {
+    if (it?.isDir && it.url) void folderSizes.ensure(it.url, folderSizeKey(it));
+  },
+  { immediate: true }
+);
+const folderSizeLabel = computed(() => {
+  const it = item.value;
+  if (!it?.isDir || !it.url) return "";
+  const s = folderSizes.cached(it.url, folderSizeKey(it));
+  return s === undefined ? "Calculating…" : filesize(s);
 });
 
 // ── RC-4: always-present details pane ───────────────────────────────

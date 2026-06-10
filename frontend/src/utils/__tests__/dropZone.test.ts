@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isPointInRowIntoZone } from "@/utils/dropZone";
+import { isPointInRowIntoZone, resolveRowDropMode } from "@/utils/dropZone";
 
 // Build a list-view folder row with controllable layout rects, mirroring the
 // real DOM: an icon, then `.item__name-text` (flex:1 — its box spans the WHOLE
@@ -29,9 +29,16 @@ const rect =
       toJSON() {},
     }) as DOMRect;
 
-function buildRow(glyphRight: number, withGlyph = true): HTMLElement {
+function buildRow(
+  glyphRight: number,
+  withGlyph = true,
+  isDir = true
+): HTMLElement {
   const row = document.createElement("div");
   row.className = "item";
+  // `resolveRowDropMode` keys the folder check off this attribute (mirrors the
+  // real row's `:data-dir`), so set it the same way ListingItem renders it.
+  row.dataset.dir = isDir ? "true" : "false";
   const icon = document.createElement("div");
   icon.className = "item__icon";
   const name = document.createElement("span");
@@ -117,5 +124,55 @@ describe("isPointInRowIntoZone", () => {
     expect(isPointInRowIntoZone(row, 545, 22)).toBe(true); // within the grab margin
     expect(isPointInRowIntoZone(row, 450, 22)).toBe(true); // over the glyphs
     expect(isPointInRowIntoZone(row, 330, 22)).toBe(true); // over the icon
+  });
+});
+
+describe("resolveRowDropMode", () => {
+  // This is the single resolver every drop surface (highlight, desktop drop,
+  // touch drop, upload drop) calls. These assert the two things that kept
+  // diverging across those four call sites: (1) a FOLDER row's icon+name is the
+  // ONLY "into" zone, and (2) it layers `data-dir` on top of the geometry so a
+  // FILE row is never "into" no matter where the cursor lands.
+
+  it("is 'into' over a folder row's icon + name glyphs", () => {
+    const row = buildRow(120); // folder, glyphs end at 120
+    expect(resolveRowDropMode(row, 20, 22)).toBe("into"); // over the icon
+    expect(resolveRowDropMode(row, 80, 22)).toBe("into"); // over the name text
+    expect(resolveRowDropMode(row, 132, 22)).toBe("into"); // within the 16px grab
+  });
+
+  it("is 'alongside' past a folder row's name (empty space / meta columns)", () => {
+    const row = buildRow(120);
+    expect(resolveRowDropMode(row, 200, 22)).toBe("alongside");
+    expect(resolveRowDropMode(row, 500, 22)).toBe("alongside");
+  });
+
+  it("is ALWAYS 'alongside' on a FILE row, even over its icon + name", () => {
+    const row = buildRow(120, /* withGlyph */ true, /* isDir */ false);
+    // Same geometry as a folder, but data-dir="false" → you can never drop INTO
+    // a file. Every point that would be "into" on a folder is "alongside" here.
+    expect(resolveRowDropMode(row, 20, 22)).toBe("alongside"); // over the icon
+    expect(resolveRowDropMode(row, 80, 22)).toBe("alongside"); // over the name
+    expect(resolveRowDropMode(row, 132, 22)).toBe("alongside"); // in the grab band
+  });
+
+  it("treats a row with no data-dir as not-a-folder → 'alongside'", () => {
+    const row = buildRow(120);
+    delete row.dataset.dir; // attribute absent entirely
+    expect(resolveRowDropMode(row, 80, 22)).toBe("alongside");
+  });
+
+  it("equals (isDir && isPointInRowIntoZone) for every cell of a golden table", () => {
+    // The contract, asserted directly: resolveRowDropMode is exactly the folder
+    // check ANDed with the geometry. If either ever drifts, this fails.
+    const xs = [20, 80, 132, 200, 500, 600];
+    for (const isDir of [true, false]) {
+      for (const x of xs) {
+        const row = buildRow(120, true, isDir);
+        const expected =
+          isDir && isPointInRowIntoZone(row, x, 22) ? "into" : "alongside";
+        expect(resolveRowDropMode(row, x, 22)).toBe(expected);
+      }
+    }
   });
 });

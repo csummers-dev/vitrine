@@ -178,6 +178,22 @@ async function cancel(id: string): Promise<void> {
   await refresh();
 }
 
+/**
+ * Re-run a failed / canceled / interrupted transfer. The server starts a fresh
+ * job for the not-yet-done items and dismisses the old one, so we swap the old
+ * row out and the new running job in, then resume polling for its progress.
+ */
+async function retry(id: string): Promise<TransferJob> {
+  const job = await jobsApi.retryJob(id);
+  removeJob(id); // the server dismissed the original as part of the retry
+  upsert(job);
+  ensurePolling();
+  // The retry snapshot is "queued"; pull its running status + first bytes
+  // promptly rather than waiting a whole poll interval (same as start()).
+  setTimeout(() => void refresh(), 150);
+  return job;
+}
+
 /** Remove a finished transfer from the dock (and the server registry). */
 async function dismiss(id: string): Promise<void> {
   // Optimistic: drop it locally so the row vanishes instantly.
@@ -199,6 +215,7 @@ export function useTransfers() {
     start,
     cancel,
     dismiss,
+    retry,
     refresh,
   };
 }

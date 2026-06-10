@@ -34,11 +34,19 @@ const (
 	StatusCompleted Status = "completed"
 	StatusFailed    Status = "failed"
 	StatusCanceled  Status = "canceled"
+	// StatusInterrupted is set ONLY at startup for a job that was in flight
+	// (queued/running) when the process died — recovered from the persisted
+	// record (2.4.0 Stage 3). The transfer itself didn't survive; the job sits
+	// in the dock with a Retry affordance and isn't scheduled on any worker.
+	StatusInterrupted Status = "interrupted"
 )
 
-// Terminal reports whether the status is final (won't change again).
+// Terminal reports whether the status is final (won't change on its own).
+// Interrupted counts as terminal: the original run is over and the job only
+// changes via an explicit Retry or Dismiss.
 func (s Status) Terminal() bool {
-	return s == StatusCompleted || s == StatusFailed || s == StatusCanceled
+	return s == StatusCompleted || s == StatusFailed ||
+		s == StatusCanceled || s == StatusInterrupted
 }
 
 // Kind distinguishes a move from a copy (affects the verb shown + whether the
@@ -86,6 +94,10 @@ type Job struct {
 	finishedAt  time.Time
 	cancel      func() // non-nil only while running
 	canceled    bool   // a cancel was requested (queued or running)
+	// itemsDone[i] is true once item i has fully transferred — persisted so a
+	// Retry (manual, or of an interrupted-on-restart job) re-runs ONLY the
+	// items that hadn't finished (2.4.0 Stage 3). Same length as items.
+	itemsDone []bool
 }
 
 // ID returns the job's opaque id.
@@ -139,6 +151,41 @@ func (j *Job) StartFile(name, to string) {
 // FinishFile increments the completed-file counter.
 func (j *Job) FinishFile() { atomic.AddInt64(&j.filesDone, 1) }
 
+// MarkItemDone records that item i has fully transferred (for partial-batch
+// Retry). Out-of-range indices are ignored. Returns the now-complete snapshot
+// flags so the caller can persist them.
+func (j *Job) MarkItemDone(i int) {
+	j.mu.Lock()
+	if i >= 0 && i < len(j.itemsDone) {
+		j.itemsDone[i] = true
+	}
+	j.mu.Unlock()
+}
+
+// ItemsDone returns a copy of the per-item completion flags.
+func (j *Job) ItemsDone() []bool {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	out := make([]bool, len(j.itemsDone))
+	copy(out, j.itemsDone)
+	return out
+}
+
+// PendingItems returns the items that haven't finished yet — the input for a
+// Retry. For a fresh or fully-failed job that's every item.
+func (j *Job) PendingItems() []Item {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	out := make([]Item, 0, len(j.items))
+	for i, it := range j.items {
+		if i < len(j.itemsDone) && j.itemsDone[i] {
+			continue
+		}
+		out = append(out, it)
+	}
+	return out
+}
+
 // Canceled reports whether cancellation was requested. Executors honor ctx
 // cancellation; this is an extra signal for loops that don't thread ctx.
 func (j *Job) Canceled() bool {
@@ -173,6 +220,10 @@ type JobView struct {
 	CreatedAt   time.Time `json:"createdAt"`
 	StartedAt   time.Time `json:"startedAt,omitempty"`
 	FinishedAt  time.Time `json:"finishedAt,omitempty"`
+	// Retryable is true when the job can be re-run (failed, canceled, or
+	// interrupted-on-restart) AND at least one item hasn't finished — drives
+	// the dock's Retry button (2.4.0 Stage 3).
+	Retryable bool `json:"retryable"`
 }
 
 // Snapshot returns a consistent point-in-time view of the job.
@@ -185,6 +236,15 @@ func (j *Job) Snapshot() JobView {
 		toPaths[i] = it.To
 		fromPaths[i] = it.From
 	}
+	pending := false
+	for i := range j.items {
+		if i >= len(j.itemsDone) || !j.itemsDone[i] {
+			pending = true
+			break
+		}
+	}
+	retryable := pending &&
+		(j.status == StatusFailed || j.status == StatusCanceled || j.status == StatusInterrupted)
 	return JobView{
 		ID:          j.id,
 		Kind:        j.kind,
@@ -204,5 +264,42 @@ func (j *Job) Snapshot() JobView {
 		CreatedAt:   j.createdAt,
 		StartedAt:   j.startedAt,
 		FinishedAt:  j.finishedAt,
+		Retryable:   retryable,
+	}
+}
+
+// Record is the serializable persistence form of a job (2.4.0 Stage 3). Only
+// IN-FLIGHT jobs are persisted; on restart each becomes an interrupted job.
+// Carries everything needed to (a) render the dock row and (b) Retry the
+// not-yet-done items — but NOT the execution payload (the user's fs), which the
+// Retry request rebuilds from its own authenticated context.
+type Record struct {
+	ID        string    `json:"id"`
+	UserID    uint      `json:"userId"`
+	Kind      Kind      `json:"kind"`
+	Items     []Item    `json:"items"`
+	ItemsDone []bool    `json:"itemsDone"`
+	Name      string    `json:"name"`
+	Dest      string    `json:"dest"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+// Record captures the job's persistence form (call under no external lock).
+func (j *Job) Record() Record {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	items := make([]Item, len(j.items))
+	copy(items, j.items)
+	done := make([]bool, len(j.itemsDone))
+	copy(done, j.itemsDone)
+	return Record{
+		ID:        j.id,
+		UserID:    j.userID,
+		Kind:      j.kind,
+		Items:     items,
+		ItemsDone: done,
+		Name:      j.name,
+		Dest:      j.dest,
+		CreatedAt: j.createdAt,
 	}
 }

@@ -40,6 +40,18 @@
             }}</span>
             <span class="transfer-dock__pct tabular">{{ rowRight(job) }}</span>
             <button
+              v-if="job.retryable"
+              type="button"
+              class="transfer-dock__btn transfer-dock__btn--retry"
+              :class="{ 'is-busy': isRetrying(job.id) }"
+              :disabled="isRetrying(job.id)"
+              aria-label="Retry transfer"
+              title="Retry"
+              @click="onRetry(job.id)"
+            >
+              <Icon name="rotate-cw" :size="13" :stroke-width="2" />
+            </button>
+            <button
               type="button"
               class="transfer-dock__btn"
               :aria-label="isActive(job) ? 'Cancel transfer' : 'Dismiss'"
@@ -69,6 +81,12 @@
             class="transfer-dock__note is-muted"
           >
             Canceled
+          </div>
+          <div
+            v-else-if="job.status === 'interrupted'"
+            class="transfer-dock__note is-muted"
+          >
+            Interrupted — server restarted
           </div>
           <div v-else class="transfer-dock__note">{{ subLabel(job) }}</div>
 
@@ -110,6 +128,7 @@ import {
   ref,
   watch,
 } from "vue";
+import { useToast } from "vue-toastification";
 import Icon from "@/components/Icon.vue";
 import { filesize } from "@/utils";
 import { transferPercent, type TransferJob } from "@/api/jobs";
@@ -118,16 +137,47 @@ import {
   isTransferRowVisible,
   shouldAutoSelectTransfer,
   transferTouchesFolder,
+  rollingRate,
+  etaSeconds,
+  formatRate,
+  formatEta,
+  type RateSample,
 } from "@/utils/transfers";
 import { useFileStore } from "@/stores/file";
 import { useUploadStore } from "@/stores/upload";
 
-const { jobs, bootstrap, cancel, dismiss } = useTransfers();
+const { jobs, bootstrap, cancel, dismiss, retry } = useTransfers();
 const fileStore = useFileStore();
 const uploadStore = useUploadStore();
+const toast = useToast();
 const collapsed = ref(false);
 
 onMounted(() => void bootstrap());
+
+// Ids with a retry POST in flight — gates the button so a fast double-click
+// can't fire two retries (each would re-run the same items and race on the
+// destination). The row is only swapped once the POST resolves, so without this
+// the button stays clickable in between. Reassigned (not mutated) so the
+// template re-evaluates.
+const retrying = ref<Set<string>>(new Set());
+const isRetrying = (id: string): boolean => retrying.value.has(id);
+
+// Re-run a failed / canceled / interrupted transfer. The store swaps the old
+// row for a fresh running job; surface a toast if the retry POST itself fails
+// (perm change, the source went away) so the click isn't silently swallowed.
+const onRetry = async (id: string): Promise<void> => {
+  if (retrying.value.has(id)) return; // already in flight — ignore the re-click
+  retrying.value = new Set(retrying.value).add(id);
+  try {
+    await retry(id);
+  } catch (e) {
+    toast.error((e as Error)?.message || "Couldn't retry the transfer");
+  } finally {
+    const next = new Set(retrying.value);
+    next.delete(id);
+    retrying.value = next;
+  }
+};
 
 // Both this dock and the upload dock anchor to the bottom-right corner. When an
 // upload is in progress, sit ABOVE the upload dock (measured from its real
@@ -252,6 +302,8 @@ const rowRight = (j: TransferJob): string => {
       return "Failed";
     case "canceled":
       return "Canceled";
+    case "interrupted":
+      return "Interrupted";
     case "queued":
       return "Queued";
     default:
@@ -278,6 +330,16 @@ const subLabel = (j: TransferJob): string => {
   if (j.totalBytes > 0) {
     parts.push(`${filesize(j.doneBytes)} / ${filesize(j.totalBytes)}`);
   }
+  // Live throughput + ETA, only while actively running and once there's enough
+  // signal for a rate (rollingRate returns 0 on a stall / too-few samples).
+  if (j.status === "running" && j.totalBytes > 0) {
+    const rate = rollingRate(rateSamples.get(j.id) ?? []);
+    if (rate > 0) {
+      parts.push(formatRate(rate, filesize));
+      const eta = etaSeconds(j.doneBytes, j.totalBytes, rate);
+      if (eta !== null) parts.push(formatEta(eta));
+    }
+  }
   return parts.join(" · ");
 };
 
@@ -285,6 +347,7 @@ const rowClass = (j: TransferJob) => ({
   "is-done": j.status === "completed",
   "is-error": j.status === "failed",
   "is-canceled": j.status === "canceled",
+  "is-interrupted": j.status === "interrupted",
 });
 
 // Auto-clear completed rows a few seconds after they finish (so the dock
@@ -304,6 +367,12 @@ const timers: number[] = [];
 const prevFilesDone = new Map<string, number>();
 let lastTransferReloadAt = 0;
 const TRANSFER_RELOAD_THROTTLE_MS = 900;
+
+// Rolling byte-progress samples per running job, feeding the live throughput +
+// ETA shown in the dock's subLabel (2.4.0 Stage 3 / I). Pruned when a job leaves
+// the list and trimmed to a small tail — the rate window is only a few seconds.
+const rateSamples = new Map<string, RateSample[]>();
+const MAX_RATE_SAMPLES = 24;
 
 // The folder currently on screen, in the decoded scope-relative namespace the
 // transfer paths use. Derive it from a visible row when possible (exact same
@@ -338,6 +407,7 @@ watch(
       if (!live.has(id)) {
         prevStatus.delete(id);
         prevFilesDone.delete(id);
+        rateSamples.delete(id);
       }
     }
 
@@ -399,6 +469,18 @@ watch(
         }
       }
       prevFilesDone.set(j.id, j.filesDone);
+
+      // Record a byte-progress sample for the live throughput/ETA estimate while
+      // a transfer is actively running with a known total. Trimmed to a short
+      // tail (the rate window is only a few seconds); samples drop entirely once
+      // the job leaves the list (pruned above).
+      if (j.status === "running" && j.totalBytes > 0) {
+        const arr = rateSamples.get(j.id) ?? [];
+        arr.push({ t: Date.now(), bytes: j.doneBytes });
+        if (arr.length > MAX_RATE_SAMPLES)
+          arr.splice(0, arr.length - MAX_RATE_SAMPLES);
+        rateSamples.set(j.id, arr);
+      }
 
       if (j.status === "completed" && !scheduled.has(j.id)) {
         scheduled.add(j.id);
@@ -570,6 +652,30 @@ html.dark .transfer-dock__icon.is-done {
   background: var(--color-elevated, #f4f4f5);
   color: var(--color-ink-1, #18181b);
 }
+.transfer-dock__btn--retry {
+  color: var(--color-accent, #5e6ad2);
+}
+.transfer-dock__btn--retry:hover {
+  background: var(--color-accent-soft, rgba(94, 106, 210, 0.12));
+  color: var(--color-accent, #5e6ad2);
+}
+.transfer-dock__btn--retry.is-busy {
+  cursor: default;
+  opacity: 0.55;
+}
+.transfer-dock__btn--retry.is-busy :deep(svg) {
+  animation: transfer-retry-spin 0.7s linear infinite;
+}
+@keyframes transfer-retry-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .transfer-dock__btn--retry.is-busy :deep(svg) {
+    animation: none;
+  }
+}
 .transfer-dock__path {
   font-size: 11px;
   color: var(--color-accent, #5e6ad2);
@@ -612,7 +718,8 @@ html.dark .transfer-dock__icon.is-done {
 .transfer-dock__row.is-error .transfer-dock__bar-fill {
   background: var(--color-danger, #dc2626);
 }
-.transfer-dock__row.is-canceled .transfer-dock__bar-fill {
+.transfer-dock__row.is-canceled .transfer-dock__bar-fill,
+.transfer-dock__row.is-interrupted .transfer-dock__bar-fill {
   background: var(--color-ink-3, #a1a1aa);
 }
 

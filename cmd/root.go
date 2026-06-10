@@ -30,9 +30,11 @@ import (
 	"github.com/filebrowser/filebrowser/v2/frontend"
 	fbhttp "github.com/filebrowser/filebrowser/v2/http"
 	"github.com/filebrowser/filebrowser/v2/img"
+	"github.com/filebrowser/filebrowser/v2/jobstore"
 	"github.com/filebrowser/filebrowser/v2/settings"
 	"github.com/filebrowser/filebrowser/v2/storage"
 	"github.com/filebrowser/filebrowser/v2/tags"
+	"github.com/filebrowser/filebrowser/v2/trash"
 	"github.com/filebrowser/filebrowser/v2/users"
 	"github.com/filebrowser/filebrowser/v2/webhooks"
 )
@@ -247,6 +249,28 @@ user created with the credentials from options "username" and "password".`,
 		defer unsubscribeWebhooks()
 		log.Println("Webhooks store: " + webhooksPath)
 
+		// Trash index (2.4.0 Stage 2). Sibling bolt DB; the .trash payload
+		// dirs live inside the served tree (per volume), this DB only maps
+		// entry ids to original/trash paths.
+		trashPath := dbBase + "-trash.db"
+		trashStore, err := trash.New(trashPath)
+		if err != nil {
+			return fmt.Errorf("trash: open store: %w", err)
+		}
+		defer trashStore.Close()
+		log.Println("Trash store: " + trashPath)
+
+		// Transfer-job store (2.4.0 Stage 3). Sibling bolt DB holding only
+		// IN-FLIGHT move/copy jobs, so a transfer interrupted by a restart
+		// reappears in the dock with a Retry affordance.
+		jobsPath := dbBase + "-jobs.db"
+		jobStore, err := jobstore.New(jobsPath)
+		if err != nil {
+			return fmt.Errorf("jobs: open store: %w", err)
+		}
+		defer jobStore.Close()
+		log.Println("Jobs store: " + jobsPath)
+
 		server, err := getServerSettings(v, st.Storage)
 		if err != nil {
 			return err
@@ -258,6 +282,35 @@ user created with the credentials from options "username" and "password".`,
 			return err
 		}
 		server.Root = root
+
+		// Age-based trash auto-purge (settings.TrashRetentionDays; 0 = off).
+		// Runs at startup and every 6h; the setting is re-read each tick so an
+		// admin change applies without a restart. Stops on shutdown.
+		purgeDone := make(chan struct{})
+		defer close(purgeDone)
+		go func() {
+			ticker := time.NewTicker(6 * time.Hour)
+			defer ticker.Stop()
+			purge := func() {
+				st, err := st.Settings.Get()
+				if err != nil || st.TrashRetentionDays == 0 {
+					return
+				}
+				cutoff := time.Now().Add(-time.Duration(st.TrashRetentionDays) * 24 * time.Hour)
+				if n, err := trashStore.PurgeOlderThan(afero.NewOsFs(), cutoff); err == nil && n > 0 {
+					log.Printf("Trash: auto-purged %d item(s) older than %d day(s)", n, st.TrashRetentionDays)
+				}
+			}
+			purge()
+			for {
+				select {
+				case <-purgeDone:
+					return
+				case <-ticker.C:
+					purge()
+				}
+			}
+		}()
 
 		adr := server.Address + ":" + server.Port
 
@@ -298,7 +351,7 @@ user created with the credentials from options "username" and "password".`,
 			panic(err)
 		}
 
-		handler, err := fbhttp.NewHandler(imageService, fileCache, uploadCache, st.Storage, tagsStore, auditLog, webhookStore, webhookDispatcher, server, assetsFs)
+		handler, err := fbhttp.NewHandler(imageService, fileCache, uploadCache, st.Storage, tagsStore, trashStore, jobStore, auditLog, webhookStore, webhookDispatcher, server, assetsFs)
 		if err != nil {
 			return err
 		}

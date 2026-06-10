@@ -2,6 +2,114 @@
 
 All notable changes to **filebrowser pretty**.
 
+## v2.4.0 — Cut/copy/paste, a recycle bin, and transfers that don't lose data
+
+The largest release since the "pretty" milestone, landing the whole 2.4.0 arc:
+a Finder-style cut/copy/paste, a real recycle bin, transfers that survive a
+server restart and can verify what they wrote, recursive folder sizes, instant
+indexed search, and bulk tagging — plus a long tail of UI polish and fixes.
+
+**Moving & organizing files**
+
+- **Cut / Copy / Paste, Finder-style** (⌘X / ⌘C / ⌘V, plus right-click *Paste into
+  folder*) running through the same background transfer pipeline as drag-drop —
+  same-volume paste is instant, conflicts get the full resolve dialog, and the
+  conflict dialog now shows the exact "kept as …(1)" name up front.
+- **Trash / recycle bin.** Deleting moves to a per-drive `.trash` (an instant
+  rename, even for huge folders); a **Trash** page lets you Restore or Delete
+  forever, Undo works even after navigating away, **Shift+Delete** skips the bin,
+  and an admin **retention (days)** setting auto-purges. Tags follow a file in and
+  back out; `.trash` never shows in listings or search.
+
+**Transfers that don't lose data**
+
+- **Survive a restart + Retry.** A big move/copy interrupted by a server restart
+  reappears in the dock marked *Interrupted* with a **Retry** that re-runs only
+  the unfinished items. Transient filesystem hiccups auto-retry; real errors fail
+  fast.
+- **Live speed + ETA** in the transfer dock; instant same-drive moves got faster
+  (no up-front byte-count walk).
+- **Opt-in verify-after-copy** (admin setting): re-reads and checksums every copy
+  against its source — a mismatch fails the transfer and **keeps the original**,
+  including before a cross-volume move deletes its source.
+
+**Finding & understanding files**
+
+- **Folder sizes** — a folder's recursive total now shows in the details pane (and
+  the Size column once computed), measured on demand and kept fresh as contents
+  change; the hidden Trash isn't counted.
+- **Instant search** — the server keeps an in-memory index per user instead of
+  walking the whole tree on every keystroke; identical results, far faster, self-
+  refreshing, with a *Rebuild search index* command if ever needed.
+- **Bulk tagging** — tag a whole multi-selection at once with a tri-state picker
+  (on all ✓ / on some – / none).
+
+**Polish & fixes**
+
+- **Sorting is instant.** Choosing a sort field or flipping the direction now
+  re-orders the listing immediately instead of only after the next navigation,
+  and **Then by → None** truly clears the secondary sort.
+- **Correct file-type icons everywhere.** Images, audio, video and PDFs now show
+  their proper coloured glyph even where only the filename is known — the Trash
+  page, search hits, recents — instead of a generic grey tile.
+- **Trash page redesign.** The recycle bin now matches the rest of the app: a
+  proper header, flat full-width rows with coloured icons, and Restore / Delete
+  on hover. The sidebar's Trash icon is coloured to match.
+- **Folder sizes fill in on their own.** A listing's Size column now populates
+  every folder at once (bounded + cache-backed) instead of one click at a time.
+- **"Last updated" never reads as the future.** A folder time slightly ahead of
+  your clock no longer shows "in a few seconds" — it's always framed as past.
+- **No false upload warning.** Browsing between folders or pages while an upload
+  is running no longer claims it will be cancelled — it keeps going. (Closing the
+  tab still warns, because that genuinely stops it.)
+- The "moved to Trash" undo window is **5 seconds**, and the directory header's
+  "N items · last updated …" line no longer wraps onto a second line.
+
+## v2.4.0-alpha.6 — Indexed search + bulk tagging
+
+- **Search is instant on big libraries.** Searching used to walk the whole folder tree on the server for *every keystroke* — fine for a handful of files, sluggish on a large collection. The server now keeps an in-memory **name + path index** per user that answers searches without touching the disk. It builds itself in the background the first time you search (falling back to the old live walk until it's ready) and keeps itself up to date automatically as you add, rename, move, or delete files. Results are identical to before — the speed-up is invisible except that it's fast. A **"Rebuild search index"** command (in the ⌘K palette) is there if results ever look stale.
+- **Tag a whole selection at once.** Select multiple files/folders and a new **Tags** button appears in the selection bar. It opens a picker showing each tag as **on (✓)**, **off**, or **mixed (–)** — *mixed* meaning the tag is on some of the selected items but not all. Check a tag to add it to everything, uncheck to remove it from everything, or leave a mixed tag alone to keep each item as-is. One Save applies the whole change in a single request. (Previously you could only tag one file at a time.)
+
+_Alpha builds are development checkpoints, not releases._
+
+## v2.4.0-alpha.5 — Verify-after-copy + folder sizes
+
+- **See how big a folder really is.** Select a folder and its **total size** (everything inside, recursively) now shows in the details pane — and once computed, in the listing's Size column too (folders used to just show "—"). It's measured on demand and cached, so it's quick and doesn't re-scan every time; the hidden Trash is never counted. The figure stays fresh automatically as you add, remove, or edit files anywhere inside.
+- **Optional integrity check on every copy.** A new **admin setting — Global settings → "Verify copies"** — re-reads each freshly-copied file and checksums it (xxhash64) against the original. If they don't match, the transfer **fails and keeps your original** instead of trusting a bad copy. It also covers the copy phase of a cross-volume move, verifying *before* the source is removed — so a corrupted move can never delete the only good copy. Off by default (it roughly doubles copy time); turn it on when integrity matters more than speed.
+- **Edits and extractions keep folder sizes honest.** Saving a file in the editor, or extracting an archive, now updates the affected folders' sizes immediately (previously a content edit could leave a stale total). These also flow through to the audit log and webhooks as a new **"file modified"** event.
+
+_Alpha builds are development checkpoints, not releases._
+
+## v2.4.0-alpha.4 — Transfer hardening
+
+- **Big move/copy jobs survive a server restart.** Background transfers now record their progress to disk as they run, so if the server is restarted (or crashes) mid-transfer, the dock shows the job as **Interrupted** when it comes back — with a **Retry** button — instead of the job silently vanishing. Retry re-runs only the items that hadn't finished yet (a half-done batch picks up where it left off, not from the start) and drops the old entry. The same Retry button appears on any **failed** or **canceled** transfer.
+- **A flaky transfer retries itself before giving up.** A transient filesystem hiccup mid-copy (an interrupted syscall, a momentarily-busy file, a timeout) is now retried automatically a couple of times with a short backoff, instead of failing the whole job on the first blip. Genuine errors (missing source, permission denied, out of space, cross-device) still fail fast — they're not the kind of thing retrying fixes.
+- **Live speed and time-remaining in the transfer dock.** A running transfer now shows its current **throughput** (e.g. "12.4 MB/s") and an **estimated time remaining** (e.g. "3m left"), computed over a rolling window so the number tracks the *current* speed and recovers after a stall rather than being dragged down by a slow start.
+- **Instant same-drive moves got even faster.** A same-volume move (the "fast lane" — a rename that copies no bytes) no longer walks the whole tree up front to total its bytes, since it isn't going to copy any. Moving a folder with thousands of files now starts immediately instead of pausing to count first.
+
+_Alpha builds are development checkpoints, not releases._
+
+## v2.4.0-alpha.3 — Trash / recycle bin
+
+- **Deleting now moves to the Trash instead of being permanent.** Delete a file or folder (the Delete/⌫ key, the menu, the pill bar, anywhere) and it slides into a recycle bin you can get it back from. The move is instant — the item is renamed into a hidden `.trash` folder on the same drive, so even deleting a huge folder is immediate and copies nothing. A **new Trash page** (in the sidebar) lists everything you've deleted with where it came from and how long ago, and lets you **Restore** it to its original spot or **Delete forever**. There's an **Empty trash** button too.
+- **Undo actually restores now.** The "Moved to Trash" toast's **Undo** puts the item right back — and because the delete already happened server-side, undo works even after you've navigated to another folder (the old optimistic-delete undo couldn't).
+- **Skip the Trash when you mean it.** **Shift+Delete** (and the Trash page's own "Delete forever") removes an item permanently, with a clearly-worded confirmation and no recycle step.
+- **Tags, search, and storage all stay sane.** A tag on a file follows it into the Trash and back out when you restore it. The `.trash` folder never shows up in listings or search results. Admins get a **Trash retention (days)** setting (Global settings; 0 = keep until you empty it) that auto-purges old items.
+
+## v2.4.0-alpha.2 — Cut, Copy & Paste
+
+- **Cut / Copy / Paste, Finder-style.** Select files or folders and press **⌘X** (cut) or **⌘C** (copy), then **⌘V** to paste — into the current folder, or use the new right-click **Paste into folder** on any folder to paste without navigating into it first. Cut rows render dimmed until you paste (or press **Esc** to call it off); a copy stays on the clipboard after pasting so you can paste it again elsewhere. Paste runs through the same background transfer pipeline as drag-drop and the move/copy tool, so a same-volume cut→paste completes instantly on the fast lane, conflicts get the full resolve dialog, and progress shows in the floating dock. The right-click menu gained **Cut** and **Copy** (the destination-picker entries were relabeled "Move/Copy … to…" so the two kinds of copy can't be confused), and the existing "Copy path" action picked up a keyboard shortcut: **⌘⇧C**.
+- **Sane same-folder behavior (bug fix):** pasting a CUT back into the folder it came from used to *rename every item onto a "(1)" suffix of itself* — it's now a no-op that simply disarms the cut. Pasting a COPY in place duplicates the items with the usual "(N)" suffix directly, with no conflict popup — the old popup's "Override" choice there was a destructive self-copy trap.
+- **"Keep both" now tells you the resulting name.** In the conflict dialog's per-item view, a row resolved to keep-both shows exactly what the incoming copy will be named (e.g. *will be kept as "report(1).pdf"*) — computed with the same naming scheme the server uses, including its quirky edge cases (".bashrc" → "(1).bashrc"). Works across every conflict surface: paste, the move/copy tool, and drag-drop. (Best-effort under concurrent writes; the server's final name wins.)
+- **Fixed a data-loss edge:** copying an item onto itself with "Override" (reachable via the move/copy tool pointed at the item's own folder) would truncate the file while it was being read — the copy destroyed its own source. The server now rejects any move or copy of an item onto itself, while keep-both self-copies (which rename apart) and case-only renames still work.
+
+## v2.4.0-alpha.1 — Drop-handler consolidation (internal)
+
+- **All drop decisions now share one resolver.** Whether you drag a file onto a folder with the mouse, with touch, or drag a file in from your computer to upload, the "drop INTO this folder vs. drop alongside it" choice is now computed in exactly one place (`resolveRowDropMode`) — and recomputed the moment you release, never from a stale cached flag. This is the structural fix behind the 2.3.1 drop regression: the four drop paths can no longer drift out of sync, so the highlight you see and where the file actually lands always agree. No visible behavior change; it hardens the foundation for the rest of 2.4.0 (cut/copy/paste, recycle bin, transfer hardening). A new parity test asserts every path resolves identically.
+- **Internal cleanup:** removed a legacy `__vue__` shim — a global hook that stamped a back-reference onto every component's element just so the drop code could read a folder's path from the DOM. The drop code now uses real component data instead, which also means slightly less work per rendered row.
+
+_Alpha builds are development checkpoints, not releases._
+
 ## v2.3.1 — Fix dropping onto a folder row
 
 - **Dropping a file onto a folder row is scoped to the icon + name again** — the "drop INTO this folder" target is meant to be just the folder's icon and name text (exactly where the highlight + spring-load countdown appear); the rest of the row drops "alongside" (into the current folder). Two problems combined to break this: (1) the hit-test measured the name off the `.item__name-text` element, which is `flex: 1` and spans the whole name column — so the rendered name now lives in an inner inline span whose box is exactly the glyph run, and the hit-test reads that (`Element.getBoundingClientRect()` stays correct mid-drag, unlike the text/Range measurement it replaced); and (2) more importantly, the **drop itself reused a cached "in zone" flag that could be left stale** (e.g. by spring-load navigation), so a release in the alongside area — with no highlight showing — still dropped INTO the folder. The drop now recomputes the same hit-test at the release point, so it can never disagree with the highlight. (This was newly exposed when 2.3.0 removed the bottom "drop into this folder" panel that had masked it.) All three drop paths now share that one hit-test: internal desktop drag, internal touch drag, and **dragging a file in from your computer to upload** — which previously treated the entire folder row as "upload into this folder" (it never checked the zone at all)

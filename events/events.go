@@ -131,6 +131,20 @@ type FileUploaded struct {
 
 func (FileUploaded) Type() string { return "file.uploaded" }
 
+// FileModified fires when an existing file's CONTENT is rewritten in place —
+// the text editor save / image-edit overwrite (the PUT handler). Distinct from
+// FileCreated (new empty file) and FileUploaded (external upload): a content
+// edit changes a file's size without touching its parent directory's mtime, so
+// subscribers that track sizes (the folder-size cache, 2.4.0 Stage 4) must learn
+// about it from this event rather than a dir-mtime poll.
+type FileModified struct {
+	Base
+	Path string `json:"path"`
+	Size int64  `json:"size"`
+}
+
+func (FileModified) Type() string { return "file.modified" }
+
 // ShareGranted fires when a new share link is minted.
 type ShareGranted struct {
 	Base

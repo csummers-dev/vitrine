@@ -1,5 +1,5 @@
 <template>
-  <SlideOver :open="open" title="Manage tags" eyebrow="Tags" @cancel="onCancel">
+  <SlideOver :open="open" :title="sheetTitle" eyebrow="Tags" @cancel="onCancel">
     <div class="tag-picker">
       <!-- Search + create combo. Typing filters the list AND surfaces
            a "Create tag: <query>" CTA when no exact match exists. -->
@@ -34,6 +34,7 @@
             <input
               type="checkbox"
               :checked="selectedIds.has(tag.id)"
+              :indeterminate.prop="indeterminateIds.has(tag.id)"
               @change="toggleTag(tag)"
             />
             <TagChip :tag="tag" size="md" />
@@ -133,13 +134,27 @@ import TagChip from "@/components/TagChip.vue";
 import TagColorPicker from "@/components/TagColorPicker.vue";
 import { tags as tagsApi } from "@/api";
 import { useTagsStore } from "@/stores/tags";
+import { tagTriState, tagBatchDelta } from "@/utils/tagBatch";
 
 const props = defineProps<{
   /** Whether the sheet is open. Two-way via emit('cancel') on close. */
   open: boolean;
-  /** Path of the file we're managing tags for. */
-  path: string;
+  /** Path of the file we're managing tags for (single-file mode). */
+  path?: string;
+  /** Paths for bulk mode (2.4.0 Stage 5 / K). When set, the sheet shows a
+   *  tri-state list (on all / on some = indeterminate / on none) and applies
+   *  add/remove deltas across every path via /api/tags/apply. */
+  paths?: string[];
 }>();
+
+// Bulk mode whenever a `paths` array is supplied.
+const isBatch = computed<boolean>(() => (props.paths?.length ?? 0) > 0);
+const targetPaths = computed<string[]>(() =>
+  props.paths?.length ? props.paths : props.path ? [props.path] : []
+);
+const sheetTitle = computed<string>(() =>
+  isBatch.value ? `Tag ${targetPaths.value.length} items` : "Manage tags"
+);
 
 const emit = defineEmits<{
   (e: "cancel"): void;
@@ -160,8 +175,17 @@ const creating = ref(false);
 // IDs currently selected (checked in the picker). Mutated optimistically
 // as the user toggles checkboxes; reconciled with the server on Save.
 const selectedIds = ref<Set<number>>(new Set());
-// Snapshot of selectedIds at open time, used to compute the Save diff.
+// Snapshot of selectedIds at open time, used to compute the single-file diff.
 const initialIds = ref<Set<number>>(new Set());
+
+// Bulk tri-state (Stage 5 / K). A tag on EVERY selected path starts checked
+// (initialAllIds); a tag on SOME but not all starts INDETERMINATE — tracked in
+// someIds (the original set) and indeterminateIds (those still untouched). The
+// Save delta: a tag the user checked → add to all; a tag they unchecked that was
+// present anywhere → remove from all; a tag left indeterminate → no change.
+const initialAllIds = ref<Set<number>>(new Set());
+const someIds = ref<Set<number>>(new Set());
+const indeterminateIds = ref<Set<number>>(new Set());
 
 const filteredTags = computed<Tag[]>(() => {
   const q = searchQuery.value.trim().toLowerCase();
@@ -177,6 +201,10 @@ const showCreateCTA = computed<boolean>(() => {
 });
 
 const hasChanges = computed<boolean>(() => {
+  if (isBatch.value) {
+    const { add, remove } = batchDelta.value;
+    return add.length > 0 || remove.length > 0;
+  }
   if (selectedIds.value.size !== initialIds.value.size) return true;
   for (const id of selectedIds.value) {
     if (!initialIds.value.has(id)) return true;
@@ -191,13 +219,27 @@ watch(
     if (!isOpen) return;
     loading.value = true;
     searchQuery.value = "";
+    indeterminateIds.value = new Set();
     try {
-      // Load both the user's full tag list AND the file's current tags.
       await tagsStore.ensureLoaded();
-      const current = await tagsApi.forFile(props.path);
-      const ids = new Set(current.map((t) => t.id));
-      selectedIds.value = new Set(ids);
-      initialIds.value = new Set(ids);
+      if (isBatch.value) {
+        // Per-path tags → tri-state (on all / on some / on none).
+        const byPath = await tagsApi.batchForFiles(targetPaths.value);
+        const perPath = targetPaths.value.map((p) =>
+          (byPath[p] ?? []).map((t) => t.id)
+        );
+        const { all, some } = tagTriState(perPath);
+        initialAllIds.value = new Set(all);
+        someIds.value = new Set(some);
+        selectedIds.value = new Set(all); // checked = on-all
+        indeterminateIds.value = new Set(some); // dashes = on-some
+      } else {
+        // Single-file: the file's current tags are pre-checked.
+        const current = await tagsApi.forFile(targetPaths.value[0]);
+        const ids = new Set(current.map((t) => t.id));
+        selectedIds.value = new Set(ids);
+        initialIds.value = new Set(ids);
+      }
     } catch (e) {
       if (e instanceof Error) $showError(e);
     } finally {
@@ -210,12 +252,27 @@ watch(
 );
 
 const toggleTag = (tag: Tag) => {
-  if (selectedIds.value.has(tag.id)) {
-    selectedIds.value.delete(tag.id);
+  const id = tag.id;
+  // Tri-state cycle: indeterminate → checked → unchecked → checked.
+  if (indeterminateIds.value.has(id)) {
+    indeterminateIds.value.delete(id);
+    selectedIds.value.add(id);
+  } else if (selectedIds.value.has(id)) {
+    selectedIds.value.delete(id);
   } else {
-    selectedIds.value.add(tag.id);
+    selectedIds.value.add(id);
   }
 };
+
+// Bulk Save delta (pure logic in utils/tagBatch).
+const batchDelta = computed<{ add: number[]; remove: number[] }>(() =>
+  tagBatchDelta(
+    initialAllIds.value,
+    someIds.value,
+    selectedIds.value,
+    indeterminateIds.value
+  )
+);
 
 // ── Color picker integration (v1.3 S2-8) ────────────────────────────
 // Tracks which tag the popover is anchored to (null = closed). Only
@@ -288,7 +345,20 @@ const onCreate = async () => {
 const onSave = async () => {
   saving.value = true;
   try {
-    // Compute diff: additions = in new but not initial; removals = vice versa.
+    if (isBatch.value) {
+      const { add, remove } = batchDelta.value;
+      await tagsApi.applyBatch(targetPaths.value, add, remove);
+      // Refresh the listing's cached chips for every affected path.
+      try {
+        await tagsStore.loadForPaths(targetPaths.value);
+      } catch {
+        /* chips just won't refresh — not worth failing the save */
+      }
+      emit("saved", []);
+      emit("cancel");
+      return;
+    }
+    // Single-file diff: additions = in new but not initial; removals = vice versa.
     const additions: number[] = [];
     const removals: number[] = [];
     for (const id of selectedIds.value) {
@@ -297,14 +367,15 @@ const onSave = async () => {
     for (const id of initialIds.value) {
       if (!selectedIds.value.has(id)) removals.push(id);
     }
+    const singlePath = targetPaths.value[0];
     // Dispatch in parallel — independent ops, no ordering constraints.
     await Promise.all([
-      ...additions.map((id) => tagsApi.attach(props.path, id)),
-      ...removals.map((id) => tagsApi.detach(props.path, id)),
+      ...additions.map((id) => tagsApi.attach(singlePath, id)),
+      ...removals.map((id) => tagsApi.detach(singlePath, id)),
     ]);
     // Build the final tag list from cache to emit upstream.
     const final = tagsStore.tags.filter((t) => selectedIds.value.has(t.id));
-    tagsStore.setLocalForPath(props.path, final);
+    tagsStore.setLocalForPath(singlePath, final);
     emit("saved", final);
     emit("cancel"); // close the sheet
   } catch (e) {

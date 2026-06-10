@@ -79,6 +79,18 @@
               v-text="verdictLabel(item)"
             ></span>
           </div>
+          <!-- J (2.4.0): when this row resolves to keep-both, show the exact
+               name the kept copy will get (computed against the destination
+               listing with the backend's suffix scheme) — so "Rename" isn't a
+               mystery box. Move/copy/paste only; uploads have no rename. -->
+          <p
+            v-if="
+              item.checked.length === 2 && !isUploadAction && item.keepBothName
+            "
+            class="rc-item__keep-both"
+          >
+            Incoming copy will be kept as “{{ item.keepBothName }}”
+          </p>
           <div class="rc-item__cols">
             <label class="rc-item__col">
               <input v-model="item.checked" type="checkbox" value="origin" />
@@ -488,6 +500,16 @@ const toogleCheckAll = (e: Event) => {
 .rc-chip.is-error {
   background: rgba(220, 38, 38, 0.12);
   color: #dc2626;
+}
+
+/* J (2.4.0): "will be kept as" preview under the filename when the row
+   resolves to keep-both. Amber-tinted to pair with the Rename verdict chip. */
+.rc-item__keep-both {
+  margin: -4px 0 8px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #d97706;
+  word-break: break-all;
 }
 
 .rc-item__cols {

@@ -11,7 +11,10 @@ export type TransferStatus =
   | "running"
   | "completed"
   | "failed"
-  | "canceled";
+  | "canceled"
+  // Set only on restart for a transfer that was in flight when the server
+  // died (2.4.0 Stage 3) — shown in the dock with a Retry button.
+  | "interrupted";
 
 /** A server transfer job snapshot — mirrors the backend `jobs.JobView`. */
 export interface TransferJob {
@@ -39,6 +42,9 @@ export interface TransferJob {
   createdAt: string;
   startedAt?: string;
   finishedAt?: string;
+  /** True when the job can be re-run (failed/canceled/interrupted with at least
+   *  one unfinished item) — drives the dock's Retry button (2.4.0 Stage 3). */
+  retryable?: boolean;
 }
 
 /** One source→destination pair. Paths are scope-relative + decoded; the caller
@@ -74,6 +80,14 @@ async function deleteJob(id: string): Promise<void> {
 }
 export const cancelJob = deleteJob;
 export const dismissJob = deleteJob;
+
+/** Retry a failed/canceled/interrupted transfer — re-runs its not-yet-done
+ *  items as a fresh job and drops the old one. Resolves with the new job. */
+export async function retryJob(id: string): Promise<TransferJob> {
+  return fetchJSON<TransferJob>(`/api/jobs/${encodeURIComponent(id)}/retry`, {
+    method: "POST",
+  });
+}
 
 /** Byte-based completion percentage (0–100). The dock treats a `completed`
  *  status as 100% regardless, to cover zero-byte / instant transfers. */

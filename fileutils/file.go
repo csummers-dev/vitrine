@@ -67,6 +67,35 @@ func MoveFileWithProgress(ctx context.Context, afs afero.Fs, src, dst string, fi
 	return nil
 }
 
+// MoveFileVerified is MoveFileWithProgress with an opt-in integrity check on the
+// cross-volume copy path (2.4.0 Stage 4). After the deep copy and BEFORE the
+// source is removed, it re-reads both sides and compares an xxhash64; on a
+// mismatch it removes the bad destination and returns ErrVerifyMismatch with the
+// SOURCE LEFT INTACT — so a corrupted transfer never deletes the only good copy.
+// The same-volume rename fast path needs no check: a rename relocates the exact
+// bytes (it doesn't copy them), so there's nothing that could have gone wrong in
+// transit and, after it, no source remains to compare against.
+func MoveFileVerified(ctx context.Context, afs afero.Fs, src, dst string, fileMode, dirMode fs.FileMode, p Progress) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if afs.Rename(src, dst) == nil {
+		return nil
+	}
+	if err := CopyWithProgress(ctx, afs, src, dst, fileMode, dirMode, p); err != nil {
+		_ = afs.RemoveAll(dst)
+		return fmt.Errorf("move %q -> %q: copy fallback failed: %w", src, dst, err)
+	}
+	if err := Verify(afs, src, dst); err != nil {
+		_ = afs.RemoveAll(dst) // drop the bad copy; keep the source
+		return err
+	}
+	if err := afs.RemoveAll(src); err != nil {
+		return fmt.Errorf("move %q -> %q: copied ok but removing source failed: %w", src, dst, err)
+	}
+	return nil
+}
+
 // CopyFile copies a file from source to dest and returns
 // an error if any. Errors are wrapped with the failing operation + path
 // so a failed move surfaces exactly which file (and which syscall) broke.

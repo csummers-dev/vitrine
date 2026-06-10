@@ -49,6 +49,23 @@ describe("fileIcon", () => {
     expect(fileIcon({ name: "mystery.qqq" })).toBe("file");
     expect(fileIcon({ type: "somethingelse" })).toBe("file");
   });
+
+  it("infers the media type from the extension when no type is given", () => {
+    // Name-only callers (Trash, search hits, recents) have no server `type`;
+    // these media extensions live in the type table, not the ext table.
+    expect(fileIcon({ name: "IHYPH.jpg" })).toBe("image");
+    expect(fileIcon({ name: "photo.PNG" })).toBe("image");
+    expect(fileIcon({ name: "07 TV OFF.m4a" })).toBe("music");
+    expect(fileIcon({ name: "song.mp3" })).toBe("music");
+    expect(fileIcon({ name: "clip.mp4" })).toBe("video");
+    expect(fileIcon({ name: "movie.mkv" })).toBe("video");
+    expect(fileIcon({ name: "doc.pdf" })).toBe("file-text");
+  });
+
+  it("keeps ext-table entries winning over inferred media types", () => {
+    // .ts is TypeScript in the ext table, NOT an MPEG transport stream.
+    expect(fileIcon({ name: "main.ts" })).toBe("code");
+  });
 });
 
 describe("fileIconColor", () => {
@@ -74,6 +91,17 @@ describe("fileIconColor", () => {
     expect(fileIconColor({ name: "x.unknownext", type: "image" })).toBe(
       "bg-pink-600 text-white"
     );
+  });
+
+  it("colors media files by their inferred type when no type is given", () => {
+    expect(fileIconColor({ name: "IHYPH.jpg" })).toBe("bg-pink-600 text-white");
+    expect(fileIconColor({ name: "07 TV OFF.m4a" })).toBe(
+      "bg-yellow-600 text-white"
+    );
+    expect(fileIconColor({ name: "clip.mp4" })).toBe(
+      "bg-indigo-500 text-white"
+    );
+    expect(fileIconColor({ name: "doc.pdf" })).toBe("bg-rose-600 text-white");
   });
 
   it("falls back to the default color when nothing matches", () => {

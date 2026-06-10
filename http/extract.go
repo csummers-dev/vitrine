@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -21,6 +22,7 @@ import (
 	yzip "github.com/yeka/zip"
 
 	fberrors "github.com/filebrowser/filebrowser/v2/errors"
+	"github.com/filebrowser/filebrowser/v2/events"
 	"github.com/filebrowser/filebrowser/v2/files"
 	"github.com/filebrowser/filebrowser/v2/settings"
 )
@@ -113,6 +115,15 @@ func extractHandler() handleFunc {
 		if err := extractArchive(r.Context(), file.RealPath(), filepath.Clean(dst), password, opts); err != nil {
 			return errToStatus(err), err
 		}
+		// Extraction added content under the destination folder. Emit FileCreated
+		// for that dir so size-tracking subscribers (the folder-size cache, 2.4.0
+		// Stage 4) invalidate it + its ancestors; also gives the audit log a
+		// record that an archive was unpacked here.
+		events.Publish(events.FileCreated{
+			Base:  eventBase(r, d),
+			Path:  path.Clean("/" + filepath.ToSlash(dst)),
+			IsDir: true,
+		})
 		return http.StatusOK, nil
 	})
 }

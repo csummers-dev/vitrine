@@ -1,42 +1,35 @@
 /**
- * Apply a secondary sort criterion as a tiebreaker over an already-
- * primary-sorted item list (v1.3 S3-4).
+ * Client-side listing sort (2.4.x).
  *
- * The server sorts by the primary axis and returns the items in that
- * order. To honor multi-column sort semantics ("by Size desc, then by
- * Modified desc"), we walk the list, find groups of items that have
- * identical primary values, and sort just those groups by the
- * secondary axis. Primary order is preserved exactly; only ties
- * within the primary key get rearranged.
+ * The listing's displayed order is decided HERE, on the client, so a sort
+ * change is reflected instantly — the moment the user picks a field or flips
+ * direction — instead of waiting on a server round-trip + silent reload. The
+ * server still persists the primary sort (so it's the order on the next fresh
+ * load) and sorts the initial payload, but the rendered order is this
+ * function's. That means:
  *
- * Why this approach instead of a full client-side re-sort:
- *   - Preserves the server's primary ordering byte-for-byte. No risk
- *     of subtle JS-vs-Go comparator drift (e.g., Go's natural.Less
- *     handles "file_2" vs "file_10" differently than JS's default
- *     string compare).
- *   - O(N log K) where K is the typical tie-group size (often 1, so
- *     effectively O(N)).
+ *   - Changing the primary sort re-orders the listing immediately.
+ *   - A "None" secondary truly means none — no hidden tiebreaker survives.
  *
- * No-op when secondary is null or when the secondary key equals the
- * primary (every primary tie is also a secondary tie — sort would be
- * meaningless).
+ * Called once per group (dirs and files render separately, dirs first), so
+ * each group sorts in isolation and the dirs-first grouping is never
+ * disturbed. Sorting copies (never `req.items` itself), so each item keeps its
+ * original `index` — selection / keyboard-nav still map back correctly.
+ *
+ * Native Array.prototype.sort is stable (ES2019+), so two items equal on BOTH
+ * criteria keep their incoming (server) order as the final tiebreaker.
+ *
+ * Comparator note: name / extension use localeCompare(numeric) — a close match
+ * to the Go backend's natural.Less ("file_2" before "file_10"), and already
+ * the comparator this codebase shipped for the secondary axis.
  */
 
-/** Extract the comparable value for a given sort key. */
-function primaryKey(item: ResourceItem, by: SortKey): string | number {
-  switch (by) {
-    case "name":
-      return item.name;
-    case "size":
-      return item.size;
-    case "modified":
-      return item.modified;
-    case "extension":
-      return item.extension;
-  }
-}
-
-/** Comparator producing -1/0/1 for two items by the given sort key. */
+/**
+ * Comparator producing a negative / 0 / positive number for two items by the
+ * given sort key (ascending). Returns 0 ("equal") rather than NaN/undefined for
+ * any unparseable input or unexpected key — a comparator that returns NaN makes
+ * Array.prototype.sort's order implementation-defined, so we never let one leak.
+ */
 function compareBy(a: ResourceItem, b: ResourceItem, by: SortKey): number {
   switch (by) {
     case "name":
@@ -44,58 +37,56 @@ function compareBy(a: ResourceItem, b: ResourceItem, by: SortKey): number {
         numeric: true,
         sensitivity: "base",
       });
-    case "size":
-      return a.size - b.size;
+    case "size": {
+      const d = a.size - b.size;
+      return Number.isNaN(d) ? 0 : d;
+    }
     case "modified": {
-      // Modified is an ISO 8601 string. Date.parse is safer than
-      // string compare for ISO inputs but both work; Date.parse
-      // matches the user's "time-based" mental model.
-      const aT = Date.parse(a.modified);
-      const bT = Date.parse(b.modified);
-      return aT - bT;
+      // Modified is an ISO 8601 string. Date.parse matches the user's
+      // "time-based" mental model and is safe for ISO inputs; a malformed
+      // value yields NaN, which we treat as a tie.
+      const d = Date.parse(a.modified) - Date.parse(b.modified);
+      return Number.isNaN(d) ? 0 : d;
     }
     case "extension":
       return a.extension.localeCompare(b.extension, undefined, {
         sensitivity: "base",
       });
+    default:
+      // Unknown / stale sort key (e.g. a pref left over from a removed
+      // feature) — don't reorder.
+      return 0;
   }
 }
 
 /**
- * Return a new array with the secondary sort applied as a tiebreaker.
- * Input array is not mutated.
+ * Return a NEW array sorted by `primary`, breaking ties with `secondary`
+ * (only when it's set and names a different key). The input array is not
+ * mutated; arrays shorter than two items are returned as-is.
  */
-export function applySecondarySort(
+export function sortListing(
   items: ResourceItem[],
-  primaryBy: SortKey,
+  primary: SortCriterion,
   secondary: SortCriterion | null
 ): ResourceItem[] {
-  if (!secondary) return items;
-  // Same-key secondary is a no-op tiebreaker (sortMenuItems should
-  // disable this combo in the UI, but defend in code too).
-  if (secondary.by === primaryBy) return items;
   if (items.length < 2) return items;
 
-  const result = [...items];
-  let i = 0;
-  while (i < result.length) {
-    const key = primaryKey(result[i], primaryBy);
-    // Find the end of the current run of items with equal primary key.
-    let j = i + 1;
-    while (j < result.length && primaryKey(result[j], primaryBy) === key) {
-      j++;
+  // A secondary that repeats the primary key is a no-op tiebreaker (every
+  // primary tie is also a secondary tie). The sort menu already disables that
+  // combo; defend here too.
+  const sec = secondary && secondary.by !== primary.by ? secondary : null;
+
+  const sorted = [...items];
+  sorted.sort((a, b) => {
+    const p = compareBy(a, b, primary.by);
+    if (p !== 0) return primary.asc ? p : -p;
+    if (sec) {
+      const s = compareBy(a, b, sec.by);
+      if (s !== 0) return sec.asc ? s : -s;
     }
-    if (j - i > 1) {
-      // Stable sort within the tie-group on secondary.
-      const group = result.slice(i, j).sort((a, b) => {
-        const c = compareBy(a, b, secondary.by);
-        return secondary.asc ? c : -c;
-      });
-      for (let k = 0; k < group.length; k++) {
-        result[i + k] = group[k];
-      }
-    }
-    i = j;
-  }
-  return result;
+    // Equal on every active criterion — return 0 so the stable sort keeps
+    // the incoming (server) order.
+    return 0;
+  });
+  return sorted;
 }

@@ -230,3 +230,40 @@ var fileTagsBatchHandler = withUser(func(w http.ResponseWriter, r *http.Request,
 	}
 	return renderJSON(w, r, out)
 })
+
+// tagApplyBody — wire shape for the bulk apply: a set of paths plus the tag IDs
+// to add and remove across all of them.
+type tagApplyBody struct {
+	Paths  []string `json:"paths"`
+	Add    []uint64 `json:"add"`
+	Remove []uint64 `json:"remove"`
+}
+
+// fileTagsApplyHandler — POST /api/tags/apply
+// body: {paths: [...], add: [id...], remove: [id...]}
+//
+// Bulk-tags a multi-selection (2.4.0 Stage 5 / K): applies add/remove across
+// every path in one transaction. add IDs must exist (404 otherwise); 204 on
+// success. POST because the path + id lists can be long.
+var fileTagsApplyHandler = withUser(func(_ http.ResponseWriter, r *http.Request, d *data) (int, error) {
+	if d.tagsStore == nil {
+		return http.StatusServiceUnavailable, errors.New("tags: store not initialized")
+	}
+	if r.Body == nil {
+		return http.StatusBadRequest, nil
+	}
+	var body tagApplyBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		return http.StatusBadRequest, err
+	}
+	if len(body.Paths) == 0 {
+		return http.StatusBadRequest, errors.New("tags: no paths")
+	}
+	if len(body.Paths) > 5000 {
+		return http.StatusBadRequest, errors.New("tags: batch too large (>5000 paths)")
+	}
+	if err := d.tagsStore.ApplyTagsBatch(d.user.ID, body.Paths, body.Add, body.Remove); err != nil {
+		return tagErrToStatus(err), err
+	}
+	return http.StatusNoContent, nil
+})

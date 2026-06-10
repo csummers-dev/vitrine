@@ -496,6 +496,68 @@ func (s *Store) RemoveTag(userID uint, path string, tagID uint64) error {
 	})
 }
 
+// ApplyTagsBatch attaches addIDs and detaches removeIDs across every path in a
+// single transaction — the bulk-tag-a-multi-selection operation (2.4.0 Stage 5
+// / K). add IDs are validated to exist FIRST (ErrTagNotFound otherwise) so
+// file_tags never dangles; removing a tag a path doesn't have is a no-op. If an
+// id appears in both lists, add wins. A path left with no tags is deleted from
+// the bucket. Empty add+remove is a no-op.
+func (s *Store) ApplyTagsBatch(userID uint, paths []string, addIDs, removeIDs []uint64) error {
+	// Validate the add IDs BEFORE the write lock (mirrors AddTag), so a bad id
+	// can't half-apply a batch.
+	for _, id := range addIDs {
+		if _, err := s.GetTag(userID, id); err != nil {
+			return err
+		}
+	}
+
+	addSet := make(map[uint64]bool, len(addIDs))
+	for _, id := range addIDs {
+		addSet[id] = true
+	}
+	removeSet := make(map[uint64]bool, len(removeIDs))
+	for _, id := range removeIDs {
+		if !addSet[id] { // add wins over remove
+			removeSet[id] = true
+		}
+	}
+	if len(addSet) == 0 && len(removeSet) == 0 {
+		return nil
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.db.Update(func(tx *bolt.Tx) error {
+		b, err := userBucket(tx, fileTagsBucket, userID, true)
+		if err != nil {
+			return err
+		}
+		for _, p := range paths {
+			ids := decodeIDs(b.Get([]byte(p)))
+			next := ids[:0]
+			for _, id := range ids {
+				if !removeSet[id] {
+					next = append(next, id)
+				}
+			}
+			for id := range addSet {
+				next = append(next, id) // encodeIDs sorts + dedupes
+			}
+			if len(next) == 0 {
+				if e := b.Delete([]byte(p)); e != nil {
+					return e
+				}
+				continue
+			}
+			if e := b.Put([]byte(p), encodeIDs(next)); e != nil {
+				return e
+			}
+		}
+		return nil
+	})
+}
+
 // TagsForFile returns the full Tag objects attached to path, sorted by
 // name. Missing tag IDs (e.g., race with DeleteTag) are silently
 // skipped — returning a partial list beats failing the whole call.

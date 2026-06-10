@@ -177,6 +177,31 @@ export async function checkConflict(
  * `ConflictingResource[]` the resolve-conflict prompt consumes. `index` is the
  * item's position in `items` so callers can map a resolution back by index.
  */
+/**
+ * The name a "keep both" resolution will produce: `name` if free, else
+ * `base(N)ext` for the first free N from 1. EXACT mirror of the backend's
+ * `addVersionSuffix` (http/resource.go) including its Go `filepath.Ext`
+ * edge cases — the extension starts at the LAST dot, so ".bashrc" splits to
+ * base "" + ext ".bashrc" → "(1).bashrc", and "a.tar.gz" → "a.tar(1).gz".
+ * Pure name-set probe so it's testable and shared; the caller supplies the
+ * taken names (the destination listing).
+ */
+export function nextVersionedName(
+  name: string,
+  taken: ReadonlySet<string>
+): string {
+  const dot = name.lastIndexOf(".");
+  const ext = dot === -1 ? "" : name.slice(dot);
+  const base = dot === -1 ? name : name.slice(0, dot);
+  let candidate = name;
+  let counter = 1;
+  while (taken.has(candidate)) {
+    candidate = `${base}(${counter})${ext}`;
+    counter++;
+  }
+  return candidate;
+}
+
 export async function checkMoveConflict(
   items: Array<{
     name: string;
@@ -207,10 +232,16 @@ export async function checkMoveConflict(
   const destMap = new Map<string, (typeof destItems)[number]>();
   for (const entry of destItems) destMap.set(entry.name, entry);
 
+  // J (2.4.0): grows as keep-both names are assigned, mirroring how the
+  // backend's per-item FS probes see earlier renames in the same batch land.
+  const taken = new Set<string>(destMap.keys());
+
   const conflicts: ConflictingResource[] = [];
   items.forEach((item, index) => {
     const hit = destMap.get(item.name);
     if (!hit) return;
+    const keepBothName = nextVersionedName(item.name, taken);
+    taken.add(keepBothName);
     conflicts.push({
       index,
       name: item.name,
@@ -218,6 +249,7 @@ export async function checkMoveConflict(
       dest: { lastModified: hit.modified, size: hit.size },
       checked: ["origin"],
       isSmallerOnServer: item.size !== undefined ? item.size > hit.size : false,
+      keepBothName,
     });
   });
 

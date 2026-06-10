@@ -1,7 +1,7 @@
 <template>
   <div
     class="item"
-    :class="{ 'item--spring-loaded': springProgress > 0 }"
+    :class="{ 'item--spring-loaded': springProgress > 0, 'item--cut': isCut }"
     role="button"
     tabindex="0"
     :draggable="isDraggable && !isRenaming"
@@ -144,7 +144,10 @@
       </div>
 
       <!-- Size -->
-      <div v-if="isDir" class="item__size size" data-order="-1">&mdash;</div>
+      <div v-if="isDir" class="item__size size" data-order="-1">
+        <template v-if="dirSizeLabel">{{ dirSizeLabel }}</template>
+        <template v-else>&mdash;</template>
+      </div>
       <div v-else class="item__size size" :data-order="humanSize()">
         {{ humanSize() }}
       </div>
@@ -178,6 +181,7 @@
 <script setup lang="ts">
 import Icon from "@/components/Icon.vue";
 import { useAuthStore } from "@/stores/auth";
+import { useClipboardStore } from "@/stores/clipboard";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 import { useTagsStore } from "@/stores/tags";
@@ -196,13 +200,14 @@ import {
 import { filesize } from "@/utils";
 import { displayName, splitExtension } from "@/utils/filename";
 import { isSelfOrDescendantTarget } from "@/utils/dragdrop";
-import { isPointInRowIntoZone } from "@/utils/dropZone";
+import { resolveRowDropMode } from "@/utils/dropZone";
 import { fileIcon, fileIconColor } from "@/utils/fileIcon";
 import { setDragGhost } from "@/utils/dragGhost";
 import { startDragBadge, endDragBadge } from "@/utils/dragCopyMoveBadge";
 import dayjs from "dayjs";
 import { files as api } from "@/api";
 import { removePrefix } from "@/api/utils";
+import { useFolderSizes } from "@/composables/useFolderSizes";
 import urlUtil from "@/utils/url";
 import * as upload from "@/utils/upload";
 import { computed, inject, nextTick, onBeforeUnmount, ref, watch } from "vue";
@@ -240,6 +245,7 @@ const emit = defineEmits<{
 const authStore = useAuthStore();
 const fileStore = useFileStore();
 const layoutStore = useLayoutStore();
+const folderSizes = useFolderSizes();
 const tagsStore = useTagsStore();
 const prefs = usePreferences();
 const favorites = useFavorites();
@@ -255,6 +261,17 @@ const { movingPaths } = useTransfers();
 // subtree shimmering.
 const isMoving = computed<boolean>(
   () => !!props.path && isPathInMove(props.path, movingPaths.value)
+);
+
+// 2.4.0 Stage 1: dim this row while it's sitting on the clipboard as a CUT —
+// the Finder-style "armed for move" affordance. Cleared when the cut is pasted
+// (paste resets the clipboard) or disarmed with Esc. Keyed on the item url,
+// which is exactly what clipboardCapture stored as `from`.
+const clipboardStore = useClipboardStore();
+const isCut = computed<boolean>(
+  () =>
+    clipboardStore.key === "cut" &&
+    clipboardStore.items.some((it: ClipItem) => it.from === props.url)
 );
 
 // WS8: show/hide file extensions (per-user, default on). Reactive via the
@@ -366,12 +383,13 @@ const canForwardDrop = computed(() => !props.readOnly);
 // Non-folder rows and Alt-held drags always read as "alongside" (drop into the
 // current directory), so a folder full of folders stays easy to drop into.
 const isInIntoZone = (event: DragEvent, rowEl: HTMLElement): boolean => {
-  if (!props.isDir) return false;
   // Hold Alt/Option to force EVERY drop "alongside": no folder highlights or
   // spring-loads while it's down, so you can drop into a folder full of folders
-  // without ever landing inside one.
+  // without ever landing inside one. Otherwise defer to the shared resolver
+  // (it returns "alongside" for non-folder rows via `data-dir`, so the old
+  // explicit `!props.isDir` short-circuit is folded in).
   if (event.altKey) return false;
-  return isPointInRowIntoZone(rowEl, event.clientX, event.clientY);
+  return resolveRowDropMode(rowEl, event.clientX, event.clientY) === "into";
 };
 
 // Track in-zone state with a plain let — nothing in the template
@@ -656,6 +674,16 @@ const humanSize = () => {
   return props.type == "invalid_link" ? "invalid link" : filesize(props.size);
 };
 
+// 2.4.0: show a folder's recursive size in the Size column. The row only READS
+// the cache (reactively) — FileListing prefetches every folder's size centrally
+// on load (concurrency-limited), so the column fills in without per-row fetches
+// hammering the server. A not-yet-resolved size shows the em-dash placeholder.
+const dirSizeLabel = computed(() => {
+  if (!props.isDir) return "";
+  const s = folderSizes.cached(props.url, String(props.modified ?? ""));
+  return s === undefined ? "" : filesize(s);
+});
+
 const humanTime = () => {
   const m = dayjs(props.modified);
   const now = dayjs();
@@ -874,13 +902,6 @@ const drop = async (event: DragEvent) => {
   );
   if (dragged.length === 0) return;
 
-  let el = event.target as HTMLElement | null;
-  for (let i = 0; i < 5; i++) {
-    if (el !== null && !el.classList.contains("item")) {
-      el = el.parentElement;
-    }
-  }
-
   const items: any[] = dragged.map((it) => ({
     from: it.url,
     to: props.url + encodeURIComponent(it.name),
@@ -891,11 +912,9 @@ const drop = async (event: DragEvent) => {
     rename: false,
   }));
 
-  // Get url from ListingItem instance
-  if (el === null) {
-    return;
-  }
-  const path = el.__vue__.url;
+  // Destination for the conflict check = THIS folder row's url (the `to` paths
+  // above are built from it). No DOM walk / Vue-internals lookup needed.
+  const path = props.url;
 
   // DragEvent inherits ctrlKey/metaKey from MouseEvent — no cast needed.
   const isCopy = event.ctrlKey || event.metaKey;

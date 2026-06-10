@@ -151,7 +151,7 @@ func getStaticHandlers(store *storage.Storage, server *settings.Server, assetsFs
 
 		w.Header().Set("x-xss-protection", "1; mode=block")
 		return handleWithStaticData(w, r, d, assetsFs, "public/index.html", "text/html; charset=utf-8")
-	}, "", store, nil, server)
+	}, "", store, nil, nil, server)
 
 	static = handle(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 		if r.Method != http.MethodGet {
@@ -215,7 +215,7 @@ func getStaticHandlers(store *storage.Storage, server *settings.Server, assetsFs
 		}
 
 		return 0, nil
-	}, "/static/", store, nil, server)
+	}, "/static/", store, nil, nil, server)
 
 	return index, static
 }

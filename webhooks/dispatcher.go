@@ -26,7 +26,7 @@ var fileEventTypes = map[string]bool{
 func FileEventTypes() []string {
 	return []string{
 		"file.created", "file.renamed", "file.moved",
-		"file.copied", "file.deleted", "file.uploaded",
+		"file.copied", "file.deleted", "file.uploaded", "file.modified",
 	}
 }
 
@@ -196,6 +196,8 @@ func buildPayload(e events.Event) Payload {
 	case events.FileDeleted:
 		p.UserID, p.Path = v.UserID, v.Path
 	case events.FileUploaded:
+		p.UserID, p.Path = v.UserID, v.Path
+	case events.FileModified:
 		p.UserID, p.Path = v.UserID, v.Path
 	}
 	return p

@@ -99,7 +99,8 @@
                 >
               </h1>
               <div
-                class="mt-1 text-[13px] text-ink-3 tabular max-md:text-[12px]"
+                class="mt-1 text-[13px] text-ink-3 tabular max-md:text-[12px] truncate"
+                :title="folderMeta"
               >
                 {{ folderMeta }}
               </div>
@@ -688,6 +689,16 @@
                   <Icon name="music" :size="14" class="text-fuchsia-300" />
                   <span>Edit tags</span>
                 </button>
+                <!-- 2.4.0 Stage 5 / K: bulk add/remove user tags across the
+                     whole selection (tri-state for tags on some-but-not-all). -->
+                <button
+                  v-if="fileStore.selectedCount > 1"
+                  @click="openBulkTags"
+                  :title="`Tag ${fileStore.selectedCount} items`"
+                >
+                  <Icon name="tag" :size="14" class="text-sky-300" />
+                  <span>Tags</span>
+                </button>
                 <button
                   v-if="headerButtons.delete"
                   @click="layoutStore.showHover('delete')"
@@ -724,12 +735,12 @@
       <InfoPane />
     </div>
 
-    <!-- Delete confirmation (Stage 8). Teleported to body. -->
+    <!-- Delete confirmation (Stage 8; trash-aware since 2.4.0 Stage 2). -->
     <ConfirmDialog
       :open="confirmOpen"
       :title="confirmTitle"
       :message="confirmMessage"
-      confirm-label="Delete"
+      :confirm-label="pendingPermanent ? 'Delete forever' : 'Move to Trash'"
       cancel-label="Cancel"
       destructive
       @confirm="onDeleteConfirm"
@@ -753,6 +764,16 @@
       :open="bulkRename.isOpen.value"
       @cancel="bulkRename.close"
       @done="bulkRename.close"
+    />
+
+    <!-- 2.4.0 Stage 5 / K: bulk tag picker for a multi-selection. Its own
+         TagPickerSheet instance (the single-file one lives in InfoPane), bound
+         to the useBulkTagPicker singleton + a `paths` array → tri-state. -->
+    <TagPickerSheet
+      :open="bulkTagPicker.isOpen.value"
+      :paths="bulkTagPicker.paths.value"
+      @cancel="bulkTagPicker.close"
+      @saved="bulkTagPicker.close"
     />
 
     <!-- Share slide-over (Stage 8). -->
@@ -809,9 +830,9 @@ import { useListingNavigation } from "@/composables/useListingNavigation";
 import { useTouchDevice } from "@/composables/useTouchDevice";
 import { usePullToRefresh } from "@/composables/usePullToRefresh";
 import { copy } from "@/utils/clipboard";
-import { applySecondarySort } from "@/utils/secondarySort";
+import { sortListing } from "@/utils/secondarySort";
 
-import { users, files as api } from "@/api";
+import { users, files as api, trash as trashApi } from "@/api";
 import { enableExec, unzipEnabled } from "@/utils/constants";
 import { isExtractable } from "@/utils/archive";
 import { isAudioTaggable } from "@/utils/audio";
@@ -820,7 +841,7 @@ import { moveDragBadge, endDragBadge } from "@/utils/dragCopyMoveBadge";
 import * as upload from "@/utils/upload";
 import { throttle } from "lodash-es";
 import { Base64 } from "js-base64";
-import dayjs from "dayjs";
+import { timeAgo } from "@/utils/relativeTime";
 // v1.3 S6-1: fixed-size list virtualization for huge folders.
 import { RecycleScroller } from "vue-virtual-scroller";
 import "vue-virtual-scroller/dist/vue-virtual-scroller.css";
@@ -839,10 +860,12 @@ import UndoToast from "@/components/UndoToast.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import MoveCopyPanel from "@/components/files/MoveCopyPanel.vue";
 import BulkRenamePanel from "@/components/files/BulkRenamePanel.vue";
+import TagPickerSheet from "@/components/files/TagPickerSheet.vue";
+import { useBulkTagPicker } from "@/composables/useBulkTagPicker";
+import { useFolderSizes } from "@/composables/useFolderSizes";
 import ExtractPanel from "@/components/files/ExtractPanel.vue";
 import SharePanel from "@/components/files/SharePanel.vue";
 import { useToast } from "vue-toastification";
-import { usePendingDelete } from "@/composables/usePendingDelete";
 import ContextMenu, { type MenuItem } from "@/components/ContextMenu.vue";
 import { useDropTarget } from "@/composables/useDropTarget";
 import { useTouchDrag } from "@/composables/useTouchDrag";
@@ -861,7 +884,7 @@ import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
 import { removePrefix } from "@/api/utils";
 import { startTransfer } from "@/utils/transfers";
-import { isPointInRowIntoZone } from "@/utils/dropZone";
+import { resolveRowDropMode } from "@/utils/dropZone";
 
 const dragCounter = ref<number>(0);
 const width = ref<number>(window.innerWidth);
@@ -889,6 +912,16 @@ const favTitleDialog = useFavoriteTitleDialog();
 // menu, the bulk-pill button, and the command palette all trigger
 // through the same flag.
 const bulkRename = useBulkRename();
+// 2.4.0: recursive folder-size cache, prefetched for the listing's folders.
+const folderSizes = useFolderSizes();
+// 2.4.0 Stage 5 / K: bulk tag picker for the current multi-selection.
+const bulkTagPicker = useBulkTagPicker();
+const openBulkTags = () => {
+  const paths = fileStore.selected
+    .map((i) => fileStore.req?.items[i]?.url)
+    .filter((u): u is string => !!u);
+  if (paths.length) bulkTagPicker.open(paths);
+};
 
 // ── Inline tag chip plumbing (v1.3 S2-5) ────────────────────────────
 // After each listing fetch, do ONE batched call to /api/tags/batch so
@@ -904,6 +937,13 @@ watch(
     void tagsStore.ensureLoaded();
     const paths = req.items.map((i) => i.url).filter(Boolean);
     void tagsStore.loadForPaths(paths);
+    // 2.4.0: prefetch every folder's recursive size (concurrency-limited) so the
+    // Size column fills in without clicking each folder. Cached + singleflit'd
+    // server-side, so reloads are cheap; rows update reactively as each lands.
+    const folderTargets = req.items
+      .filter((i) => i.isDir && i.url)
+      .map((i) => ({ path: i.url, mod: String(i.modified ?? "") }));
+    if (folderTargets.length) void folderSizes.ensureMany(folderTargets);
   },
   { immediate: true }
 );
@@ -1350,7 +1390,7 @@ const listingTouchDrag = useTouchDrag<{ index: number }>({
     // "alongside" into the current folder, so don't highlight/spring the folder.
     // Dedicated drop targets (breadcrumb segments, the current-folder area)
     // aren't `.item` rows and keep their whole-element target.
-    const inIntoZone = isFolderRow && isPointInRowIntoZone(raw!, x, y);
+    const inIntoZone = isFolderRow && resolveRowDropMode(raw!, x, y) === "into";
     const highlightEl = isFolderRow ? (inIntoZone ? raw : null) : raw;
 
     if (highlightEl !== touchHighlightEl) {
@@ -1521,7 +1561,7 @@ const folderMeta = computed(() => {
   // du-style walk of the whole subtree on every open, which isn't worth the
   // latency. Per-file sizes still show on the rows.
   if (req.modified) {
-    parts.push(`last updated ${dayjs(req.modified).fromNow()}`);
+    parts.push(`last updated ${timeAgo(req.modified)}`);
   }
   return parts.join(" · ");
 });
@@ -1543,10 +1583,6 @@ const items = computed(() => {
   const files: ResourceItem[] = [];
 
   fileStore.req?.items.forEach((item) => {
-    // Stage 8: items in the pending-delete window are visually removed from
-    // the listing so the undo flow feels real-time. Their actual API
-    // removal happens when the undo window expires.
-    if (pendingDelete.isPending(item.url)) return;
     if (item.isDir) {
       dirs.push(item);
     } else {
@@ -1554,14 +1590,19 @@ const items = computed(() => {
     }
   });
 
-  // v1.3 S3-4: apply secondary sort as a tiebreaker within tied
-  // primary-key groups. dirs/files sorted independently so the
-  // existing dirs-first / files-first grouping isn't disturbed.
-  const primaryBy = (fileStore.req?.sorting.by ?? "name") as SortKey;
+  // 2.4.x: the listing's DISPLAY order is decided client-side (primary +
+  // optional secondary tiebreaker) so a sort change re-orders instantly,
+  // rather than waiting on a server round-trip + silent reload. dirs/files
+  // sort independently so the dirs-first grouping isn't disturbed; `req.items`
+  // itself is untouched, so each item keeps its server-assigned `index`.
+  const primary = {
+    by: (fileStore.req?.sorting.by ?? "name") as SortKey,
+    asc: fileStore.req?.sorting.asc ?? false,
+  };
   const sec = secondarySort.value;
   return {
-    dirs: applySecondarySort(dirs, primaryBy, sec),
-    files: applySecondarySort(files, primaryBy, sec),
+    dirs: sortListing(dirs, primary, sec),
+    files: sortListing(files, primary, sec),
   };
 });
 
@@ -1854,6 +1895,10 @@ const keyEvent = (event: KeyboardEvent) => {
   }
 
   if (event.key === "Escape") {
+    // A pending CUT is an armed state (its rows render dimmed) — Esc disarms
+    // it. A pending COPY has no visual state and survives, so you can still
+    // paste it elsewhere after clearing a selection.
+    if (clipboardStore.key === "cut") clipboardStore.resetClipboard();
     // Reset files selection + keyboard cursor.
     fileStore.selected = [];
     fileStore.activeIndex = -1;
@@ -1910,6 +1955,18 @@ const keyEvent = (event: KeyboardEvent) => {
           event.preventDefault();
           fileStore.reload = true;
           return;
+        case "Delete":
+        case "Backspace": {
+          // 2.4.0 Stage 2: Delete (⌫ on Mac keyboards) moves the selection to
+          // the Trash; holding SHIFT deletes permanently. Both go through the
+          // same confirm dialog — only the wording and the commit differ.
+          if (!authStore.user?.perm.delete) return;
+          const delItems = collectSelectedDeleteItems();
+          if (delItems.length === 0) return;
+          event.preventDefault();
+          openDeleteConfirm(delItems, event.shiftKey);
+          return;
+        }
         default:
           // Type-ahead — printable single chars only, and not when the global
           // shortcut dispatcher already claimed the key (it ran first and
@@ -1960,11 +2017,27 @@ const keyEvent = (event: KeyboardEvent) => {
       }
       break;
     case "c":
+    case "C":
     case "x":
-      copyCut(event);
+    case "X":
+      // ⌘⇧C — copy the selected item's path (the clipboard-copy sibling;
+      // same action as the InfoPane/context-menu "Copy path").
+      if (event.key.toLowerCase() === "c" && event.shiftKey) {
+        const it =
+          fileStore.selectedCount === 1
+            ? (fileStore.req?.items[fileStore.selected[0]] ?? null)
+            : null;
+        if (it) {
+          event.preventDefault();
+          void copyItemPath(it);
+        }
+        break;
+      }
+      clipboardCapture(event.key.toLowerCase() === "x" ? "cut" : "copy", event);
       break;
     case "v":
-      paste(event);
+    case "V":
+      void paste();
       break;
     case "a":
       event.preventDefault();
@@ -2071,13 +2144,21 @@ const stopDragScroll = () => {
   }
 };
 
-const copyCut = (event: Event | KeyboardEvent): void => {
-  if ((event.target as HTMLElement).tagName?.toLowerCase() === "input") return;
-
+/**
+ * Capture the current selection into the app clipboard (NOT the OS clipboard —
+ * items are pasted via the background transfer pipeline). `mode` is explicit so
+ * the context menu can call this without synthesizing keyboard events.
+ * Permission gates mirror the backend's transfer checks: a cut pastes as a
+ * MOVE (perm.rename), a copy pastes as a COPY (perm.create). With nothing
+ * selected (or no permission) this no-ops WITHOUT preventDefault, so ⌘C still
+ * performs the browser's native text-selection copy.
+ */
+const clipboardCapture = (mode: "copy" | "cut", event?: Event): void => {
   if (fileStore.req === null) return;
+  if (mode === "cut" && !authStore.user?.perm.rename) return;
+  if (mode === "copy" && !authStore.user?.perm.create) return;
 
   const items = [];
-
   for (const i of fileStore.selected) {
     items.push({
       from: fileStore.req.items[i].url,
@@ -2086,27 +2167,54 @@ const copyCut = (event: Event | KeyboardEvent): void => {
       modified: fileStore.req.items[i].modified,
     });
   }
+  if (items.length === 0) return;
 
-  if (items.length === 0) {
-    return;
-  }
-
+  event?.preventDefault();
   clipboardStore.$patch({
-    key: (event as KeyboardEvent).key,
+    key: mode,
     items,
     path: route.path,
   });
 };
 
-const paste = async (event: Event) => {
-  if ((event.target as HTMLElement).tagName?.toLowerCase() === "input") return;
+/**
+ * Paste the app clipboard into `dest` (a folder URL; defaults to the current
+ * folder). Runs through the shared background transfer pipeline, so a
+ * same-volume cut→paste lands on the 2.3.0 fast lane automatically.
+ *
+ * Same-folder handling (Stage 1):
+ *   - CUT pasted back into its source folder is a NO-OP that just disarms the
+ *     clipboard (Finder semantics) — previously this moved every item onto a
+ *     "(1)" suffix of itself, effectively renaming the originals.
+ *   - COPY pasted into its source folder duplicates every item with the
+ *     backend's "(N)" suffix directly — no conflict prompt. Every item
+ *     trivially collides with itself there, and surfacing "Override" for a
+ *     self-copy is a destructive trap, so keep-both is the only resolution.
+ */
+const paste = async (dest?: string) => {
+  if (clipboardStore.items.length === 0) return;
 
-  // TODO router location should it be
+  const rawDest = dest ?? route.path;
+  const path = rawDest.endsWith("/") ? rawDest : rawDest + "/";
+  const clipSrc = clipboardStore.path
+    ? clipboardStore.path.endsWith("/")
+      ? clipboardStore.path
+      : clipboardStore.path + "/"
+    : "";
+  const samePlace = clipSrc === path;
+
+  const isMove = clipboardStore.key === "cut";
+  const kind: "move" | "copy" = isMove ? "move" : "copy";
+
+  if (isMove && samePlace) {
+    clipboardStore.resetClipboard();
+    return;
+  }
+
   const items: any[] = [];
-
   for (const item of clipboardStore.items) {
     const from = item.from.endsWith("/") ? item.from.slice(0, -1) : item.from;
-    const to = route.path + encodeURIComponent(item.name);
+    const to = path + encodeURIComponent(item.name);
     items.push({
       from,
       to,
@@ -2114,16 +2222,13 @@ const paste = async (event: Event) => {
       size: item.size,
       modified: item.modified,
       overwrite: false,
-      rename: clipboardStore.path == route.path,
+      rename: samePlace,
     });
   }
 
   if (items.length === 0) {
     return;
   }
-
-  const isMove = clipboardStore.key === "x";
-  const kind: "move" | "copy" = isMove ? "move" : "copy";
 
   // Run the paste through the SHARED background transfer — the same path the
   // move/copy tool and drag-drop use. The floating transfer dock then (a) shows
@@ -2148,7 +2253,13 @@ const paste = async (event: Event) => {
       .catch($showError);
   };
 
-  const path = route.path.endsWith("/") ? route.path : route.path + "/";
+  // Same-folder copy: every item collides with itself, so skip the conflict
+  // prompt and duplicate with the backend "(N)" suffix (rename was set above).
+  if (samePlace) {
+    run();
+    return;
+  }
+
   const conflict = await upload.checkMoveConflict(items, path);
 
   if (conflict.length > 0) {
@@ -2265,20 +2376,20 @@ const drop = async (event: DragEvent) => {
   const files: UploadList = (await upload.scanFiles(dt)) as UploadList;
   let path = route.path.endsWith("/") ? route.path : route.path + "/";
 
-  if (
+  // Upload INTO a folder ONLY when the cursor is over its icon + name — the same
+  // shared `resolveRowDropMode` hit-test that draws the highlight (path #4 of the
+  // four drop surfaces; see utils/dropZone). Anywhere else on the row (or empty
+  // space) keeps `path` as the current directory, so the file uploads "alongside".
+  // The target folder's url is the row's `data-drop-url` (set only for droppable,
+  // non-read-only folders) — no Vue-internals poke.
+  const intoFolderUrl =
     el !== null &&
     el.classList.contains("item") &&
-    el.dataset.dir === "true" &&
-    // Upload INTO this folder ONLY when the cursor is over its icon + name —
-    // the SAME hit-test that draws the highlight. Anywhere else on the row (or
-    // empty space) keeps `path` as the current directory, so the file uploads
-    // "alongside", matching the internal drag-and-drop behavior. Without this
-    // the entire folder row acted as the "drop inside" target.
-    isPointInRowIntoZone(el, event.clientX, event.clientY)
-  ) {
-    // Get url from ListingItem instance
-    // TODO: Don't know what is happening here
-    path = el.__vue__.url;
+    resolveRowDropMode(el, event.clientX, event.clientY) === "into"
+      ? el.dataset.dropUrl
+      : undefined;
+  if (intoFolderUrl) {
+    path = intoFolderUrl;
 
     try {
       (await api.fetch(path)).items;
@@ -2408,7 +2519,7 @@ const resetOpacity = () => {
   });
 };
 
-const sort = async (by: string) => {
+const sort = (by: string) => {
   let asc = false;
 
   if (by === "name") {
@@ -2432,17 +2543,10 @@ const sort = async (by: string) => {
     asc = true;
   }
 
-  try {
-    if (authStore.user?.id) {
-      await users.update({ id: authStore.user?.id, sorting: { by, asc } }, [
-        "sorting",
-      ]);
-    }
-  } catch (e: any) {
-    $showError(e);
-  }
-
-  fileStore.reload = true;
+  // Delegate to the shared dispatcher (optimistic re-sort + persist). The
+  // asc above is computed from the CURRENT sort icons, so re-clicking a
+  // column toggles its direction.
+  void sortRaw(by as SortKey, asc);
 };
 
 const windowsResize = throttle(() => {
@@ -2587,36 +2691,29 @@ const inlineNewKind = computed<"newDir" | "newFile" | null>(() => {
   return name === "newDir" || name === "newFile" ? name : null;
 });
 
-// ── Stage 8: Delete → confirm → optimistic + Undo toast ──────────────
-// Delete is destructive enough to warrant a confirmation step. Flow:
-//   1. Any "delete" trigger (header button, palette, pill, ctx menu)
-//      routes through `layoutStore.showHover("delete")`.
-//   2. We intercept here when there's an active listing selection,
-//      capture the items, dismiss the prompt, and open a confirm dialog.
-//   3. Confirm → items disappear from the listing immediately, an Undo
-//      toast appears for 10s, the API delete fires only after the
-//      window expires (undo cancels it).
-//   4. Cancel → nothing happens.
+// ── Delete → confirm → trash + Undo-restores toast ───────────────────
+// (Stage 8 flow, rebuilt for the 2.4.0 Stage 2 recycle bin.) Flow:
+//   1. Any "delete" trigger (header button, palette, pill, ctx menu, the
+//      Delete key) routes through the confirm dialog.
+//   2. Confirm → the delete API runs IMMEDIATELY — the backend MOVES the
+//      items into the trash (an instant same-volume rename) and returns a
+//      trashId per item.
+//   3. An Undo toast shows for 10s; Undo RESTORES the trashed entries (the
+//      delete already happened — undo is a real round-trip, so it works
+//      even after navigating away). Items also remain recoverable from the
+//      Trash view long after the toast is gone.
+//   4. Shift+Delete (or the Trash view) deletes permanently: same confirm
+//      dialog with "Delete forever" wording, no undo.
 // The legacy modal is still kept in Prompts.vue for the file-editor
 // delete case (where `isListing === false`).
-const pendingDelete = usePendingDelete();
 const $toast = useToast();
-const UNDO_WINDOW_MS = 10000;
+const UNDO_WINDOW_MS = 5000;
 
 const confirmOpen = ref(false);
 const confirmTitle = ref("");
 const confirmMessage = ref("");
 const pendingConfirm = ref<{ url: string; name: string }[]>([]);
-
-const performDelete = async (items: { url: string; name: string }[]) => {
-  try {
-    await Promise.all(items.map((i) => api.remove(i.url)));
-  } catch (e) {
-    if (e instanceof Error) $showError(e);
-  } finally {
-    fileStore.reload = true;
-  }
-};
+const pendingPermanent = ref(false);
 
 // After an optimistic delete, move the selection to the nearest remaining
 // item so a follow-up Shift+Delete (RC-10) has a target instead of
@@ -2646,19 +2743,67 @@ const selectNeighborAfterDelete = (deletedUrls: Set<string>) => {
   if (neighbor.path) fileStore.setPreselect(neighbor.path);
 };
 
-const startUndoDelete = (items: { url: string; name: string }[]) => {
+// Undo = restore the just-trashed entries by id. A real API round-trip (the
+// delete already happened), so it works even after navigating away.
+const undoRestore = async (ids: string[]) => {
+  try {
+    await Promise.all(ids.map((id) => trashApi.restore(id)));
+  } catch (e) {
+    if (e instanceof Error) $showError(e);
+  } finally {
+    fileStore.reload = true;
+  }
+};
+
+const startUndoDelete = async (
+  items: { url: string; name: string }[],
+  permanent: boolean
+) => {
   // Advance the selection to a neighbor before the items vanish (RC-10).
   selectNeighborAfterDelete(new Set(items.map((i) => i.url)));
 
+  if (permanent) {
+    try {
+      await Promise.all(items.map((i) => api.remove(i.url, true)));
+    } catch (e) {
+      if (e instanceof Error) $showError(e);
+    } finally {
+      fileStore.reload = true;
+    }
+    return;
+  }
+
+  // Move to trash NOW (instant same-volume rename server-side), keep the ids
+  // for the undo toast. Partial failures: whatever made it into the trash is
+  // undoable; the error for the rest surfaces via the toast.
+  let trashIds: string[] = [];
+  try {
+    const results = await Promise.all(items.map((i) => api.remove(i.url)));
+    trashIds = results
+      .filter((r): r is { trashId: string } => !!r?.trashId)
+      .map((r) => r.trashId);
+  } catch (e) {
+    if (e instanceof Error) $showError(e);
+  } finally {
+    fileStore.reload = true;
+  }
+  if (trashIds.length === 0) return;
+
   const message =
     items.length === 1
-      ? `Deleted “${items[0].name}”`
-      : `Deleted ${items.length} items`;
+      ? `Moved “${items[0].name}” to Trash`
+      : `Moved ${items.length} items to Trash`;
 
   const toastId = $toast(
     {
       component: UndoToast,
-      props: { message, onClick: () => pendingDelete.undo() },
+      props: {
+        message,
+        onClick: () => {
+          $toast.dismiss(toastId);
+          void undoRestore(trashIds);
+        },
+      },
     },
     {
       timeout: UNDO_WINDOW_MS,
@@ -2670,24 +2815,53 @@ const startUndoDelete = (items: { url: string; name: string }[]) => {
       toastClassName: "toast--undo",
     }
   );
+};
 
-  pendingDelete.queue(items, UNDO_WINDOW_MS).then((didUndo) => {
-    $toast.dismiss(toastId);
-    if (!didUndo) void performDelete(items);
-  });
+// Open the trash/permanent confirm for `items`. Shared by the prompt
+// intercept watcher (header button, pill, ctx menu, palette) and the
+// Delete-key shortcut, so every entry point gets identical wording.
+const openDeleteConfirm = (
+  items: { url: string; name: string }[],
+  permanent: boolean
+) => {
+  if (items.length === 0) return;
+  pendingConfirm.value = items;
+  pendingPermanent.value = permanent;
+  if (permanent) {
+    confirmTitle.value =
+      items.length === 1
+        ? `Permanently delete “${items[0].name}”?`
+        : `Permanently delete ${items.length} items?`;
+    confirmMessage.value = "This skips the Trash and cannot be undone.";
+  } else {
+    const it = items[0];
+    const labelHint = it.url.endsWith("/") ? "folder" : "file";
+    confirmTitle.value =
+      items.length === 1
+        ? `Move this ${labelHint} to the Trash?`
+        : `Move ${items.length} items to the Trash?`;
+    confirmMessage.value =
+      items.length === 1
+        ? `“${it.name}” can be restored from the Trash later.`
+        : "They can be restored from the Trash later.";
+  }
+  confirmOpen.value = true;
 };
 
 const onDeleteConfirm = () => {
   const items = pendingConfirm.value;
+  const permanent = pendingPermanent.value;
   confirmOpen.value = false;
   pendingConfirm.value = [];
+  pendingPermanent.value = false;
   if (items.length === 0) return;
-  startUndoDelete(items);
+  void startUndoDelete(items, permanent);
 };
 
 const onDeleteCancel = () => {
   confirmOpen.value = false;
   pendingConfirm.value = [];
+  pendingPermanent.value = false;
 };
 
 // Build the {url, name}[] list for the current listing selection.
@@ -2819,17 +2993,7 @@ watch(
     // Dismiss the prompt so the legacy modal doesn't render alongside ours
     layoutStore.closeHovers();
 
-    pendingConfirm.value = items;
-    if (items.length === 1) {
-      const it = items[0];
-      const labelHint = it.url.endsWith("/") ? "folder" : "file";
-      confirmTitle.value = `Delete this ${labelHint}?`;
-      confirmMessage.value = `“${it.name}” will be permanently removed. You'll have 10 seconds to undo.`;
-    } else {
-      confirmTitle.value = `Delete ${items.length} items?`;
-      confirmMessage.value = `The selected files and folders will be permanently removed. You'll have 10 seconds to undo.`;
-    }
-    confirmOpen.value = true;
+    openDeleteConfirm(items, false);
   }
 );
 
@@ -3139,16 +3303,44 @@ const sortMenuItems = computed<MenuItem[]>(() => {
  *  reuses this codepath internally so the persistence story is
  *  centralized. */
 const sortRaw = async (by: SortKey, asc: boolean) => {
+  // Optimistic + client-authoritative: update the in-memory sorting NOW so the
+  // listing and the sort icons re-order this frame (the `items` computed sorts
+  // client-side). Then persist to the server so the choice sticks on the next
+  // fresh load. No forced reload — the client already shows the new order, and
+  // relying on a silent background reload to re-sort was the source of the
+  // "sort button does nothing" bug.
+  const prev = fileStore.req?.sorting;
+  if (fileStore.req) fileStore.req.sorting = { by, asc };
   try {
     if (authStore.user?.id) {
       await users.update({ id: authStore.user?.id, sorting: { by, asc } }, [
         "sorting",
       ]);
     }
+    // Race guard: a silent background refresh (transfer/upload/tag tick) that
+    // landed WHILE the PUT was in flight calls updateRequest(), which swaps in
+    // the server's PRE-update sorting and snaps the list back. The PUT has now
+    // committed our value server-side, so if the current sorting is still that
+    // stale pre-change value, re-assert ours locally (no reload) to win the
+    // race. If it's a *different* value, the user picked another sort in the
+    // meantime — leave their newer choice alone.
+    const cur = fileStore.req?.sorting;
+    if (
+      fileStore.req &&
+      cur &&
+      prev &&
+      cur.by === prev.by &&
+      cur.asc === prev.asc &&
+      (cur.by !== by || cur.asc !== asc)
+    ) {
+      fileStore.req.sorting = { by, asc };
+    }
   } catch (e: any) {
+    // Roll the optimistic order back so the view doesn't show a sort the
+    // server never accepted.
+    if (fileStore.req && prev) fileStore.req.sorting = prev;
     $showError(e);
   }
-  fileStore.reload = true;
 };
 
 const uploadFunc = () => {
@@ -3376,8 +3568,52 @@ const rowMenuItems = computed<MenuItem[]>(() => {
     });
   }
 
-  // ── Rename / Move / Copy / Copy path / Download (varies) ─────────
+  // ── Clipboard: Cut / Copy / Paste into folder (2.4.0 Stage 1) ────
+  // Same gates as the Move/Copy pickers (cut pastes as a MOVE → perm.rename;
+  // copy pastes as a COPY → perm.create). "Paste into folder" appears on a
+  // single selected folder when the clipboard is armed — pasting INTO it
+  // without navigating first.
   if (items.length > 0) items.push({ type: "separator" });
+  if (hb.move) {
+    items.push({
+      label: sel === 1 ? "Cut" : `Cut ${sel} items`,
+      icon: "scissors",
+      kbd: "⌘X",
+      action: () => {
+        hideContextMenu();
+        clipboardCapture("cut");
+      },
+    });
+  }
+  if (hb.copy) {
+    items.push({
+      label: sel === 1 ? "Copy" : `Copy ${sel} items`,
+      icon: "copy",
+      kbd: "⌘C",
+      action: () => {
+        hideContextMenu();
+        clipboardCapture("copy");
+      },
+    });
+  }
+  if (singleItem?.isDir && clipboardStore.items.length > 0) {
+    const folderUrl = singleItem.url;
+    items.push({
+      label: "Paste into folder",
+      icon: "clipboard",
+      action: () => {
+        hideContextMenu();
+        void paste(folderUrl);
+      },
+    });
+  }
+
+  // ── Rename / Move to / Copy to / Copy path / Download (varies) ───
+  // (ContextMenu renders every separator literally, so don't stack one on an
+  // empty or already-separated tail — e.g. a read-only user's menu.)
+  if (items.length > 0 && items[items.length - 1].type !== "separator") {
+    items.push({ type: "separator" });
+  }
   // Single-selection rename → existing inline rename flow.
   // Multi-selection rename → S4-2 BulkRenamePanel (different code path,
   // entirely different UX). Permission gate is the same (perm.rename).
@@ -3401,16 +3637,18 @@ const rowMenuItems = computed<MenuItem[]>(() => {
       },
     });
   }
+  // "… to…" labels = the destination-picker slide-overs, distinct from the
+  // clipboard Cut/Copy entries above (Stage 1) which act via paste.
   if (hb.move) {
     items.push({
-      // Folder-aware single-item label so a folder reads "Move folder", not
-      // "Move file". Multi-select uses the neutral "N items" wording.
+      // Folder-aware single-item label so a folder reads "Move folder to…",
+      // not "Move file to…". Multi-select uses the neutral "N items" wording.
       label:
         sel === 1
           ? singleItem?.isDir
-            ? "Move folder"
-            : t("buttons.moveFile")
-          : `Move ${sel} items…`,
+            ? "Move folder to…"
+            : "Move file to…"
+          : `Move ${sel} items to…`,
       icon: "forward",
       action: () => {
         hideContextMenu();
@@ -3423,10 +3661,10 @@ const rowMenuItems = computed<MenuItem[]>(() => {
       label:
         sel === 1
           ? singleItem?.isDir
-            ? "Copy folder"
-            : t("buttons.copyFile")
-          : `Copy ${sel} items…`,
-      icon: "copy",
+            ? "Copy folder to…"
+            : "Copy file to…"
+          : `Copy ${sel} items to…`,
+      icon: "copy-plus",
       action: () => {
         hideContextMenu();
         layoutStore.showHover("copy");
@@ -3437,6 +3675,7 @@ const rowMenuItems = computed<MenuItem[]>(() => {
     items.push({
       label: "Copy path",
       icon: "link",
+      kbd: "⌘⇧C",
       action: () => {
         hideContextMenu();
         void copyItemPath(singleItem);
@@ -3513,10 +3752,9 @@ const backgroundMenuItems = computed<MenuItem[]>(() => {
     });
   }
 
-  // Paste only when the clipboard store has cut/copy contents. Items
-  // were placed by the legacy "X" (cut) / "C" (copy) keyboard handlers
-  // — Paste is the corresponding "V" intake. The `paste(event)` helper
-  // already handles conflict resolution + clipboard reset for cut.
+  // Paste only when the clipboard store has cut/copy contents (placed by
+  // ⌘X / ⌘C or the row menu's Cut / Copy). The `paste()` helper handles
+  // conflict resolution + clipboard reset for cut.
   if (clipboardStore.items.length > 0) {
     items.push({
       label: "Paste",
@@ -3524,9 +3762,7 @@ const backgroundMenuItems = computed<MenuItem[]>(() => {
       kbd: "⌘V",
       action: () => {
         hideContextMenu();
-        // paste expects an event so we don't accidentally trigger from
-        // an input; synthesize a non-input target.
-        void paste(new Event("paste"));
+        void paste();
       },
     });
   }

@@ -73,6 +73,15 @@ interface ConflictingResource {
   dest: ConflictingItem;
   checked: Array<"origin" | "dest", "origin-resume">;
   isSmallerOnServer?: boolean;
+  /**
+   * The name a "keep both" resolution will produce (`base(N)ext`), computed
+   * against the destination listing with the same scheme as the backend's
+   * `addVersionSuffix` (http/resource.go). Best-effort: the backend probes the
+   * live FS at execution time, so a concurrent write could shift N — the
+   * server's final name wins. Set by `checkMoveConflict` (move/copy/paste
+   * surfaces only); absent on the upload conflict path.
+   */
+  keepBothName?: string;
 }
 
 interface CsvData {

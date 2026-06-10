@@ -13,6 +13,7 @@ type settingsData struct {
 	HideLoginButton       bool                  `json:"hideLoginButton"`
 	CreateUserDir         bool                  `json:"createUserDir"`
 	MinimumPasswordLength uint                  `json:"minimumPasswordLength"`
+	TrashRetentionDays    uint                  `json:"trashRetentionDays"`
 	UserHomeBasePath      string                `json:"userHomeBasePath"`
 	Defaults              settings.UserDefaults `json:"defaults"`
 	AuthMethod            settings.AuthMethod   `json:"authMethod"`
@@ -29,6 +30,7 @@ var settingsGetHandler = withAdmin(func(w http.ResponseWriter, r *http.Request, 
 		HideLoginButton:       d.settings.HideLoginButton,
 		CreateUserDir:         d.settings.CreateUserDir,
 		MinimumPasswordLength: d.settings.MinimumPasswordLength,
+		TrashRetentionDays:    d.settings.TrashRetentionDays,
 		UserHomeBasePath:      d.settings.UserHomeBasePath,
 		Defaults:              d.settings.Defaults,
 		AuthMethod:            d.settings.AuthMethod,
@@ -52,6 +54,7 @@ var settingsPutHandler = withAdmin(func(_ http.ResponseWriter, r *http.Request, 
 	d.settings.Signup = req.Signup
 	d.settings.CreateUserDir = req.CreateUserDir
 	d.settings.MinimumPasswordLength = req.MinimumPasswordLength
+	d.settings.TrashRetentionDays = req.TrashRetentionDays
 	d.settings.UserHomeBasePath = req.UserHomeBasePath
 	d.settings.Defaults = req.Defaults
 	d.settings.Rules = req.Rules

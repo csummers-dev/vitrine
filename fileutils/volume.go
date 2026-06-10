@@ -8,6 +8,23 @@ import (
 	"github.com/spf13/afero"
 )
 
+// DeviceID returns the filesystem device id (st_dev) of path, with ok=false
+// when it can't be determined (stat error, or a FileInfo without a
+// *syscall.Stat_t — e.g. an in-memory test fs). Callers treat not-ok
+// conservatively, the same philosophy as SameVolume below. Used by the trash
+// package to find the top of the volume a deleted file lives on.
+func DeviceID(afs afero.Fs, path string) (uint64, bool) {
+	fi, err := afs.Stat(path)
+	if err != nil {
+		return 0, false
+	}
+	st, ok := fi.Sys().(*syscall.Stat_t)
+	if !ok {
+		return 0, false
+	}
+	return uint64(st.Dev), true //nolint:unconvert // Dev is int32 on darwin, uint64 on linux
+}
+
 // SameVolume reports whether paths a and b live on the same filesystem volume —
 // i.e. whether a rename(a→b) would stay an instant metadata operation rather
 // than fall back to a cross-device copy. It compares the underlying device id
