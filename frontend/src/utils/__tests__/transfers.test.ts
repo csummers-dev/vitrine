@@ -4,7 +4,12 @@ import {
   isTransferRowVisible,
   shouldAutoSelectTransfer,
   transferTouchesFolder,
+  rollingRate,
+  etaSeconds,
+  formatRate,
+  formatEta,
   TRANSFER_REVEAL_MS,
+  type RateSample,
 } from "@/utils/transfers";
 import type { TransferJob } from "@/api/jobs";
 
@@ -260,5 +265,86 @@ describe("transferTouchesFolder", () => {
         "/dst/"
       )
     ).toBe(true);
+  });
+});
+
+describe("rollingRate", () => {
+  const s = (t: number, bytes: number): RateSample => ({ t, bytes });
+
+  it("returns 0 with fewer than two samples (no signal yet)", () => {
+    expect(rollingRate([])).toBe(0);
+    expect(rollingRate([s(0, 0)])).toBe(0);
+  });
+
+  it("computes bytes/sec from the spanning samples", () => {
+    // 1000 bytes over 1s = 1000 B/s.
+    expect(rollingRate([s(0, 0), s(1000, 1000)])).toBe(1000);
+  });
+
+  it("spans the rolling window, excluding a burst older than windowMs", () => {
+    // A fast first second (1000 B) is OLDER than the 3s window and must not
+    // inflate the current rate: the anchor is the first sample at/after the
+    // window edge (t=1000), so we measure t=1000→4000 → 300 B over 3s = 100 B/s,
+    // reflecting the recent slow phase rather than the cumulative ~325 B/s.
+    const samples = [
+      s(0, 0),
+      s(1000, 1000), // fast burst — excluded (lands on the window edge as anchor)
+      s(2000, 1100),
+      s(3000, 1200),
+      s(4000, 1300), // recent: ~100 B/s
+    ];
+    expect(rollingRate(samples, 3000)).toBe(100);
+  });
+
+  it("returns 0 on a stall or a backward byte count (e.g. a retry reset)", () => {
+    expect(rollingRate([s(0, 5000), s(1000, 5000)])).toBe(0); // no progress
+    expect(rollingRate([s(0, 5000), s(1000, 1000)])).toBe(0); // went backward
+  });
+});
+
+describe("etaSeconds", () => {
+  it("returns whole seconds remaining at the given rate", () => {
+    // 5000 of 10000 bytes done, 1000 B/s → 5000 remaining / 1000 = 5s.
+    expect(etaSeconds(5000, 10000, 1000)).toBe(5);
+  });
+
+  it("rounds up to a 1s floor for a near-complete transfer", () => {
+    expect(etaSeconds(9990, 10000, 1000)).toBe(1);
+  });
+
+  it("returns null when it can't be estimated", () => {
+    expect(etaSeconds(0, 10000, 0)).toBeNull(); // no rate
+    expect(etaSeconds(0, 0, 1000)).toBeNull(); // unknown total
+    expect(etaSeconds(10000, 10000, 1000)).toBeNull(); // already complete
+  });
+
+  it("returns null rather than an absurd multi-day ETA at a near-zero rate", () => {
+    // 1 TB remaining at 1 B/s would be ~31000 years — capped to null.
+    expect(etaSeconds(0, 1_000_000_000_000, 1)).toBeNull();
+  });
+});
+
+describe("formatRate", () => {
+  // A trivial filesize stand-in so the test doesn't depend on the real one.
+  const fs = (n: number) => `${n}B`;
+
+  it("appends /s to the formatted byte rate", () => {
+    expect(formatRate(1500, fs)).toBe("1500B/s");
+  });
+});
+
+describe("formatEta", () => {
+  it("shows seconds under a minute", () => {
+    expect(formatEta(8)).toBe("8s left");
+    expect(formatEta(59)).toBe("59s left");
+  });
+
+  it("shows whole minutes under an hour", () => {
+    expect(formatEta(180)).toBe("3m left");
+  });
+
+  it("shows hours and minutes past an hour, dropping a zero minute", () => {
+    expect(formatEta(3840)).toBe("1h 4m left"); // 1h 04m
+    expect(formatEta(3600)).toBe("1h left"); // exactly an hour
   });
 });

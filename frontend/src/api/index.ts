@@ -4,6 +4,7 @@ import * as users from "./users";
 import * as settings from "./settings";
 import * as pub from "./pub";
 import * as tags from "./tags";
+import * as trash from "./trash";
 import * as audit from "./audit";
 import * as webhooks from "./webhooks";
 import * as audiotags from "./audiotags";
@@ -19,6 +20,7 @@ export {
   commands,
   search,
   tags,
+  trash,
   audit,
   webhooks,
   audiotags,

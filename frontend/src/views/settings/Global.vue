@@ -57,6 +57,23 @@
             class="settings-input settings-input--num"
           />
         </SettingsRow>
+        <SettingsRow
+          label="Trash retention (days)"
+          description="Items in the Trash older than this are purged automatically. 0 keeps them until deleted by hand."
+        >
+          <input
+            v-model.number="settings.trashRetentionDays"
+            type="number"
+            min="0"
+            class="settings-input settings-input--num"
+          />
+        </SettingsRow>
+        <SettingsRow
+          label="Verify copies"
+          description="After every background copy (and cross-volume move), re-read the new files and checksum them against the source. A mismatch fails the transfer and keeps the original. Safer, but roughly doubles copy time."
+        >
+          <Toggle v-model="settings.verifyTransfers" />
+        </SettingsRow>
       </SettingsSection>
 
       <!-- ── Interface ──────────────────────────────────────────────────

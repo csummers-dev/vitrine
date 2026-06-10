@@ -3,6 +3,7 @@ package fbhttp
 import (
 	"path"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -23,7 +24,10 @@ func seedFile(t *testing.T, fs afero.Fs, name, content string) {
 }
 
 func testPayload(fs afero.Fs) *transferPayload {
-	return &transferPayload{fs: fs, fileMode: 0o644, dirMode: 0o755, base: events.NewBase(1, "")}
+	// prewalk:true models a main-lane transfer (copy or cross-volume move),
+	// where the executor counts bytes up front. The fast-lane skip is covered
+	// by TestTransferExecuteSkipsPrewalk.
+	return &transferPayload{fs: fs, fileMode: 0o644, dirMode: 0o755, base: events.NewBase(1, ""), prewalk: true}
 }
 
 func waitJob(t *testing.T, tm *transferManager, id string, uid uint, want jobs.Status) jobs.JobView {
@@ -117,5 +121,70 @@ func TestTransferExecuteCopyErrorRollsBackDest(t *testing.T) {
 	}
 	if _, err := fs.Stat("/dst/nope.txt"); err == nil {
 		t.Error("a failed copy left a destination behind")
+	}
+}
+
+func TestTransferExecuteSkipsPrewalk(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	seedFile(t, fs, "/src/a.txt", "data")
+
+	tm := newTransferManager()
+	defer tm.reg.Close()
+
+	// prewalk:false models a fast-lane (same-volume) move — the executor must
+	// NOT walk for byte totals; the rename copies nothing, so TotalBytes stays 0
+	// while MarkComplete still pins 100% / N-of-N.
+	pl := &transferPayload{fs: fs, fileMode: 0o644, dirMode: 0o755, base: events.NewBase(1, ""), prewalk: false}
+	j := tm.reg.Enqueue(1, jobs.KindMove,
+		[]jobs.Item{{From: "/src/a.txt", To: "/dst/a.txt"}}, pl)
+	v := waitJob(t, tm, j.ID(), 1, jobs.StatusCompleted)
+
+	if v.TotalBytes != 0 {
+		t.Errorf("prewalk should have been skipped (TotalBytes=0), got %d", v.TotalBytes)
+	}
+	if v.FileCount != 1 || v.FilesDone != 1 {
+		t.Errorf("files: want 1/1, got %d/%d", v.FilesDone, v.FileCount)
+	}
+	if _, err := fs.Stat("/src/a.txt"); err == nil {
+		t.Error("source still present after move")
+	}
+}
+
+func TestTransferExecuteVerifiedCopy(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	seedFile(t, fs, "/src/a.txt", "verify me")
+
+	tm := newTransferManager()
+	defer tm.reg.Close()
+
+	// verify:true → the executor re-hashes src vs dst after the copy; a faithful
+	// copy passes, so the job still completes with the source intact.
+	pl := &transferPayload{fs: fs, fileMode: 0o644, dirMode: 0o755, base: events.NewBase(1, ""), prewalk: true, verify: true}
+	j := tm.reg.Enqueue(1, jobs.KindCopy,
+		[]jobs.Item{{From: "/src/a.txt", To: "/dst/a.txt"}}, pl)
+	v := waitJob(t, tm, j.ID(), 1, jobs.StatusCompleted)
+
+	got, _ := afero.ReadFile(fs, "/dst/a.txt")
+	if string(got) != "verify me" {
+		t.Errorf("dest = %q, want %q", got, "verify me")
+	}
+	if v.DoneBytes != v.TotalBytes || v.FilesDone != v.FileCount {
+		t.Errorf("verified copy counters off: %d/%d bytes, %d/%d files",
+			v.DoneBytes, v.TotalBytes, v.FilesDone, v.FileCount)
+	}
+}
+
+func TestIsTransientTransferErr(t *testing.T) {
+	transient := []error{syscall.EINTR, syscall.EAGAIN, syscall.EBUSY, syscall.ETIMEDOUT}
+	for _, e := range transient {
+		if !isTransientTransferErr(e) {
+			t.Errorf("%v should be transient", e)
+		}
+	}
+	permanent := []error{nil, syscall.ENOENT, syscall.EACCES, syscall.EEXIST, syscall.ENOSPC, syscall.EXDEV}
+	for _, e := range permanent {
+		if isTransientTransferErr(e) {
+			t.Errorf("%v should NOT be transient", e)
+		}
 	}
 }

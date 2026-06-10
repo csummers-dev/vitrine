@@ -333,6 +333,10 @@ func buildEntry(e events.Event) Entry {
 		base.UserID = v.UserID
 		base.IP = v.IP
 		base.Path = v.Path
+	case events.FileModified:
+		base.UserID = v.UserID
+		base.IP = v.IP
+		base.Path = v.Path
 	case events.ShareGranted:
 		base.UserID = v.UserID
 		base.IP = v.IP

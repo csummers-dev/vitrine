@@ -15,7 +15,8 @@ import type { Router } from "vue-router";
 import type { useAuthStore } from "@/stores/auth";
 import type { useFileStore } from "@/stores/file";
 import type { useLayoutStore } from "@/stores/layout";
-import { users } from "@/api";
+import { users, files } from "@/api";
+import { useToast } from "vue-toastification";
 import * as auth from "@/utils/auth";
 import { unzipEnabled } from "@/utils/constants";
 import { isExtractable } from "@/utils/archive";
@@ -189,6 +190,25 @@ export function buildStaticCommands(ctx: CommandContext): Command[] {
       },
     });
   }
+
+  // 2.4.0 Stage 5 / H: force a rebuild of the server's in-memory search index
+  // if results ever look stale (the index normally keeps itself fresh).
+  cmds.push({
+    id: "action.rebuildSearchIndex",
+    group: "actions",
+    label: "Rebuild search index",
+    icon: "refresh-cw",
+    keywords: ["reindex", "search", "stale", "refresh index"],
+    run: async () => {
+      const toast = useToast();
+      try {
+        await files.rebuildSearchIndex();
+        toast.success("Search index rebuilt");
+      } catch {
+        toast.error("Couldn't rebuild the search index");
+      }
+    },
+  });
 
   // Bulk operations on the current selection
   const selCount = fileStore.selectedCount ?? 0;

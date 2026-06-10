@@ -56,13 +56,6 @@ app.use(i18n);
 app.use(pinia);
 app.use(router);
 
-app.mixin({
-  mounted() {
-    // expose vue instance to components
-    this.$el.__vue__ = this;
-  },
-});
-
 // provide v-focus for components
 app.directive("focus", {
   mounted: async (el) => {

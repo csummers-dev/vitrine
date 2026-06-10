@@ -226,10 +226,80 @@ const COLOR_BY_EXT: Record<string, string> = {
   ".cbr": "bg-violet-600 text-white",
 };
 
+// Map common media extensions to the server's `type` buckets. The backend tags
+// files with a `type` (image/audio/video/pdf/text) that drives the icon +
+// colour above — but callers that only have a NAME (Trash entries, search hits,
+// recents) get no `type`, and these extensions live in BY_TYPE, not BY_EXT.
+// Inferring the bucket from the extension lets those name-only surfaces show the
+// same coloured glyph as the main listing instead of a generic grey tile.
+// (Extensions already covered by BY_EXT — e.g. ".ts" as TypeScript — are
+// resolved there first and never reach this map.)
+const EXT_TO_TYPE: Record<string, string> = {
+  // Image
+  ".jpg": "image",
+  ".jpeg": "image",
+  ".png": "image",
+  ".gif": "image",
+  ".webp": "image",
+  ".bmp": "image",
+  ".svg": "image",
+  ".ico": "image",
+  ".tif": "image",
+  ".tiff": "image",
+  ".heic": "image",
+  ".heif": "image",
+  ".avif": "image",
+
+  // Audio
+  ".mp3": "audio",
+  ".m4a": "audio",
+  ".aac": "audio",
+  ".flac": "audio",
+  ".wav": "audio",
+  ".ogg": "audio",
+  ".oga": "audio",
+  ".opus": "audio",
+  ".wma": "audio",
+  ".aiff": "audio",
+  ".alac": "audio",
+
+  // Video
+  ".mp4": "video",
+  ".m4v": "video",
+  ".mkv": "video",
+  ".mov": "video",
+  ".avi": "video",
+  ".webm": "video",
+  ".wmv": "video",
+  ".flv": "video",
+  ".mpg": "video",
+  ".mpeg": "video",
+  ".3gp": "video",
+
+  // PDF
+  ".pdf": "pdf",
+
+  // Plain text
+  ".txt": "text",
+  ".text": "text",
+  ".nfo": "text",
+};
+
 function getExt(name: string): string | null {
   const dot = name.lastIndexOf(".");
   if (dot === -1) return null;
   return name.substring(dot).toLowerCase();
+}
+
+/** Resolve the effective `type` bucket: the explicit one if known, else
+ *  inferred from a media extension. */
+function resolveType(
+  type: string | undefined,
+  ext: string | null
+): string | undefined {
+  if (type && BY_TYPE[type]) return type;
+  if (ext && EXT_TO_TYPE[ext]) return EXT_TO_TYPE[ext];
+  return type;
 }
 
 export function fileIcon(opts: {
@@ -238,11 +308,11 @@ export function fileIcon(opts: {
   name?: string;
 }): string {
   if (opts.isDir) return "folder";
-  if (opts.name) {
-    const ext = getExt(opts.name);
-    if (ext && BY_EXT[ext]) return BY_EXT[ext];
-  }
-  if (opts.type && BY_TYPE[opts.type]) return BY_TYPE[opts.type];
+  const ext = opts.name ? getExt(opts.name) : null;
+  // Specific extension icons (e.g. .zip → archive) win over the type bucket.
+  if (ext && BY_EXT[ext]) return BY_EXT[ext];
+  const type = resolveType(opts.type, ext);
+  if (type && BY_TYPE[type]) return BY_TYPE[type];
   return "file";
 }
 
@@ -252,10 +322,9 @@ export function fileIconColor(opts: {
   name?: string;
 }): string {
   if (opts.isDir) return FOLDER_COLOR;
-  if (opts.name) {
-    const ext = getExt(opts.name);
-    if (ext && COLOR_BY_EXT[ext]) return COLOR_BY_EXT[ext];
-  }
-  if (opts.type && COLOR_BY_TYPE[opts.type]) return COLOR_BY_TYPE[opts.type];
+  const ext = opts.name ? getExt(opts.name) : null;
+  if (ext && COLOR_BY_EXT[ext]) return COLOR_BY_EXT[ext];
+  const type = resolveType(opts.type, ext);
+  if (type && COLOR_BY_TYPE[type]) return COLOR_BY_TYPE[type];
   return DEFAULT_COLOR;
 }

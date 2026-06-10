@@ -65,6 +65,19 @@ type Settings struct {
 	FileMode              fs.FileMode         `json:"fileMode"`
 	DirMode               fs.FileMode         `json:"dirMode"`
 	HideDotfiles          bool                `json:"hideDotfiles"`
+	// TrashRetentionDays auto-purges trash entries older than this many days
+	// (2.4.0 Stage 2). 0 disables auto-purge — trashed items stay until
+	// restored, deleted forever, or the trash is emptied by hand. Existing
+	// databases unmarshal to 0, so enabling retention is always an explicit
+	// admin choice in Global settings.
+	TrashRetentionDays uint `json:"trashRetentionDays"`
+	// VerifyTransfers turns on an integrity check after every background copy
+	// (and after the copy phase of a cross-volume move): the source and the new
+	// destination are re-read and compared by xxhash64, and a mismatch fails the
+	// transfer with the SOURCE KEPT (2.4.0 Stage 4). Off by default — it roughly
+	// doubles I/O, so it's an explicit admin opt-in. Existing databases unmarshal
+	// to false.
+	VerifyTransfers bool `json:"verifyTransfers"`
 }
 
 // GetRules implements rules.Provider.

@@ -5,6 +5,7 @@ vi.mock("@/api/jobs", () => ({
   listJobs: vi.fn(),
   cancelJob: vi.fn(),
   dismissJob: vi.fn(),
+  retryJob: vi.fn(),
 }));
 
 import * as jobsApi from "@/api/jobs";
@@ -113,6 +114,26 @@ describe("useTransfers", () => {
     await t.cancel("j1");
     expect(jobsApi.cancelJob).toHaveBeenCalledWith("j1");
     expect(jobsApi.listJobs).toHaveBeenCalled();
+  });
+
+  it("retry swaps the old row for the fresh job and resumes polling", async () => {
+    // A failed/interrupted row is showing; retry returns a brand-new running job
+    // and the server has already dismissed the original.
+    vi.mocked(jobsApi.listJobs).mockResolvedValue([
+      job({ id: "old", status: "failed", retryable: true }),
+    ]);
+    vi.mocked(jobsApi.retryJob).mockResolvedValue(
+      job({ id: "new", status: "queued" })
+    );
+    const t = useTransfers();
+    await t.bootstrap();
+
+    const j = await t.retry("old");
+    expect(j.id).toBe("new");
+    expect(jobsApi.retryJob).toHaveBeenCalledWith("old");
+    // Old row gone, new row present.
+    expect(t.jobs.value.find((x) => x.id === "old")).toBeUndefined();
+    expect(t.jobs.value.find((x) => x.id === "new")).toBeTruthy();
   });
 
   describe("movingPaths (in-listing move shimmer)", () => {

@@ -13,9 +13,9 @@ import Shares from "@/views/settings/Shares.vue";
 import Audit from "@/views/settings/Audit.vue";
 import Sessions from "@/views/settings/Sessions.vue";
 import Webhooks from "@/views/settings/Webhooks.vue";
+import Trash from "@/views/Trash.vue";
 import Errors from "@/views/Errors.vue";
 import { useAuthStore } from "@/stores/auth";
-import { useUploadStore } from "@/stores/upload";
 import { baseURL, brand } from "@/utils/constants";
 import i18n from "@/i18n";
 import { recaptcha, loginPage } from "@/utils/constants";
@@ -34,6 +34,7 @@ const titles = {
   User: "settings.user",
   Audit: "settings.audit",
   Webhooks: "settings.webhooks",
+  Trash: "sidebar.trash",
   Forbidden: "errors.forbidden",
   NotFound: "errors.notFound",
   InternalServerError: "errors.internal",
@@ -67,6 +68,21 @@ const routes = [
         path: ":path*",
         name: "Files",
         component: Files,
+      },
+    ],
+  },
+  {
+    // Trash / recycle bin (2.4.0 Stage 2).
+    path: "/trash",
+    component: Layout,
+    meta: {
+      requiresAuth: true,
+    },
+    children: [
+      {
+        path: "",
+        name: "Trash",
+        component: Trash,
       },
     ],
   },
@@ -217,32 +233,15 @@ const router = createRouter({
   },
 });
 
-// Active-upload navigation guard (H8). The browser-native
-// beforeunload dialog has hardcoded text we can't customize, so we
-// intercept in-app navigation FIRST and surface a custom confirm
-// with specific context — "5 uploads in progress" beats Chrome's
-// generic "Leave site?". Skipped when:
-//   - First navigation (from.name is null): the app is bootstrapping,
-//     there can't be uploads in progress.
-//   - to.path === from.path: same-route refresh trigger.
-//   - No uploads pending: hot path, no overhead.
-// Hard refresh / tab close / browser close still fall through to the
-// beforeunload handler in stores/upload.ts (browser-controlled text).
-router.beforeEach(async (to, from) => {
-  if (from.name == null) return true;
-  if (to.path === from.path) return true;
-  const uploadStore = useUploadStore();
-  const pending = uploadStore.pendingUploadCount;
-  if (pending <= 0) return true;
-  const label = pending === 1 ? "1 upload is" : `${pending} uploads are`;
-  // Native confirm() lets us write our own message. Modal, blocks
-  // until the user responds, returns boolean. Vue Router treats
-  // `return false` as a cancel.
-  const proceed = window.confirm(
-    `${label} still in progress. Leaving this page will cancel them.\n\nDo you want to leave anyway?`
-  );
-  return proceed;
-});
+// NOTE: there is deliberately NO active-upload guard on IN-APP navigation.
+// Uploads run from the app-level upload store (stores/upload.ts), independent
+// of the route — switching folders, opening a file, or visiting Settings does
+// NOT abort an in-flight upload. An earlier version (H8) popped a confirm()
+// here warning that "uploads will be canceled," which was simply untrue for
+// SPA navigation and only annoyed users. The genuine risk — closing the tab /
+// hard refresh, which DOES tear down the JS context and cancel uploads — is
+// still covered by the `beforeunload` handler in stores/upload.ts, where the
+// browser shows its own (truthful) leave-site prompt.
 
 // Modernized to Vue Router 5's return-value navigation guards (G1):
 //   - return false           → cancel navigation

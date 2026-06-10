@@ -37,6 +37,13 @@ type Registry struct {
 	retain    time.Duration
 	now       func() time.Time
 	stop      chan struct{}
+
+	// Persistence hooks (2.4.0 Stage 3) — optional; nil = in-memory only.
+	// persist is called whenever an in-flight job's state changes; forget when
+	// a job becomes terminal or is dismissed (so the store holds only in-flight
+	// jobs, and the sole post-restart state is "interrupted").
+	persist func(Record)
+	forget  func(id string)
 }
 
 // New creates a registry and starts its sequential worker + TTL sweeper. exec
@@ -55,6 +62,57 @@ func New(exec Executor) *Registry {
 	go r.worker(r.fastQueue) // fast lane (same-volume moves)
 	go r.sweeper()
 	return r
+}
+
+// SetPersistence wires the bolt-backed store (2.4.0 Stage 3). Call once,
+// before any Enqueue. `persist` records an in-flight job, `forget` drops it.
+func (r *Registry) SetPersistence(persist func(Record), forget func(id string)) {
+	r.persist = persist
+	r.forget = forget
+}
+
+// savePersist records the job if persistence is wired (no-op otherwise).
+func (r *Registry) savePersist(j *Job) {
+	if r.persist != nil {
+		r.persist(j.Record())
+	}
+}
+
+// dropPersist forgets the job's record if persistence is wired.
+func (r *Registry) dropPersist(id string) {
+	if r.forget != nil {
+		r.forget(id)
+	}
+}
+
+// Restore re-registers jobs that were in flight when the process died, as
+// non-scheduled `interrupted` jobs the dock shows with a Retry button (2.4.0
+// Stage 3). Called once at startup with the persisted records. finishedAt is
+// left zero so the TTL sweeper never reaps them — they linger until the user
+// retries or dismisses.
+func (r *Registry) Restore(records []Record) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for _, rec := range records {
+		if _, exists := r.jobs[rec.ID]; exists {
+			continue
+		}
+		done := make([]bool, len(rec.Items))
+		copy(done, rec.ItemsDone)
+		j := &Job{
+			id:        rec.ID,
+			userID:    rec.UserID,
+			kind:      rec.Kind,
+			items:     rec.Items,
+			name:      rec.Name,
+			dest:      rec.Dest,
+			status:    StatusInterrupted,
+			createdAt: rec.CreatedAt,
+			itemsDone: done,
+		}
+		r.jobs[j.id] = j
+		r.order = append(r.order, j.id)
+	}
 }
 
 // Close stops the worker + sweeper goroutines. A job already running is left to
@@ -103,12 +161,14 @@ func (r *Registry) enqueue(q chan *Job, userID uint, kind Kind, items []Item, pa
 		dest:      destDir(items),
 		status:    StatusQueued,
 		createdAt: r.now(),
+		itemsDone: make([]bool, len(items)),
 	}
 
 	r.mu.Lock()
 	r.jobs[j.id] = j
 	r.order = append(r.order, j.id)
 	r.mu.Unlock()
+	r.savePersist(j) // record the in-flight job (Stage 3)
 
 	// Snapshot BEFORE scheduling: until the channel send below, no worker can
 	// hold j, so this view is guaranteed status=queued.
@@ -122,9 +182,40 @@ func (r *Registry) enqueue(q chan *Job, userID uint, kind Kind, items []Item, pa
 		j.errMsg = "transfer queue is full"
 		j.finishedAt = r.now()
 		j.mu.Unlock()
+		r.dropPersist(j.id) // terminal → forget
 		view = j.Snapshot()
 	}
 	return j, view
+}
+
+// PersistProgress re-records the job's in-flight state (call after item-done
+// updates so a restart's interrupted retry skips finished items). No-op without
+// a persister.
+func (r *Registry) PersistProgress(j *Job) { r.savePersist(j) }
+
+// RetrySource returns a retryable job's kind + not-yet-finished items, so the
+// caller can rebuild a payload and re-enqueue them. ok=false when the job is
+// missing, not owned by userID, not retryable, or has nothing pending.
+func (r *Registry) RetrySource(id string, userID uint) (Kind, []Item, bool) {
+	r.mu.Lock()
+	j, ok := r.jobs[id]
+	r.mu.Unlock()
+	if !ok || j.userID != userID {
+		return "", nil, false
+	}
+	j.mu.Lock()
+	retryable := j.status == StatusFailed || j.status == StatusCanceled ||
+		j.status == StatusInterrupted
+	kind := j.kind
+	j.mu.Unlock()
+	if !retryable {
+		return "", nil, false
+	}
+	pending := j.PendingItems()
+	if len(pending) == 0 {
+		return "", nil, false
+	}
+	return kind, pending, true
 }
 
 // Cancel requests cancellation of a job owned by userID. Returns true if the
@@ -165,6 +256,7 @@ func (r *Registry) Dismiss(id string, userID uint) bool {
 	}
 	delete(r.jobs, id)
 	r.removeOrderLocked(id)
+	r.dropPersist(id) // also drop any lingering interrupted-job record
 	return true
 }
 
@@ -221,12 +313,14 @@ func (r *Registry) run(j *Job) {
 		j.status = StatusCanceled
 		j.finishedAt = r.now()
 		j.mu.Unlock()
+		r.dropPersist(j.id) // terminal → forget
 		return
 	}
 	j.status = StatusRunning
 	j.startedAt = r.now()
 	j.cancel = cancel
 	j.mu.Unlock()
+	r.savePersist(j) // now running
 
 	err := r.exec(ctx, j)
 
@@ -243,6 +337,7 @@ func (r *Registry) run(j *Job) {
 		j.status = StatusCompleted
 	}
 	j.mu.Unlock()
+	r.dropPersist(j.id) // terminal → forget (only in-flight jobs are persisted)
 }
 
 func (r *Registry) sweeper() {

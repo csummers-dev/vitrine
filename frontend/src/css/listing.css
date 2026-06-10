@@ -375,6 +375,12 @@ html.dark #listing .item .name.is-moving {
 .item.item--spring-loaded {
   background: var(--color-accent-soft, rgba(94, 106, 210, 0.08));
 }
+/* 2.4.0 Stage 1: rows sitting on the clipboard as a CUT render dimmed (the
+   Finder-style "armed for move" affordance) until pasted or disarmed (Esc).
+   Opacity only — selection highlight, hover, and drag still read through. */
+.item.item--cut {
+  opacity: 0.45;
+}
 /* V3-B #5: in grid + gallery the icon fills the whole tile, so the inset:0 ring
    stretches edge-to-edge and the countdown sits right against the tile border.
    Cap it to a centered ~52px badge so it reads as a deliberate countdown framing

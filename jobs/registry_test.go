@@ -251,3 +251,86 @@ func TestLabelAndDest(t *testing.T) {
 		t.Fatalf("dest dir: got %q", got)
 	}
 }
+
+// ── Stage 3: persistence + restore + partial-batch retry ─────────────────────
+
+func TestPersistAndForgetHooks(t *testing.T) {
+	var mu sync.Mutex
+	saved := map[string]Record{}
+	forgotten := map[string]bool{}
+
+	r := New(func(_ context.Context, j *Job) error {
+		j.MarkItemDone(0)
+		return nil
+	})
+	defer r.Close()
+	r.SetPersistence(
+		func(rec Record) { mu.Lock(); saved[rec.ID] = rec; mu.Unlock() },
+		func(id string) { mu.Lock(); forgotten[id] = true; mu.Unlock() },
+	)
+
+	j := r.Enqueue(1, KindMove, sampleItems(), nil)
+	waitStatus(t, r, j.ID(), 1, StatusCompleted)
+
+	mu.Lock()
+	defer mu.Unlock()
+	// Persisted at least once while in flight, then forgotten on completion.
+	if _, ok := saved[j.ID()]; !ok {
+		t.Fatal("expected the in-flight job to be persisted")
+	}
+	if !forgotten[j.ID()] {
+		t.Fatal("expected a completed job's record to be forgotten")
+	}
+}
+
+func TestRestoreMakesInterruptedRetryable(t *testing.T) {
+	r := New(func(_ context.Context, _ *Job) error { return nil })
+	defer r.Close()
+
+	// A record for a 2-item job where item 0 finished before the "crash".
+	rec := Record{
+		ID:        "abc123",
+		UserID:    7,
+		Kind:      KindCopy,
+		Items:     []Item{{From: "/a", To: "/x/a"}, {From: "/b", To: "/x/b"}},
+		ItemsDone: []bool{true, false},
+		Name:      "",
+		Dest:      "/x",
+		CreatedAt: time.Now().Add(-time.Hour),
+	}
+	r.Restore([]Record{rec})
+
+	v, ok := r.Get("abc123", 7)
+	if !ok {
+		t.Fatal("restored job not found")
+	}
+	if v.Status != StatusInterrupted {
+		t.Fatalf("status: want interrupted, got %q", v.Status)
+	}
+	if !v.Retryable {
+		t.Fatal("an interrupted job with a pending item should be Retryable")
+	}
+	// Another user can't see it.
+	if _, ok := r.Get("abc123", 99); ok {
+		t.Fatal("restored job leaked across users")
+	}
+	// RetrySource returns ONLY the not-yet-done item (partial-batch retry).
+	kind, pending, ok := r.RetrySource("abc123", 7)
+	if !ok || kind != KindCopy {
+		t.Fatalf("RetrySource: ok=%v kind=%q", ok, kind)
+	}
+	if len(pending) != 1 || pending[0].From != "/b" {
+		t.Fatalf("pending items: want just /b, got %+v", pending)
+	}
+}
+
+func TestRetrySourceRejectsNonRetryable(t *testing.T) {
+	r := New(func(_ context.Context, _ *Job) error { return nil })
+	defer r.Close()
+	j := r.Enqueue(1, KindCopy, sampleItems(), nil)
+	waitStatus(t, r, j.ID(), 1, StatusCompleted)
+	// A completed job is not retryable.
+	if _, _, ok := r.RetrySource(j.ID(), 1); ok {
+		t.Fatal("a completed job must not be retryable")
+	}
+}

@@ -2,14 +2,20 @@ package fbhttp
 
 import (
 	"io/fs"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
 
 	"github.com/filebrowser/filebrowser/v2/audit"
+	"github.com/filebrowser/filebrowser/v2/foldersize"
+	"github.com/filebrowser/filebrowser/v2/jobs"
+	"github.com/filebrowser/filebrowser/v2/jobstore"
+	"github.com/filebrowser/filebrowser/v2/searchindex"
 	"github.com/filebrowser/filebrowser/v2/settings"
 	"github.com/filebrowser/filebrowser/v2/storage"
 	"github.com/filebrowser/filebrowser/v2/tags"
+	"github.com/filebrowser/filebrowser/v2/trash"
 	"github.com/filebrowser/filebrowser/v2/webhooks"
 )
 
@@ -25,6 +31,8 @@ func NewHandler(
 	uploadCache UploadCache,
 	store *storage.Storage,
 	tagsStore *tags.Store,
+	trashStore *trash.Store,
+	jobStore *jobstore.Store,
 	auditLog *audit.Log,
 	webhookStore *webhooks.Store,
 	webhookDispatcher *webhooks.Dispatcher,
@@ -43,7 +51,7 @@ func NewHandler(
 	index, static := getStaticHandlers(store, server, assetsFs)
 
 	monkey := func(fn handleFunc, prefix string) http.Handler {
-		return handle(fn, prefix, store, tagsStore, server)
+		return handle(fn, prefix, store, tagsStore, trashStore, server)
 	}
 
 	r.HandleFunc("/health", healthHandler)
@@ -76,13 +84,46 @@ func NewHandler(
 	api.PathPrefix("/resources").Handler(monkey(resourcePatchHandler(fileCache), "/api/resources")).Methods("PATCH")
 
 	// Background transfers (move/copy jobs) with progress + cancellation. The
-	// manager owns an in-memory job registry + a single sequential worker; it
-	// lives for the server lifetime (held by the route closures below).
+	// manager owns an in-memory job registry + two worker lanes; it lives for the
+	// server lifetime (held by the route closures below). With a job store wired
+	// (Stage 3), in-flight jobs are persisted and any interrupted by a restart
+	// are restored as Retryable rows.
 	transfers := newTransferManager()
+	if jobStore != nil {
+		transfers.reg.SetPersistence(
+			func(rec jobs.Record) {
+				if err := jobStore.Save(rec); err != nil {
+					log.Printf("WARNING: persist transfer job %s: %v", rec.ID, err)
+				}
+			},
+			func(id string) { _ = jobStore.Delete(id) },
+		)
+		if records, err := jobStore.LoadAll(); err != nil {
+			log.Printf("WARNING: load interrupted transfer jobs: %v", err)
+		} else if len(records) > 0 {
+			transfers.reg.Restore(records)
+			log.Printf("Transfers: restored %d interrupted job(s) from a prior run", len(records))
+		}
+	}
+	// Folder-size cache (2.4.0 Stage 4 / E): on-demand recursive directory sizes,
+	// kept fresh by subscribing to the events bus for ancestor invalidation. One
+	// per server, lives for its lifetime (held by the route closure below).
+	folderSizes := foldersize.New()
+	api.PathPrefix("/folder-size").Handler(monkey(folderSizeHandler(folderSizes), "/api/folder-size")).Methods("GET")
+
 	api.Handle("/jobs", monkey(transfers.jobsListHandler(), "")).Methods("GET")
 	api.Handle("/jobs", monkey(transfers.jobsPostHandler(), "")).Methods("POST")
 	api.Handle("/jobs/{id}", monkey(transfers.jobsGetHandler(), "")).Methods("GET")
 	api.Handle("/jobs/{id}", monkey(transfers.jobsDeleteHandler(), "")).Methods("DELETE")
+	// Retry a failed/canceled/interrupted transfer's not-yet-done items (Stage 3).
+	api.Handle("/jobs/{id}/retry", monkey(transfers.jobsRetryHandler(), "")).Methods("POST")
+
+	// Trash / recycle bin (2.4.0 Stage 2). Deletes land here (see
+	// resourceDeleteHandler); these routes list, restore, and purge.
+	api.Handle("/trash", monkey(trashListHandler(), "")).Methods("GET")
+	api.Handle("/trash", monkey(trashDeleteHandler(), "")).Methods("DELETE")
+	api.Handle("/trash/{id}", monkey(trashRestoreHandler(), "")).Methods("POST")
+	api.Handle("/trash/{id}", monkey(trashDeleteHandler(), "")).Methods("DELETE")
 
 	api.PathPrefix("/tus").Handler(monkey(tusPostHandler(uploadCache), "/api/tus")).Methods("POST")
 	api.PathPrefix("/tus").Handler(monkey(tusHeadHandler(uploadCache), "/api/tus")).Methods("HEAD", "GET")
@@ -109,6 +150,7 @@ func NewHandler(
 	api.Handle("/tags", monkey(tagsListHandler, "")).Methods("GET")
 	api.Handle("/tags", monkey(tagsCreateHandler, "")).Methods("POST")
 	api.Handle("/tags/batch", monkey(fileTagsBatchHandler, "")).Methods("POST")
+	api.Handle("/tags/apply", monkey(fileTagsApplyHandler, "")).Methods("POST")
 	api.Handle("/tags/{id:[0-9]+}", monkey(tagsUpdateHandler, "")).Methods("PATCH")
 	api.Handle("/tags/{id:[0-9]+}", monkey(tagsDeleteHandler, "")).Methods("DELETE")
 	// File ↔ tag mapping. Path is in the URL after /api/files-tags;
@@ -154,12 +196,17 @@ func NewHandler(
 	api.PathPrefix("/comic/page/{index:[0-9]+}/{path:.*}").
 		Handler(monkey(comicPageHandler(fileCache), "/api/comic")).Methods("GET")
 	api.PathPrefix("/command").Handler(monkey(commandsHandler, "/api/command")).Methods("GET")
-	// Order matters: the more-specific /search/recursive prefix must
-	// register before the plain /search catch-all, otherwise the
-	// catch-all would swallow recursive requests.
+	// In-memory search index (2.4.0 Stage 5 / H): per-user name+path index,
+	// lazily built + kept fresh off the events bus, so search answers from
+	// memory instead of walking the tree on every keystroke. Server-lifetime.
+	searchIndex := searchindex.New()
+	// Order matters: the more-specific /search/recursive + /search/rebuild
+	// routes must register before the plain /search catch-all, otherwise the
+	// catch-all would swallow them.
 	api.PathPrefix("/search/recursive").
 		Handler(monkey(searchRecursiveHandler, "/api/search/recursive")).Methods("GET")
-	api.PathPrefix("/search").Handler(monkey(searchHandler, "/api/search")).Methods("GET")
+	api.Handle("/search/rebuild", monkey(searchRebuildHandler(searchIndex), "")).Methods("POST")
+	api.PathPrefix("/search").Handler(monkey(searchHandler(searchIndex), "/api/search")).Methods("GET")
 	api.PathPrefix("/subtitle").Handler(monkey(subtitleHandler, "/api/subtitle")).Methods("GET")
 
 	public := api.PathPrefix("/public").Subrouter()

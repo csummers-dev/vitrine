@@ -103,6 +103,23 @@ export async function batchForFiles(
   return (await res.json()) as Record<string, Tag[]>;
 }
 
+/** Bulk add/remove tags across many paths in one request (2.4.0 Stage 5 / K).
+ *  `add` and `remove` are tag IDs; `add` wins if an id is in both. */
+export async function applyBatch(
+  paths: string[],
+  add: number[],
+  remove: number[]
+): Promise<void> {
+  if (paths.length === 0 || (add.length === 0 && remove.length === 0)) return;
+  const res = await fetchURL(`/api/tags/apply`, {
+    method: "POST",
+    body: JSON.stringify({ paths, add, remove }),
+  });
+  if (res.status !== 204) {
+    throw new StatusError(await res.text(), res.status);
+  }
+}
+
 // ── Compound search (S2-4 endpoint) ─────────────────────────────────
 
 /** Smart-folder + palette-driven search. Path scopes the recursive

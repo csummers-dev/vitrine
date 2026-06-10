@@ -453,6 +453,14 @@ func (i *FileInfo) readListing(checker rules.Checker, readHeader bool, calcImgRe
 		name := f.Name()
 		fPath := path.Join(i.Path, name)
 
+		// 2.4.0 Stage 2: trash directories never appear in listings — the
+		// recycle bin has its own view backed by the trash index, and showing
+		// the raw payload dir would invite people to "delete" it (which would
+		// orphan the index). Name kept in sync with trash.Dirname.
+		if name == ".trash" && f.IsDir() {
+			continue
+		}
+
 		if !checker.Check(fPath) {
 			continue
 		}

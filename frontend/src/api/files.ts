@@ -71,8 +71,26 @@ async function resourceAction(url: string, method: ApiMethod, content?: any) {
   return res;
 }
 
-export async function remove(url: string) {
-  return resourceAction(url, "DELETE");
+/**
+ * Delete a resource. By default the backend MOVES it to the trash (2.4.0
+ * Stage 2) and answers `{ trashId }` — returned here so the undo toast can
+ * restore it. With `permanent: true` (Shift+Delete, the Trash view) the item
+ * is removed for good and the result is null (204, no body).
+ */
+export async function remove(
+  url: string,
+  permanent = false
+): Promise<{ trashId: string } | null> {
+  const res = await resourceAction(
+    permanent ? `${url}?permanent=true` : url,
+    "DELETE"
+  );
+  try {
+    const body = await res.json();
+    return body && typeof body.trashId === "string" ? body : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function put(url: string, content = "") {
@@ -366,6 +384,25 @@ export function getSubtitlesURL(file: ResourceItem) {
   };
 
   return file.subtitles?.map((d) => createURL("api/subtitle" + d, params));
+}
+
+/** Recursive size of a folder, computed (and cached) server-side (2.4.0 Stage
+ *  4 / E). `computedAt` is when the figure was measured. Throws StatusError on a
+ *  non-2xx (e.g. 400 for a file path, 403 out of scope) so callers can ignore it. */
+export interface FolderSize {
+  size: number;
+  computedAt: string;
+}
+export async function folderSize(url: string): Promise<FolderSize> {
+  url = removePrefix(url);
+  const res = await fetchURL(`/api/folder-size${url}`, {});
+  return res.json();
+}
+
+/** Force a rebuild of this user's in-memory search index (2.4.0 Stage 5 / H) —
+ *  the manual "rebuild search index" action for when results look stale. */
+export async function rebuildSearchIndex(): Promise<void> {
+  await fetchURL(`/api/search/rebuild`, { method: "POST" });
 }
 
 export async function usage(url: string, signal: AbortSignal) {

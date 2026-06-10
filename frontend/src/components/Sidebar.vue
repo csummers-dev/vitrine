@@ -89,6 +89,27 @@
           </span>
         </button>
 
+        <!-- Trash / recycle bin (2.4.0 Stage 2). Deleted items land here and
+             can be restored or removed for good. -->
+        <button
+          @click="toTrash"
+          :class="[
+            'w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition text-left max-md:w-10 max-md:h-10 max-md:p-0 max-md:justify-center max-md:gap-0',
+            trashNavActive
+              ? 'bg-selected text-accent-ink font-medium'
+              : 'hover:bg-hover text-ink-2',
+          ]"
+          :title="$t('sidebar.trash')"
+          :aria-label="$t('sidebar.trash')"
+        >
+          <Icon
+            name="trash-2"
+            :size="14"
+            class="text-[var(--c-rose)] shrink-0"
+          />
+          <span class="flex-1 max-md:hidden">{{ $t("sidebar.trash") }}</span>
+        </button>
+
         <!-- Settings is reachable by clicking the username row below (which
              routes to Profile/Settings), so a separate nav item here was a
              duplicate of the same destination. -->
@@ -802,6 +823,9 @@ export default {
     mainNavActive() {
       return this.isFiles || this.$route.path.startsWith("/settings");
     },
+    trashNavActive() {
+      return this.$route.path.startsWith("/trash");
+    },
     signup: () => signup,
     hideLoginButton: () => hideLoginButton,
     version: () => version,
@@ -885,6 +909,10 @@ export default {
     },
     toRoot() {
       this.$router.push({ path: "/files" });
+      this.closeHovers();
+    },
+    toTrash() {
+      this.$router.push({ path: "/trash" });
       this.closeHovers();
     },
     toAccountSettings() {

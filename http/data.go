@@ -12,6 +12,7 @@ import (
 	"github.com/filebrowser/filebrowser/v2/settings"
 	"github.com/filebrowser/filebrowser/v2/storage"
 	"github.com/filebrowser/filebrowser/v2/tags"
+	"github.com/filebrowser/filebrowser/v2/trash"
 	"github.com/filebrowser/filebrowser/v2/users"
 )
 
@@ -19,12 +20,13 @@ type handleFunc func(w http.ResponseWriter, r *http.Request, d *data) (int, erro
 
 type data struct {
 	*runner.Runner
-	settings  *settings.Settings
-	server    *settings.Server
-	store     *storage.Storage
-	tagsStore *tags.Store // optional; nil disables tag handlers (503)
-	user      *users.User
-	raw       interface{}
+	settings   *settings.Settings
+	server     *settings.Server
+	store      *storage.Storage
+	tagsStore  *tags.Store  // optional; nil disables tag handlers (503)
+	trashStore *trash.Store // optional; nil makes every delete permanent (503 on /api/trash)
+	user       *users.User
+	raw        interface{}
 }
 
 // Check implements rules.Checker.
@@ -49,7 +51,7 @@ func (d *data) Check(path string) bool {
 	return allow
 }
 
-func handle(fn handleFunc, prefix string, store *storage.Storage, tagsStore *tags.Store, server *settings.Server) http.Handler {
+func handle(fn handleFunc, prefix string, store *storage.Storage, tagsStore *tags.Store, trashStore *trash.Store, server *settings.Server) http.Handler {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		for k, v := range globalHeaders {
 			w.Header().Set(k, v)
@@ -62,11 +64,12 @@ func handle(fn handleFunc, prefix string, store *storage.Storage, tagsStore *tag
 		}
 
 		status, err := fn(w, r, &data{
-			Runner:    &runner.Runner{Enabled: server.EnableExec, Settings: settings},
-			store:     store,
-			tagsStore: tagsStore,
-			settings:  settings,
-			server:    server,
+			Runner:     &runner.Runner{Enabled: server.EnableExec, Settings: settings},
+			store:      store,
+			tagsStore:  tagsStore,
+			trashStore: trashStore,
+			settings:   settings,
+			server:     server,
 		})
 
 		if status >= 400 || err != nil {

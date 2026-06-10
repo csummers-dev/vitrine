@@ -83,6 +83,75 @@ export function isTransferRowVisible(
   return now - firstSeenAt >= revealMs;
 }
 
+/**
+ * One byte-progress observation for the rolling throughput/ETA estimate
+ * (2.4.0 Stage 3 / I): the client-clock time and the job's doneBytes then.
+ */
+export interface RateSample {
+  t: number; // ms (performance-style monotonic-ish; Date.now is fine)
+  bytes: number;
+}
+
+/**
+ * Bytes/sec over the samples spanning at least `windowMs` back from the latest,
+ * or 0 when there isn't enough signal (fewer than 2 samples, no time elapsed, or
+ * a non-increasing byte count — e.g. a stall or a fresh retry reset). A rolling
+ * window (not cumulative) so the rate tracks the CURRENT speed, recovering after
+ * a stall instead of being dragged down by early slowness.
+ */
+export function rollingRate(samples: RateSample[], windowMs = 5000): number {
+  if (samples.length < 2) return 0;
+  const latest = samples[samples.length - 1];
+  // Oldest sample still inside the window (fall back to the first sample).
+  let oldest = samples[0];
+  for (let i = samples.length - 1; i >= 0; i--) {
+    oldest = samples[i];
+    if (latest.t - samples[i].t >= windowMs) break;
+  }
+  const dt = (latest.t - oldest.t) / 1000;
+  const db = latest.bytes - oldest.bytes;
+  if (dt <= 0 || db <= 0) return 0;
+  return db / dt;
+}
+
+/**
+ * Whole seconds remaining at the given bytes/sec, or null when it can't be
+ * estimated (no rate, unknown total, or already complete). Capped so a near-zero
+ * rate doesn't produce an absurd multi-day ETA.
+ */
+export function etaSeconds(
+  doneBytes: number,
+  totalBytes: number,
+  bytesPerSec: number
+): number | null {
+  if (bytesPerSec <= 0 || totalBytes <= 0) return null;
+  const remaining = totalBytes - doneBytes;
+  if (remaining <= 0) return null;
+  const secs = remaining / bytesPerSec;
+  if (secs > 24 * 3600) return null; // > a day → don't pretend to know
+  return Math.max(1, Math.round(secs));
+}
+
+/** "1.2 MB/s" — bytes/sec for the dock, reusing the project filesize helper. */
+export function formatRate(
+  bytesPerSec: number,
+  filesize: (n: number) => string
+): string {
+  return `${filesize(bytesPerSec)}/s`;
+}
+
+/** "8s left" / "3m left" / "1h 4m left" — compact remaining-time label. */
+export function formatEta(secs: number): string {
+  if (secs < 60) return `${secs}s left`;
+  if (secs < 3600) {
+    const m = Math.round(secs / 60);
+    return `${m}m left`;
+  }
+  const h = Math.floor(secs / 3600);
+  const m = Math.round((secs % 3600) / 60);
+  return m > 0 ? `${h}h ${m}m left` : `${h}h left`;
+}
+
 /** Order-independent equality of two path lists. */
 function samePathSet(a: string[], b: string[]): boolean {
   return a.length === b.length && a.every((p) => b.includes(p));

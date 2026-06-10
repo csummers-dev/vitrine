@@ -4,6 +4,11 @@ interface ISettings {
   hideLoginButton: boolean;
   rememberLastPage: boolean;
   minimumPasswordLength: number;
+  /** Days before trashed items are auto-purged; 0 = keep forever (2.4.0). */
+  trashRetentionDays: number;
+  /** Checksum every background copy against its source; mismatch keeps the
+   *  source and fails the transfer (2.4.0 Stage 4). Off by default. */
+  verifyTransfers: boolean;
   userHomeBasePath: string;
   defaults: SettingsDefaults;
   authMethod: string;

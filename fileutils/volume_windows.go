@@ -11,3 +11,9 @@ import "github.com/spf13/afero"
 func SameVolume(_ afero.Fs, _, _ string) (bool, error) {
 	return false, nil
 }
+
+// DeviceID is unavailable on Windows (no portable st_dev); ok=false makes the
+// trash package fall back to a single .trash at the server root.
+func DeviceID(_ afero.Fs, _ string) (uint64, bool) {
+	return 0, false
+}
