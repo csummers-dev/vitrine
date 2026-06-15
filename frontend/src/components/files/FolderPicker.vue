@@ -28,6 +28,33 @@
       </template>
     </div>
 
+    <!-- Inline "new folder" input. Creates the folder in the CURRENT picker
+         path, then drops into it so it becomes the chosen destination. Shown
+         above the list so it's visible even when the folder has no subfolders. -->
+    <div v-if="creating" class="folder-picker__create">
+      <span class="folder-picker__icon bg-amber-50 text-amber-500">
+        <Icon
+          name="folder"
+          :size="14"
+          :stroke-width="1.4"
+          style="fill: currentColor"
+        />
+      </span>
+      <input
+        ref="createInputEl"
+        v-model.trim="newName"
+        type="text"
+        class="folder-picker__create-input"
+        placeholder="New folder name"
+        autocomplete="off"
+        spellcheck="false"
+        @keydown.enter.prevent="commitCreate"
+        @keydown.esc.prevent="cancelCreate"
+        @blur="onCreateBlur"
+      />
+      <kbd class="folder-picker__create-kbd">↵</kbd>
+    </div>
+
     <!-- Loading / error / empty / items -->
     <div v-if="loading" class="folder-picker__state">
       <Icon name="loader-circle" :size="14" class="folder-picker__spin" />
@@ -73,11 +100,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, inject, nextTick, onMounted, ref, watch } from "vue";
 import { files as api } from "@/api";
 import { StatusError } from "@/api/utils";
 import url from "@/utils/url";
 import Icon from "@/components/Icon.vue";
+
+const $showError = inject<IToastError>("$showError");
 
 interface Folder {
   name: string;
@@ -100,6 +129,14 @@ const currentPath = ref<string>(props.initialPath);
 const folders = ref<Folder[]>([]);
 const loading = ref<boolean>(false);
 let abortCtrl: AbortController | null = null;
+
+// Inline "new folder" creation (triggered by the host panel's New-folder
+// button via the exposed `startCreate`). `creating` toggles the input row;
+// the guard prevents an Enter→blur double-submit.
+const creating = ref<boolean>(false);
+const newName = ref<string>("");
+const createInputEl = ref<HTMLInputElement | null>(null);
+let createSubmitting = false;
 
 const segments = computed<Folder[]>(() => {
   const stripped = currentPath.value.replace(/^\/files\/?/, "");
@@ -132,6 +169,49 @@ const navigate = async (path: string) => {
   }
 };
 
+const cancelCreate = () => {
+  creating.value = false;
+  newName.value = "";
+};
+
+// Blur tears the input down — but defer a tick so a click on a sibling button
+// (e.g. the host's Cancel) can register first, and skip if a submit is in
+// flight (Enter→blur fire together).
+const onCreateBlur = () => {
+  if (createSubmitting) return;
+  setTimeout(() => {
+    if (!createSubmitting) cancelCreate();
+  }, 120);
+};
+
+const commitCreate = async () => {
+  if (createSubmitting) return;
+  const trimmed = newName.value.trim();
+  if (trimmed === "") {
+    cancelCreate();
+    return;
+  }
+  createSubmitting = true;
+  // currentPath is a `/files/...` URL ending in "/"; api.post strips the
+  // `/files` prefix internally, so this targets the picker's CURRENT folder —
+  // not the listing behind the panel.
+  const uri = currentPath.value + encodeURIComponent(trimmed) + "/";
+  try {
+    await api.post(uri);
+  } catch (e) {
+    // Most likely a name collision — surface it and keep the input open so the
+    // user can pick another name.
+    if (e instanceof Error) $showError?.(e);
+    createSubmitting = false;
+    return;
+  }
+  creating.value = false;
+  newName.value = "";
+  // Drop into the freshly-made folder so it becomes the chosen destination
+  // (navigating in is what makes `update:path` point at the new folder).
+  await navigate(uri);
+};
+
 onMounted(() => {
   void navigate(props.initialPath);
 });
@@ -145,11 +225,15 @@ watch(
   }
 );
 
-/** Public method (used via template ref) to add a freshly-created folder to
- * the current view without a full re-fetch. */
 defineExpose({
-  appendFolder(folder: Folder) {
-    folders.value = [...folders.value, folder];
+  /** Open the inline "new folder" input, focused. The host panel's
+   *  New-folder button calls this; creation happens entirely in the picker. */
+  async startCreate() {
+    creating.value = true;
+    newName.value = "";
+    createSubmitting = false;
+    await nextTick();
+    createInputEl.value?.focus();
   },
   refresh() {
     void navigate(currentPath.value);
@@ -240,6 +324,46 @@ defineExpose({
 
 .folder-picker__row:hover {
   background: var(--color-elevated, #f4f4f5);
+}
+
+/* Inline "new folder" input row — accent ring so it reads as an active field. */
+.folder-picker__create {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--color-accent, #5e6ad2);
+  background: var(--color-surface, #fff);
+}
+
+.folder-picker__create-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-ink-1, #18181b);
+  padding: 0;
+}
+
+.folder-picker__create-input::placeholder {
+  color: var(--color-ink-3, #a1a1aa);
+  font-weight: 400;
+}
+
+.folder-picker__create-kbd {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--color-elevated, #f4f4f5);
+  border: 1px solid var(--color-line, #ececec);
+  color: var(--color-ink-3, #a1a1aa);
+  flex-shrink: 0;
 }
 
 .folder-picker__icon {

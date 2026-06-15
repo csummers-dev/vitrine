@@ -1,17 +1,22 @@
 <template>
   <aside
-    class="sidebar-root w-[256px] max-md:w-[64px] max-md:items-center shrink-0 border-r border-line bg-canvas flex flex-col"
+    class="sidebar-root shrink-0 border-r border-line bg-canvas flex flex-col transition-[width] duration-150"
+    :class="
+      collapsed && isLoggedIn
+        ? 'w-[56px] items-center sidebar-collapsed'
+        : 'w-[256px] max-md:w-[64px] max-md:items-center'
+    "
   >
     <!-- Workspace header -->
     <div
-      class="h-12 px-3 max-md:px-0 max-md:justify-center flex items-center gap-2.5 shrink-0"
+      class="h-12 px-3 max-md:px-0 max-md:justify-center flex items-center gap-2.5 shrink-0 s-rail-head"
     >
       <img
         :src="logoPngURL"
         alt="logo"
         class="w-7 h-7 max-md:w-9 max-md:h-9 rounded-md object-contain shrink-0"
       />
-      <div class="flex-1 min-w-0 max-md:hidden">
+      <div class="flex-1 min-w-0 max-md:hidden s-hide">
         <div
           class="text-[13px] font-semibold leading-tight truncate text-ink-1"
         >
@@ -30,26 +35,56 @@
           v{{ version }}
         </a>
       </div>
+      <!-- Collapse toggle — sits alongside the title to use the header space
+           (expanded only). When collapsed it moves to its own centred row below
+           the logo (there's no room for it beside a 64px rail). -->
+      <button
+        v-if="isLoggedIn && !collapsed"
+        type="button"
+        class="w-7 h-7 rounded-md hover:bg-hover text-ink-3 hover:text-ink-1 flex items-center justify-center transition shrink-0"
+        title="Collapse sidebar"
+        aria-label="Collapse sidebar"
+        @click="toggleCollapsed"
+      >
+        <Icon name="chevrons-left" :size="15" />
+      </button>
     </div>
 
     <template v-if="isLoggedIn">
+      <!-- Expand toggle for the collapsed rail (centred below the logo). When
+           expanded, the toggle lives in the header beside the title instead. -->
+      <div v-if="collapsed" class="pt-1 pb-0.5 px-0 flex justify-center">
+        <button
+          type="button"
+          class="w-7 h-7 rounded-md hover:bg-hover text-ink-3 hover:text-ink-1 flex items-center justify-center transition"
+          title="Expand sidebar"
+          aria-label="Expand sidebar"
+          :aria-pressed="collapsed"
+          @click="toggleCollapsed"
+        >
+          <Icon name="chevrons-right" :size="15" />
+        </button>
+      </div>
+
       <!-- Primary actions -->
       <div
         v-if="user.perm.create"
-        class="px-3 pb-2 flex gap-1.5 max-md:flex-col max-md:items-center"
+        class="px-3 pb-2 flex gap-1.5 max-md:flex-col max-md:items-center s-rail-row"
       >
         <button
           @click="showHover('newDir')"
-          class="flex-1 h-8 rounded-md btn-accent-gradient text-white text-[13px] font-medium flex items-center justify-center gap-1.5 transition shadow-sm max-md:flex-none max-md:w-10 max-md:h-10 max-md:p-0"
+          class="flex-1 h-8 rounded-md btn-accent-gradient text-white text-[13px] font-medium flex items-center justify-center gap-1.5 transition shadow-sm max-md:flex-none max-md:w-10 max-md:h-10 max-md:p-0 s-rail-btn"
           :title="$t('sidebar.newFolder')"
           :aria-label="$t('sidebar.newFolder')"
         >
           <Icon name="folder-plus" :size="14" />
-          <span class="max-md:hidden">{{ $t("sidebar.newFolder") }}</span>
+          <span class="max-md:hidden s-hide">{{
+            $t("sidebar.newFolder")
+          }}</span>
         </button>
         <button
           @click="showHover('newFile')"
-          class="sidebar-newfile w-8 h-8 max-md:w-10 max-md:h-10 rounded-md border flex items-center justify-center transition"
+          class="sidebar-newfile w-8 h-8 max-md:w-10 max-md:h-10 rounded-md border flex items-center justify-center transition s-rail-btn"
           :title="$t('sidebar.newFile')"
           :aria-label="$t('sidebar.newFile')"
         >
@@ -59,13 +94,13 @@
 
       <!-- Quick links -->
       <nav
-        class="px-2 pt-2 space-y-0.5 text-[13px] max-md:px-0 max-md:flex max-md:flex-col max-md:items-center"
+        class="px-2 pt-2 space-y-0.5 text-[13px] max-md:px-0 max-md:flex max-md:flex-col max-md:items-center s-rail-row"
       >
         <button
           @click="toRoot"
           @contextmenu.prevent="onMyFilesContextMenu($event)"
           :class="[
-            'w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition text-left max-md:w-10 max-md:h-10 max-md:p-0 max-md:justify-center max-md:gap-0',
+            'w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition text-left max-md:w-10 max-md:h-10 max-md:p-0 max-md:justify-center max-md:gap-0 s-rail-btn',
             mainNavActive
               ? 'bg-selected text-accent-ink font-medium'
               : 'hover:bg-hover text-ink-2',
@@ -78,12 +113,12 @@
             :size="14"
             class="text-[var(--c-lilac)] shrink-0"
           />
-          <span class="flex-1 max-md:hidden">{{
+          <span class="flex-1 max-md:hidden s-hide">{{
             rootLabel || $t("sidebar.myFiles")
           }}</span>
           <span
             v-if="filesCount > 0"
-            class="text-[11px] text-ink-3 tabular max-md:hidden"
+            class="text-[11px] text-ink-3 tabular max-md:hidden s-hide"
           >
             {{ filesCount }}
           </span>
@@ -94,7 +129,7 @@
         <button
           @click="toTrash"
           :class="[
-            'w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition text-left max-md:w-10 max-md:h-10 max-md:p-0 max-md:justify-center max-md:gap-0',
+            'w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition text-left max-md:w-10 max-md:h-10 max-md:p-0 max-md:justify-center max-md:gap-0 s-rail-btn',
             trashNavActive
               ? 'bg-selected text-accent-ink font-medium'
               : 'hover:bg-hover text-ink-2',
@@ -107,7 +142,9 @@
             :size="14"
             class="text-[var(--c-rose)] shrink-0"
           />
-          <span class="flex-1 max-md:hidden">{{ $t("sidebar.trash") }}</span>
+          <span class="flex-1 max-md:hidden s-hide">{{
+            $t("sidebar.trash")
+          }}</span>
         </button>
 
         <!-- Settings is reachable by clicking the username row below (which
@@ -127,13 +164,43 @@
       <div
         class="sidebar-scroll flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
       >
+        <!-- Collapsed (icon-rail) Favorites: each pinned folder becomes a star
+             icon; hovering shows the folder name (title). Recents are omitted
+             from the rail entirely (spec). Only rendered while manually
+             collapsed — the responsive max-md: rail keeps its prior behaviour
+             (favorites hidden). -->
+        <nav
+          v-if="collapsed && isLoggedIn && favorites.length > 0"
+          class="pt-2 flex flex-col items-center gap-1.5"
+          aria-label="Favorites"
+        >
+          <button
+            v-for="path in favorites"
+            :key="path"
+            type="button"
+            class="s-rail-btn rounded-md hover:bg-hover flex items-center justify-center transition"
+            :title="favoriteName(path)"
+            :aria-label="favoriteName(path)"
+            @click="navigateFavorite(path)"
+            @contextmenu="onFavoriteContextMenu(path, $event)"
+          >
+            <Icon
+              name="star"
+              :size="16"
+              :stroke-width="0"
+              fill="currentColor"
+              class="text-amber-500"
+            />
+          </button>
+        </nav>
+
         <!-- Favorites (v1.3 S3-2). Pinned folders from useFavorites.
              Hidden in icon-rail mode. Empty list is suppressed entirely
              (no "None yet" filler) — the sidebar only shows the section
              when there's content, so first-time users aren't presented
              with empty scaffolding. -->
         <nav
-          v-if="isLoggedIn && favorites.length > 0"
+          v-if="isLoggedIn && favorites.length > 0 && !collapsed"
           ref="favListEl"
           class="px-2 pt-4 max-md:hidden"
         >
@@ -225,7 +292,7 @@
            (up to the 50-cap from the store). Click opens preview by
            routing to the file's URL. -->
         <nav
-          v-if="isLoggedIn && recents.length > 0"
+          v-if="isLoggedIn && recents.length > 0 && !collapsed"
           class="px-2 pt-4 max-md:hidden"
         >
           <div class="px-2 pb-1.5 flex items-center justify-between gap-2">
@@ -258,6 +325,7 @@
                 :to="`/files${r.path}`"
                 class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] hover:bg-hover text-ink-2 transition"
                 :title="r.path"
+                @click="onRecentClick(`/files${r.path}`, $event)"
               >
                 <Icon
                   name="file"
@@ -312,7 +380,7 @@
     <!-- Storage card (hidden in icon-rail) -->
     <div
       v-if="isLoggedIn && isFiles && !disableUsedPercentage"
-      class="px-3 pb-3 max-md:hidden"
+      class="px-3 pb-3 max-md:hidden s-hide"
     >
       <div class="sidebar-storage p-3 rounded-lg border border-line bg-surface">
         <div class="flex items-center justify-between mb-2">
@@ -340,11 +408,11 @@
     <!-- User row -->
     <div
       v-if="isLoggedIn"
-      class="px-3 pb-3 border-t border-line pt-3 flex items-center gap-1.5 max-md:px-0 max-md:flex-col max-md:gap-1"
+      class="px-3 pb-3 border-t border-line pt-3 flex items-center gap-1.5 max-md:px-0 max-md:flex-col max-md:gap-1 s-rail-row"
     >
       <button
         @click="toAccountSettings"
-        class="flex-1 flex items-center gap-2 px-1.5 py-1.5 rounded-md hover:bg-hover transition min-w-0 max-md:flex-none max-md:p-0"
+        class="flex-1 flex items-center gap-2 px-1.5 py-1.5 rounded-md hover:bg-hover transition min-w-0 max-md:flex-none max-md:p-0 s-rail-btn"
         :title="user.username"
       >
         <div
@@ -352,7 +420,7 @@
         >
           {{ userInitials }}
         </div>
-        <div class="flex-1 min-w-0 text-left max-md:hidden">
+        <div class="flex-1 min-w-0 text-left max-md:hidden s-hide">
           <div
             class="text-[13px] font-medium leading-tight truncate text-ink-1"
           >
@@ -366,7 +434,7 @@
       <button
         v-if="canLogout"
         @click="logout"
-        class="w-7 h-7 max-md:w-9 max-md:h-9 rounded-md flex items-center justify-center transition sidebar-logout"
+        class="w-7 h-7 max-md:w-9 max-md:h-9 rounded-md flex items-center justify-center transition sidebar-logout s-rail-btn"
         :title="$t('sidebar.logout')"
         :aria-label="$t('sidebar.logout')"
       >
@@ -404,8 +472,7 @@
 </template>
 
 <script>
-import { reactive, ref } from "vue";
-import { useRouter } from "vue-router";
+import { reactive, ref, computed } from "vue";
 import { useToast } from "vue-toastification";
 import { mapActions, mapState } from "pinia";
 import { useAuthStore } from "@/stores/auth";
@@ -438,6 +505,7 @@ import { useFavorites } from "@/composables/useFavorites";
 import { useFavoriteTitleDialog } from "@/composables/useFavoriteTitleDialog";
 import { useRootLabel } from "@/composables/useRootLabel";
 import { useDropTarget } from "@/composables/useDropTarget";
+import { useActivePane } from "@/composables/useActivePane";
 
 // How many recents to show before the "View all" disclosure kicks in.
 // 5 keeps the section compact in the default sidebar layout.
@@ -465,7 +533,18 @@ export default {
     const favoritesComposable = useFavorites();
     const favTitleDialog = useFavoriteTitleDialog();
     const rootLabelComposable = useRootLabel();
-    const router = useRouter();
+    // Folder navigation (Home / favorites / recents) targets the active pane:
+    // pane B in place when split + B active, else a normal route push (pane A).
+    // (useActivePane owns the router internally, so no local useRouter here.)
+    const { navigate: navigateActivePane, targetsPaneB } = useActivePane();
+    // Recents are <router-link>s (keep the href semantics for the pane-A case);
+    // when pane B is the active target, intercept the click and divert to B.
+    const onRecentClick = (path, event) => {
+      if (targetsPaneB()) {
+        event.preventDefault();
+        navigateActivePane(path);
+      }
+    };
     const toast = useToast();
 
     // ── Right-click context menus for the sidebar lists ───────────────
@@ -521,7 +600,7 @@ export default {
           icon: "external-link",
           action: () => {
             hideSidebarMenu();
-            void router.push(path);
+            navigateActivePane(path);
           },
         },
         {
@@ -567,7 +646,7 @@ export default {
           icon: "external-link",
           action: () => {
             hideSidebarMenu();
-            void router.push(`/files${recent.path}`);
+            navigateActivePane(`/files${recent.path}`);
           },
         },
         {
@@ -684,7 +763,7 @@ export default {
     // Navigate to a favorited folder on click (the row is a plain div, not a
     // router-link — see the template comment for why).
     const navigateFavorite = (path) => {
-      if (router.currentRoute.value.fullPath !== path) router.push(path);
+      navigateActivePane(path);
     };
 
     const onFavDragStart = (index, event) => {
@@ -773,6 +852,17 @@ export default {
       });
     };
 
+    // ── Whole-sidebar collapse (icon rail) ──────────────────────────────
+    // User-toggled, persisted in prefs. When on, the sidebar shrinks to a
+    // narrow icon rail at ANY width (the max-md: responsive rail only kicks in
+    // on narrow viewports). prefs.get is reactive, so this computed re-evaluates
+    // when the toggle flips. Favorites collapse to star icons; Recents are
+    // hidden entirely (per the spec — the rail stays compact).
+    const collapsed = computed(() => !!prefs.get("sidebarCollapsed", false));
+    const toggleCollapsed = () => {
+      void prefs.set("sidebarCollapsed", !collapsed.value);
+    };
+
     return {
       usage,
       usageAbortController: new AbortController(),
@@ -790,6 +880,8 @@ export default {
       favListEl,
       favoriteName,
       navigateFavorite,
+      navigateActivePane,
+      onRecentClick,
       onFavDragStart,
       onFavDragOver,
       onFavDragLeave,
@@ -798,6 +890,8 @@ export default {
       cleanupFavDrag,
       isSectionCollapsed,
       toggleSection,
+      collapsed,
+      toggleCollapsed,
       sidebarMenuShow,
       sidebarMenuPos,
       sidebarMenuItems,
@@ -908,7 +1002,9 @@ export default {
       }
     },
     toRoot() {
-      this.$router.push({ path: "/files" });
+      // Home targets the active pane: pane B in place when split + B active,
+      // else a route push to the files root (pane A).
+      this.navigateActivePane("/files/");
       this.closeHovers();
     },
     toTrash() {
@@ -1000,5 +1096,44 @@ export default {
   opacity: 0.5;
   outline: 1px dashed var(--color-accent, #5e6ad2);
   outline-offset: -1px;
+}
+
+/* ── Manual collapse → icon rail (any width) ──────────────────────────
+   Mirrors the max-md: responsive rail, but user-toggled (persisted in prefs)
+   so it works at any viewport width. These descendant selectors outrank the
+   single-class Tailwind utilities on the same elements, so the base classes
+   don't need touching. Markers: `s-hide` (drop text/sections), `s-rail-head`
+   (centre the logo row), `s-rail-row` (stack + centre a row of controls),
+   `s-rail-btn` (square 40×40 icon button). */
+.sidebar-collapsed .s-hide {
+  display: none;
+}
+.sidebar-collapsed .s-rail-head {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+.sidebar-collapsed .s-rail-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-left: 0;
+  padding-right: 0;
+}
+/* Tiles sized smaller than the rail so the squircle reads as a compact icon
+   button, not a big crowded block (the icons themselves are unchanged). */
+.sidebar-collapsed .s-rail-btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  gap: 0;
+  flex: 0 0 auto;
+  justify-content: center;
+}
+/* Don't let `space-y-*` margins (carried from the expanded layout) stack on top
+   of the row gap above — keeps the vertical rhythm even across all rail groups. */
+.sidebar-collapsed .s-rail-row > * + * {
+  margin-top: 0;
 }
 </style>

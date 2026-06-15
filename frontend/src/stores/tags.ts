@@ -73,20 +73,24 @@ export const useTagsStore = defineStore("tags", {
       return this.ensureLoaded();
     },
     /** Populate `byPath` for the current listing. Called by FileListing
-     *  after each directory fetch. Replaces (not merges) the cache so
-     *  stale entries from a previous folder don't leak through. */
+     *  after each directory fetch. Refreshes exactly the queried paths
+     *  (sets those with tags, clears those without) while leaving every
+     *  OTHER path untouched — so the two panes don't wipe each other's
+     *  chips (dual-pane: each navigation only touched its own folder, but
+     *  a whole-map replace dropped the other pane's tags + re-fetched on
+     *  every move). Stale entries for folders no longer shown are harmless:
+     *  a row only ever reads `forPath(itsOwnUrl)`. */
     async loadForPaths(paths: string[]): Promise<void> {
-      if (paths.length === 0) {
-        this.byPath = {};
-        return;
-      }
+      if (paths.length === 0) return;
       try {
-        this.byPath = await tagsApi.batchForFiles(paths);
+        const fresh = await tagsApi.batchForFiles(paths);
+        for (const p of paths) {
+          if (fresh[p]?.length) this.byPath[p] = fresh[p];
+          else delete this.byPath[p];
+        }
       } catch {
         // Tags being unavailable shouldn't break the listing render;
-        // silently fall back to "no tags shown". The picker still
-        // works via its own per-file load.
-        this.byPath = {};
+        // silently leave the cache as-is (rows fall back to "no tags").
       }
     },
     /** Read cached tags for a path. Returns an empty array — not

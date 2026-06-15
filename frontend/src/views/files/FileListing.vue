@@ -4,12 +4,23 @@
       <!-- Primary column (V2-J): hero + scrolling listing + bottom breadcrumb
            bar, stacked. The details rail (InfoPane) sits beside it as a
            full-height sibling. -->
-      <div class="fb-primary flex-1 flex flex-col min-w-0 min-h-0">
+      <div
+        class="fb-primary flex-1 flex flex-col min-w-0 min-h-0"
+        :class="{
+          'fb-primary--active': splitActive && panes.activePane === 'a',
+        }"
+        :role="splitActive ? 'region' : undefined"
+        :aria-label="splitActive ? 'Primary folder pane' : undefined"
+        @pointerdown.capture="onPaneAActivate"
+      >
         <!-- V2-J unified hero: title (left) + adaptive control cluster (right).
              Replaces the dissolved top header bar; always rendered so the
              controls never flash out during a folder load. The title block is
-             also the parent-folder drop / spring-load target (F2). -->
-        <div class="fb-hero">
+             also the parent-folder drop / spring-load target (F2).
+             In SPLIT view this hero is swapped for the compact header below so
+             both panes read consistently (the breadcrumb moves to the bottom
+             bar); non-split keeps the full hero unchanged. -->
+        <div v-if="!splitActive" class="fb-hero">
           <!-- Mobile: open the sidebar drawer (no top bar to host it). -->
           <button
             type="button"
@@ -108,78 +119,210 @@
           </div>
           <div v-else class="fb-hero__title"></div>
 
-          <!-- Control cluster — single adaptive row. Share + Download collapse
-               into the ⋯ More menu to save space (V2-J). -->
-          <div class="fb-hero__cluster">
-            <search />
-            <div class="w-px h-5 bg-line mx-1 max-md:hidden"></div>
-            <div
-              class="h-7 p-0.5 rounded-md border border-line bg-surface flex items-center"
-            >
-              <button
-                @click="setView('list')"
-                :class="[
-                  'h-6 w-7 rounded flex items-center justify-center transition',
-                  viewMode === 'list'
-                    ? 'bg-elevated text-[var(--c-blue)] shadow-sm'
-                    : 'text-ink-3 hover:text-ink-1',
-                ]"
-                title="List"
-                aria-label="List view"
+          <!-- Hero right column: control cluster on top, search field stacked
+               directly beneath it. Keeping search in this right-hand column makes
+               it sit FLUSH under the toolbar — a separate full-width row below the
+               hero dropped beneath the multi-line title block on the left, leaving
+               a big vertical gap. -->
+          <div class="fb-hero__right">
+            <!-- Control cluster — single adaptive row. Share + Download collapse
+                 into the ⋯ More menu to save space (V2-J). -->
+            <div class="fb-hero__cluster">
+              <div
+                v-if="!splitActive"
+                class="h-7 p-0.5 rounded-md border border-line bg-surface flex items-center"
               >
-                <Icon name="list" :size="14" />
+                <button
+                  @click="setView('list')"
+                  :class="[
+                    'h-6 w-7 rounded flex items-center justify-center transition',
+                    viewMode === 'list'
+                      ? 'bg-elevated text-[var(--c-blue)] shadow-sm'
+                      : 'text-ink-3 hover:text-ink-1',
+                  ]"
+                  title="List"
+                  aria-label="List view"
+                >
+                  <Icon name="list" :size="14" />
+                </button>
+                <button
+                  @click="setView('mosaic')"
+                  :class="[
+                    'h-6 w-7 rounded flex items-center justify-center transition',
+                    viewMode === 'mosaic'
+                      ? 'bg-elevated text-[var(--c-blue)] shadow-sm'
+                      : 'text-ink-3 hover:text-ink-1',
+                  ]"
+                  title="Grid"
+                  aria-label="Grid view"
+                >
+                  <Icon name="layout-grid" :size="14" />
+                </button>
+                <button
+                  @click="setView('mosaic gallery')"
+                  :class="[
+                    'h-6 w-7 rounded flex items-center justify-center transition',
+                    viewMode === 'mosaic gallery'
+                      ? 'bg-elevated text-[var(--c-blue)] shadow-sm'
+                      : 'text-ink-3 hover:text-ink-1',
+                  ]"
+                  title="Gallery"
+                  aria-label="Gallery view"
+                >
+                  <Icon name="image" :size="14" />
+                </button>
+              </div>
+              <!-- Dual-pane split toggle (2.5.0). Hidden when there isn't room for
+                 two panes (narrow / mobile). Highlighted while the split is on. -->
+              <button
+                v-if="splitAvailable"
+                @click="toggleSplit"
+                :class="[
+                  'h-7 w-7 rounded-md border border-line inline-flex items-center justify-center transition',
+                  splitActive
+                    ? 'bg-elevated text-[var(--c-lilac)] shadow-sm'
+                    : 'bg-surface text-ink-2 hover:bg-elevated',
+                ]"
+                :title="splitActive ? 'Close split view' : 'Split view'"
+                :aria-label="splitActive ? 'Close split view' : 'Split view'"
+                :aria-pressed="splitActive"
+              >
+                <Icon
+                  name="columns-2"
+                  :size="14"
+                  class="text-[var(--c-lilac)]"
+                />
+              </button>
+              <!-- Icon-only at all widths (label dropped to save header room; the
+                   current sort field stays available via the title tooltip + the
+                   menu itself). -->
+              <button
+                class="h-7 w-7 rounded-md border border-line bg-surface hover:bg-elevated inline-flex items-center justify-center transition"
+                @click.stop="openSortMenu"
+                :title="`Sort: ${sortLabel}`"
+                :aria-label="`Sort: ${sortLabel}`"
+              >
+                <Icon
+                  name="arrow-up-down"
+                  :size="14"
+                  class="text-[var(--c-green)]"
+                />
               </button>
               <button
-                @click="setView('mosaic')"
-                :class="[
-                  'h-6 w-7 rounded flex items-center justify-center transition',
-                  viewMode === 'mosaic'
-                    ? 'bg-elevated text-[var(--c-blue)] shadow-sm'
-                    : 'text-ink-3 hover:text-ink-1',
-                ]"
-                title="Grid"
-                aria-label="Grid view"
+                class="h-7 w-7 rounded-md border border-line bg-surface hover:bg-elevated inline-flex items-center justify-center transition"
+                @click="toggleSortDirection"
+                :title="`Sort direction: ${sortDirLabel}`"
+                :aria-label="`Sort direction: ${sortDirLabel}`"
               >
-                <Icon name="layout-grid" :size="14" />
+                <Icon
+                  :name="sortDirIcon"
+                  :size="14"
+                  class="text-[var(--c-blue)]"
+                />
               </button>
               <button
-                @click="setView('mosaic gallery')"
-                :class="[
-                  'h-6 w-7 rounded flex items-center justify-center transition',
-                  viewMode === 'mosaic gallery'
-                    ? 'bg-elevated text-[var(--c-blue)] shadow-sm'
-                    : 'text-ink-3 hover:text-ink-1',
-                ]"
-                title="Gallery"
-                aria-label="Gallery view"
+                v-if="headerButtons.upload && isTouchDevice"
+                class="h-7 w-7 rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 inline-flex items-center justify-center transition"
+                @click="photoInput?.click()"
+                title="Add photos or videos"
+                aria-label="Add photos or videos"
               >
-                <Icon name="image" :size="14" />
+                <Icon name="image-plus" :size="14" />
+              </button>
+              <input
+                ref="photoInput"
+                style="display: none"
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                @change="uploadInput($event)"
+              />
+              <!-- Icon-only at all widths (label dropped to save header room;
+                   the gradient fill keeps it reading as the primary action). -->
+              <button
+                v-if="headerButtons.upload"
+                class="h-7 w-7 rounded-md btn-accent-gradient text-white flex items-center justify-center shadow-sm transition"
+                @click="uploadFunc"
+                :title="t('buttons.upload')"
+                :aria-label="t('buttons.upload')"
+              >
+                <Icon name="upload" :size="14" />
+              </button>
+              <button
+                class="w-7 h-7 rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 flex items-center justify-center transition"
+                title="More"
+                aria-label="More"
+                @click.stop="showSectionMore"
+              >
+                <Icon name="ellipsis" :size="14" />
               </button>
             </div>
+            <!-- Search sits directly beneath the toolbar cluster (single-pane —
+                 the whole hero is gated !splitActive). On its own line it expands
+                 leftward freely without crowding the buttons; right-aligned under
+                 the cluster via the column's align-items. -->
+            <search />
+          </div>
+        </div>
+        <!-- Split-only compact header (Request #2): in split view both panes
+             share pane B's toolbar chrome via the global .compare-head /
+             .compare-btn classes, so the headers are identical. The breadcrumb
+             lives in the bottom bar; a spacer right-aligns the action cluster.
+             Button set matches pane B exactly (parent · sort · sort-dir · new
+             folder · upload · ⋯ · close). Search stays available via ⌘K. -->
+        <header
+          v-if="splitActive"
+          class="compare-head"
+          :class="{ 'compare-head--drop': sectionDropActive }"
+          @dragenter="onSectionDragEnter"
+          @dragover="onSectionDragOver"
+          @dragleave="onSectionDragLeave"
+          @drop="onSectionDrop"
+        >
+          <div class="compare-head__info" :title="folderTitle">
+            <Icon
+              name="folder"
+              :size="15"
+              class="compare-head__icon text-[var(--c-lilac)]"
+            />
+            <span class="compare-head__name headline-gradient">{{
+              folderTitle
+            }}</span>
+            <span v-if="splitHeaderCount > 0" class="compare-head__count">
+              {{ splitHeaderCount }}
+              {{ splitHeaderCount === 1 ? "item" : "items" }}
+            </span>
+          </div>
+          <div class="compare-head__actions">
             <button
-              class="h-7 px-2 min-w-[110px] max-md:min-w-0 max-md:w-7 max-md:h-7 max-md:px-0 max-md:justify-center rounded-md border border-line bg-surface hover:bg-elevated inline-flex items-center justify-center gap-1.5 text-[13px] text-ink-2 transition"
-              @click.stop="openSortMenu"
+              type="button"
+              class="compare-head__parent"
+              :disabled="!parentFolderUrl"
+              title="Parent folder"
+              aria-label="Parent folder"
+              @click="goToParentFolder"
+            >
+              <Icon name="arrow-up" :size="15" :stroke-width="2.2" />
+            </button>
+            <button
+              type="button"
+              class="compare-btn compare-btn--icon"
               :title="`Sort: ${sortLabel}`"
               :aria-label="`Sort: ${sortLabel}`"
+              @click.stop="openSortMenu"
             >
               <Icon
                 name="arrow-up-down"
                 :size="14"
                 class="text-[var(--c-green)]"
               />
-              <span class="max-md:hidden">{{ sortLabel }}</span>
             </button>
-            <context-menu
-              :show="sortMenuShow"
-              :pos="sortMenuPos"
-              :items="sortMenuItems"
-              @hide="sortMenuShow = false"
-            />
             <button
-              class="h-7 w-7 rounded-md border border-line bg-surface hover:bg-elevated inline-flex items-center justify-center transition"
-              @click="toggleSortDirection"
+              type="button"
+              class="compare-btn"
               :title="`Sort direction: ${sortDirLabel}`"
               :aria-label="`Sort direction: ${sortDirLabel}`"
+              @click="toggleSortDirection"
             >
               <Icon
                 :name="sortDirIcon"
@@ -187,47 +330,70 @@
                 class="text-[var(--c-blue)]"
               />
             </button>
-            <button
-              v-if="headerButtons.upload && isTouchDevice"
-              class="h-7 w-7 rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 inline-flex items-center justify-center transition"
-              @click="photoInput?.click()"
-              title="Add photos or videos"
-              aria-label="Add photos or videos"
-            >
-              <Icon name="image-plus" :size="14" />
-            </button>
-            <input
-              ref="photoInput"
-              style="display: none"
-              type="file"
-              accept="image/*,video/*"
-              multiple
-              @change="uploadInput($event)"
-            />
+            <span class="compare-head__sep" aria-hidden="true"></span>
             <button
               v-if="headerButtons.upload"
-              class="h-7 px-2.5 max-md:w-7 max-md:h-7 max-md:px-0 max-md:justify-center rounded-md btn-accent-gradient text-white text-[13px] font-medium flex items-center gap-1.5 shadow-sm transition"
-              @click="uploadFunc"
-              :title="t('buttons.upload')"
-              :aria-label="t('buttons.upload')"
+              type="button"
+              class="compare-btn"
+              title="New folder"
+              aria-label="New folder"
+              @click="layoutStore.showHover('newDir')"
             >
-              <Icon name="upload" :size="14" />
-              <span class="max-md:hidden">{{ t("buttons.upload") }}</span>
+              <Icon
+                name="folder-plus"
+                :size="14"
+                class="text-[var(--c-lilac)]"
+              />
             </button>
             <button
-              class="w-7 h-7 rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 flex items-center justify-center transition"
-              title="More"
-              aria-label="More"
+              v-if="headerButtons.upload"
+              type="button"
+              class="compare-btn"
+              :title="t('buttons.upload')"
+              :aria-label="t('buttons.upload')"
+              @click="uploadFunc"
+            >
+              <Icon name="upload" :size="14" class="text-[var(--c-blue)]" />
+            </button>
+            <button
+              type="button"
+              class="compare-btn"
+              title="More actions"
+              aria-label="More actions"
               @click.stop="showSectionMore"
             >
-              <Icon name="ellipsis" :size="14" />
+              <Icon name="ellipsis" :size="15" />
+            </button>
+            <button
+              type="button"
+              class="compare-btn compare-btn--close"
+              title="Close this pane"
+              aria-label="Close this pane"
+              @click="closeSplitToB"
+            >
+              <Icon name="x" :size="15" />
             </button>
           </div>
-        </div>
+        </header>
+        <!-- Sort dropdown — hoisted out of the hero cluster so it renders in
+             BOTH the hero and the split compact header. -->
+        <context-menu
+          :show="sortMenuShow"
+          :pos="sortMenuPos"
+          :items="sortMenuItems"
+          @hide="sortMenuShow = false"
+        />
         <section
           ref="scrollSection"
           class="flex-1 flex flex-col min-w-0 min-h-0 overflow-y-auto ptr-host"
-          :class="{ 'scroll-section--virtual': isListVirtual }"
+          :class="{
+            'scroll-section--virtual': isListVirtual,
+            'scroll-section--drop': paneADropActive,
+          }"
+          @dragenter="onPaneADragEnter"
+          @dragover="onPaneADragOver"
+          @dragleave="onPaneADragLeave"
+          @drop="onPaneADrop"
         >
           <!-- S7-1: pull-to-refresh indicator. Only visible during a pull
              or while refreshing; pinned at the visible top (scrollTop is
@@ -387,7 +553,7 @@
               data-clear-on-click="true"
               :data-drop-url="currentFolderUrl || undefined"
               :class="[
-                viewMode,
+                effectiveViewMode,
                 {
                   'listing--virtual': isListVirtual,
                   'is-touch': isTouchDevice,
@@ -480,7 +646,8 @@
                 ref="listScroller"
                 class="listing-virtual"
                 :items="listRows"
-                :item-size="44"
+                :item-size="null"
+                :min-item-size="44"
                 key-field="id"
                 :buffer="320"
                 data-clear-on-click="true"
@@ -626,103 +793,107 @@
                 webkitdirectory
                 multiple
               />
-
-              <div
-                :class="{ active: showBulkPill }"
-                id="multiple-selection"
-                @click.stop
-              >
-                <span class="multiple-selection__count">
-                  {{ fileStore.selectedCount }} selected
-                </span>
-
-                <div class="multiple-selection__divider"></div>
-
-                <button
-                  v-if="headerButtons.download"
-                  @click="download"
-                  :title="t('buttons.download')"
-                >
-                  <!-- V3-C #24: colorful action icons on the dark pill (labels
-                       stay white). Bright 300/400 hues read well on the inverse
-                       surface in both themes. -->
-                  <Icon name="download" :size="14" class="text-sky-400" />
-                  <span>{{ t("buttons.download") }}</span>
-                </button>
-                <button
-                  v-if="headerButtons.copy"
-                  @click="layoutStore.showHover('copy')"
-                  :title="t('buttons.copyFiles')"
-                >
-                  <Icon name="copy" :size="14" class="text-teal-300" />
-                  <span>{{ t("buttons.copyFiles") }}</span>
-                </button>
-                <button
-                  v-if="headerButtons.move"
-                  @click="layoutStore.showHover('move')"
-                  :title="t('buttons.moveFiles')"
-                >
-                  <Icon name="forward" :size="14" class="text-indigo-300" />
-                  <span>{{ t("buttons.moveFiles") }}</span>
-                </button>
-                <!-- v1.3 S4-2: Bulk rename pill button. Only renders for
-                   multi-select (single-select uses inline rename in
-                   ListingItem). Gated on perm.rename. -->
-                <button
-                  v-if="
-                    fileStore.selectedCount > 1 && authStore.user?.perm.rename
-                  "
-                  @click="bulkRename.open"
-                  title="Bulk rename"
-                >
-                  <Icon name="pencil" :size="14" class="text-amber-400" />
-                  <span>Rename</span>
-                </button>
-                <!-- 1.6.0: batch-edit ID3/Vorbis tags across the audio files in
-                   the selection. Only fields changed in the editor are applied
-                   to all of them. -->
-                <button
-                  v-if="canBulkEditTags"
-                  @click="layoutStore.showHover('audio-tags')"
-                  :title="`Edit tags on ${bulkAudioCount} audio files`"
-                >
-                  <Icon name="music" :size="14" class="text-fuchsia-300" />
-                  <span>Edit tags</span>
-                </button>
-                <!-- 2.4.0 Stage 5 / K: bulk add/remove user tags across the
-                     whole selection (tri-state for tags on some-but-not-all). -->
-                <button
-                  v-if="fileStore.selectedCount > 1"
-                  @click="openBulkTags"
-                  :title="`Tag ${fileStore.selectedCount} items`"
-                >
-                  <Icon name="tag" :size="14" class="text-sky-300" />
-                  <span>Tags</span>
-                </button>
-                <button
-                  v-if="headerButtons.delete"
-                  @click="layoutStore.showHover('delete')"
-                  class="multiple-selection__danger"
-                  :title="t('buttons.delete')"
-                >
-                  <Icon name="trash-2" :size="14" class="text-rose-400" />
-                  <span>{{ t("buttons.delete") }}</span>
-                </button>
-
-                <div class="multiple-selection__divider"></div>
-
-                <button
-                  @click="clearSelection"
-                  class="multiple-selection__close"
-                  :title="t('buttons.clear')"
-                  :aria-label="t('buttons.clear')"
-                >
-                  <Icon name="x" :size="14" />
-                </button>
-              </div>
             </div>
           </template>
         </section>
+        <!-- Bulk-selection pill. A direct child of `.fb-primary` (NOT the
+             scroll section) so it can be `position: absolute` within the pane's
+             column — keeping it over pane A only in split view, instead of
+             viewport-centred across both panes. Visibility is driven by
+             `showBulkPill`; it slides up from below when ≥2 items are selected. -->
+        <div
+          :class="{
+            active: showBulkPill,
+            'multiple-selection--compact': splitActive,
+          }"
+          id="multiple-selection"
+          @click.stop
+        >
+          <span class="multiple-selection__count">
+            {{ fileStore.selectedCount }} selected
+          </span>
+
+          <div class="multiple-selection__divider"></div>
+
+          <button
+            v-if="headerButtons.download"
+            @click="download"
+            :title="t('buttons.download')"
+          >
+            <!-- V3-C #24: colorful action icons on the dark pill (labels stay
+                 white). Bright 300/400 hues read well on the inverse surface in
+                 both themes. -->
+            <Icon name="download" :size="14" class="text-sky-400" />
+            <span>{{ t("buttons.download") }}</span>
+          </button>
+          <button
+            v-if="headerButtons.copy"
+            @click="layoutStore.showHover('copy')"
+            :title="t('buttons.copyFiles')"
+          >
+            <Icon name="copy" :size="14" class="text-teal-300" />
+            <span>{{ t("buttons.copyFiles") }}</span>
+          </button>
+          <button
+            v-if="headerButtons.move"
+            @click="layoutStore.showHover('move')"
+            :title="t('buttons.moveFiles')"
+          >
+            <Icon name="forward" :size="14" class="text-indigo-300" />
+            <span>{{ t("buttons.moveFiles") }}</span>
+          </button>
+          <!-- v1.3 S4-2: Bulk rename pill button. Only renders for multi-select
+               (single-select uses inline rename in ListingItem). Gated on
+               perm.rename. -->
+          <button
+            v-if="fileStore.selectedCount > 1 && authStore.user?.perm.rename"
+            @click="bulkRename.open"
+            title="Bulk rename"
+          >
+            <Icon name="pencil" :size="14" class="text-amber-400" />
+            <span>Rename</span>
+          </button>
+          <!-- 1.6.0: batch-edit ID3/Vorbis tags across the audio files in the
+               selection. Only fields changed in the editor are applied to all. -->
+          <button
+            v-if="canBulkEditTags"
+            @click="layoutStore.showHover('audio-tags')"
+            :title="`Edit tags on ${bulkAudioCount} audio files`"
+          >
+            <Icon name="music" :size="14" class="text-fuchsia-300" />
+            <span>Edit tags</span>
+          </button>
+          <!-- 2.4.0 Stage 5 / K: bulk add/remove user tags across the whole
+               selection (tri-state for tags on some-but-not-all). -->
+          <button
+            v-if="fileStore.selectedCount > 1"
+            @click="openBulkTags"
+            :title="`Tag ${fileStore.selectedCount} items`"
+          >
+            <Icon name="tag" :size="14" class="text-sky-300" />
+            <span>Tags</span>
+          </button>
+          <button
+            v-if="headerButtons.delete"
+            @click="layoutStore.showHover('delete')"
+            class="multiple-selection__danger"
+            :title="t('buttons.delete')"
+          >
+            <Icon name="trash-2" :size="14" class="text-rose-400" />
+            <span>{{ t("buttons.delete") }}</span>
+          </button>
+
+          <div class="multiple-selection__divider"></div>
+
+          <button
+            @click="clearSelection"
+            class="multiple-selection__close"
+            :title="t('buttons.clear')"
+            :aria-label="t('buttons.clear')"
+          >
+            <Icon name="x" :size="14" />
+          </button>
+        </div>
         <!-- V2-J: directory breadcrumb path — bottom of the primary column,
              left-aligned, border/background hugging the path text only (no
              item count). Listing pages only (absent on preview + settings). -->
@@ -732,7 +903,10 @@
           </div>
         </div>
       </div>
-      <InfoPane />
+      <!-- Dual-pane second pane (2.5.0). Sits beside the primary column; the
+           details rail is hidden while split (the two listings need the room). -->
+      <ComparePane v-if="splitActive" />
+      <InfoPane v-else />
     </div>
 
     <!-- Delete confirmation (Stage 8; trash-aware since 2.4.0 Stage 2). -->
@@ -751,6 +925,7 @@
     <MoveCopyPanel
       :open="moveCopyOpen"
       :mode="moveCopyMode"
+      :override="moveCopyOverride"
       @cancel="closeMoveCopy"
       @done="closeMoveCopy"
     />
@@ -776,12 +951,18 @@
       @saved="bulkTagPicker.close"
     />
 
-    <!-- Share slide-over (Stage 8). -->
-    <SharePanel :open="shareOpen" @cancel="closeShare" />
+    <!-- Share slide-over (Stage 8). The optional `override` lets the second
+         pane (ComparePane) target its own item via showHover props. -->
+    <SharePanel
+      :open="shareOpen"
+      :override="layoutStore.currentPrompt?.props?.override"
+      @cancel="closeShare"
+    />
 
     <!-- Extract zip slide-over (PR #5746 Phase B). -->
     <ExtractPanel
       :open="extractOpen"
+      :override="layoutStore.currentPrompt?.props?.override"
       @cancel="closeExtract"
       @done="closeExtract"
     />
@@ -815,13 +996,13 @@ import Icon from "@/components/Icon.vue";
 import { useAuthStore } from "@/stores/auth";
 import { useClipboardStore } from "@/stores/clipboard";
 import { useFileStore } from "@/stores/file";
+import { usePanesStore } from "@/stores/panes";
 import { useLayoutStore } from "@/stores/layout";
 import { useTagsStore } from "@/stores/tags";
 import { useFavorites } from "@/composables/useFavorites";
 import { useRootLabel } from "@/composables/useRootLabel";
 import { usePreferences } from "@/composables/usePreferences";
 import { useFolderScrollMemory } from "@/composables/useFolderScrollMemory";
-import { useTagPicker } from "@/composables/useTagPicker";
 import { useFavoriteTitleDialog } from "@/composables/useFavoriteTitleDialog";
 import { useBulkRename } from "@/composables/useBulkRename";
 import { useDragSelect } from "@/composables/useDragSelect";
@@ -852,6 +1033,7 @@ import Action from "@/components/header/Action.vue";
 import Search from "@/components/Search.vue";
 import Item from "@/components/files/ListingItem.vue";
 import InfoPane from "@/components/files/InfoPane.vue";
+import ComparePane from "@/components/files/ComparePane.vue";
 import ImageHoverPreview from "@/components/files/ImageHoverPreview.vue";
 import InlineNewItem from "@/components/files/InlineNewItem.vue";
 import ListingSkeleton from "@/components/files/ListingSkeleton.vue";
@@ -862,7 +1044,6 @@ import MoveCopyPanel from "@/components/files/MoveCopyPanel.vue";
 import BulkRenamePanel from "@/components/files/BulkRenamePanel.vue";
 import TagPickerSheet from "@/components/files/TagPickerSheet.vue";
 import { useBulkTagPicker } from "@/composables/useBulkTagPicker";
-import { useFolderSizes } from "@/composables/useFolderSizes";
 import ExtractPanel from "@/components/files/ExtractPanel.vue";
 import SharePanel from "@/components/files/SharePanel.vue";
 import { useToast } from "vue-toastification";
@@ -889,6 +1070,41 @@ import { resolveRowDropMode } from "@/utils/dropZone";
 const dragCounter = ref<number>(0);
 const width = ref<number>(window.innerWidth);
 const isContextMenuVisible = ref<boolean>(false);
+
+// ── Dual-pane / split view (2.5.0) ───────────────────────────────────
+// `panes.split` is the user's choice; `splitActive` also gates on width — the
+// split needs room, so below SPLIT_MIN_WIDTH (or on mobile) we collapse to a
+// single pane without forgetting the preference. While active, this pane (A)
+// is forced to the list layout (per the locked decision) via effectiveViewMode,
+// without clobbering the user's stored grid/gallery preference.
+const panes = usePanesStore();
+const SPLIT_MIN_WIDTH = 880;
+const splitAvailable = computed(() => width.value >= SPLIT_MIN_WIDTH);
+const splitActive = computed(() => panes.split && splitAvailable.value);
+const effectiveViewMode = computed(() =>
+  splitActive.value ? "list" : viewMode.value
+);
+// Item count shown in pane A's split-only compact header (mirrors pane B).
+const splitHeaderCount = computed(
+  () => (fileStore.req?.numDirs ?? 0) + (fileStore.req?.numFiles ?? 0)
+);
+const toggleSplit = () => {
+  if (panes.split) panes.closeSplit();
+  else panes.openSplit(route.path.replace(/\/?$/, "/"));
+};
+// Interacting with the primary column makes pane A the active pane again (the
+// mirror of ComparePane's pointerdown), so global surfaces target it. No-op
+// when not split. Capture-phase so it fires before row handlers stop it.
+const onPaneAActivate = () => {
+  if (splitActive.value && panes.activePane !== "a") panes.setActive("a");
+};
+// Keep the active-pane target consistent with what's actually on screen: when
+// the split collapses (narrowed below the min width, or toggled off) pane B is
+// no longer mounted, so pane A must become active again — otherwise the
+// sidebar/palette could navigate an invisible pane B.
+watch(splitActive, (active) => {
+  if (!active && panes.activePane !== "a") panes.setActive("a");
+});
 const contextMenuPos = ref<{ x: number; y: number }>({ x: 0, y: 0 });
 
 const $showError = inject<IToastError>("$showError")!;
@@ -902,9 +1118,6 @@ const tagsStore = useTagsStore();
 const prefs = usePreferences();
 // V2-J: the mobile hamburger lives in the hero now (no top header bar).
 const mobileNav = useMobileNav();
-// S4-1: shared open-state for the TagPickerSheet so the row context
-// menu can open it from outside InfoPane.
-const tagPicker = useTagPicker();
 // Shared open-state for the favorites display-title editor, opened from the
 // row context menu + the section ⋯ menu (both gated on the folder being pinned).
 const favTitleDialog = useFavoriteTitleDialog();
@@ -912,8 +1125,6 @@ const favTitleDialog = useFavoriteTitleDialog();
 // menu, the bulk-pill button, and the command palette all trigger
 // through the same flag.
 const bulkRename = useBulkRename();
-// 2.4.0: recursive folder-size cache, prefetched for the listing's folders.
-const folderSizes = useFolderSizes();
 // 2.4.0 Stage 5 / K: bulk tag picker for the current multi-selection.
 const bulkTagPicker = useBulkTagPicker();
 const openBulkTags = () => {
@@ -937,13 +1148,9 @@ watch(
     void tagsStore.ensureLoaded();
     const paths = req.items.map((i) => i.url).filter(Boolean);
     void tagsStore.loadForPaths(paths);
-    // 2.4.0: prefetch every folder's recursive size (concurrency-limited) so the
-    // Size column fills in without clicking each folder. Cached + singleflit'd
-    // server-side, so reloads are cheap; rows update reactively as each lands.
-    const folderTargets = req.items
-      .filter((i) => i.isDir && i.url)
-      .map((i) => ({ path: i.url, mod: String(i.modified ?? "") }));
-    if (folderTargets.length) void folderSizes.ensureMany(folderTargets);
+    // Folder sizes are fetched lazily per visible row now (ListingItem), so the
+    // Size column fills in for what's on screen without prefetching every
+    // subfolder up front (DP v2 R1 — that recursive walk doubled with the split).
   },
   { immediate: true }
 );
@@ -1267,7 +1474,10 @@ const cancelSectionSpring = () => {
 };
 
 const onSectionDragEnter = (event: DragEvent) => {
-  if (fileStore.selectedCount === 0) return;
+  // Gate on the active DRAG set (not the current selection) so a cross-pane
+  // drag — whose items live in `draggedItems`, not pane A's `selected` — also
+  // arms the parent spring-load when held over the split header (#18).
+  if (fileStore.draggedItems.length === 0) return;
   if (!parentFolderUrl.value) return;
   event.preventDefault();
   sectionDragDepth++;
@@ -1284,7 +1494,7 @@ const onSectionDragEnter = (event: DragEvent) => {
 };
 
 const onSectionDragOver = (event: DragEvent) => {
-  if (fileStore.selectedCount === 0) return;
+  if (fileStore.draggedItems.length === 0) return;
   if (!parentFolderUrl.value) return;
   event.preventDefault();
   if (event.dataTransfer) {
@@ -1310,6 +1520,58 @@ const onSectionDrop = (event: DragEvent) => {
   sectionDropActive.value = false;
   if (!parentFolderUrl.value) return;
   void performParentDrop(event, parentFolderUrl.value);
+};
+
+// ── Pane A cross-pane drop overlay (#17) ─────────────────────────────
+// Mirrors ComparePane's `.compare-body--drop`: while an internal selection is
+// dragged over pane A's body, draw the same dashed accent frame so pane A reads
+// as a drop target too (previously only pane B lit up). Split-only — in single
+// pane these handlers early-return, so that path is byte-for-byte unchanged.
+// `fileStore.draggedItems` is the shared cross-pane drag set (written by either
+// pane's dragstart), so this fires for both A→A and B→A drags.
+const paneADropDepth = ref<number>(0);
+const paneADropActive = computed(
+  () =>
+    splitActive.value &&
+    paneADropDepth.value > 0 &&
+    fileStore.draggedItems.length > 0
+);
+const onPaneADragEnter = (event: DragEvent) => {
+  if (!splitActive.value || fileStore.draggedItems.length === 0) return;
+  event.preventDefault();
+  paneADropDepth.value++;
+};
+const onPaneADragOver = (event: DragEvent) => {
+  if (!splitActive.value || fileStore.draggedItems.length === 0) return;
+  event.preventDefault();
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect =
+      event.ctrlKey || event.metaKey ? "copy" : "move";
+  }
+};
+const onPaneADragLeave = () => {
+  if (paneADropDepth.value > 0) paneADropDepth.value--;
+};
+const onPaneADrop = (event: DragEvent) => {
+  paneADropDepth.value = 0;
+  // Only internal cross-pane drags land here; OS-file drops (no draggedItems)
+  // are owned by the global document `drop` handler — don't double-handle them.
+  if (!splitActive.value || fileStore.draggedItems.length === 0) return;
+  // A row (folder into-zone, or a file row's dropAlongside) already handled it.
+  if ((event.target as HTMLElement | null)?.closest(".item")) return;
+  if (!currentFolderUrl.value) return;
+  void performParentDrop(event, currentFolderUrl.value);
+};
+
+// Drag-cancel safety net (review #1): Esc-cancelling a drag fires `dragend` but
+// NOT `dragleave`/`drop`, so a pending section spring-load timer would otherwise
+// still navigate ~PARENT_SPRING_MS later, and the pane-A drop overlay would stay
+// lit. Wired to the document `dragend` alongside `resetOpacity` (same rationale).
+const onListingDragEnd = () => {
+  cancelSectionSpring();
+  sectionDropActive.value = false;
+  sectionDragDepth = 0;
+  paneADropDepth.value = 0;
 };
 
 // `currentFolderUrl` — the current folder's url (trailing "/" like the
@@ -1618,7 +1880,9 @@ const files = computed((): ResourceItem[] => {
 // Only the LIST view virtualizes (uniform 40px rows). Grid + gallery
 // tiles wrap to variable heights, so they stay on the incremental
 // `showLimit` windowing above — list-first per the locked Stage 6 plan.
-const isListVirtual = computed<boolean>(() => viewMode.value === "list");
+const isListVirtual = computed<boolean>(
+  () => effectiveViewMode.value === "list"
+);
 
 // Flat row model the RecycleScroller consumes: every dir, an optional
 // folder/file divider sentinel, then every file. Crucially this is the
@@ -1637,6 +1901,9 @@ interface ListRow {
   divider: boolean;
   /** The file/folder for a normal row; null on the divider. */
   item: ResourceItem | null;
+  /** Per-row height for the variable-size recycler (item-size=null). Only the
+   *  divider sets it (a slim slot); item rows fall back to min-item-size. */
+  size?: number;
 }
 
 const listRows = computed<ListRow[]>(() => {
@@ -1646,7 +1913,10 @@ const listRows = computed<ListRow[]>(() => {
     rows.push({ id: "d:" + base64(d.name), divider: false, item: d });
   }
   if (dirs.length > 0 && files.length > 0) {
-    rows.push({ id: "__divider__", divider: true, item: null });
+    // `size` drives the virtual scroller's variable row height (item-size=null):
+    // the divider gets a slim slot so folders→files aren't separated by a full
+    // 44px row of dead space. Item rows omit `size` → fall back to min-item-size.
+    rows.push({ id: "__divider__", divider: true, item: null, size: 18 });
   }
   for (const f of files) {
     rows.push({ id: "f:" + base64(f.name), divider: false, item: f });
@@ -1800,6 +2070,9 @@ watch(req, () => {
 let gridResizeObserver: ResizeObserver | null = null;
 
 onMounted(() => {
+  // Dual-pane: load the saved split on/off + pane-B path from the prefs bag.
+  panes.restore();
+
   // Measure the grid columns/tile-height for the first time.
   columnsResize();
 
@@ -1853,6 +2126,14 @@ onMounted(() => {
   // can't empty an in-flight move.
   document.addEventListener("drop", clearDragSnapshot);
   document.addEventListener("dragend", clearDragSnapshot);
+  // Clear the drag DIM (rows set to 50% opacity on dragenter) when a drag ends
+  // WITHOUT a drop — e.g. the user presses Esc to cancel. Esc fires `dragend`
+  // but not `drop`/`dragleave`, so without this the hovered/dragged rows stayed
+  // dimmed until the next interaction. (drop already calls resetOpacity itself.)
+  document.addEventListener("dragend", resetOpacity);
+  // Cancel a pending parent spring-load + clear the pane-A drop overlay on an
+  // Esc-cancelled drag (review #1).
+  document.addEventListener("dragend", onListingDragEnd);
 });
 
 onBeforeUnmount(() => {
@@ -1882,6 +2163,8 @@ onBeforeUnmount(() => {
   document.removeEventListener("dragend", endDragBadge);
   document.removeEventListener("drop", clearDragSnapshot);
   document.removeEventListener("dragend", clearDragSnapshot);
+  document.removeEventListener("dragend", resetOpacity);
+  document.removeEventListener("dragend", onListingDragEnd);
   stopDragScroll();
   endDragBadge();
 });
@@ -1891,6 +2174,27 @@ const base64 = (name: string) => Base64.encodeURI(name);
 const keyEvent = (event: KeyboardEvent) => {
   // No prompts are shown
   if (layoutStore.currentPrompt !== null) {
+    return;
+  }
+
+  // Dual-pane (R4): F6 toggles the active pane (the OS convention for cycling
+  // panes). Handled here — before the bail below — so it works whichever pane
+  // is active; the typing guard keeps it inert while editing a field.
+  if (splitActive.value && event.key === "F6") {
+    const tgt = event.target as HTMLElement | null;
+    const tg = tgt?.tagName?.toLowerCase();
+    if (tg !== "input" && tg !== "textarea" && !tgt?.isContentEditable) {
+      event.preventDefault();
+      panes.setActive(panes.activePane === "a" ? "b" : "a");
+      return;
+    }
+  }
+
+  // Dual-pane (R4): when the split is open and pane B is the active pane, it
+  // owns the keyboard — ComparePane has its own handler. Bail here so the two
+  // don't both act. When pane A is active this guard is false, so pane A's
+  // keyboard behaves exactly as it did before the split existed.
+  if (splitActive.value && panes.activePane === "b") {
     return;
   }
 
@@ -1955,11 +2259,12 @@ const keyEvent = (event: KeyboardEvent) => {
           event.preventDefault();
           fileStore.reload = true;
           return;
-        case "Delete":
-        case "Backspace": {
-          // 2.4.0 Stage 2: Delete (⌫ on Mac keyboards) moves the selection to
+        case "Delete": {
+          // 2.4.0 Stage 2: the Delete (Del / Fn+⌫) key moves the selection to
           // the Trash; holding SHIFT deletes permanently. Both go through the
           // same confirm dialog — only the wording and the commit differ.
+          // Backspace is deliberately NOT bound: delete is destructive enough
+          // that the user asked to drop the easy-to-hit accidental trigger.
           if (!authStore.user?.perm.delete) return;
           const delItems = collectSelectedDeleteItems();
           if (delItems.length === 0) return;
@@ -2374,7 +2679,17 @@ const drop = async (event: DragEvent) => {
   }
 
   const files: UploadList = (await upload.scanFiles(dt)) as UploadList;
-  let path = route.path.endsWith("/") ? route.path : route.path + "/";
+
+  // Dual-pane: when the OS-file drop lands inside pane B (ComparePane), the base
+  // destination is pane B's folder, not pane A's route path. This single global
+  // handler catches every OS-file drop (it's on `document`); without this, a drop
+  // on pane B's empty space or a file row fell through to pane A's path. A drop
+  // landing ON a folder row still uploads into that row's folder — resolved just
+  // below from its `data-drop-url`, which is already pane-correct.
+  const inPaneB =
+    (event.target as HTMLElement | null)?.closest?.(".compare-pane") != null;
+  const basePath = inPaneB ? panes.secondaryPath : route.path;
+  let path = basePath.endsWith("/") ? basePath : basePath + "/";
 
   // Upload INTO a folder ONLY when the cursor is over its icon + name — the same
   // shared `resolveRowDropMode` hit-test that draws the highlight (path #4 of the
@@ -2432,8 +2747,9 @@ const drop = async (event: DragEvent) => {
         if (files.length > 0) {
           upload.handleFiles(files, path, true);
           // Re-select against the post-conflict-resolution survivors
-          // so skipped files don't end up "selected but missing".
-          fileStore.setPreselect(buildPreselect(files));
+          // so skipped files don't end up "selected but missing". Preselect is
+          // a pane-A concept; skip it for pane-B uploads (those refresh pane B).
+          if (!inPaneB) fileStore.setPreselect(buildPreselect(files));
         }
       },
     });
@@ -2442,7 +2758,7 @@ const drop = async (event: DragEvent) => {
   }
 
   upload.handleFiles(files, path);
-  fileStore.setPreselect(buildPreselect(files));
+  if (!inPaneB) fileStore.setPreselect(buildPreselect(files));
 };
 
 const uploadInput = async (event: Event) => {
@@ -2883,6 +3199,19 @@ const collectSelectedDeleteItems = (): { url: string; name: string }[] => {
 // Prompts.vue only as a safety net for non-listing callers.
 const moveCopyOpen = ref(false);
 const moveCopyMode = ref<"move" | "copy">("move");
+// Dual-pane: pane B opens the move/copy picker for ITS selection by passing an
+// `override` on the prompt. Captured here (before closeHovers clears the prompt)
+// and handed to MoveCopyPanel; null for pane A, which reads fileStore as before.
+const moveCopyOverride = ref<{
+  items: {
+    url: string;
+    name: string;
+    isDir: boolean;
+    size: number;
+    modified: string;
+  }[];
+  sourceUrl: string;
+} | null>(null);
 const shareOpen = ref(false);
 const extractOpen = ref(false);
 // v1.3 S4-2: BulkRenamePanel state lives on `bulkRename` (composable
@@ -2893,6 +3222,7 @@ const extractOpen = ref(false);
 
 const closeMoveCopy = () => {
   moveCopyOpen.value = false;
+  moveCopyOverride.value = null;
 };
 const closeShare = () => {
   shareOpen.value = false;
@@ -2940,8 +3270,14 @@ watch(
   () => layoutStore.currentPromptName,
   (name) => {
     if (name === "move" || name === "copy") {
-      if (!fileStore.isListing || fileStore.selectedCount === 0) return;
+      // Pane B passes its own items via `props.override`; capture it BEFORE
+      // closeHovers clears the prompt. With an override we skip the pane-A
+      // fileStore gate (pane B's selection lives in its own store).
+      const override = layoutStore.currentPrompt?.props?.override ?? null;
+      if (!override && (!fileStore.isListing || fileStore.selectedCount === 0))
+        return;
       moveCopyMode.value = name;
+      moveCopyOverride.value = override;
       layoutStore.closeHovers();
       closeAllPanels();
       moveCopyOpen.value = true;
@@ -3044,8 +3380,10 @@ const sectionMoreItems = computed<MenuItem[]>(() => {
         }
       : null,
     // Rename the CURRENTLY VIEWED folder (not selected items).
-    // Hidden at the storage root since you can't rename "/".
-    canRenameCurrentFolder.value
+    // Hidden at the storage root since you can't rename "/". Also hidden while
+    // split: the inline rename input lives in the hero, which is swapped for the
+    // compact header in split view, so there'd be nowhere to type (silent no-op).
+    canRenameCurrentFolder.value && !splitActive.value
       ? {
           label: "Rename folder",
           icon: "pencil",
@@ -3089,6 +3427,20 @@ const sectionMoreItems = computed<MenuItem[]>(() => {
 
 const refresh = () => {
   fileStore.reload = true;
+  // Dual-pane: also refresh pane B so a refresh updates BOTH panes (especially
+  // when they're showing the same folder). Cheap re-fetch; no-op visually if its
+  // folder didn't change.
+  if (splitActive.value) panes.refreshB();
+};
+
+// Pane A's split close button (X): close the split and make pane B's folder the
+// single open folder — i.e. close the pane the user clicked, keep the other. (The
+// generic toggle just drops the split keeping pane A; that's the wrong pane when
+// closing FROM pane A's header.) Pane B's own X already keeps pane A via closeSplit().
+const closeSplitToB = () => {
+  const target = panes.secondaryPath;
+  panes.closeSplit();
+  if (target && target !== route.path) void router.push({ path: target });
 };
 
 // ── S7-1: pull-to-refresh (touch only) ──────────────────────────────
@@ -3491,13 +3843,32 @@ const rowMenuItems = computed<MenuItem[]>(() => {
       },
     });
   }
+  // Open a folder in a SECOND pane (dual-pane). Single-pane only — once split is
+  // already on, the cross-pane "Move/Copy to other pane" actions cover the rest.
+  if (singleItem?.isDir && !splitActive.value && splitAvailable.value) {
+    const dirUrl = singleItem.url;
+    items.push({
+      label: "Open in new pane",
+      icon: "columns-2",
+      action: () => {
+        hideContextMenu();
+        panes.openSplit(route.path.replace(/\/?$/, "/"));
+        void panes.navigateB(dirUrl);
+      },
+    });
+  }
   if (singleItem) {
     items.push({
       label: "Tag…",
       icon: "tag",
       action: () => {
         hideContextMenu();
-        tagPicker.open();
+        // Route through the bulk tag sheet (mounted at this component's top
+        // level, always available) instead of `tagPicker` — that one lives
+        // INSIDE InfoPane behind `v-if="item"`, so it silently no-ops when the
+        // details rail is collapsed or has no item. A single-path array gives
+        // the same single-file tag UX.
+        bulkTagPicker.open([singleItem.url]);
       },
     });
   }
@@ -3621,7 +3992,6 @@ const rowMenuItems = computed<MenuItem[]>(() => {
     items.push({
       label: t("buttons.rename"),
       icon: "pencil",
-      kbd: "F2",
       action: () => {
         hideContextMenu();
         layoutStore.showHover("rename");
@@ -3703,7 +4073,7 @@ const rowMenuItems = computed<MenuItem[]>(() => {
       label: sel === 1 ? t("buttons.delete") : `Delete ${sel} items`,
       icon: "trash-2",
       destructive: true,
-      kbd: "⌫",
+      kbd: "Del",
       action: () => {
         hideContextMenu();
         layoutStore.showHover("delete");
@@ -3727,7 +4097,6 @@ const backgroundMenuItems = computed<MenuItem[]>(() => {
     items.push({
       label: "New folder",
       icon: "folder-plus",
-      kbd: "N",
       action: () => {
         hideContextMenu();
         layoutStore.showHover("newDir");
@@ -3744,7 +4113,6 @@ const backgroundMenuItems = computed<MenuItem[]>(() => {
     items.push({
       label: t("buttons.upload"),
       icon: "upload",
-      kbd: "U",
       action: () => {
         hideContextMenu();
         uploadFunc();
@@ -3787,7 +4155,7 @@ const backgroundMenuItems = computed<MenuItem[]>(() => {
   items.push({
     label: "Refresh",
     icon: "rotate-ccw",
-    kbd: "R",
+    kbd: "/",
     action: () => {
       hideContextMenu();
       fileStore.reload = true;
@@ -3863,6 +4231,17 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
    keep their native section scroll + showLimit windowing untouched. */
 .scroll-section--virtual {
   overflow: hidden;
+}
+
+/* Cross-pane drop affordance for pane A (#17) — the same dashed accent frame
+   ComparePane draws (`.compare-body--drop`), so dragging a selection over the
+   primary pane lights it up identically. Split-only (the flag is gated on
+   `splitActive`), so single-pane drag never shows this. */
+.scroll-section--drop {
+  outline: 2px dashed var(--color-accent, #5e6ad2);
+  outline-offset: -4px;
+  border-radius: 8px;
+  background: var(--color-accent-soft, rgba(94, 106, 210, 0.06));
 }
 
 #listing.listing--virtual {
@@ -4072,6 +4451,13 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   background: var(--color-accent-soft, rgba(94, 106, 210, 0.08));
   box-shadow: inset 0 0 0 2px var(--color-accent, #5e6ad2);
 }
+/* Split-header parent spring-load target (#18): dragging a selection onto pane
+   A's compact header navigates up a folder, mirroring the single-pane
+   section-title drop affordance above. */
+.compare-head--drop {
+  background: var(--color-accent-soft, rgba(94, 106, 210, 0.08));
+  box-shadow: inset 0 0 0 2px var(--color-accent, #5e6ad2);
+}
 
 /* ── V2-J unified hero (title + control cluster) ─────────────────────────
    Replaces the dissolved top header bar. No border/box — it flows straight
@@ -4083,9 +4469,14 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   gap: 12px;
   padding: 16px 20px 12px;
   flex-shrink: 0;
-  /* Positioning context for the active search overlay (#search.active in
-     header.css), so when the search expands it floats over this header row
-     instead of pushing the title + toolbar. */
+  /* Single row on desktop. (An earlier `flex-wrap: wrap` here dropped the whole
+     control cluster onto a second line far too eagerly: flex-wrap keys off the
+     title's FULL, un-truncated width, so it wrapped even when the title could
+     have ellipsized to make room — #9 over-correction. Title-yields-first + an
+     in-place cluster wrap below handle the squeeze instead.) */
+  /* Local positioning context for absolutely-positioned hero children. (Search
+     used to anchor here; it now lives in the `.fb-hero__right` column and anchors
+     to #search itself, but other overlays still rely on this.) */
   position: relative;
 }
 @media (max-width: 768px) {
@@ -4093,6 +4484,20 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
     padding: 12px 16px 10px;
     flex-wrap: wrap;
   }
+}
+/* Hero right column: control cluster on top, search field directly beneath it,
+   both right-aligned. (Search was previously a full-width second row below the
+   hero, but the hero is as tall as the multi-line title block on the left — so
+   the row sat well below the toolbar with a big gap. Stacking it here keeps it
+   flush under the cluster.) Does NOT grow (the title's `flex-grow` claims the
+   slack), so the column hugs the toolbar width on the right. */
+.fb-hero__right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  min-width: 0;
+  flex-shrink: 1;
 }
 .fb-hero__menu {
   width: 32px;
@@ -4111,21 +4516,51 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
 /* `.section-title` already supplies the drop-target radius/transition; the
    hero title just needs to flex + truncate. */
 .fb-hero__title {
-  flex: 1 1 auto;
+  /* Greedy but HIGHLY shrinkable: its h1 + subtitle carry `truncate`, so it
+     ellipsizes to absorb the squeeze when the details rail opens — yielding the
+     row's space to the control cluster before the cluster gives up any (the high
+     shrink factor makes the title lose width first). */
+  flex: 1 8 auto;
   min-width: 0;
 }
 .fb-hero__cluster {
   display: flex;
   align-items: center;
   gap: 6px;
+  /* Single row, never wraps. The buttons are now all compact icon-only tiles
+     (sort + upload lost their labels), and the search moved to its own line, so
+     the cluster fits on one row without folding upload/⋯ onto a second row as it
+     used to. The title (flex: 1 8 auto) gives up width first. */
   flex-shrink: 0;
-  flex-wrap: wrap;
+  min-width: 0;
+  flex-wrap: nowrap;
   justify-content: flex-end;
+  /* Right-align within its `.fb-hero__right` column. */
+  align-self: stretch;
 }
 
 /* ── V2-J bottom breadcrumb bar (listing pages only) ─────────────────────
-   The chrome (border + tint) hugs the path text only; the rest of the strip
-   stays transparent so it doesn't read as a boxed footer. */
+   The crumbs pill hugs the path (no blank tail) and grows with it. Breadcrumbs.vue
+   keeps the path as long as fits — folding the middle into "…" only when it
+   overflows — so the pill is as wide as the path, not padded out to full width. */
+/* Positioning context for the bulk-selection pill (#multiple-selection), which
+   is a direct child positioned `absolute` so it stays over pane A's column in
+   split view. `.fb-primary` is NOT a scroll container, so the pill stays pinned
+   to the column bottom. */
+.fb-primary {
+  position: relative;
+}
+
+/* Dual-pane (2.5.0): the active pane is shown by its HEADER alone (tint +
+   accent underline below) — no edge line on the column. Edge accents at the
+   divider looked like a colored line "swapping" across the gap; on the outer
+   edge they left the middle empty. The centre divider stays a static 1px line
+   (ComparePane's border-left). Mirrors pane B's `.compare-pane--active`. */
+.fb-primary--active .compare-head {
+  background: var(--color-accent-soft, rgba(94, 106, 210, 0.06));
+  box-shadow: inset 0 -2px 0 0 var(--color-accent, #5e6ad2);
+}
+
 .fb-breadcrumb-bar {
   flex-shrink: 0;
   display: flex;
@@ -4137,8 +4572,12 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   min-width: 0;
 }
 .fb-breadcrumb-bar__crumbs {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  /* Hug the path (no grow) so there's no blank tail after the crumbs; the pill
+     grows with the path itself. Capped at the bar width so an over-long path
+     scrolls / folds instead of overflowing — Breadcrumbs.vue shows every folder
+     that fits and only folds the middle into "…" when it genuinely can't. */
   min-width: 0;
   max-width: 100%;
   padding: 4px 10px;

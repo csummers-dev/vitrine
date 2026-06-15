@@ -46,13 +46,23 @@ import { useRoute } from "vue-router";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 import { files as api } from "@/api";
-import url from "@/utils/url";
+import url, { buildCreatePath } from "@/utils/url";
 import { fileIcon, fileIconColor } from "@/utils/fileIcon";
 import Icon from "@/components/Icon.vue";
 
 const props = defineProps<{
   /** "newDir" creates a folder, "newFile" creates an empty file. */
   kind: "newDir" | "newFile";
+  /**
+   * Dual-pane (pane B): create in THIS folder and refresh/dismiss via the given
+   * callbacks instead of pane A's route + fileStore. Undefined for pane A, so
+   * that path is byte-for-byte unchanged.
+   */
+  target?: {
+    folderUrl: string;
+    reload: () => void;
+    close: () => void;
+  } | null;
 }>();
 
 const $showError = inject<IToastError>("$showError")!;
@@ -82,7 +92,8 @@ onMounted(async () => {
 });
 
 const cancel = () => {
-  layoutStore.closeHovers();
+  if (props.target) props.target.close();
+  else layoutStore.closeHovers();
 };
 
 // Blur often fires when the user clicks "Save" elsewhere on the page; only
@@ -105,31 +116,41 @@ const submit = async () => {
   }
   submitting = true;
 
-  // Build the URI the same way the legacy NewDir.vue / NewFile.vue did,
-  // so we don't change any backend contract.
-  let uri = fileStore.isFiles ? route.path + "/" : "/";
-  if (!fileStore.isListing) {
-    uri = url.removeLastDir(uri) + "/";
+  // Build the URI the same way the legacy NewDir.vue / NewFile.vue did, so we
+  // don't change any backend contract. Pane B (target) creates in its own folder
+  // via the shared `buildCreatePath`; pane A derives it from the route +
+  // fileStore as before.
+  let uri: string;
+  if (props.target) {
+    uri = buildCreatePath(props.target.folderUrl, trimmed, isDir.value);
+  } else {
+    let u = fileStore.isFiles ? route.path + "/" : "/";
+    if (!fileStore.isListing) u = url.removeLastDir(u) + "/";
+    u += encodeURIComponent(trimmed);
+    if (isDir.value) u += "/";
+    uri = u.replace("//", "/");
   }
-  uri += encodeURIComponent(trimmed);
-  if (isDir.value) uri += "/";
-  uri = uri.replace("//", "/");
 
   try {
     await api.post(uri);
-    // Stay in the current listing for both folders and files — reload in
-    // place so the new entry appears in the row list. The legacy NewFile
-    // flow used to auto-navigate into the empty file's editor; we don't
-    // do that anymore.
-    const res = await api.fetch(url.removeLastDir(uri) + "/");
-    fileStore.updateRequest(res);
+    if (props.target) {
+      // Pane B: refresh its own listing + dismiss the inline input.
+      props.target.reload();
+      props.target.close();
+    } else {
+      // Stay in the current listing for both folders and files — reload in
+      // place so the new entry appears in the row list. The legacy NewFile
+      // flow used to auto-navigate into the empty file's editor; we don't
+      // do that anymore.
+      const res = await api.fetch(url.removeLastDir(uri) + "/");
+      fileStore.updateRequest(res);
+      layoutStore.closeHovers();
+    }
   } catch (e) {
     if (e instanceof Error) $showError(e);
     submitting = false;
     return;
   }
-
-  layoutStore.closeHovers();
 };
 </script>
 

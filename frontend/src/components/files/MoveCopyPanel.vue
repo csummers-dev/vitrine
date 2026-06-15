@@ -92,15 +92,31 @@ import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 import { users } from "@/api";
 import * as upload from "@/utils/upload";
-import { startTransfer } from "@/utils/transfers";
+import { startTransfer, buildMoveCopyItems } from "@/utils/transfers";
 import SlideOver from "@/components/SlideOver.vue";
 import FolderPicker from "@/components/files/FolderPicker.vue";
 import Toggle from "@/components/settings/Toggle.vue";
 import Icon from "@/components/Icon.vue";
 
+type MoveCopyItem = {
+  url: string;
+  name: string;
+  isDir: boolean;
+  size: number;
+  modified: string;
+};
+
 const props = defineProps<{
   open: boolean;
   mode: "move" | "copy";
+  /**
+   * Dual-pane (pane B): when set, move/copy THESE items from THIS source folder
+   * instead of reading pane A's `fileStore` selection + route. Undefined for
+   * pane A, so that path is byte-for-byte unchanged. The transfer itself
+   * (`startTransfer`) is pane-agnostic; the TransferDock refreshes both panes
+   * on settle, so no per-pane reload wiring is needed here.
+   */
+  override?: { items: MoveCopyItem[]; sourceUrl: string } | null;
 }>();
 
 const emit = defineEmits<{
@@ -152,8 +168,19 @@ const selectedItems = ref<
   }[]
 >([]);
 
+// The source folder the items came from (trailing-slash-stripped to match
+// `route.path`). Drives the picker's start folder + the "same as source" no-op
+// guard + the "open destination" skip.
+const sourceFolder = computed(() =>
+  props.override ? props.override.sourceUrl.replace(/\/+$/, "") : route.path
+);
+
 const initialPath = computed(() =>
-  fileStore.isFiles ? route.path.replace(/\/?$/, "/") : "/files/"
+  props.override
+    ? props.override.sourceUrl.replace(/\/?$/, "/")
+    : fileStore.isFiles
+      ? route.path.replace(/\/?$/, "/")
+      : "/files/"
 );
 
 const excluded = computed(() => {
@@ -166,7 +193,9 @@ const excluded = computed(() => {
 const canCreate = computed(() => !!authStore.user?.perm.create);
 
 const sameAsSource = computed(
-  () => destPath.value === route.path || destPath.value === route.path + "/"
+  () =>
+    destPath.value === sourceFolder.value ||
+    destPath.value === sourceFolder.value + "/"
 );
 
 const canSubmit = computed(() => {
@@ -203,36 +232,18 @@ const onPathChange = (p: string) => {
 const onCancel = () => emit("cancel");
 
 const onCreateFolder = () => {
-  // Reuse the existing newDir flow but scoped to the picker's current path.
-  // The picker doesn't auto-refresh on confirm yet, so we trigger refresh().
-  const base = destPath.value;
-  layoutStore.showHover({
-    prompt: "newDir",
-    confirm: (createdUrl: string) => {
-      // Append the new folder to the picker's current view instead of refetch
-      const parts = createdUrl.replace(/\/$/, "").split("/");
-      pickerRef.value?.appendFolder({
-        name: decodeURIComponent(parts[parts.length - 1]),
-        url: createdUrl,
-      });
-    },
-    props: { redirect: false, base },
-  });
+  // Create a folder in the picker's CURRENTLY-BROWSED destination — not the
+  // listing behind the panel. The picker owns the inline input + POST and then
+  // drops into the new folder so it becomes the chosen destination. (The old
+  // flow routed through the listing's inline new-folder, which created it in
+  // the current open directory — unreachable behind the panel's scrim.)
+  void pickerRef.value?.startCreate();
 };
 
 const onSubmit = async () => {
   if (!canSubmit.value) return;
   const dest = destPath.value;
-  const items = selectedItems.value.map((i) => ({
-    from: i.url,
-    to: dest + encodeURIComponent(i.name),
-    name: i.name,
-    size: i.size,
-    modified: i.modified,
-    isDir: i.isDir,
-    overwrite: false,
-    rename: false,
-  }));
+  const items = buildMoveCopyItems(selectedItems.value, dest);
 
   // The legacy flows show a conflict-resolution prompt when names already
   // exist. We delegate to the same util so behavior stays identical.
@@ -246,7 +257,7 @@ const onSubmit = async () => {
   // the move/copy API; the (false, false) args are just the defaults.
   const runInBackground = () => {
     const isCopy = props.mode === "copy";
-    const sourceRoute = route.path;
+    const sourceRoute = sourceFolder.value;
     const goToDest =
       openDest.value && dest !== sourceRoute && dest !== sourceRoute + "/";
 
@@ -314,18 +325,29 @@ watch(
   () => props.open,
   (open) => {
     if (!open) return;
-    const req = fileStore.req;
-    if (!req) return;
-    selectedItems.value = fileStore.selected
-      .map((idx) => req.items[idx])
-      .filter(Boolean)
-      .map((i) => ({
+    if (props.override) {
+      // Pane B (or any non-pane-A caller): use the items handed in.
+      selectedItems.value = props.override.items.map((i) => ({
         url: i.url,
         name: i.name,
         isDir: i.isDir,
         size: i.size,
         modified: i.modified,
       }));
+    } else {
+      const req = fileStore.req;
+      if (!req) return;
+      selectedItems.value = fileStore.selected
+        .map((idx) => req.items[idx])
+        .filter(Boolean)
+        .map((i) => ({
+          url: i.url,
+          name: i.name,
+          isDir: i.isDir,
+          size: i.size,
+          modified: i.modified,
+        }));
+    }
     destPath.value = initialPath.value;
     busy.value = false;
     // RC-16: seed the toggle from the persisted user field.

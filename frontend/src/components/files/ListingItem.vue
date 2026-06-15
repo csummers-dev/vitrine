@@ -183,6 +183,8 @@ import Icon from "@/components/Icon.vue";
 import { useAuthStore } from "@/stores/auth";
 import { useClipboardStore } from "@/stores/clipboard";
 import { useFileStore } from "@/stores/file";
+import { usePanesStore } from "@/stores/panes";
+import { usePaneContext } from "@/composables/usePaneContext";
 import { useLayoutStore } from "@/stores/layout";
 import { useTagsStore } from "@/stores/tags";
 import { usePreferences } from "@/composables/usePreferences";
@@ -211,12 +213,9 @@ import { useFolderSizes } from "@/composables/useFolderSizes";
 import urlUtil from "@/utils/url";
 import * as upload from "@/utils/upload";
 import { computed, inject, nextTick, onBeforeUnmount, ref, watch } from "vue";
-import { useRouter } from "vue-router";
-
 const touches = ref<number>(0);
 
 const $showError = inject<IToastError>("$showError")!;
-const router = useRouter();
 
 const props = defineProps<{
   name: string;
@@ -244,6 +243,12 @@ const emit = defineEmits<{
 
 const authStore = useAuthStore();
 const fileStore = useFileStore();
+// Dual-pane: this row's selection + keyboard-cursor state resolve through the
+// pane context (pane A = fileStore by default, pane B = its own store). The
+// drag snapshot (`draggedItems`), touch-click guard (`suppressClicksUntil`) and
+// `reload` stay on `fileStore` — they're global to the one drag session.
+const { listing, navigate: paneNavigate, paneId } = usePaneContext();
+const panes = usePanesStore();
 const layoutStore = useLayoutStore();
 const folderSizes = useFolderSizes();
 const tagsStore = useTagsStore();
@@ -339,9 +344,7 @@ const openOnSingleClick = computed(
 const singleClick = computed(
   () => !props.readOnly && authStore.user?.singleClick
 );
-const isSelected = computed(
-  () => fileStore.selected.indexOf(props.index) !== -1
-);
+const isSelected = computed(() => listing.selected.indexOf(props.index) !== -1);
 const isDraggable = computed(
   () => !props.readOnly && authStore.user?.perm.rename
 );
@@ -450,6 +453,22 @@ const onThumbError = () => {
   thumbError.value = true;
 };
 
+// Lazy folder size (DP v2 R1): fetch THIS folder's recursive size when the row
+// mounts or is recycled onto a new folder. The RecycleScroller only mounts rows
+// near the viewport, so sizes fill in for what's actually on screen instead of
+// the parent prefetching every subfolder up front — which, with the split open,
+// fired that recursive walk for every subfolder of BOTH panes at once. `ensure`
+// dedupes by (url, mod) and is a no-op when already cached/in-flight.
+watch(
+  () => [props.url, props.isDir, props.modified] as const,
+  () => {
+    if (props.isDir && props.url) {
+      void folderSizes.ensure(props.url, String(props.modified ?? ""));
+    }
+  },
+  { immediate: true }
+);
+
 const showThumbnail = computed(() => {
   if (props.readOnly || !props.path || thumbError.value) return false;
   const ext = getExtension(props.name).toLowerCase();
@@ -496,8 +515,15 @@ let docMouseUpHandler: ((e: MouseEvent) => void) | null = null;
 const isRenaming = computed(() => {
   return (
     layoutStore.currentPromptName === "rename" &&
-    fileStore.selectedCount === 1 &&
-    fileStore.selected[0] === props.index
+    // Dual-pane (#15): the "rename" prompt is global, but each pane's rows watch
+    // it independently. Without this guard, if BOTH panes have a single item
+    // selected, opening rename in one pane also opens an inline input in the
+    // other — the two inputs blur-fight and the rename "immediately closes."
+    // The prompt targets the ACTIVE pane, so only that pane's row may edit.
+    // (Single-pane: paneId is "a" and activePane stays "a", so this is a no-op.)
+    panes.activePane === paneId &&
+    listing.selectedCount === 1 &&
+    listing.selected[0] === props.index
   );
 });
 
@@ -571,7 +597,7 @@ const nameRenameEligible = (event: Event | KeyboardEvent): boolean => {
     !me.ctrlKey &&
     !me.metaKey &&
     !me.shiftKey &&
-    fileStore.selectedCount === 1 &&
+    listing.selectedCount === 1 &&
     !!target?.closest?.(".item__name-text")
   );
 };
@@ -579,7 +605,7 @@ const nameRenameEligible = (event: Event | KeyboardEvent): boolean => {
 const startRename = () => {
   // Mirrors FileListing's F2 handler: the gesture guarantees this row is the
   // sole selection, so showing the rename prompt targets it.
-  if (!authStore.user?.perm.rename || fileStore.selectedCount !== 1) return;
+  if (!authStore.user?.perm.rename || listing.selectedCount !== 1) return;
   layoutStore.showHover("rename");
 };
 
@@ -660,8 +686,20 @@ const submitRename = async () => {
     // applyPreSelection would silently fail to find the renamed item
     // and the row would lose its selection — the exact "feels broken"
     // UX the user reported.
-    fileStore.setPreselect(decodeURIComponent(removePrefix(newLink)));
-    fileStore.reload = true;
+    listing.setPreselect(decodeURIComponent(removePrefix(newLink)));
+    // Reload the pane this row lives in, and — when the split shows the SAME
+    // folder in both panes — the other pane too, so a rename refreshes both at
+    // once (#5). Pane-aware so it stays correct once pane B renames inline.
+    const norm = (p?: string | null) => (p ? p.replace(/\/+$/, "") : "");
+    const sameFolderBothPanes =
+      panes.split && norm(fileStore.req?.url) === norm(panes.secondaryPath);
+    if (paneId === "b") {
+      panes.refreshB();
+      if (sameFolderBothPanes) fileStore.reload = true;
+    } else {
+      fileStore.reload = true;
+      if (sameFolderBothPanes) panes.refreshB();
+    }
   } catch (e) {
     if (e instanceof Error) $showError(e);
     renameSubmitting = false;
@@ -708,9 +746,9 @@ const humanTime = () => {
 
 const dragStart = (event: DragEvent) => {
   // Promote + snapshot the drag selection (shared with the lifted touch
-  // path) — see fileStore.snapshotDragSelection. Snapshotting up front
+  // path) — see listing.snapshotDragSelection. Snapshotting up front
   // means spring-load navigation can't drop the selection mid-drag.
-  fileStore.snapshotDragSelection(props.index);
+  listing.snapshotDragSelection(props.index);
 
   // v1.3 S4-4: replace the browser's ugly translucent row snapshot with
   // a compact ghost — the grabbed row's icon + filename (single) or a
@@ -821,7 +859,7 @@ const startSpringLoad = () => {
     cancelSpringLoad();
     // Navigate into this folder — drag state survives the route change
     // (browsers keep the active drag session across SPA navigations).
-    router.push({ path: props.url });
+    paneNavigate(props.url, props.isDir);
   }, SPRING_LOAD_MS);
 };
 
@@ -985,7 +1023,7 @@ const itemClick = (event: Event | KeyboardEvent) => {
   // the prompt first leaves the click to select/open the row as normal.
   if (
     layoutStore.currentPromptName === "rename" &&
-    fileStore.selected[0] !== props.index
+    listing.selected[0] !== props.index
   ) {
     layoutStore.closeHovers();
   }
@@ -994,7 +1032,7 @@ const itemClick = (event: Event | KeyboardEvent) => {
     !(event as KeyboardEvent).ctrlKey &&
     !(event as KeyboardEvent).metaKey &&
     !(event as KeyboardEvent).shiftKey &&
-    !fileStore.multiple
+    !listing.multiple
   )
     open();
   else click(event);
@@ -1003,28 +1041,27 @@ const itemClick = (event: Event | KeyboardEvent) => {
 // Checkbox-cell click: pure additive selection toggle (never opens). This is
 // how touch users build a multi-selection now that a row tap opens the item.
 const onSelectClick = () => {
-  const i = fileStore.selected.indexOf(props.index);
+  const i = listing.selected.indexOf(props.index);
   if (i !== -1) {
-    fileStore.removeSelected(props.index);
+    listing.removeSelected(props.index);
   } else {
-    fileStore.selected.push(props.index);
+    listing.selected.push(props.index);
   }
 };
 
 const contextMenu = (event: MouseEvent) => {
   event.preventDefault();
   if (
-    fileStore.selected.length === 0 ||
+    listing.selected.length === 0 ||
     event.ctrlKey ||
-    fileStore.selected.indexOf(props.index) === -1
+    listing.selected.indexOf(props.index) === -1
   ) {
     click(event);
   }
 };
 
 const click = (event: Event | KeyboardEvent) => {
-  if (!singleClick.value && fileStore.selectedCount !== 0)
-    event.preventDefault();
+  if (!singleClick.value && listing.selectedCount !== 0) event.preventDefault();
 
   setTimeout(() => {
     touches.value = 0;
@@ -1038,7 +1075,7 @@ const click = (event: Event | KeyboardEvent) => {
     open();
   }
 
-  if (fileStore.selected.indexOf(props.index) !== -1) {
+  if (listing.selected.indexOf(props.index) !== -1) {
     // Re-clicking an already-selected item. A SLOW second click on the NAME
     // text (not the fast second half of a double-click → open, handled above)
     // arms an inline rename — the familiar "click, pause, click the name"
@@ -1053,25 +1090,25 @@ const click = (event: Event | KeyboardEvent) => {
       }, RENAME_GESTURE_MS);
       return;
     }
-    fileStore.removeSelected(props.index);
+    listing.removeSelected(props.index);
     return;
   }
 
-  if ((event as KeyboardEvent).shiftKey && fileStore.selected.length > 0) {
+  if ((event as KeyboardEvent).shiftKey && listing.selected.length > 0) {
     let fi = 0;
     let la = 0;
 
-    if (props.index > fileStore.selected[0]) {
-      fi = fileStore.selected[0] + 1;
+    if (props.index > listing.selected[0]) {
+      fi = listing.selected[0] + 1;
       la = props.index;
     } else {
       fi = props.index;
-      la = fileStore.selected[0] - 1;
+      la = listing.selected[0] - 1;
     }
 
     for (; fi <= la; fi++) {
-      if (fileStore.selected.indexOf(fi) == -1) {
-        fileStore.selected.push(fi);
+      if (listing.selected.indexOf(fi) == -1) {
+        listing.selected.push(fi);
       }
     }
 
@@ -1081,15 +1118,15 @@ const click = (event: Event | KeyboardEvent) => {
   if (
     !(event as KeyboardEvent).ctrlKey &&
     !(event as KeyboardEvent).metaKey &&
-    !fileStore.multiple
+    !listing.multiple
   ) {
-    fileStore.selected = [];
+    listing.selected = [];
   }
-  fileStore.selected.push(props.index);
+  listing.selected.push(props.index);
 };
 
 const open = () => {
-  router.push({ path: props.url });
+  paneNavigate(props.url, props.isDir);
 };
 
 const getExtension = (fileName: string): string => {

@@ -16,59 +16,161 @@
 
 html.dark {
   /* ── Backgrounds (deep, low-alpha for blend) ─────────────────────────── */
-  .bg-amber-50 { background-color: rgba(245, 158, 11, 0.16) !important; }
-  .bg-rose-50 { background-color: rgba(244, 63, 94, 0.16) !important; }
-  .bg-pink-50 { background-color: rgba(236, 72, 153, 0.16) !important; }
-  .bg-indigo-50 { background-color: rgba(99, 102, 241, 0.16) !important; }
-  .bg-yellow-50 { background-color: rgba(234, 179, 8, 0.16) !important; }
-  .bg-teal-50 { background-color: rgba(20, 184, 166, 0.16) !important; }
-  .bg-green-50 { background-color: rgba(34, 197, 94, 0.16) !important; }
-  .bg-orange-50 { background-color: rgba(249, 115, 22, 0.16) !important; }
-  .bg-violet-50 { background-color: rgba(139, 92, 246, 0.16) !important; }
-  .bg-red-50 { background-color: rgba(239, 68, 68, 0.16) !important; }
-  .bg-sky-50 { background-color: rgba(14, 165, 233, 0.16) !important; }
-  .bg-emerald-50 { background-color: rgba(16, 185, 129, 0.16) !important; }
-  .bg-cyan-50 { background-color: rgba(6, 182, 212, 0.16) !important; }
+  .bg-amber-50 {
+    background-color: rgba(245, 158, 11, 0.16) !important;
+  }
+  .bg-rose-50 {
+    background-color: rgba(244, 63, 94, 0.16) !important;
+  }
+  .bg-pink-50 {
+    background-color: rgba(236, 72, 153, 0.16) !important;
+  }
+  .bg-indigo-50 {
+    background-color: rgba(99, 102, 241, 0.16) !important;
+  }
+  .bg-yellow-50 {
+    background-color: rgba(234, 179, 8, 0.16) !important;
+  }
+  .bg-teal-50 {
+    background-color: rgba(20, 184, 166, 0.16) !important;
+  }
+  .bg-green-50 {
+    background-color: rgba(34, 197, 94, 0.16) !important;
+  }
+  .bg-orange-50 {
+    background-color: rgba(249, 115, 22, 0.16) !important;
+  }
+  .bg-violet-50 {
+    background-color: rgba(139, 92, 246, 0.16) !important;
+  }
+  .bg-red-50 {
+    background-color: rgba(239, 68, 68, 0.16) !important;
+  }
+  .bg-sky-50 {
+    background-color: rgba(14, 165, 233, 0.16) !important;
+  }
+  .bg-emerald-50 {
+    background-color: rgba(16, 185, 129, 0.16) !important;
+  }
+  .bg-cyan-50 {
+    background-color: rgba(6, 182, 212, 0.16) !important;
+  }
 
   /* Lighter-100 backgrounds get the same treatment */
-  .bg-zinc-100 { background-color: rgba(161, 161, 170, 0.18) !important; }
-  .bg-slate-100 { background-color: rgba(148, 163, 184, 0.18) !important; }
-  .bg-stone-100 { background-color: rgba(168, 162, 158, 0.18) !important; }
-  .bg-neutral-100 { background-color: rgba(163, 163, 163, 0.18) !important; }
-  .bg-gray-100 { background-color: rgba(156, 163, 175, 0.18) !important; }
+  .bg-zinc-100 {
+    background-color: rgba(161, 161, 170, 0.18) !important;
+  }
+  .bg-slate-100 {
+    background-color: rgba(148, 163, 184, 0.18) !important;
+  }
+  .bg-stone-100 {
+    background-color: rgba(168, 162, 158, 0.18) !important;
+  }
+  .bg-neutral-100 {
+    background-color: rgba(163, 163, 163, 0.18) !important;
+  }
+  .bg-gray-100 {
+    background-color: rgba(156, 163, 175, 0.18) !important;
+  }
 
   /* ── Text colours (brighten so the tint reads on dark bg) ───────────── */
-  .text-amber-500 { color: #fbbf24 !important; }
-  .text-amber-600 { color: #fbbf24 !important; }
-  .text-amber-700 { color: #f59e0b !important; }
-  .text-rose-500 { color: #fb7185 !important; }
-  .text-rose-600 { color: #fb7185 !important; }
-  .text-pink-500 { color: #f472b6 !important; }
-  .text-pink-600 { color: #f472b6 !important; }
-  .text-indigo-500 { color: #818cf8 !important; }
-  .text-indigo-600 { color: #818cf8 !important; }
-  .text-yellow-500 { color: #facc15 !important; }
-  .text-yellow-600 { color: #facc15 !important; }
-  .text-yellow-700 { color: #eab308 !important; }
-  .text-teal-500 { color: #2dd4bf !important; }
-  .text-teal-600 { color: #2dd4bf !important; }
-  .text-green-500 { color: #4ade80 !important; }
-  .text-green-600 { color: #4ade80 !important; }
-  .text-orange-500 { color: #fb923c !important; }
-  .text-orange-600 { color: #fb923c !important; }
-  .text-violet-500 { color: #a78bfa !important; }
-  .text-violet-600 { color: #a78bfa !important; }
-  .text-red-500 { color: #f87171 !important; }
-  .text-red-600 { color: #f87171 !important; }
-  .text-sky-500 { color: #38bdf8 !important; }
-  .text-sky-600 { color: #38bdf8 !important; }
-  .text-emerald-500 { color: #34d399 !important; }
-  .text-emerald-600 { color: #34d399 !important; }
-  .text-cyan-500 { color: #22d3ee !important; }
-  .text-cyan-600 { color: #22d3ee !important; }
-  .text-zinc-500 { color: #d4d4d8 !important; }
-  .text-zinc-600 { color: #d4d4d8 !important; }
-  .text-slate-500 { color: #cbd5e1 !important; }
-  .text-slate-600 { color: #cbd5e1 !important; }
-  .text-slate-700 { color: #cbd5e1 !important; }
+  .text-amber-500 {
+    color: #fbbf24 !important;
+  }
+  .text-amber-600 {
+    color: #fbbf24 !important;
+  }
+  .text-amber-700 {
+    color: #f59e0b !important;
+  }
+  .text-rose-500 {
+    color: #fb7185 !important;
+  }
+  .text-rose-600 {
+    color: #fb7185 !important;
+  }
+  .text-pink-500 {
+    color: #f472b6 !important;
+  }
+  .text-pink-600 {
+    color: #f472b6 !important;
+  }
+  .text-indigo-500 {
+    color: #818cf8 !important;
+  }
+  .text-indigo-600 {
+    color: #818cf8 !important;
+  }
+  .text-yellow-500 {
+    color: #facc15 !important;
+  }
+  .text-yellow-600 {
+    color: #facc15 !important;
+  }
+  .text-yellow-700 {
+    color: #eab308 !important;
+  }
+  .text-teal-500 {
+    color: #2dd4bf !important;
+  }
+  .text-teal-600 {
+    color: #2dd4bf !important;
+  }
+  .text-green-500 {
+    color: #4ade80 !important;
+  }
+  .text-green-600 {
+    color: #4ade80 !important;
+  }
+  .text-orange-500 {
+    color: #fb923c !important;
+  }
+  .text-orange-600 {
+    color: #fb923c !important;
+  }
+  .text-violet-500 {
+    color: #a78bfa !important;
+  }
+  .text-violet-600 {
+    color: #a78bfa !important;
+  }
+  .text-red-500 {
+    color: #f87171 !important;
+  }
+  .text-red-600 {
+    color: #f87171 !important;
+  }
+  .text-sky-500 {
+    color: #38bdf8 !important;
+  }
+  .text-sky-600 {
+    color: #38bdf8 !important;
+  }
+  .text-emerald-500 {
+    color: #34d399 !important;
+  }
+  .text-emerald-600 {
+    color: #34d399 !important;
+  }
+  .text-cyan-500 {
+    color: #22d3ee !important;
+  }
+  .text-cyan-600 {
+    color: #22d3ee !important;
+  }
+  .text-zinc-500 {
+    color: #d4d4d8 !important;
+  }
+  .text-zinc-600 {
+    color: #d4d4d8 !important;
+  }
+  .text-slate-500 {
+    color: #cbd5e1 !important;
+  }
+  .text-slate-600 {
+    color: #cbd5e1 !important;
+  }
+  .text-slate-700 {
+    color: #cbd5e1 !important;
+  }
 }

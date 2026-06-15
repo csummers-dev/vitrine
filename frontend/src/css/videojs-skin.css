@@ -47,7 +47,7 @@
 
 /* Center play button (shown before first play / on pause) */
 .video-js .vjs-big-play-button {
-  background: rgba(0, 0, 0, 0.50);
+  background: rgba(0, 0, 0, 0.5);
   border: 0;
   border-radius: var(--radius-full);
   width: 64px;
@@ -59,7 +59,9 @@
   left: 50%;
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-  transition: background-color var(--dur-base) ease, transform var(--dur-base) ease;
+  transition:
+    background-color var(--dur-base) ease,
+    transform var(--dur-base) ease;
 }
 .video-js:hover .vjs-big-play-button,
 .video-js .vjs-big-play-button:focus {
@@ -74,7 +76,7 @@
 .video-js .vjs-progress-holder {
   height: 4px;
   border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.20);
+  background: rgba(255, 255, 255, 0.2);
   margin: 0;
 }
 .video-js .vjs-play-progress {
@@ -105,7 +107,7 @@
 
 /* ── Volume slider ─────────────────────────────────────────────── */
 .video-js .vjs-volume-bar {
-  background: rgba(255, 255, 255, 0.20);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: var(--radius-full);
 }
 .video-js .vjs-volume-level {
@@ -120,15 +122,15 @@
   font-variant-numeric: tabular-nums;
   line-height: 36px;
   padding: 0 6px;
-  color: rgba(255, 255, 255, 0.90);
+  color: rgba(255, 255, 255, 0.9);
 }
 .video-js .vjs-time-divider {
-  color: rgba(255, 255, 255, 0.60);
+  color: rgba(255, 255, 255, 0.6);
 }
 
 /* ── Menus (speed, captions, etc.) ─────────────────────────────── */
 .video-js .vjs-menu .vjs-menu-content {
-  background: rgba(0, 0, 0, 0.80);
+  background: rgba(0, 0, 0, 0.8);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border-radius: var(--radius-md);
@@ -148,7 +150,7 @@
   color: white;
 }
 .video-js .vjs-menu li:hover:not(.vjs-selected) {
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* ── Loading spinner: replace the spinning ring with our motion ── */

@@ -161,6 +161,9 @@ type ShareLink = Share & {
 
 const props = defineProps<{
   open: boolean;
+  /** Dual-pane: when the second pane opens Share, it passes its own item here
+   *  so the panel doesn't read pane A's fileStore selection. */
+  override?: { url: string; name: string; path?: string };
 }>();
 
 const emit = defineEmits<{
@@ -180,6 +183,7 @@ const unit = ref<"seconds" | "minutes" | "hours" | "days">("hours");
 const password = ref<string>("");
 
 const targetUrl = computed<string>(() => {
+  if (props.override) return props.override.url;
   // When viewing a file directly, share that file. Otherwise share the
   // single selected item from the current listing.
   if (!fileStore.isListing) return route.path;
@@ -189,6 +193,7 @@ const targetUrl = computed<string>(() => {
 });
 
 const targetName = computed<string>(() => {
+  if (props.override) return props.override.name;
   if (!fileStore.isListing) return fileStore.req?.name ?? route.path;
   if (fileStore.selectedCount !== 1) return "";
   return fileStore.req?.items[fileStore.selected[0]]?.name ?? "";
@@ -198,6 +203,7 @@ const targetName = computed<string>(() => {
 // "Copy path" affordance in the details pane (InfoPane). Falls back to the
 // resource url when no decoded path is available.
 const targetPath = computed<string>(() => {
+  if (props.override) return props.override.path ?? props.override.url;
   if (!fileStore.isListing)
     return fileStore.req?.path ?? fileStore.req?.url ?? route.path;
   if (fileStore.selectedCount !== 1) return "";

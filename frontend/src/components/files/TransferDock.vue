@@ -144,10 +144,12 @@ import {
   type RateSample,
 } from "@/utils/transfers";
 import { useFileStore } from "@/stores/file";
+import { usePanesStore } from "@/stores/panes";
 import { useUploadStore } from "@/stores/upload";
 
 const { jobs, bootstrap, cancel, dismiss, retry } = useTransfers();
 const fileStore = useFileStore();
+const panesStore = usePanesStore();
 const uploadStore = useUploadStore();
 const toast = useToast();
 const collapsed = ref(false);
@@ -442,6 +444,9 @@ watch(
         // A job that just reached a terminal state moved/copied files — refresh
         // the current listing so the change settles (source + destination).
         fileStore.reload = true;
+        // Dual-pane: also refresh pane B (a cheap re-fetch; no-op if its folder
+        // wasn't touched), so a cross-pane move/copy settles in both panes.
+        panesStore.refreshB();
       }
       prevStatus.set(j.id, j.status);
 
