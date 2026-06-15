@@ -110,47 +110,41 @@ header .action .counter {
   position: relative;
   height: 32px;
   /* V2-J: compact pill when idle (icon + "Search" + ⌘K); expands to a real
-     input field once activated (#search.active below). */
-  width: auto;
-  max-width: 380px;
+     input field once activated (#search.active below).
+     Sizes to its own content (max-content) and never grows with the viewport.
+     The trigger stays in the layout while active (visually hidden via
+     `.search-trigger--reserve`), so it reserves this width in BOTH states and the
+     toolbar to its right doesn't shift when the input overlay opens. */
+  width: max-content;
+  max-width: 320px;
+  /* Expanded input + result-dropdown width, kept in sync between the two. */
+  --search-w-expanded: min(440px, calc(100vw - 120px));
 }
-/* When the search is the active element it floats as an absolute overlay
-   CENTERED over the header row (anchored to .fb-hero's positioning context)
-   instead of expanding IN FLOW. In flow it grew the right-aligned toolbar
-   cluster and squeezed the folder title into a sliver (the reported bug). A
-   centered ~40%-width overlay reads as a focused search field rather than a
-   jarring full-width bar; it sits above the title + toolbar while open and
-   leaves their layout untouched, and closing it (blur / Esc) restores the row.
-   width is clamped so it stays usable on narrow viewports and doesn't sprawl on
-   ultra-wide ones. The result dropdown anchors to #search, so it follows along.
-   (Height stays 32px from the base #search rule.) */
+/* When the search is activated, the input expands as an absolute overlay
+   anchored to the search's RIGHT edge so it grows ONLY to the LEFT (over the
+   folder-title area), never pushing or overlapping the toolbar buttons that
+   sit directly to its right. #search itself stays in flow at its reserved
+   trigger width, so the header layout doesn't shift when search opens. The
+   result dropdown anchors to the same right edge and shares the width. */
 #search.active {
-  position: absolute;
-  top: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: clamp(280px, 40%, 480px);
-  max-width: calc(100% - 32px);
   z-index: 30;
 }
-
-/* Responsive: shrink search at narrower viewports */
-@media (max-width: 1280px) {
-  #search {
-    width: 280px;
-    max-width: 280px;
-  }
+#search.active #input {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: var(--search-w-expanded);
 }
-
-@media (max-width: 960px) {
-  #search {
-    width: 200px;
-    max-width: 200px;
-  }
+/* RTL: the search sits on the opposite side, so anchor the input overlay (and
+   its dropdown, below) to the left edge and grow rightward instead. */
+html[dir="rtl"] #search.active #input {
+  right: auto;
+  left: 0;
 }
 
 @media (max-width: 800px) {
-  /* Below 800px, collapse to icon-button width (label hidden via CSS below) */
+  /* Below 800px, collapse the idle pill to icon-button width (label hidden
+     via CSS below). */
   #search {
     width: 36px;
     max-width: 36px;
@@ -163,8 +157,8 @@ header .action .counter {
     padding: 0;
     justify-content: center;
   }
-  /* The active-state overlay is now handled by the base `#search.active` rule
-     above (it floats at every width), so no narrow-only override is needed. */
+  /* The active input still overlays leftward from the (now 36px) trigger slot,
+     so no narrow-only override is needed. */
 }
 
 /* Inactive: button-shaped trigger */
@@ -188,6 +182,14 @@ header .action .counter {
 .search-trigger:hover {
   background: var(--color-elevated, var(--surfaceSecondary));
   border-color: var(--color-line-strong, var(--borderSecondary));
+}
+
+/* While the search is active, the trigger stays in the layout to RESERVE the
+   slot width (so the toolbar to its right doesn't shift) but is visually hidden
+   and inert — the #input overlay renders on top of it. */
+.search-trigger--reserve {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .search-trigger__label {
@@ -285,9 +287,11 @@ header .action .counter {
   box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(16, 24, 40, 0.08));
   position: absolute;
   top: calc(100% + 6px);
-  left: 0;
+  /* Anchor to the search's right edge and match the expanded input width so the
+     dropdown lines up under the leftward-growing input (not the 132px slot). */
   right: 0;
-  width: 100%;
+  left: auto;
+  width: var(--search-w-expanded);
   max-height: 0;
   padding: 0;
   color: var(--color-ink-1, var(--textPrimary));
@@ -309,6 +313,10 @@ header .action .counter {
 html[dir="rtl"] #search #result {
   direction: ltr;
   text-align: right;
+  /* The LTR base anchors the dropdown to the search's right edge; in RTL the
+     search sits on the opposite side, so anchor to the left edge instead. */
+  right: auto;
+  left: 0;
 }
 
 html[dir="rtl"] #search #result ul > * {

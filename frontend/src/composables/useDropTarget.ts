@@ -24,27 +24,24 @@ export function useDropTarget() {
   const layoutStore = useLayoutStore();
   const toast = useToast();
 
-  const performDrop = async (event: DragEvent, targetUrl: string) => {
-    event.preventDefault();
-
-    // Read from the dragstart snapshot, not `selected`. Spring-load
-    // navigation between dragstart and drop may have cleared `selected`
-    // when the original items left the visible listing — the snapshot
-    // survives those navigations.
-    const snapshot = fileStore.draggedItems;
-    if (snapshot.length === 0) {
-      // Empty snapshot at drop time isn't a user-facing error (RC-12): a
-      // single native drop bubbles to ancestor drop handlers, and by the
-      // time a later one runs `dragend` may already have cleared the
-      // snapshot. The real move was performed by the first handler — so
-      // surfacing an error toast here was spurious. Silently no-op.
-      return;
-    }
+  /**
+   * Core move/copy: send `sourceItems` into `targetUrl`, resolving conflicts
+   * and kicking off a background transfer. Shared by the native drop handler
+   * (`performDrop`, reading the drag snapshot) and the dual-pane context-menu
+   * actions ("Move/Copy to other pane", which have no DragEvent). Returns
+   * silently when there's nothing legal to move.
+   */
+  const transferSelectionInto = async (
+    sourceItems: ResourceItem[],
+    targetUrl: string,
+    isCopy: boolean
+  ) => {
+    if (sourceItems.length === 0) return;
 
     // Track whether the user is explicitly trying to drop a folder INTO
     // itself or its own subtree (a cycle the backend rejects). We warn for
     // that, but stay silent for a plain same-location no-op (below).
-    const isCycleDrop = snapshot.some((it) =>
+    const isCycleDrop = sourceItems.some((it) =>
       isSelfOrDescendantTarget(it.url, it.isDir, targetUrl)
     );
 
@@ -55,7 +52,7 @@ export function useDropTarget() {
     //      not, so compare canonically — this trailing-slash mismatch is
     //      what previously let a folder be "dropped onto itself" and trip
     //      the conflict prompt instead of being refused.
-    const dragged = snapshot.filter((it) => {
+    const dragged = sourceItems.filter((it) => {
       const dest = targetUrl + encodeURIComponent(it.name);
       return (
         !isSelfOrDescendantTarget(it.url, it.isDir, targetUrl) &&
@@ -86,9 +83,8 @@ export function useDropTarget() {
 
     if (items.length === 0) return;
 
-    const isCopy = event.ctrlKey || event.metaKey;
     const action = () => {
-      // The drag items already carry their per-item overwrite/rename flags
+      // The items already carry their per-item overwrite/rename flags
       // (set during conflict resolution; default false). Start a background
       // job — the floating transfer dock shows progress + result and refreshes
       // the listing when it settles.
@@ -134,5 +130,29 @@ export function useDropTarget() {
     action();
   };
 
-  return { performDrop };
+  const performDrop = async (event: DragEvent, targetUrl: string) => {
+    event.preventDefault();
+
+    // Read from the dragstart snapshot, not `selected`. Spring-load
+    // navigation between dragstart and drop may have cleared `selected`
+    // when the original items left the visible listing — the snapshot
+    // survives those navigations.
+    const snapshot = fileStore.draggedItems;
+    if (snapshot.length === 0) {
+      // Empty snapshot at drop time isn't a user-facing error (RC-12): a
+      // single native drop bubbles to ancestor drop handlers, and by the
+      // time a later one runs `dragend` may already have cleared the
+      // snapshot. The real move was performed by the first handler — so
+      // surfacing an error toast here was spurious. Silently no-op.
+      return;
+    }
+
+    await transferSelectionInto(
+      snapshot,
+      targetUrl,
+      event.ctrlKey || event.metaKey
+    );
+  };
+
+  return { performDrop, transferSelectionInto };
 }

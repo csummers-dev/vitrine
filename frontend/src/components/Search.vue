@@ -1,21 +1,27 @@
 <template>
   <div id="search" ref="root" v-bind:class="{ active, ongoing }">
-    <!-- Inactive: button-shaped placeholder (matches mockup) -->
+    <!-- Button-shaped placeholder (matches mockup). Kept in the layout even while
+         active (just visually hidden + inert via `search-trigger--reserve`) so it
+         RESERVES the search's slot width from its own content — that's what keeps
+         the toolbar buttons to the right from shifting when the input overlay
+         opens, without a hard-coded `min-width` magic number. -->
     <button
-      v-if="!active"
       type="button"
       class="search-trigger"
+      :class="{ 'search-trigger--reserve': active }"
+      :tabindex="active ? -1 : 0"
+      :aria-hidden="active ? 'true' : undefined"
       @click="open"
       :aria-label="$t('search.search')"
     >
-      <Icon name="search" :size="14" />
+      <Icon name="search" :size="14" class="text-[var(--c-blue)]" />
       <span class="search-trigger__label">Search</span>
       <kbd class="search-kbd">⌘K</kbd>
     </button>
 
-    <!-- Active: input field, mirrors the trigger's chrome -->
-    <div v-else id="input">
-      <Icon name="search" :size="14" />
+    <!-- Active: input field overlay, mirrors the trigger's chrome -->
+    <div v-if="active" id="input">
+      <Icon name="search" :size="14" class="text-[var(--c-blue)]" />
       <input
         type="text"
         ref="input"

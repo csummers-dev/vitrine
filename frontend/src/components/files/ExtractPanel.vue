@@ -150,6 +150,9 @@ import Icon from "@/components/Icon.vue";
 
 const props = defineProps<{
   open: boolean;
+  /** Dual-pane: when the second pane opens Extract, it passes its own archive
+   *  (+ default destination base) here instead of pane A's fileStore selection. */
+  override?: { url: string; name: string; size?: number; base?: string };
 }>();
 
 const emit = defineEmits<{
@@ -196,9 +199,10 @@ const snapshot = ref<{
   size: number;
 } | null>(null);
 
-const initialPath = computed(() =>
-  fileStore.isFiles ? route.path.replace(/\/?$/, "/") : "/files/"
-);
+const initialPath = computed(() => {
+  if (props.override?.base) return props.override.base.replace(/\/?$/, "/");
+  return fileStore.isFiles ? route.path.replace(/\/?$/, "/") : "/files/";
+});
 
 /**
  * Final destination path the backend receives. When the "new subfolder"
@@ -277,6 +281,17 @@ watch(
     // RC-8: restore the remembered "open extracted folder" choice.
     openFolder.value = prefs.get<boolean>("extractOpenFolder", false);
     destPath.value = initialPath.value;
+
+    // Dual-pane: the second pane passes its archive directly via `override`.
+    if (props.override) {
+      snapshot.value = {
+        url: props.override.url,
+        name: props.override.name,
+        size: props.override.size ?? 0,
+      };
+      folderName.value = deriveSubfolderName(props.override.name);
+      return;
+    }
 
     const req = fileStore.req;
     if (!req || fileStore.selected.length !== 1) {

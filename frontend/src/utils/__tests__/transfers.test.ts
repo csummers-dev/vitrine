@@ -8,8 +8,10 @@ import {
   etaSeconds,
   formatRate,
   formatEta,
+  buildMoveCopyItems,
   TRANSFER_REVEAL_MS,
   type RateSample,
+  type MoveCopySource,
 } from "@/utils/transfers";
 import type { TransferJob } from "@/api/jobs";
 
@@ -346,5 +348,59 @@ describe("formatEta", () => {
   it("shows hours and minutes past an hour, dropping a zero minute", () => {
     expect(formatEta(3840)).toBe("1h 4m left"); // 1h 04m
     expect(formatEta(3600)).toBe("1h left"); // exactly an hour
+  });
+});
+
+describe("buildMoveCopyItems (move/copy destination math)", () => {
+  const src = (over: Partial<MoveCopySource>): MoveCopySource => ({
+    url: "/files/A/file.txt",
+    name: "file.txt",
+    isDir: false,
+    size: 10,
+    modified: "2020-01-01T00:00:00.000Z",
+    ...over,
+  });
+
+  it("sets each item's `to` = dest folder + its URL-encoded name", () => {
+    const items = buildMoveCopyItems(
+      [src({ url: "/files/A/My Doc.txt", name: "My Doc.txt" })],
+      "/files/B/"
+    );
+    expect(items[0].from).toBe("/files/A/My Doc.txt");
+    expect(items[0].to).toBe("/files/B/My%20Doc.txt");
+  });
+
+  it("carries name/size/modified/isDir and defaults overwrite+rename to false", () => {
+    const items = buildMoveCopyItems(
+      [src({ url: "/files/A/sub", name: "sub", isDir: true, size: 0 })],
+      "/files/B/"
+    );
+    expect(items[0]).toMatchObject({
+      from: "/files/A/sub",
+      to: "/files/B/sub",
+      name: "sub",
+      size: 0,
+      isDir: true,
+      overwrite: false,
+      rename: false,
+    });
+  });
+
+  it("encodes unicode + reserved chars and maps every item", () => {
+    const items = buildMoveCopyItems(
+      [
+        src({ url: "/files/A/café.txt", name: "café.txt" }),
+        src({ url: "/files/A/a&b.txt", name: "a&b.txt" }),
+      ],
+      "/files/B/"
+    );
+    expect(items.map((i) => i.to)).toEqual([
+      "/files/B/caf%C3%A9.txt",
+      "/files/B/a%26b.txt",
+    ]);
+  });
+
+  it("returns [] for an empty selection", () => {
+    expect(buildMoveCopyItems([], "/files/B/")).toEqual([]);
   });
 });

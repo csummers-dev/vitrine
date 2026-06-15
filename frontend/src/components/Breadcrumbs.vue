@@ -1,5 +1,6 @@
 <template>
   <nav
+    ref="navEl"
     class="breadcrumbs-nav flex items-center gap-0.5 text-[13px] min-w-0 text-ink-2"
     :aria-label="t('files.home')"
   >
@@ -38,70 +39,53 @@
       </span>
     </template>
 
-    <template v-for="(entry, index) in displayItems" :key="index">
+    <!-- Desktop: every segment is shown in full (no middle "…" fold) — when the
+         path is wider than the bar the strip scrolls horizontally instead, with
+         the scroll pinned to the current folder. Mobile keeps the compact "…"
+         above and hides the intermediate crumbs (`max-md:hidden`). -->
+    <template v-for="(entry, index) in items" :key="index">
       <span
         :class="[
           'text-ink-3 px-0.5 flex items-center',
           // Hide the chevron preceding non-final items on mobile —
           // mobile already collapses everything but the last crumb
           // into the compact ellipsis up top.
-          index !== displayItems.length - 1 && 'max-md:hidden',
+          index !== items.length - 1 && 'max-md:hidden',
         ]"
       >
         <Icon name="chevron-right" :size="12" />
       </span>
 
-      <!-- Middle-ellipsis chip (v1.3 S3-6). When the path has more
-           than 4 segments we collapse the middle into this clickable
-           chip. Clicking it pops a ContextMenu listing the hidden
-           segments so the user can jump directly to any of them. -->
-      <button
-        v-if="entry.kind === 'ellipsis'"
-        type="button"
-        class="breadcrumb-link breadcrumb-link--ellipsis max-md:hidden"
-        :title="entry.collapsed.map((c) => c.name).join(' / ')"
-        :aria-label="`${entry.collapsed.length} hidden path segment(s)`"
-        @click.stop="openEllipsisMenu($event, entry.collapsed)"
-      >
-        …
-      </button>
-
       <component
-        v-else
         :is="element"
-        :to="entry.link.url"
+        :to="entry.url"
         :class="[
-          'breadcrumb-link truncate max-w-[180px]',
-          index === displayItems.length - 1
-            ? 'text-ink-1 font-semibold'
-            : 'text-ink-2 max-md:hidden',
-          dragOver === entry.link.url && 'is-drop-target',
+          'breadcrumb-link',
+          index === items.length - 1
+            ? 'breadcrumb-link--current text-ink-1 font-semibold'
+            : 'breadcrumb-link--crumb text-ink-2 max-md:hidden',
+          dragOver === entry.url && 'is-drop-target',
         ]"
-        :data-drop-url="entry.link.url"
-        @dragenter="onDragEnter(entry.link.url, $event)"
+        :title="entry.name"
+        :data-drop-url="entry.url"
+        @dragenter="onDragEnter(entry.url, $event)"
         @dragover="onDragOver($event)"
-        @dragleave="onDragLeave(entry.link.url)"
-        @drop="onDrop(entry.link.url, entry.link.url, $event)"
+        @dragleave="onDragLeave(entry.url)"
+        @drop="onDrop(entry.url, entry.url, $event)"
       >
-        {{ entry.link.name }}
+        <!-- Text lives in a block span so `text-overflow: ellipsis` actually
+             truncates — an inline-flex link can't ellipsize its own text node
+             (it hard-clips). Ancestor crumbs cap + ellipsize at a fixed width;
+             the current crumb shows in full and the bar scrolls if it overflows. -->
+        <span class="breadcrumb-link__text">{{ entry.name }}</span>
       </component>
     </template>
-
-    <!-- Dropdown for the collapsed middle segments. ContextMenu
-         primitive (S1-3) handles keyboard nav + smart positioning. -->
-    <context-menu
-      :show="ellipsisMenuShow"
-      :pos="ellipsisMenuPos"
-      :items="ellipsisMenuItems"
-      @hide="ellipsisMenuShow = false"
-    />
   </nav>
 </template>
 
 <script setup lang="ts">
 import Icon from "@/components/Icon.vue";
-import ContextMenu, { type MenuItem } from "@/components/ContextMenu.vue";
-import { computed, onBeforeUnmount, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { useFileStore } from "@/stores/file";
@@ -113,6 +97,19 @@ const route = useRoute();
 const router = useRouter();
 const fileStore = useFileStore();
 const { performDrop } = useDropTarget();
+
+// When the path is too long for the bar it scrolls horizontally; default the
+// scroll to the FAR RIGHT so the current folder (last crumb) is visible by
+// default, and the user can scroll left to reach ancestors.
+const navEl = ref<HTMLElement | null>(null);
+watch(
+  () => route.path,
+  () =>
+    void nextTick(() => {
+      if (navEl.value) navEl.value.scrollLeft = navEl.value.scrollWidth;
+    }),
+  { immediate: true }
+);
 
 const props = defineProps<{
   base: string;
@@ -149,57 +146,6 @@ const items = computed(() => {
 
   return breadcrumbs;
 });
-
-// ── Middle-ellipsis collapse (v1.3 S3-6) ────────────────────────────
-// Standard pattern (Finder, Linear): when a path is deeper than 4
-// segments, keep the first, second-to-last, and last visible, and
-// collapse the middle into a clickable "…" chip. Click pops a
-// ContextMenu listing the hidden segments so the user can jump to
-// any of them in one click.
-const ELLIPSIS_THRESHOLD = 4;
-
-/**
- * Discriminated union of items rendered in the breadcrumb strip.
- * Either a real link or an ellipsis chip carrying the collapsed
- * sub-list. Template branches on `kind`.
- */
-type CrumbEntry =
-  | { kind: "link"; link: BreadCrumb }
-  | { kind: "ellipsis"; collapsed: BreadCrumb[] };
-
-const displayItems = computed<CrumbEntry[]>(() => {
-  const all = items.value;
-  if (all.length <= ELLIPSIS_THRESHOLD) {
-    return all.map((link) => ({ kind: "link" as const, link }));
-  }
-  // Keep: items[0] (first), items[len-2] (second-last), items[len-1] (last)
-  // Collapse: items[1..len-2] (everything between first and second-last)
-  return [
-    { kind: "link" as const, link: all[0] },
-    { kind: "ellipsis" as const, collapsed: all.slice(1, all.length - 2) },
-    { kind: "link" as const, link: all[all.length - 2] },
-    { kind: "link" as const, link: all[all.length - 1] },
-  ];
-});
-
-// ── Ellipsis dropdown state ─────────────────────────────────────────
-const ellipsisMenuShow = ref(false);
-const ellipsisMenuPos = ref<{ x: number; y: number }>({ x: 0, y: 0 });
-const ellipsisMenuItems = ref<MenuItem[]>([]);
-
-const openEllipsisMenu = (event: MouseEvent, collapsed: BreadCrumb[]) => {
-  const target = event.currentTarget as HTMLElement;
-  const rect = target.getBoundingClientRect();
-  // Anchor under the ellipsis chip. ContextMenu's positioner clamps
-  // to viewport so right-edge overflow self-corrects.
-  ellipsisMenuPos.value = { x: rect.left, y: rect.bottom + 4 };
-  ellipsisMenuItems.value = collapsed.map((crumb) => ({
-    label: crumb.name,
-    icon: "folder",
-    action: () => router.push({ path: crumb.url }),
-  }));
-  ellipsisMenuShow.value = true;
-};
 
 const element = computed(() => {
   if (props.noLink) {
@@ -333,6 +279,7 @@ onBeforeUnmount(() => {
   border-radius: 4px;
   display: inline-flex;
   align-items: center;
+  min-width: 0;
   transition:
     background-color var(--dur-base) ease,
     box-shadow var(--dur-base) ease,
@@ -342,31 +289,33 @@ onBeforeUnmount(() => {
   background: var(--color-hover, rgba(24, 24, 27, 0.045));
 }
 
+/* The text node lives in this block span so the ellipsis renders (an inline-flex
+   parent hard-clips instead). */
+.breadcrumb-link__text {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Ancestor crumbs cap at a fixed width + ellipsize a long name. */
+.breadcrumb-link--crumb {
+  max-width: 180px;
+}
+
+/* The current folder does NOT shrink (matches the nav's `> * { flex-shrink: 0 }`)
+   so when the path is too long the strip OVERFLOWS and the nav scrolls
+   horizontally (scroll pinned to the current folder), instead of the name being
+   silently ellipsized to fit. */
+.breadcrumb-link--current {
+  flex-shrink: 0;
+  min-width: 0;
+}
+
 .breadcrumb-link.is-drop-target {
   background: var(--color-accent-soft, rgba(94, 106, 210, 0.1));
   box-shadow: 0 0 0 2px var(--color-accent, #5e6ad2);
   color: var(--color-accent, #5e6ad2);
-}
-
-/* Middle-ellipsis chip (v1.3 S3-6). Button-shaped (not a link)
-   because clicking opens a dropdown of skipped segments, not a
-   navigation. Slightly tighter padding than regular crumbs so it
-   reads as a compact placeholder. */
-.breadcrumb-link--ellipsis {
-  font: inherit;
-  font-size: 13px;
-  border: 0;
-  background: transparent;
-  color: var(--color-ink-3, #a1a1aa);
-  cursor: pointer;
-  padding: 2px 6px;
-  line-height: 1;
-}
-.breadcrumb-link--ellipsis:hover {
-  color: var(--color-ink-1, #18181b);
-}
-.breadcrumb-link--ellipsis:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
-  outline-offset: 1px;
 }
 </style>

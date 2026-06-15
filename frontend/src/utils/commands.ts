@@ -22,6 +22,7 @@ import { unzipEnabled } from "@/utils/constants";
 import { isExtractable } from "@/utils/archive";
 import { useBulkRename } from "@/composables/useBulkRename";
 import { useShortcutsOverlay } from "@/composables/useShortcutsOverlay";
+import { usePanesStore } from "@/stores/panes";
 
 export type CommandGroup =
   | "quickActions"
@@ -338,6 +339,42 @@ export function buildStaticCommands(ctx: CommandContext): Command[] {
     keywords: ["thumbnails", "photos", "media"],
     run: () => setViewMode("mosaic gallery"),
   });
+
+  // Dual-pane split toggle (2.5.0). Only offered when there's room for two
+  // panes; on narrow / mobile widths the split can't show.
+  if (window.innerWidth >= 880) {
+    const panesStore = usePanesStore();
+    cmds.push({
+      id: "view.split",
+      group: "view",
+      label: panesStore.split ? "Close split view" : "Split view (two panes)",
+      icon: "columns-2",
+      keywords: ["dual", "pane", "compare", "side by side", "two"],
+      run: () => {
+        if (panesStore.split) panesStore.closeSplit();
+        else
+          panesStore.openSplit(
+            router.currentRoute.value.path.replace(/\/?$/, "/")
+          );
+      },
+    });
+    // Switch which pane is active (only meaningful while split is open).
+    if (panesStore.split) {
+      cmds.push({
+        id: "view.switchPane",
+        group: "view",
+        label:
+          panesStore.activePane === "a"
+            ? "Switch to second pane"
+            : "Switch to first pane",
+        hint: "F6",
+        icon: "arrow-left-right",
+        keywords: ["pane", "focus", "active", "switch", "other"],
+        run: () =>
+          panesStore.setActive(panesStore.activePane === "a" ? "b" : "a"),
+      });
+    }
+  }
 
   // ── Navigation ─────────────────────────────────────────────────────────
   cmds.push({

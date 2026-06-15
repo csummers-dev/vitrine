@@ -115,6 +115,7 @@ import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 import { searchSmart } from "@/utils/searchSmart";
 import { useRecents } from "@/composables/useRecents";
+import { useActivePane } from "@/composables/useActivePane";
 import { usePreferences } from "@/composables/usePreferences";
 import { displayName } from "@/utils/filename";
 import {
@@ -214,6 +215,9 @@ const route = useRoute();
 const authStore = useAuthStore();
 const fileStore = useFileStore();
 const layoutStore = useLayoutStore();
+// Folder navigation targets the active pane (pane B when split + B active);
+// opening a file always routes (preview is a pane-A/route concept).
+const { navigate: navigateActivePane } = useActivePane();
 
 // File search state (live results streamed in from the backend).
 const fileResults = ref<Command[]>([]);
@@ -307,7 +311,12 @@ const runSearch = async (q: string) => {
             type: hit.dir ? "dir" : "blob",
             name: hit.name,
           }),
-          run: () => void router.push(hit.url),
+          run: () => {
+            // A folder hit opens in the active pane; a file opens its preview
+            // (a pane-A/route concept).
+            if (hit.dir) navigateActivePane(hit.url);
+            else void router.push(hit.url);
+          },
         });
       });
     } catch (err: unknown) {
@@ -361,7 +370,11 @@ const recentCommands = computed<Command[]>(() => {
     label: displayName(r.name, r.isDir, showExtensions.value),
     hint: r.path,
     icon: iconForFile({ isDir: r.isDir, type: "blob", name: r.name }),
-    run: () => void router.push(`/files${r.path}`),
+    run: () => {
+      // A recent folder opens in the active pane; a recent file opens preview.
+      if (r.isDir) navigateActivePane(`/files${r.path}`);
+      else void router.push(`/files${r.path}`);
+    },
   }));
 });
 

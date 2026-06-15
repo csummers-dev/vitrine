@@ -2,6 +2,68 @@
 
 All notable changes to **filebrowser pretty**.
 
+## v2.5.0 — Dual-pane (split) file browsing
+
+A second directory listing, side by side, so you can compare two folders at a
+glance and move files between them without losing your place. Off by default.
+
+**Two panes, side by side**
+
+- A **Split** button in the listing toolbar (`columns-2`), or the **Split view**
+  palette command, opens a second pane next to the first. Each pane navigates
+  independently — folders, breadcrumb, parent button, and its own sort. The
+  details rail steps aside while split; both panes are list view.
+- **Per-user persistence.** Whether the split is open and which folder the second
+  pane shows are saved to your prefs and restored on your next visit (a missing
+  saved folder offers a one-click **Go Home**). The URL still encodes only the
+  primary pane.
+- **Active pane.** Exactly one pane is active (a soft accent edge marks it).
+  Clicking a pane activates it, and the sidebar (Home / favorites / recents) and
+  command-palette navigation target the active pane. **F6** switches panes (also
+  a palette command).
+
+**Both panes are full equals**
+
+- The second pane has its **own toolbar** (parent · sort · new folder · upload ·
+  ⋯ overflow · close) and the **full right-click menu** — Open, Copy path,
+  Rename, Tag, Download, Share, Extract, Move/Copy, Delete, New folder, New file
+  — all scoped to that pane and permission-gated.
+- **Inline** new folder / file and rename (no dialog), a **selection pill**
+  (move/copy · tag · download · delete · clear), **upload** straight into its
+  folder with the usual conflict resolution, and a full **move/copy destination
+  picker** to any folder.
+
+**Moving files between folders**
+
+- **Cross-pane drag** to move — drop on a folder row, or anywhere in the other
+  pane (including an empty folder); hold the copy modifier to copy. Runs through
+  the same background-transfer + conflict-resolution pipeline as every other
+  move/copy; both panes refresh when it settles, and edits to a shared folder
+  cross-refresh the other pane.
+
+**Keyboard follows the active pane**
+
+- Arrows · Home/End · Enter · ⌘A · Delete · Esc · **type-ahead** drive whichever
+  pane is active; `/` refreshes it. The primary pane's keyboard is unchanged when
+  it's active.
+
+**Fast, and responsive to each pane**
+
+- Folder sizes load **lazily per visible row** instead of pre-walking both panes
+  up front, and the panes no longer wipe each other's tag chips on navigation.
+- Each pane's list responds to **its own width** (not the window's): a narrow
+  pane sheds the Size then Modified columns to keep the file name and icon
+  visible — which also fixes narrow single-pane windows.
+- Split needs room: below ~880px (and on mobile) it collapses to a single pane
+  and the toggle hides.
+
+**Listing header refresh** (single pane)
+
+- Search moved to **its own row** beneath the toolbar; **Sort and Upload are
+  icon-only** and the toolbar no longer wraps onto a second line. The breadcrumb
+  shows the **full path and scrolls** when it's longer than the bar (long
+  ancestor names ellipsize; the current folder stays in view).
+
 ## v2.4.0 — Cut/copy/paste, a recycle bin, and transfers that don't lose data
 
 The largest release since the "pretty" milestone, landing the whole 2.4.0 arc:

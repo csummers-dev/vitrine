@@ -35,8 +35,25 @@ export function encodePath(str: string) {
     .join("/");
 }
 
+/**
+ * Build the resource URL for a NEW folder / file created inside `folderUrl`.
+ * `folderUrl` is normalized to end in exactly one slash, the name is
+ * URL-encoded, and folders get a trailing slash. Used by the inline new-item
+ * input (pane B passes its own folder here) so the path math lives in one
+ * tested place.
+ */
+export function buildCreatePath(
+  folderUrl: string,
+  name: string,
+  isDir: boolean
+): string {
+  const base = folderUrl.replace(/\/?$/, "/");
+  return base + encodeURIComponent(name) + (isDir ? "/" : "");
+}
+
 export default {
   encodeRFC5987ValueChars,
   removeLastDir,
   encodePath,
+  buildCreatePath,
 };

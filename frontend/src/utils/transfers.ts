@@ -15,6 +15,50 @@ interface RawItem {
   rename?: boolean;
 }
 
+/** A listing item that can be moved/copied (the subset the panel + drag read). */
+export interface MoveCopySource {
+  url: string;
+  name: string;
+  isDir: boolean;
+  size: number;
+  modified: string;
+}
+
+/** The `{ from, to, … }` shape `checkMoveConflict` + `startTransfer` consume. */
+export interface MoveCopyItem {
+  from: string;
+  to: string;
+  name: string;
+  size: number;
+  modified: string;
+  isDir: boolean;
+  overwrite: boolean;
+  rename: boolean;
+}
+
+/**
+ * Build the move/copy `{ from, to, … }` list: each item's destination is the
+ * target folder (`destUrl`, which must end in a slash) plus its URL-encoded
+ * name; overwrite/rename default false (set later by conflict resolution).
+ * Shared by the move/copy panel (pane A + pane B's `override`) so the
+ * destination math lives in one tested place.
+ */
+export function buildMoveCopyItems(
+  items: MoveCopySource[],
+  destUrl: string
+): MoveCopyItem[] {
+  return items.map((i) => ({
+    from: i.url,
+    to: destUrl + encodeURIComponent(i.name),
+    name: i.name,
+    size: i.size,
+    modified: i.modified,
+    isDir: i.isDir,
+    overwrite: false,
+    rename: false,
+  }));
+}
+
 const norm = (p: string): string => {
   const stripped = removePrefix(p);
   try {

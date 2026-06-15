@@ -167,7 +167,6 @@ main .spinner .bounce2 {
   border: 2px solid var(--borderPrimary);
 }
 
-
 /* The text editor (Editor.vue) is self-contained with scoped styles —
    it no longer uses the legacy `#editor-container` / Ace chrome. */
 
@@ -700,22 +699,70 @@ html.dark .confirm-prompt__icon.is-warn {
   pointer-events: none;
   opacity: 0.72; /* = "subtle" (default before data-bg-intensity is set) */
   background:
-    radial-gradient(ellipse 62% 58% at 14% 16%, rgba(94, 106, 210, 0.2) 0%, transparent 62%),
-    radial-gradient(ellipse 62% 58% at 86% 14%, rgba(59, 130, 246, 0.18) 0%, transparent 62%),
-    radial-gradient(ellipse 62% 58% at 92% 56%, rgba(13, 148, 136, 0.16) 0%, transparent 62%),
-    radial-gradient(ellipse 62% 58% at 72% 88%, rgba(22, 163, 74, 0.16) 0%, transparent 62%),
-    radial-gradient(ellipse 62% 58% at 22% 86%, rgba(217, 119, 6, 0.16) 0%, transparent 62%),
-    radial-gradient(ellipse 62% 58% at 8% 52%, rgba(225, 29, 72, 0.16) 0%, transparent 62%);
+    radial-gradient(
+      ellipse 62% 58% at 14% 16%,
+      rgba(94, 106, 210, 0.2) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse 62% 58% at 86% 14%,
+      rgba(59, 130, 246, 0.18) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse 62% 58% at 92% 56%,
+      rgba(13, 148, 136, 0.16) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse 62% 58% at 72% 88%,
+      rgba(22, 163, 74, 0.16) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse 62% 58% at 22% 86%,
+      rgba(217, 119, 6, 0.16) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse 62% 58% at 8% 52%,
+      rgba(225, 29, 72, 0.16) 0%,
+      transparent 62%
+    );
 }
 
 html.dark .app-mesh {
   background:
-    radial-gradient(ellipse 62% 58% at 14% 16%, rgba(124, 135, 229, 0.34) 0%, transparent 64%),
-    radial-gradient(ellipse 62% 58% at 86% 14%, rgba(96, 165, 250, 0.28) 0%, transparent 64%),
-    radial-gradient(ellipse 62% 58% at 92% 56%, rgba(45, 212, 191, 0.24) 0%, transparent 64%),
-    radial-gradient(ellipse 62% 58% at 72% 88%, rgba(74, 222, 128, 0.22) 0%, transparent 64%),
-    radial-gradient(ellipse 62% 58% at 22% 86%, rgba(251, 191, 36, 0.22) 0%, transparent 64%),
-    radial-gradient(ellipse 62% 58% at 8% 52%, rgba(251, 113, 133, 0.24) 0%, transparent 64%);
+    radial-gradient(
+      ellipse 62% 58% at 14% 16%,
+      rgba(124, 135, 229, 0.34) 0%,
+      transparent 64%
+    ),
+    radial-gradient(
+      ellipse 62% 58% at 86% 14%,
+      rgba(96, 165, 250, 0.28) 0%,
+      transparent 64%
+    ),
+    radial-gradient(
+      ellipse 62% 58% at 92% 56%,
+      rgba(45, 212, 191, 0.24) 0%,
+      transparent 64%
+    ),
+    radial-gradient(
+      ellipse 62% 58% at 72% 88%,
+      rgba(74, 222, 128, 0.22) 0%,
+      transparent 64%
+    ),
+    radial-gradient(
+      ellipse 62% 58% at 22% 86%,
+      rgba(251, 191, 36, 0.22) 0%,
+      transparent 64%
+    ),
+    radial-gradient(
+      ellipse 62% 58% at 8% 52%,
+      rgba(251, 113, 133, 0.24) 0%,
+      transparent 64%
+    );
 }
 
 /* Intensity knob (layer opacity); "off" removes the layer entirely. */
@@ -751,10 +798,12 @@ html[data-bg-intensity="bold"] .app-mesh {
    the sidebar, so it uses the same --color-canvas base and blur, otherwise it
    looked whiter than the sidebar (it was using the more-opaque --color-surface
    fill). */
-html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .sidebar-root,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
+  .sidebar-root,
 html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .header-bar,
 html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .info-pane,
-html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .preview-toolbar {
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
+  .preview-toolbar {
   background-color: color-mix(in srgb, var(--color-canvas) 64%, transparent);
   backdrop-filter: blur(7px);
   -webkit-backdrop-filter: blur(7px);
@@ -762,7 +811,8 @@ html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .preview-too
 
 /* Content panels (settings / slide-overs) — more opaque so text and form
    fields stay crisp, with a touch more blur. */
-html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .settings-section,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
+  .settings-section,
 html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .slideover {
   background-color: color-mix(in srgb, var(--color-surface) 82%, transparent);
   backdrop-filter: blur(9px);
@@ -775,32 +825,41 @@ html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .slideover {
    outside the scroll area, so nothing bleeds under them; their borders still
    delineate. (Previously these had a canvas fill, which left a visible opaque
    band — the reported "header/footer missing the gradient".) */
-html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .slideover__header,
-html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .slideover__footer,
-html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .settings-section__footer {
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
+  .slideover__header,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
+  .slideover__footer,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
+  .settings-section__footer {
   background-color: transparent;
 }
 
 /* Preview shell backdrop. */
-html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .preview-shell {
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
+  .preview-shell {
   background-color: color-mix(in srgb, var(--color-canvas) 70%, transparent);
 }
 
 /* Grid / gallery tiles — lightly translucent, NO backdrop-filter (there can
    be many on screen at once; the mesh is soft enough to read unblurred). */
-html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) #listing.mosaic .item {
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
+  #listing.mosaic
+  .item {
   background-color: color-mix(in srgb, var(--color-surface) 88%, transparent);
 }
 
 /* Sidebar storage card sits INSIDE the already-frosted sidebar — just thin
    its fill (no second blur) so that glass shows through. */
-html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .sidebar-storage {
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
+  .sidebar-storage {
   background-color: color-mix(in srgb, var(--color-surface) 45%, transparent);
 }
 
 /* Review pass — more chrome bars: text-editor toolbar + settings sub-nav rail. */
-html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .editor-topbar,
-html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .settings-rail {
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
+  .editor-topbar,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
+  .settings-rail {
   background-color: color-mix(in srgb, var(--color-canvas) 64%, transparent);
   backdrop-filter: blur(7px);
   -webkit-backdrop-filter: blur(7px);
@@ -812,14 +871,21 @@ html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .settings-ra
    treatment as the side panels so nothing that floats over the mesh reads as a
    flat block. (The mobile nav drawer + the code-editing surface are left solid
    on purpose: a drawer rides a dark scrim, and code needs maximum contrast.) */
-html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .cmd-palette,
-html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .context-menu,
-html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .dropdown-modal-list,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
+  .cmd-palette,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
+  .context-menu,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
+  .dropdown-modal-list,
 html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .shortcuts,
-html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .confirm-prompt,
-html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .confirm-dialog,
-html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .upload-dock,
-html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) #file-selection {
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
+  .confirm-prompt,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
+  .confirm-dialog,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
+  .upload-dock,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
+  #file-selection {
   background-color: color-mix(in srgb, var(--color-surface) 82%, transparent);
   backdrop-filter: blur(9px);
   -webkit-backdrop-filter: blur(9px);
@@ -836,7 +902,8 @@ html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) #file-select
    so the panel's glass + mesh show through; keep the border for affordance. No
    per-button backdrop-filter (there are several; the panel behind them already
    frosts the mesh). Hover/active states keep their own fills. */
-html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .info-action {
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
+  .info-action {
   background-color: color-mix(in srgb, var(--color-surface) 55%, transparent);
 }
 

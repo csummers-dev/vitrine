@@ -1,12 +1,13 @@
 import { useFileStore } from "@/stores/file";
+import type { ListingState } from "@/composables/usePaneContext";
 
 /**
  * useListingNavigation — Finder-style keyboard navigation of the file listing.
  *
  * Drives the selection from the arrow keys / Home / End over the *visual* order
- * of the listing (folders, then files). The "cursor" is `fileStore.activeIndex`
- * (the moving end); `fileStore.anchorIndex` is the fixed end for Shift+Arrow
- * range extension. Selection stays the existing `fileStore.selected` index
+ * of the listing (folders, then files). The "cursor" is `listing.activeIndex`
+ * (the moving end); `listing.anchorIndex` is the fixed end for Shift+Arrow
+ * range extension. Selection stays the existing `listing.selected` index
  * array, so everything downstream (the action bar, move/copy, drag) is
  * unchanged.
  *
@@ -27,10 +28,14 @@ export interface ListingNavigationOptions {
   grid: () => boolean;
   /** Scroll the item with this `req.items` index into view. */
   reveal: (reqIndex: number) => void;
+  /** The pane's listing state (selection + keyboard cursor). Defaults to the
+   *  primary fileStore, so single-pane callers pass nothing and behave exactly
+   *  as before; the second pane passes its own store. */
+  listing?: ListingState;
 }
 
 export function useListingNavigation(opts: ListingNavigationOptions) {
-  const fileStore = useFileStore();
+  const listing = opts.listing ?? (useFileStore() as unknown as ListingState);
 
   const posOf = (order: ResourceItem[], reqIndex: number): number =>
     order.findIndex((it) => it.index === reqIndex);
@@ -38,7 +43,7 @@ export function useListingNavigation(opts: ListingNavigationOptions) {
   /** First currently-selected item's visual position, or -1. */
   const firstSelectedPos = (order: ResourceItem[]): number => {
     let best = -1;
-    for (const sel of fileStore.selected) {
+    for (const sel of listing.selected) {
       const p = posOf(order, sel);
       if (p !== -1 && (best === -1 || p < best)) best = p;
     }
@@ -47,23 +52,23 @@ export function useListingNavigation(opts: ListingNavigationOptions) {
 
   const selectSingle = (order: ResourceItem[], pos: number) => {
     const reqIndex = order[pos].index;
-    fileStore.selected = [reqIndex];
-    fileStore.activeIndex = reqIndex;
-    fileStore.anchorIndex = reqIndex;
+    listing.selected = [reqIndex];
+    listing.activeIndex = reqIndex;
+    listing.anchorIndex = reqIndex;
   };
 
   const extendTo = (order: ResourceItem[], pos: number) => {
     // Anchor defaults to the current cursor if we don't have a valid one yet.
-    let anchorPos = posOf(order, fileStore.anchorIndex);
-    if (anchorPos === -1) anchorPos = posOf(order, fileStore.activeIndex);
+    let anchorPos = posOf(order, listing.anchorIndex);
+    if (anchorPos === -1) anchorPos = posOf(order, listing.activeIndex);
     if (anchorPos === -1) anchorPos = pos;
     const lo = Math.min(anchorPos, pos);
     const hi = Math.max(anchorPos, pos);
     const range: number[] = [];
     for (let i = lo; i <= hi; i++) range.push(order[i].index);
-    fileStore.selected = range;
-    fileStore.activeIndex = order[pos].index;
-    fileStore.anchorIndex = order[anchorPos].index;
+    listing.selected = range;
+    listing.activeIndex = order[pos].index;
+    listing.anchorIndex = order[anchorPos].index;
   };
 
   const move = (dir: NavDirection, extend = false) => {
@@ -72,7 +77,7 @@ export function useListingNavigation(opts: ListingNavigationOptions) {
     if (n === 0) return;
 
     // Resolve the starting cursor: the active cursor, else the first selected.
-    let cur = posOf(order, fileStore.activeIndex);
+    let cur = posOf(order, listing.activeIndex);
     if (cur === -1) cur = firstSelectedPos(order);
 
     // Nothing focused and nothing selected → land on an end without traversing.
@@ -86,11 +91,11 @@ export function useListingNavigation(opts: ListingNavigationOptions) {
     // Concretize the cursor + (for Shift) anchor from whatever we resolved, so
     // the first Shift+Arrow extends from the current item — including a prior
     // mouse selection that didn't set a keyboard cursor.
-    if (posOf(order, fileStore.activeIndex) === -1) {
-      fileStore.activeIndex = order[cur].index;
+    if (posOf(order, listing.activeIndex) === -1) {
+      listing.activeIndex = order[cur].index;
     }
-    if (extend && posOf(order, fileStore.anchorIndex) === -1) {
-      fileStore.anchorIndex = order[cur].index;
+    if (extend && posOf(order, listing.anchorIndex) === -1) {
+      listing.anchorIndex = order[cur].index;
     }
 
     const isGrid = opts.grid();

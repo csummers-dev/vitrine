@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { useFileStore } from "./file";
+import { usePanesStore } from "./panes";
 import { files as api } from "@/api";
 import buttons from "@/utils/buttons";
 import { computed, inject, markRaw, ref } from "vue";
@@ -233,6 +234,9 @@ export const useUploadStore = defineStore("upload", () => {
       buttons.success("upload");
       reset();
       fileStore.reload = true;
+      // Dual-pane: also refresh pane B (cheap re-fetch; no-op when not split or
+      // its folder wasn't the target) so an upload into the second pane shows.
+      usePanesStore().refreshB();
     }
 
     if (isActiveUploadsOnLimit() && hasPendingUploads()) {
