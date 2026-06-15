@@ -10,6 +10,7 @@ Self-hosted file management.
 
 - **List view** — Dense, scannable, color-coded.
 - **Grid + Gallery** — Comfortable file listings with previews.
+- **Split pane view** — Navigate multiple folders at once.
 - **Image + EXIF** — Pixel-perfect previews with EXIF details.
 - **Image** editor — Crop, rotate, and flip.
 - **Video** — Streams with tracks and subtitles.
