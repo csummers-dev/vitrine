@@ -45,7 +45,7 @@ Self-hosted file management.
 - **Mobile** — Mobile design prioritized.
 - **Mobile upload / pull-to-refresh** — Upload from your camera roll; pull to refresh.
 
-[![Version](https://img.shields.io/badge/version-2.5.0-5e6ad2?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-2.5.1-5e6ad2?style=flat-square)](#)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
 [![Vue](https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js&logoColor=white)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
@@ -154,7 +154,6 @@ services:
     image: ghcr.io/csummers-dev/filebrowser-pretty:latest
     container_name: filebrowser-pretty
     restart: unless-stopped
-    user: "1000:1000"        # match the UID/GID that owns your storage dirs
     ports:
       - "8080:80"
     volumes:
@@ -168,6 +167,9 @@ services:
       - ./filebrowser/database:/database
       - ./filebrowser/config:/config
     environment:
+      # The host user that owns your mounted data — run `id -u` / `id -g`.
+      PUID: 1000
+      PGID: 1000
       TZ: America/Los_Angeles
     healthcheck:
       test: ["CMD", "/healthcheck.sh"]
@@ -175,6 +177,20 @@ services:
       timeout: 5s
       retries: 3
 ```
+
+#### Permissions
+
+On startup the container reads `PUID`/`PGID`, fixes the ownership of its own data to match, then **drops to that unprivileged user** to run the app — so filebrowser never runs as root, and you never have to `chown` your media or juggle a `user:` line. Just point it at whoever owns your files:
+
+```yaml
+    environment:
+      PUID: 1000   # host user ID that owns your mounted data  (run `id -u`)
+      PGID: 1000   # its group ID                              (run `id -g`)
+```
+
+- The app's own `/config` + `/database` are re-owned to `PUID:PGID` automatically on every start, so the database is always writable — even if Docker first created those folders as `root`.
+- Your media under `/srv` is **not** touched: mount folders already owned by `PUID` (use user-owned **subdirectories**, not root-owned NAS volume roots, or uploads 403).
+- **Need strictly non-root** (no root at all, e.g. a hardened host)? Set `user: "<uid>:<gid>"` on the service instead — the container detects it, skips the root/ownership step, and runs only as that user (you manage folder ownership yourself).
 
 Behind a reverse proxy (Traefik shown here — adapt for Caddy / nginx / your stack):
 

@@ -2,19 +2,22 @@ import path from "node:path";
 import { defineConfig, createLogger } from "vite";
 import vue from "@vitejs/plugin-vue";
 import VueI18nPlugin from "@intlify/unplugin-vue-i18n/vite";
-import legacy from "@vitejs/plugin-legacy";
 import { compression } from "vite-plugin-compression2";
 import tailwindcss from "@tailwindcss/vite";
 
+// NOTE: @vitejs/plugin-legacy was removed (perf). It doubled the build — a full
+// parallel `*-legacy` bundle set (index/icons/viewers) plus an inline SystemJS
+// + nomodule loader injected into index.html — to support pre-2018 browsers
+// that this self-hosted app's users never run. Modern browsers loaded the
+// modern bundle anyway and merely ignored the legacy `<script nomodule>`, so
+// dropping it halves build artifacts and removes the loader/polyfill detection
+// with no runtime change for any current browser. Re-add it only if you need to
+// support browsers without native ES modules / dynamic import.
 const plugins = [
   vue(),
   tailwindcss(),
   VueI18nPlugin({
     include: [path.resolve(__dirname, "./src/i18n/**/*.json")],
-  }),
-  legacy({
-    // defaults already drop IE support
-    targets: ["defaults"],
   }),
   compression({ include: /\.js$/, deleteOriginalAssets: false }),
 ];
@@ -71,9 +74,6 @@ export default defineConfig(({ command }) => {
       base: "",
       build: {
         // The few chunks that exceed this are intentional and acceptable:
-        //   - "icons": the full lucide-vue-next set is imported wholesale by
-        //     Icon.vue (no tree-shaking, by design) — large but cached forever
-        //     since it never changes between app deploys.
         //   - The lazy viewer chunks (VideoViewer/video.js, PdfViewer/pdf.js,
         //     EpubViewer, TextViewer) are only fetched when a user actually
         //     opens that file type, so they don't affect cold-start weight.
@@ -116,8 +116,10 @@ export default defineConfig(({ command }) => {
               // they cache across deploys (they change far less often than app
               // code) and the main `index` chunk shrinks to just our code.
               if (id.includes("node_modules")) {
-                // Full lucide icon set (intentional wholesale `import *` in
-                // Icon.vue — the package is published as `@lucide/vue`).
+                // The tree-shaken icon set (only the icons referenced in the
+                // app, via src/utils/iconRegistry.generated.ts — regenerate with
+                // scripts/generate-icon-registry.mjs). Kept in its own chunk so
+                // it caches across deploys independently of app code.
                 if (id.includes("@lucide")) {
                   return "icons";
                 }
