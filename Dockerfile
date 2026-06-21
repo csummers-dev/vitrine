@@ -71,13 +71,16 @@ LABEL org.opencontainers.image.title="filebrowser-pretty" \
       org.opencontainers.image.revision="${REVISION}" \
       org.opencontainers.image.created="${CREATED}"
 
-# Define non-root user UID and GID
+# Default UID/GID for the runtime user. The entrypoint (init.sh) overrides these
+# at run time from the PUID/PGID env vars, so end users point the container at
+# whatever uid owns their mounted data without rebuilding.
 ENV UID=1000
 ENV GID=1000
 
 # poppler-utils → pdftoppm (PDF first-page rasterizer for row thumbnails);
-# ttf-dejavu so text-heavy first pages render legibly. Then the non-root user.
-RUN apk --no-cache add poppler-utils ttf-dejavu && \
+# ttf-dejavu so text-heavy first pages render legibly; su-exec → drop from root
+# to PUID:PGID in the entrypoint. Then create the default (1000) user.
+RUN apk --no-cache add poppler-utils ttf-dejavu su-exec && \
     addgroup -g $GID user && \
     adduser -D -u $UID -G user user
 
@@ -108,9 +111,11 @@ RUN mkdir -p /config /database /srv && \
 # Define healthcheck script
 HEALTHCHECK --start-period=2s --interval=5s --timeout=3s CMD /healthcheck.sh
 
-# Set the user, volumes and exposed ports
-USER user
-
+# NOTE: no `USER` here on purpose. The container starts as root so the
+# entrypoint (init.sh) can chown the app's own data to PUID:PGID and then drop
+# to that unprivileged user via su-exec before running filebrowser — so the app
+# itself never runs as root. Operators who require strictly-non-root (no root at
+# all) can set `user:` at run time; init.sh detects that and skips the root step.
 VOLUME /srv /config /database
 
 EXPOSE 80

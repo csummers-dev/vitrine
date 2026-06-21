@@ -15,12 +15,6 @@ services:
     container_name: filebrowser-pretty
     restart: unless-stopped
 
-    # Run as the image's built-in non-root user (uid:gid 1000:1000). When you
-    # mount real host directories into /srv, set this to the user that OWNS
-    # them (and mount user-owned subdirectories, not whole NAS volume roots) —
-    # the app writes as this uid, so a mismatch shows up as 403s on upload.
-    user: "1000:1000"
-
     ports:
       - "8080:80"
 
@@ -34,6 +28,14 @@ services:
       - database:/database # embedded bbolt DB (users / shares / tags / sessions)
 
     environment:
+      # The host user that OWNS your mounted data. On startup the container
+      # fixes the ownership of its own state (/config, /database) to match,
+      # then runs the app as this user — so just set these to `id -u` / `id -g`
+      # of whoever owns your files. Your data in /srv is NOT modified: mount
+      # folders already owned by PUID (user-owned subdirectories, not root-owned
+      # NAS volume roots, or uploads 403). Defaults to 1000:1000.
+      PUID: 1000
+      PGID: 1000
       # Set your local time zone so timestamps + logs read correctly.
       TZ: Etc/UTC
 

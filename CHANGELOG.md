@@ -2,6 +2,35 @@
 
 All notable changes to **filebrowser pretty**.
 
+## v2.5.1 — Faster cold start + simpler Docker permissions
+
+**Smaller, faster first load.** Bundle optimizations — same app, just much less
+to download and parse on first load:
+
+- **Icons are tree-shaken.** The app bundled the *entire* icon library on every
+  load; it now ships only the icons it actually uses — the icon chunk drops from
+  ~195 kB to ~53 kB gzipped.
+- **Settings, admin, login, share and trash pages load on demand** instead of in
+  the initial bundle (route-level code splitting), trimming the boot chunk.
+- **Dropped the legacy-browser build** — a full duplicate bundle set plus a
+  loader, for pre-2018 browsers that this self-hosted app's users never run.
+
+Net: roughly **~170 kB less gzipped JavaScript** fetched and parsed on a cold start.
+
+**Simpler, safer Docker permissions.** The image now uses the standard
+`PUID` / `PGID` pattern instead of a hardcoded `user:` line. Set them to the user
+that owns your data (`id -u` / `id -g` on the host) and the container fixes the
+ownership of its own `/config` + `/database` to match, then drops to that
+unprivileged user to run the app — it never runs the app as root, and you never
+have to `chown` your media or guess a `user:` value. Your files under `/srv`
+aren't touched.
+
+> **Upgrading:** remove any `user: "1000:1000"` from your `compose.yaml` and add
+> `PUID` / `PGID` under `environment` (both default to `1000`). Mount media that's
+> already owned by that uid (user-owned subdirectories, not root-owned NAS volume
+> roots). Prefer strictly non-root? Set `user:` instead and the container skips
+> the ownership step. Full details in the README's **Permissions** section.
+
 ## v2.5.0 — Dual-pane (split) file browsing
 
 A second directory listing, side by side, so you can compare two folders at a

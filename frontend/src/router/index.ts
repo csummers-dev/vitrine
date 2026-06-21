@@ -1,20 +1,29 @@
 import type { RouteLocation } from "vue-router";
 import { createRouter, createWebHistory } from "vue-router";
-import Login from "@/views/Login.vue";
+// Eager: the authed shell + the landing file listing (needed for first paint),
+// and Errors (also imported by Files.vue for its inline error state, so it's in
+// the boot graph regardless — no gain from splitting it).
 import Layout from "@/views/Layout.vue";
 import Files from "@/views/Files.vue";
-import Share from "@/views/Share.vue";
-import Users from "@/views/settings/Users.vue";
-import User from "@/views/settings/User.vue";
-import Settings from "@/views/Settings.vue";
-import GlobalSettings from "@/views/settings/Global.vue";
-import ProfileSettings from "@/views/settings/Profile.vue";
-import Shares from "@/views/settings/Shares.vue";
-import Audit from "@/views/settings/Audit.vue";
-import Sessions from "@/views/settings/Sessions.vue";
-import Webhooks from "@/views/settings/Webhooks.vue";
-import Trash from "@/views/Trash.vue";
 import Errors from "@/views/Errors.vue";
+
+// Route-level code splitting (perf): everything that isn't part of the initial
+// file-browsing paint — login, the public share view, trash, and the entire
+// settings subtree — is lazy-loaded, so it stays OUT of the boot bundle and is
+// fetched only the first time you navigate there. `component: <lazy fn>` is a
+// valid async route component, so the route table below is unchanged.
+const Login = () => import("@/views/Login.vue");
+const Share = () => import("@/views/Share.vue");
+const Trash = () => import("@/views/Trash.vue");
+const Settings = () => import("@/views/Settings.vue");
+const ProfileSettings = () => import("@/views/settings/Profile.vue");
+const Shares = () => import("@/views/settings/Shares.vue");
+const Sessions = () => import("@/views/settings/Sessions.vue");
+const GlobalSettings = () => import("@/views/settings/Global.vue");
+const Users = () => import("@/views/settings/Users.vue");
+const User = () => import("@/views/settings/User.vue");
+const Audit = () => import("@/views/settings/Audit.vue");
+const Webhooks = () => import("@/views/settings/Webhooks.vue");
 import { useAuthStore } from "@/stores/auth";
 import { baseURL, brand } from "@/utils/constants";
 import i18n from "@/i18n";
