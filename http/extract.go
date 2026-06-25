@@ -282,7 +282,7 @@ func validateArchivePassword(ctx context.Context, realPath, password string) err
 			return fs.SkipAll
 		}
 		_, probeErr = io.Copy(io.Discard, io.LimitReader(rc, 1024))
-		rc.Close()
+		_ = rc.Close()
 		return fs.SkipAll
 	})
 	if walkErr != nil {
@@ -327,7 +327,7 @@ func extractEncryptedZip(realPath, cleanDst, password string, opts extractOpts) 
 			return classifyZipPasswordErr(openErr)
 		}
 		_, copyErr := io.Copy(io.Discard, io.LimitReader(rc, int64(opts.MaxUncompressedFileSize)))
-		rc.Close()
+		_ = rc.Close()
 		if copyErr != nil {
 			return classifyZipPasswordErr(copyErr)
 		}
@@ -444,7 +444,7 @@ func materializeEntry(e normalizedEntry, cleanDst string, c *extractCounters, op
 
 	outFile, outErr := opts.Fs.OpenFile(outPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, opts.FileMode)
 	if outErr != nil {
-		rc.Close()
+		_ = rc.Close()
 		return outErr
 	}
 
@@ -454,7 +454,7 @@ func materializeEntry(e normalizedEntry, cleanDst string, c *extractCounters, op
 	n, copyErr := io.Copy(outFile, limited)
 
 	closeOutErr := outFile.Close()
-	rc.Close()
+	_ = rc.Close()
 
 	if copyErr != nil {
 		return copyErr
@@ -564,7 +564,7 @@ func detectArchive(ctx context.Context, realPath, password string) (archives.Ext
 	}
 	format, _, idErr := archives.Identify(ctx, base, f)
 	if idErr != nil {
-		f.Close()
+		_ = f.Close()
 		if errors.Is(idErr, archives.NoMatch) {
 			return nil, nil, noop, fberrors.ErrUnsupportedArchive
 		}
@@ -574,7 +574,7 @@ func detectArchive(ctx context.Context, realPath, password string) (archives.Ext
 	if !ok {
 		// e.g. a lone compressed file (.gz) with no archive inside — nothing
 		// to "extract" into a folder.
-		f.Close()
+		_ = f.Close()
 		return nil, nil, noop, fberrors.ErrUnsupportedArchive
 	}
 	// Identify returns a zero-value format; inject the password for the formats
@@ -589,10 +589,10 @@ func detectArchive(ctx context.Context, realPath, password string) (archives.Ext
 	}
 	// Identify may have advanced the stream; rewind before extracting.
 	if _, seekErr := f.Seek(0, io.SeekStart); seekErr != nil {
-		f.Close()
+		_ = f.Close()
 		return nil, nil, noop, seekErr
 	}
-	return ex, f, func() { f.Close() }, nil
+	return ex, f, func() { _ = f.Close() }, nil
 }
 
 // firstRarVolume returns the first-volume filename for a RAR set so rardecode

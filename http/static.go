@@ -168,6 +168,14 @@ func getStaticHandlers(store *storage.Storage, server *settings.Server, assetsFs
 		if d.settings.Branding.Files != "" {
 			if strings.HasPrefix(r.URL.Path, "img/") {
 				fPath := filepath.Join(d.settings.Branding.Files, r.URL.Path)
+				// SEC-006: confine to the branding dir. filepath.Join cleans away
+				// `..`, so an `img/../..` path could resolve outside the dir;
+				// reject any escape (http.ServeFile only guards the request URL's
+				// "..", not the resolved filesystem path).
+				if rel, rErr := filepath.Rel(d.settings.Branding.Files, fPath); rErr != nil ||
+					rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+					return http.StatusNotFound, nil
+				}
 				_, err := os.Stat(fPath)
 				if err != nil && !os.IsNotExist(err) {
 					log.Printf("could not load branding file override: %v", err)

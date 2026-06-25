@@ -7,11 +7,15 @@ const RETRY_BASE_DELAY = 1000;
 const RETRY_MAX_DELAY = 20000;
 const CURRENT_UPLOAD_LIST: { [key: string]: tus.Upload } = {};
 
+/** Upload progress callback. Both the XHR (`request.upload.onprogress`) and the
+ *  TUS path invoke it with a ProgressEvent-shaped `{ loaded, total }` (bytes). */
+export type UploadProgress = (event: { loaded: number; total: number }) => void;
+
 export async function upload(
   filePath: string,
   content: ApiContent = "",
   overwrite = false,
-  onupload: any
+  onupload: UploadProgress
 ) {
   if (!tusSettings) {
     // Shouldn't happen as we check for tus support before calling this function
@@ -93,9 +97,9 @@ export async function upload(
 
         reject(new Error(message));
       },
-      onProgress: function (bytesUploaded) {
+      onProgress: function (bytesUploaded, bytesTotal) {
         if (typeof onupload === "function") {
-          onupload({ loaded: bytesUploaded });
+          onupload({ loaded: bytesUploaded, total: bytesTotal });
         }
       },
       onSuccess: function () {

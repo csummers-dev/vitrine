@@ -1,7 +1,12 @@
 import { useAuthStore } from "@/stores/auth";
 import { useLayoutStore } from "@/stores/layout";
 import { baseURL } from "@/utils/constants";
-import { upload as postTus, useTus, abortUpload as abortTus } from "./tus";
+import {
+  upload as postTus,
+  useTus,
+  abortUpload as abortTus,
+  type UploadProgress,
+} from "./tus";
 import { createURL, fetchURL, removePrefix, StatusError } from "./utils";
 import { isEncodableResponse, makeRawResource } from "@/utils/encodings";
 
@@ -33,8 +38,7 @@ export async function fetch(url: string, signal?: AbortSignal) {
 
   if (data.isDir) {
     if (!data.url.endsWith("/")) data.url += "/";
-    // Perhaps change the any
-    data.items = data.items.map((item: any, index: any) => {
+    data.items = data.items.map((item: ResourceItem, index: number) => {
       item.index = index;
       item.url = `${data.url}${encodeURIComponent(item.name)}`;
 
@@ -55,7 +59,11 @@ export async function fetchAll(url: string): Promise<RecursiveEntry[]> {
   return (await res.json()) as RecursiveEntry[];
 }
 
-async function resourceAction(url: string, method: ApiMethod, content?: any) {
+async function resourceAction(
+  url: string,
+  method: ApiMethod,
+  content?: BodyInit
+) {
   url = removePrefix(url);
 
   const opts: ApiOpts = {
@@ -97,7 +105,7 @@ export async function put(url: string, content = "") {
   return resourceAction(url, "PUT", content);
 }
 
-export function download(format: any, ...files: string[]) {
+export function download(format: DownloadFormat, ...files: string[]) {
   let url = `${baseURL}/api/raw`;
 
   if (files.length === 1) {
@@ -132,7 +140,7 @@ export async function post(
   url: string,
   content: ApiContent = "",
   overwrite = false,
-  onupload: any = () => {}
+  onupload: UploadProgress = () => {}
 ) {
   // Use the pre-existing API if:
   const useResourcesApi =
@@ -158,7 +166,7 @@ async function postResources(
   url: string,
   content: ApiContent = "",
   overwrite = false,
-  onupload: any
+  onupload: UploadProgress
 ) {
   url = removePrefix(url);
 
@@ -226,8 +234,16 @@ export function cancelUpload(path: string) {
   if (req) req.abort();
 }
 
+interface MoveCopyItem {
+  from: string;
+  to?: string;
+  name?: string;
+  overwrite?: boolean;
+  rename?: boolean;
+}
+
 function moveCopy(
-  items: any[],
+  items: MoveCopyItem[],
   copy = false,
   overwrite = false,
   rename = false
@@ -250,11 +266,11 @@ function moveCopy(
   return Promise.all(promises);
 }
 
-export function move(items: any[], overwrite = false, rename = false) {
+export function move(items: MoveCopyItem[], overwrite = false, rename = false) {
   return moveCopy(items, false, overwrite, rename);
 }
 
-export function copy(items: any[], overwrite = false, rename = false) {
+export function copy(items: MoveCopyItem[], overwrite = false, rename = false) {
   return moveCopy(items, true, overwrite, rename);
 }
 
@@ -322,7 +338,7 @@ function authParam(): { auth: string } | Record<string, never> {
   return jwt ? { auth: jwt } : {};
 }
 
-export function getDownloadURL(file: ResourceItem, inline: any) {
+export function getDownloadURL(file: ResourceItem, inline: boolean) {
   const params = {
     ...(inline && { inline: "true" }),
     ...authParam(),

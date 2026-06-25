@@ -2,6 +2,43 @@
 
 All notable changes to **filebrowser pretty**.
 
+## v2.5.2 — Security hardening & code-quality pass
+
+The result of a top-to-bottom security and code-quality audit of the whole app,
+with the findings fixed. No new features, and nothing changes for day-to-day use.
+
+**Security hardening**
+
+- **Login brute-force protection.** Repeated failed logins from the same IP now
+  trigger a short lockout (with a `Retry-After`), on top of the existing bcrypt
+  password hashing.
+- **Webhook SSRF guard.** Outbound webhook deliveries can no longer be aimed at
+  loopback, private, link-local or cloud-metadata addresses — they're resolved
+  and blocked at connect time, and re-checked across redirects (defeating
+  DNS-rebinding).
+- **Stronger share links.** Share hashes are now 128-bit, and share-password and
+  token comparisons run in constant time.
+- **Tighter sandboxing & confinement.** The EPUB reader's iframe explicitly
+  disables scripting, the cache directory is created with private permissions,
+  and custom-branding file overrides are confined to the branding folder.
+
+**Tooling & dependencies**
+
+- **CI security scanning** — `govulncheck` + `gosec` (Go) and `pnpm audit`
+  (frontend) now run on every build.
+- **Dependency cleanup** — removed unused frontend packages, patched
+  build-time-only advisories (esbuild, rollup), updated DOMPurify, and tidied the
+  Go module graph.
+
+**Correctness, performance & tests**
+
+- Fixed an O(n²) cache-eviction sort and hardened the internal events bus's
+  subscribe / unsubscribe.
+- The resumable (TUS) upload path now reports total bytes for progress, matching
+  the direct-upload path.
+- Added security regression tests (login lockout, path confinement, webhook SSRF)
+  and tightened type-safety across the API layer.
+
 ## v2.5.1 — Faster cold start + simpler Docker permissions
 
 **Smaller, faster first load.** Bundle optimizations — same app, just much less

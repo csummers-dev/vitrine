@@ -116,7 +116,9 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 		defer r.Body.Close()
 	}
 
-	bytes := make([]byte, 6)
+	// 16 random bytes = 128-bit share hash (audit SEC-008). Password-less
+	// shares are guarded solely by this value, so keep it well above guessing.
+	bytes := make([]byte, 16)
 	_, err := rand.Read(bytes)
 	if err != nil {
 		return http.StatusInternalServerError, err

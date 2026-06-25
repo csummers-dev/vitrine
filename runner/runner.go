@@ -52,6 +52,13 @@ func (r *Runner) RunHook(fn func() error, evt, path, dst string, user *users.Use
 	return nil
 }
 
+// exec runs one admin-configured event command. SECURITY (audit SEC-004): the
+// command list (r.Commands) and shell choice (r.Shell) are ADMIN configuration
+// and run with the SERVER's privileges. When a shell is configured, the
+// user-controlled file path is os.Expand-ed into $FILE / $DESTINATION inside the
+// raw shell string, so a crafted filename can inject shell syntax — admins using
+// shell mode must quote "$FILE" / "$DESTINATION" in their hooks (or avoid shell
+// mode). With no shell, args are passed as argv, so metacharacters are inert.
 func (r *Runner) exec(raw, evt, path, dst string, user *users.User) error {
 	blocking := true
 

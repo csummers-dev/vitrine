@@ -17,7 +17,7 @@ export async function fetch(url: string, password: string = "") {
 
   if (data.isDir) {
     if (!data.url.endsWith("/")) data.url += "/";
-    data.items = data.items.map((item: any, index: any) => {
+    data.items = data.items.map((item: ResourceItem, index: number) => {
       item.index = index;
       item.url = `${data.url}${encodeURIComponent(item.name)}`;
 

@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -140,6 +141,14 @@ func withAdmin(fn handleFunc) handleFunc {
 
 func loginHandler(tokenExpireTime time.Duration) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+		// SEC-001: throttle online password guessing per client IP. A locked-out
+		// client is rejected before the (bcrypt-cost) auth check even runs.
+		key := realip.FromRequest(r)
+		if wait := loginThrottler.retryAfter(key); wait > 0 {
+			w.Header().Set("Retry-After", strconv.Itoa(int(wait.Seconds())+1))
+			return http.StatusTooManyRequests, nil
+		}
+
 		auther, err := d.store.Auth.Get(d.settings.AuthMethod)
 		if err != nil {
 			return http.StatusInternalServerError, err
@@ -148,10 +157,13 @@ func loginHandler(tokenExpireTime time.Duration) handleFunc {
 		user, err := auther.Auth(r, d.store.Users, d.settings, d.server)
 		switch {
 		case errors.Is(err, os.ErrPermission):
+			loginThrottler.fail(key)
 			return http.StatusForbidden, nil
 		case err != nil:
 			return http.StatusInternalServerError, err
 		}
+
+		loginThrottler.succeed(key)
 
 		// Audit the successful login. We can't use eventBase() here
 		// because d.user isn't populated on the login path (withUser

@@ -85,7 +85,7 @@ func New(dbPath string) (*Store, error) {
 		return err
 	})
 	if err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, err
 	}
 	return &Store{db: db}, nil

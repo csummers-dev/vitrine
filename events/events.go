@@ -196,8 +196,9 @@ func (SettingsChanged) Type() string { return "settings.changed" }
 // ── Subscriber registry ─────────────────────────────────────────────
 
 var (
-	subsMu sync.RWMutex
-	subs   []func(Event)
+	subsMu  sync.RWMutex
+	subs    = map[uint64]func(Event){}
+	subsSeq uint64
 )
 
 // Subscribe registers handler to receive every published event until
@@ -210,24 +211,19 @@ var (
 // should hand off to its own goroutine.
 func Subscribe(handler func(Event)) (unsubscribe func()) {
 	subsMu.Lock()
-	defer subsMu.Unlock()
-	// Use a pointer-equality trick: identify subscribers by their slot
-	// index at registration time. Removal walks the slice and clears
-	// the matching slot, then compacts. Compaction matters because the
-	// audit + webhook subscribers register once at startup and unregister
-	// only in tests — but tests need clean teardown.
-	subs = append(subs, handler)
-	idx := len(subs) - 1
+	subsSeq++
+	id := subsSeq
+	subs[id] = handler
+	subsMu.Unlock()
+	// Identify the subscriber by a unique token — a map keyed by a monotonic id
+	// (audit COR-001). The old approach captured a slice slot index, but a
+	// swap-remove compaction shifted handlers between slots, so a later
+	// unsubscribe could remove the wrong handler (or silently no-op). The token
+	// removes exactly this handler regardless of registration/removal order.
 	return func() {
 		subsMu.Lock()
-		defer subsMu.Unlock()
-		if idx >= len(subs) {
-			return
-		}
-		// Compact the slice. Order doesn't matter — subscribers are
-		// invoked unordered anyway.
-		subs[idx] = subs[len(subs)-1]
-		subs = subs[:len(subs)-1]
+		delete(subs, id)
+		subsMu.Unlock()
 	}
 }
 
@@ -239,11 +235,13 @@ func Subscribe(handler func(Event)) (unsubscribe func()) {
 // fail just because the audit log subscriber blew up.
 func Publish(ev Event) {
 	subsMu.RLock()
-	// Copy the slice so we can release the lock before invoking
-	// handlers (which may try to Subscribe / Unsubscribe themselves and
-	// would otherwise deadlock).
-	snapshot := make([]func(Event), len(subs))
-	copy(snapshot, subs)
+	// Copy into a slice so we can release the lock before invoking handlers
+	// (which may try to Subscribe / Unsubscribe themselves and would otherwise
+	// deadlock). Dispatch order is unspecified — subscribers must not rely on it.
+	snapshot := make([]func(Event), 0, len(subs))
+	for _, h := range subs {
+		snapshot = append(snapshot, h)
+	}
 	subsMu.RUnlock()
 
 	for _, h := range snapshot {
@@ -266,5 +264,6 @@ func invoke(h func(Event), ev Event) {
 func reset() {
 	subsMu.Lock()
 	defer subsMu.Unlock()
-	subs = subs[:0]
+	subs = map[uint64]func(Event){}
+	subsSeq = 0
 }

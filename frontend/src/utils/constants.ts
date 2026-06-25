@@ -13,7 +13,6 @@ const recaptcha: string = window.FileBrowser.ReCaptcha;
 const recaptchaKey: string = window.FileBrowser.ReCaptchaKey;
 const signup: boolean = window.FileBrowser.Signup;
 const version: string = window.FileBrowser.Version;
-const logoURL = `${staticURL}/img/logo.svg`;
 // PNG brand mark used by the sidebar/drawer top-left glyph (logo.svg is the
 // login-screen wordmark). Served from public/img/logo.png.
 const logoPngURL = `${staticURL}/img/logo.png`;
@@ -61,7 +60,6 @@ export {
   disableExternal,
   disableUsedPercentage,
   baseURL,
-  logoURL,
   logoPngURL,
   recaptcha,
   recaptchaKey,

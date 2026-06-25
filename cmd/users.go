@@ -49,7 +49,7 @@ func printUsers(usrs []*users.User) {
 		)
 	}
 
-	w.Flush()
+	_ = w.Flush()
 }
 
 func parseUsernameOrID(arg string) (username string, id uint) {

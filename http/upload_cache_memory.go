@@ -40,8 +40,8 @@ func newMemoryUploadCache() *memoryUploadCache {
 	cache := ttlcache.New[string, int64]()
 	cache.OnEviction(func(_ context.Context, reason ttlcache.EvictionReason, item *ttlcache.Item[string, int64]) {
 		if reason == ttlcache.EvictionReasonExpired {
-			fmt.Printf("deleting incomplete upload file: \"%s\"\n", item.Key())
-			os.Remove(item.Key())
+			_, _ = fmt.Printf("deleting incomplete upload file: \"%s\"\n", item.Key())
+			_ = os.Remove(item.Key())
 		}
 	})
 	go cache.Start()

@@ -15,12 +15,20 @@
       fails with "Error loading book". Forcing openAs:'epub' skips the
       sniff and loads the authenticated URL as a packaged epub.
     -->
+    <!--
+      allowScriptedContent:false keeps epub.js's chapter iframe sandboxed
+      WITHOUT allow-scripts, so a malicious EPUB's embedded JavaScript can't run
+      (audit FE-002 / DEP-001 — epub.js bundles @xmldom/xmldom 0.7.x and is
+      already at its latest, so the no-script sandbox is the mitigation). It's
+      epub.js's default, but set explicitly so a future upstream default change
+      can't silently weaken it.
+    -->
     <vue-reader
       :location="location"
       :url="src"
       :get-rendition="captureRendition"
       :epubInitOptions="{ requestCredentials: true, openAs: 'epub' }"
-      :epubOptions="{ allowPopups: true }"
+      :epubOptions="{ allowPopups: true, allowScriptedContent: false }"
       @update:location="$emit('update:location', $event)"
     />
     <div class="epub-viewer__size">

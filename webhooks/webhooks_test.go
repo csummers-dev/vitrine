@@ -76,6 +76,11 @@ func TestStoreCRUD(t *testing.T) {
 // bus, publish a file event, and assert the endpoint receives a correctly
 // shaped POST in the background.
 func TestDispatcherDelivery(t *testing.T) {
+	// The SSRF guard (SEC-002) blocks loopback; relax it so the httptest server
+	// is reachable. The guard logic itself is covered by TestIsBlockedIP.
+	ssrfGuardDisabled = true
+	defer func() { ssrfGuardDisabled = false }()
+
 	received := make(chan Payload, 1)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var p Payload
