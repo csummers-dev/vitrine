@@ -80,5 +80,5 @@ func (c *redisUploadCache) Touch(filePath string) {
 }
 
 func (c *redisUploadCache) Close() {
-	c.client.Close()
+	_ = c.client.Close()
 }

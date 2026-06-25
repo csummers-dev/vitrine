@@ -77,6 +77,12 @@ var commandsHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *d
 		return 0, nil
 	}
 
+	// SECURITY (audit SEC-003): this allowlist matches only the FIRST token (the
+	// binary name). With no configured shell that IS the whole command (argv).
+	// But when settings.Shell is set, ParseCommand runs the ENTIRE raw line via
+	// `sh -c`, so the allowlist gates only the first word — a user allowed `ls`
+	// could send `ls; <anything>`. Shell mode + the Execute permission is an
+	// admin-granted, server-privileged capability; treat it accordingly.
 	if !slices.Contains(d.user.Commands, name) {
 		if err := conn.WriteMessage(websocket.TextMessage, cmdNotAllowed); err != nil {
 			wsErr(conn, r, http.StatusInternalServerError, err)

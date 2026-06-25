@@ -258,7 +258,7 @@ export const useUploadStore = defineStore("upload", () => {
               (err as Error)?.message !== "Upload aborted" && $showError(err)
           );
       } else {
-        const onUpload = (event: ProgressEvent) => {
+        const onUpload = (event: { loaded: number }) => {
           upload.rawProgress.sentBytes = event.loaded;
         };
 

@@ -1,6 +1,7 @@
 package fbhttp
 
 import (
+	"crypto/subtle"
 	"errors"
 	"net/http"
 	"net/url"
@@ -131,7 +132,8 @@ func authenticateShareRequest(r *http.Request, l *share.Link) (int, error) {
 		return 0, nil
 	}
 
-	if r.URL.Query().Get("token") == l.Token {
+	// Constant-time compare so a share token isn't leaked by response timing (SEC-009).
+	if subtle.ConstantTimeCompare([]byte(r.URL.Query().Get("token")), []byte(l.Token)) == 1 {
 		return 0, nil
 	}
 

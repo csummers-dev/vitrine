@@ -94,3 +94,43 @@ jobs:
       - name: Install Task
         uses: go-task/setup-task@v2
       - run: task build
+
+  security:
+    name: Security Scan
+    # Informational to start (continue-on-error); promote to required once the
+    # baseline is clean. Added per the 2.5.1 audit (TOOL-002): the other CI jobs
+    # cover lint/type/test but nothing scanned for known vulns or insecure code.
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+      - name: govulncheck (Go known-vuln scan)
+        # Runs on the go.mod Go version (1.25), where govulncheck works — it
+        # panics on a go1.26 LOCAL toolchain (a known x/tools bug, audit
+        # TOOL-001). No `|| true`: a real vuln fails this STEP (red), but the
+        # job stays non-blocking via continue-on-error above. Once the baseline
+        # is confirmed clean, drop that job-level continue-on-error to make
+        # govulncheck required (and consider pinning @latest to a fixed tag).
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          "$(go env GOPATH)/bin/govulncheck" ./...
+      - name: gosec (Go security lint)
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          "$(go env GOPATH)/bin/gosec" -no-fail -quiet ./...
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: "frontend/package.json"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+          cache: "pnpm"
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
+      - name: pnpm audit (shipped deps)
+        working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm audit --prod || true

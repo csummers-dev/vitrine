@@ -5,7 +5,7 @@ import { encodePath } from "@/utils/url";
 
 export class StatusError extends Error {
   constructor(
-    message: any,
+    message: string,
     public status?: number,
     public is_canceled?: boolean
   ) {
@@ -63,8 +63,8 @@ export async function fetchURL(
   return res;
 }
 
-export async function fetchJSON<T>(url: string, opts?: any): Promise<T> {
-  const res = await fetchURL(url, opts);
+export async function fetchJSON<T>(url: string, opts?: ApiOpts): Promise<T> {
+  const res = await fetchURL(url, opts ?? {});
 
   if (res.status === 200) {
     return res.json() as Promise<T>;

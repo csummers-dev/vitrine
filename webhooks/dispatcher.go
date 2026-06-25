@@ -50,11 +50,12 @@ type Dispatcher struct {
 	sem    chan struct{}
 }
 
-// NewDispatcher builds a dispatcher over store.
+// NewDispatcher builds a dispatcher over store. The HTTP client refuses to
+// connect to internal/non-routable addresses (SEC-002 SSRF guard).
 func NewDispatcher(store *Store) *Dispatcher {
 	return &Dispatcher{
 		store:  store,
-		client: &http.Client{Timeout: 10 * time.Second},
+		client: newGuardedHTTPClient(10 * time.Second),
 		// Cap concurrent in-flight deliveries so a burst of events (or a
 		// slow receiver) can't spawn unbounded goroutines / sockets.
 		sem: make(chan struct{}, 4),

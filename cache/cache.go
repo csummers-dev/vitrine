@@ -32,6 +32,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 	"time"
 
@@ -94,7 +95,7 @@ func decodeMeta(buf []byte) (metaEntry, error) {
 // A maxSize of 0 disables eviction entirely (cache grows forever);
 // useful for tests but not what you want in production.
 func New(dir string, maxSize int64) (*Cache, error) {
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, fmt.Errorf("cache: mkdir %s: %w", dir, err)
 	}
 
@@ -170,10 +171,10 @@ func (c *Cache) Put(key string, content []byte) error {
 	defer c.mu.Unlock()
 
 	path := c.pathFor(key)
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return fmt.Errorf("cache: mkdir bucket: %w", err)
 	}
-	if err := os.WriteFile(path, content, 0o644); err != nil {
+	if err := os.WriteFile(path, content, 0o600); err != nil {
 		return fmt.Errorf("cache: write %s: %w", key, err)
 	}
 
@@ -360,12 +361,11 @@ func (c *Cache) evictOnce() {
 		return
 	}
 
-	// Sort ascending by lastAccess — oldest first.
-	for i := 1; i < len(entries); i++ {
-		for j := i; j > 0 && entries[j-1].atime.After(entries[j].atime); j-- {
-			entries[j-1], entries[j] = entries[j], entries[j-1]
-		}
-	}
+	// Sort ascending by lastAccess — oldest first. (audit COR-003: replaced a
+	// hand-rolled O(n²) insertion sort that was slow for large indexes.)
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].atime.Before(entries[j].atime)
+	})
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
