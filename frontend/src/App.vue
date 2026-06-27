@@ -28,6 +28,7 @@ import { useCommandPalette } from "@/composables/useCommandPalette";
 import { installShortcuts } from "@/composables/useShortcuts";
 import { useThemeBootstrap } from "@/composables/useThemePreference";
 import { useBackgroundGradientBootstrap } from "@/composables/useBackgroundGradient";
+import { useAccentColorBootstrap } from "@/composables/useAccentColor";
 import CommandPalette from "@/components/CommandPalette.vue";
 import ShortcutsOverlay from "@/components/ShortcutsOverlay.vue";
 import OfflineBanner from "@/components/OfflineBanner.vue";
@@ -49,6 +50,10 @@ useThemeBootstrap();
 // rest. Per-user, prefs bag — defaults match the CSS defaults (subtle +
 // translucent) so the common case has no flash before this runs.
 useBackgroundGradientBootstrap();
+
+// Apply the user's saved accent hue (Calm Minimal). Writes the accent source
+// vars on <html>; tokens.css derives the rest. Default Violet matches the CSS.
+useAccentColorBootstrap();
 
 // Install the global shortcut dispatcher (window-level listener). Idempotent.
 installShortcuts();

@@ -21,7 +21,7 @@
               @click="onCancel"
             >
               <!-- V3-F #12: colourful close glyph. -->
-              <Icon name="x" :size="16" class="text-[var(--c-rose)]" />
+              <Icon name="x" :size="16" class="text-[var(--color-ink-2)]" />
             </button>
           </header>
 
@@ -38,7 +38,11 @@
               :disabled="busy"
               @click="rotateBy(-90)"
             >
-              <Icon name="rotate-ccw" :size="15" class="text-[var(--c-blue)]" />
+              <Icon
+                name="rotate-ccw"
+                :size="15"
+                class="text-[var(--color-ink-2)]"
+              />
             </button>
             <button
               type="button"
@@ -48,7 +52,11 @@
               :disabled="busy"
               @click="rotateBy(90)"
             >
-              <Icon name="rotate-cw" :size="15" class="text-[var(--c-blue)]" />
+              <Icon
+                name="rotate-cw"
+                :size="15"
+                class="text-[var(--color-ink-2)]"
+              />
             </button>
             <div class="img-editor__sep"></div>
             <button
@@ -62,7 +70,7 @@
               <Icon
                 name="flip-horizontal-2"
                 :size="15"
-                class="text-[var(--c-teal)]"
+                class="text-[var(--color-ink-2)]"
               />
             </button>
             <button
@@ -76,7 +84,7 @@
               <Icon
                 name="flip-vertical-2"
                 :size="15"
-                class="text-[var(--c-teal)]"
+                class="text-[var(--color-ink-2)]"
               />
             </button>
             <div class="img-editor__sep"></div>
@@ -89,7 +97,7 @@
               :disabled="busy"
               @click="toggleCrop"
             >
-              <Icon name="crop" :size="15" class="text-[var(--c-lilac)]" />
+              <Icon name="crop" :size="15" class="text-[var(--color-ink-2)]" />
             </button>
             <div class="img-editor__spacer"></div>
             <button

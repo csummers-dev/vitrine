@@ -698,35 +698,18 @@ html.dark .confirm-prompt__icon.is-warn {
   z-index: -1;
   pointer-events: none;
   opacity: 0.72; /* = "subtle" (default before data-bg-intensity is set) */
+  /* Calm Minimal: a single faint wash in the active accent (two soft blobs),
+     driven by --accent-rgb so it follows the accent picker. Much quieter than
+     the old six-color mesh. */
   background:
     radial-gradient(
-      ellipse 62% 58% at 14% 16%,
-      rgba(94, 106, 210, 0.2) 0%,
-      transparent 62%
+      ellipse 72% 62% at 90% 110%,
+      rgb(var(--accent-rgb) / 0.1) 0%,
+      transparent 60%
     ),
     radial-gradient(
-      ellipse 62% 58% at 86% 14%,
-      rgba(59, 130, 246, 0.18) 0%,
-      transparent 62%
-    ),
-    radial-gradient(
-      ellipse 62% 58% at 92% 56%,
-      rgba(13, 148, 136, 0.16) 0%,
-      transparent 62%
-    ),
-    radial-gradient(
-      ellipse 62% 58% at 72% 88%,
-      rgba(22, 163, 74, 0.16) 0%,
-      transparent 62%
-    ),
-    radial-gradient(
-      ellipse 62% 58% at 22% 86%,
-      rgba(217, 119, 6, 0.16) 0%,
-      transparent 62%
-    ),
-    radial-gradient(
-      ellipse 62% 58% at 8% 52%,
-      rgba(225, 29, 72, 0.16) 0%,
+      ellipse 60% 54% at 4% -8%,
+      rgb(var(--accent-rgb) / 0.05) 0%,
       transparent 62%
     );
 }
@@ -734,33 +717,13 @@ html.dark .confirm-prompt__icon.is-warn {
 html.dark .app-mesh {
   background:
     radial-gradient(
-      ellipse 62% 58% at 14% 16%,
-      rgba(124, 135, 229, 0.34) 0%,
-      transparent 64%
+      ellipse 72% 62% at 90% 110%,
+      rgb(var(--accent-rgb) / 0.18) 0%,
+      transparent 62%
     ),
     radial-gradient(
-      ellipse 62% 58% at 86% 14%,
-      rgba(96, 165, 250, 0.28) 0%,
-      transparent 64%
-    ),
-    radial-gradient(
-      ellipse 62% 58% at 92% 56%,
-      rgba(45, 212, 191, 0.24) 0%,
-      transparent 64%
-    ),
-    radial-gradient(
-      ellipse 62% 58% at 72% 88%,
-      rgba(74, 222, 128, 0.22) 0%,
-      transparent 64%
-    ),
-    radial-gradient(
-      ellipse 62% 58% at 22% 86%,
-      rgba(251, 191, 36, 0.22) 0%,
-      transparent 64%
-    ),
-    radial-gradient(
-      ellipse 62% 58% at 8% 52%,
-      rgba(251, 113, 133, 0.24) 0%,
+      ellipse 60% 54% at 4% -8%,
+      rgb(var(--accent-rgb) / 0.1) 0%,
       transparent 64%
     );
 }
@@ -910,39 +873,31 @@ html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
 /* ── Colorful UI accents ──────────────────────────────────────────────────
    Shared helpers for the multi-color UI. They key off the palette tokens
    (--c-lilac … --c-rose) so they adapt to light/dark automatically. */
-.avatar-rainbow {
-  background: conic-gradient(
-    from 210deg,
-    var(--c-lilac),
-    var(--c-blue),
-    var(--c-teal),
-    var(--c-green),
-    var(--c-amber),
-    var(--c-rose),
-    var(--c-lilac)
-  );
+.avatar-accent {
+  /* Calm Minimal: the default avatar follows the single accent (was a six-hue
+     rainbow conic that clashed with the one-accent system). */
+  background: var(--accent-gradient);
 }
 
 .storage-fill {
-  /* Single-family teal→green gradient (no blue — that clashed with the green). */
-  background: linear-gradient(90deg, var(--c-teal), var(--c-green));
-}
-/* Light mode: the default green sits too close to the teal in luminance and
-   reads flat, so use a brighter green secondary stop. */
-html:not(.dark) .storage-fill {
-  background: linear-gradient(90deg, var(--c-teal), #1cd05e);
+  /* Calm Minimal: the storage bar follows the single accent (was teal→green),
+     so it stays on-palette with whatever accent the user picks. */
+  background: var(--accent-gradient);
 }
 
 /* Gradient section headline (folder title). lilac→rose, theme-aware. */
 .headline-gradient {
-  background: linear-gradient(90deg, var(--c-lilac), var(--c-rose));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  /* Calm Minimal: the folder title is plain ink so it doesn't compete with the
+     single accent (was a lilac→rose gradient). */
+  color: var(--color-ink-1);
 }
 
 /* Primary action buttons (New folder, Upload) — lilac gradient, not flat. */
 .btn-accent-gradient {
+  /* Calm Minimal: content uses the theme-correct on-accent color (dark on the
+     light accents amber/cyan, white on violet) — overrides the `text-white`
+     utility on the markup, which was wrong for amber/cyan. */
+  color: var(--color-on-accent);
   background-image: linear-gradient(
     135deg,
     var(--color-accent),

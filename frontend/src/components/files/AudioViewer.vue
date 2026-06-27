@@ -638,17 +638,35 @@ onBeforeUnmount(() => {
 
 /* Fallback gradient when no embedded artwork was found in the file. */
 .audio-viewer__art--fallback {
+  /* Calm Minimal: accent-tinted fallback cover (was amber→magenta), follows the
+     accent picker. */
   background:
-    radial-gradient(at 20% 30%, rgba(251, 191, 36, 0.45) 0%, transparent 50%),
-    radial-gradient(at 80% 70%, rgba(244, 114, 182, 0.4) 0%, transparent 50%),
-    linear-gradient(135deg, #fbbf24 0%, #d97706 50%, #be185d 100%);
+    radial-gradient(
+      at 25% 25%,
+      rgb(var(--accent-rgb) / 0.5) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      at 80% 75%,
+      rgb(var(--accent-rgb) / 0.28) 0%,
+      transparent 55%
+    ),
+    var(--accent-gradient);
 }
 
 html.dark .audio-viewer__art--fallback {
   background:
-    radial-gradient(at 20% 30%, rgba(251, 191, 36, 0.35) 0%, transparent 50%),
-    radial-gradient(at 80% 70%, rgba(236, 72, 153, 0.32) 0%, transparent 50%),
-    linear-gradient(135deg, #92400e 0%, #831843 100%);
+    radial-gradient(
+      at 25% 25%,
+      rgb(var(--accent-rgb) / 0.42) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      at 80% 75%,
+      rgb(var(--accent-rgb) / 0.24) 0%,
+      transparent 55%
+    ),
+    var(--accent-gradient);
 }
 
 /* ── Track info ───────────────────────────────────────────────── */

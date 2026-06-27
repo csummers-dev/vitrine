@@ -255,7 +255,7 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
 :is(#listing, .fb-listing).list .item__modified,
 :is(#listing, .fb-listing).list .item__size {
   display: block;
-  line-height: 40px;
+  line-height: 36px;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
@@ -562,7 +562,9 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
 :is(#listing, .fb-listing).list .item {
   grid-template-columns: 28px minmax(0, 1fr) 120px 80px 32px;
   gap: 12px;
-  height: 40px;
+  /* Calm Minimal: denser 36px row (+ 2px×2 margin = a 40px scroller slot, paired
+     with :min-item-size="40"). Was 40px row / 44px slot. */
+  height: 36px;
   padding: 0 6px;
   margin: 2px 0;
   border-radius: var(--radius-md, 8px);
@@ -909,15 +911,14 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }
 
-/* Folder section gets NARROWER tracks → smaller, more-compact folder tiles.
-   Folders sit in their own grid above the divider and carry no media
-   thumbnail, so they read as quiet "jump here" chips rather than hero tiles.
-   Tiles stay 4:3 (rule B), so a narrower track shrinks them in both
-   dimensions and fits more per row. Keep this minmax in sync with
-   MIN_GALLERY_DIR in composables/useListingGrid.ts — the scroll-windowing
-   mirrors this exact geometry. */
+/* Calm Minimal: the folder section shares the SAME track width as the file
+   section (both minmax(220px) from rule A) so folder + file tiles are the same
+   size and the gallery reads as one uniform 4:3 grid. Folders used to get
+   narrower 150px tracks, which made them noticeably smaller than the file rows
+   below the divider. Kept in sync with MIN_GALLERY_DIR (= MIN_GALLERY) in
+   composables/useListingGrid.ts. */
 :is(#listing, .fb-listing).mosaic.gallery .listing-section--dirs {
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }
 
 /* ── B. Tile: 4:3 aspect, overflow hidden, no padding ────── */
@@ -966,16 +967,13 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
   svg {
   width: 44px;
   height: 44px;
-  /* Colorful UI: amber GLYPH on a soft tint (below). The vivid saturated tile
-     used in list/grid is too loud at this large full-cell gallery size. */
-  color: var(--c-amber);
+  /* Calm Minimal: folder glyph uses the on-accent color on the SOLID accent
+     tile below, so the gallery folder matches the list / grid squircle exactly
+     (was a soft amber tint that read as a different, paler yellow). */
+  color: var(--color-on-accent);
 }
 :is(#listing, .fb-listing).mosaic.gallery .item[data-dir="true"] .item__icon {
-  background-color: color-mix(
-    in srgb,
-    var(--c-amber) 16%,
-    var(--color-surface)
-  );
+  background-color: var(--color-accent);
   background-image: none;
   box-shadow: none;
 }
@@ -1148,9 +1146,9 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
   height: auto;
   margin: 0;
 }
-/* Media block: full width, 16:10, vivid amber tile with a white folder glyph
-   (matches grid's bg-amber-500 / text-white folder card — amber-500 is the
-   same in light + dark). */
+/* Media block: full width, 16:10, accent tile with the on-accent folder glyph —
+   follows the user's accent pick, matching the list / grid folder card (was a
+   hardcoded amber-500 token + white glyph). */
 :is(#listing, .fb-listing).mosaic.gallery
   .listing-section--dirs
   .item[data-dir="true"]
@@ -1159,9 +1157,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
   height: auto;
   aspect-ratio: 16 / 10;
   border-radius: 0;
-  /* Exact grid match — the Tailwind amber-500 token the listing's folder tiles
-     use, not a hand-picked hex (which read slightly off / less vibrant). */
-  background-color: var(--color-amber-500);
+  background-color: var(--color-accent);
   background-image: linear-gradient(
     140deg,
     rgba(255, 255, 255, 0.3),
@@ -1176,7 +1172,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
   svg {
   width: 40px;
   height: 40px;
-  color: #fff;
+  color: var(--color-on-accent);
 }
 /* Footer: filename in dark text under the media (not the white overlay). */
 :is(#listing, .fb-listing).mosaic.gallery

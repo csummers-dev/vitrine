@@ -47,6 +47,15 @@ function render(): void {
 // Reflect the ⌘/Ctrl held state immediately, even if the pointer is stationary
 // (there's no "drag modifier changed" event, so we listen on the keyboard).
 function onKey(e: KeyboardEvent): void {
+  // Escape cancels the drag. Browsers don't reliably fire `dragend` on an
+  // Esc-cancel (and the source row can unmount mid-drag), which would leave
+  // this badge stranded on screen. This listener is window-capture and stays
+  // live for the whole drag — so it sees the Escape even while the native drag
+  // owns the pointer — so tear the badge down here directly.
+  if (e.key === "Escape") {
+    endDragBadge();
+    return;
+  }
   const copy = e.ctrlKey || e.metaKey;
   if (copy !== lastCopy) {
     lastCopy = copy;

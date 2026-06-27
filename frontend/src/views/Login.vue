@@ -388,74 +388,36 @@ onMounted(async () => {
 .login__mesh {
   position: absolute;
   inset: 0;
+  /* Calm Minimal: a single faint accent wash (two soft blobs) replacing the
+     six-color "all accents" mesh. Uses the default accent vars (violet) since
+     the picker hasn't loaded pre-auth. */
   background:
     radial-gradient(
-      ellipse 62% 58% at 14% 16%,
-      rgba(94, 106, 210, 0.2) 0%,
+      ellipse 64% 60% at 16% 18%,
+      rgb(var(--accent-rgb) / 0.14) 0%,
       transparent 62%
     ),
     radial-gradient(
-      ellipse 62% 58% at 86% 14%,
-      rgba(59, 130, 246, 0.18) 0%,
-      transparent 62%
-    ),
-    radial-gradient(
-      ellipse 62% 58% at 92% 56%,
-      rgba(13, 148, 136, 0.16) 0%,
-      transparent 62%
-    ),
-    radial-gradient(
-      ellipse 62% 58% at 72% 88%,
-      rgba(22, 163, 74, 0.16) 0%,
-      transparent 62%
-    ),
-    radial-gradient(
-      ellipse 62% 58% at 22% 86%,
-      rgba(217, 119, 6, 0.16) 0%,
-      transparent 62%
-    ),
-    radial-gradient(
-      ellipse 62% 58% at 8% 52%,
-      rgba(225, 29, 72, 0.16) 0%,
+      ellipse 60% 56% at 88% 84%,
+      rgb(var(--accent-rgb) / 0.1) 0%,
       transparent 62%
     );
   pointer-events: none;
   z-index: 0;
 }
 
-/* Dark mode: bump alpha so the blobs stay visible against the darker canvas,
-   and use the lighter "grad" tone of each accent (teal/green/amber/rose) so
-   the hues pop instead of muddying. */
+/* Dark mode: stronger alpha so the accent wash stays visible against the dark
+   canvas. */
 html.dark .login__mesh {
   background:
     radial-gradient(
-      ellipse 62% 58% at 14% 16%,
-      rgba(124, 135, 229, 0.34) 0%,
+      ellipse 64% 60% at 16% 18%,
+      rgb(var(--accent-rgb) / 0.24) 0%,
       transparent 64%
     ),
     radial-gradient(
-      ellipse 62% 58% at 86% 14%,
-      rgba(96, 165, 250, 0.28) 0%,
-      transparent 64%
-    ),
-    radial-gradient(
-      ellipse 62% 58% at 92% 56%,
-      rgba(45, 212, 191, 0.24) 0%,
-      transparent 64%
-    ),
-    radial-gradient(
-      ellipse 62% 58% at 72% 88%,
-      rgba(74, 222, 128, 0.22) 0%,
-      transparent 64%
-    ),
-    radial-gradient(
-      ellipse 62% 58% at 22% 86%,
-      rgba(251, 191, 36, 0.22) 0%,
-      transparent 64%
-    ),
-    radial-gradient(
-      ellipse 62% 58% at 8% 52%,
-      rgba(251, 113, 133, 0.24) 0%,
+      ellipse 60% 56% at 88% 84%,
+      rgb(var(--accent-rgb) / 0.16) 0%,
       transparent 64%
     );
 }

@@ -26,7 +26,7 @@
         <Icon
           name="folder"
           :size="15"
-          class="compare-head__icon text-[var(--c-lilac)]"
+          class="compare-head__icon text-[var(--color-ink-2)]"
         />
         <span class="compare-head__name headline-gradient">{{
           folderName
@@ -50,23 +50,14 @@
         <button
           type="button"
           class="compare-btn compare-btn--icon"
-          :title="`Sort: ${sortLabel}`"
-          :aria-label="`Sort by ${sortLabel}`"
+          :title="`Sort: ${sortLabel} · ${sortAsc ? 'Ascending' : 'Descending'}`"
+          :aria-label="`Sort: ${sortLabel}, ${sortAsc ? 'Ascending' : 'Descending'}`"
           @click.stop="openSortMenu"
         >
-          <Icon name="arrow-up-down" :size="14" class="text-[var(--c-green)]" />
-        </button>
-        <button
-          type="button"
-          class="compare-btn"
-          :title="sortAsc ? 'Ascending' : 'Descending'"
-          :aria-label="sortAsc ? 'Ascending' : 'Descending'"
-          @click="sortAsc = !sortAsc"
-        >
           <Icon
-            :name="sortAsc ? 'arrow-up-narrow-wide' : 'arrow-down-wide-narrow'"
+            name="arrow-up-down"
             :size="14"
-            class="text-[var(--c-blue)]"
+            class="text-[var(--color-ink-2)]"
           />
         </button>
         <span class="compare-head__sep" aria-hidden="true"></span>
@@ -78,7 +69,11 @@
           aria-label="New folder"
           @click="startPaneNew('newDir')"
         >
-          <Icon name="folder-plus" :size="14" class="text-[var(--c-lilac)]" />
+          <Icon
+            name="folder-plus"
+            :size="14"
+            class="text-[var(--color-ink-2)]"
+          />
         </button>
         <button
           v-if="canUpload"
@@ -88,7 +83,7 @@
           aria-label="Upload to this pane"
           @click="triggerUpload"
         >
-          <Icon name="upload" :size="14" class="text-[var(--c-blue)]" />
+          <Icon name="upload" :size="14" class="text-[var(--color-ink-2)]" />
         </button>
         <button
           type="button"
@@ -240,7 +235,7 @@
           class="compare-scroller"
           :items="listRows"
           :item-size="null"
-          :min-item-size="44"
+          :min-item-size="40"
           key-field="id"
           :buffer="320"
           v-slot="{ item: row }"
@@ -277,7 +272,7 @@
           aria-label="Home"
           @click="navigateB('/files/', true)"
         >
-          <Icon name="house" :size="14" class="text-[var(--c-blue)]" />
+          <Icon name="house" :size="14" class="text-[var(--color-accent)]" />
         </button>
         <template v-for="(seg, i) in segments" :key="seg.url">
           <Icon name="chevron-right" :size="12" class="compare-crumb-sep" />
@@ -310,7 +305,7 @@
         :aria-label="`Move to ${otherPaneLabel}`"
         @click="void crossPaneTransfer(false)"
       >
-        <Icon name="corner-up-left" :size="14" class="text-indigo-300" />
+        <Icon name="corner-up-left" :size="14" class="text-white/80" />
       </button>
       <button
         type="button"
@@ -319,7 +314,7 @@
         :aria-label="`Copy to ${otherPaneLabel}`"
         @click="void crossPaneTransfer(true)"
       >
-        <Icon name="copy" :size="14" class="text-teal-300" />
+        <Icon name="copy" :size="14" class="text-white/80" />
       </button>
       <button
         type="button"
@@ -328,7 +323,7 @@
         aria-label="Tag"
         @click="tagSelection"
       >
-        <Icon name="tag" :size="14" class="text-sky-300" />
+        <Icon name="tag" :size="14" class="text-white/80" />
       </button>
       <button
         v-if="canDownload"
@@ -338,7 +333,7 @@
         aria-label="Download"
         @click="downloadSelection"
       >
-        <Icon name="download" :size="14" class="text-sky-400" />
+        <Icon name="download" :size="14" class="text-white/80" />
       </button>
       <button
         v-if="canDelete"
@@ -348,7 +343,7 @@
         aria-label="Delete"
         @click="paneActions.remove()"
       >
-        <Icon name="trash" :size="14" class="text-rose-400" />
+        <Icon name="trash" :size="14" class="text-white/80" />
       </button>
       <button
         type="button"
@@ -600,9 +595,9 @@ const sortBy = ref<SortKey>("name");
 const sortAsc = ref<boolean>(true);
 const sortLabel = computed(() => SORT_LABELS[sortBy.value]);
 
-// Sort field DROPDOWN — matches pane A (the sort button pops a menu to pick the
-// field; the separate ↑/↓ button owns direction). Previously this button just
-// cycled fields silently, which didn't match pane A.
+// Consolidated Sort DROPDOWN — matches pane A: one button opens a popover with
+// both the field ("Sort by") and the direction ("Ascending/Descending"),
+// replacing the former separate field + ↑/↓ button pair.
 const sortMenuShow = ref<boolean>(false);
 const sortMenuPos = ref<{ x: number; y: number }>({ x: 0, y: 0 });
 const openSortMenu = (event: MouseEvent) => {
@@ -614,16 +609,35 @@ const openSortMenu = (event: MouseEvent) => {
   sortMenuPos.value = { x: rect.left, y: rect.bottom + 4 };
   sortMenuShow.value = true;
 };
-const sortMenuItems = computed<MenuItem[]>(() =>
-  SORT_FIELDS.map((key) => ({
+const sortMenuItems = computed<MenuItem[]>(() => [
+  { type: "header", label: "Sort by" },
+  ...SORT_FIELDS.map((key) => ({
     label: SORT_LABELS[key],
     icon: sortBy.value === key ? "check" : undefined,
     action: () => {
       sortBy.value = key;
       sortMenuShow.value = false;
     },
-  }))
-);
+  })),
+  { type: "separator" },
+  { type: "header", label: "Direction" },
+  {
+    label: "Ascending",
+    icon: sortAsc.value ? "check" : undefined,
+    action: () => {
+      sortAsc.value = true;
+      sortMenuShow.value = false;
+    },
+  },
+  {
+    label: "Descending",
+    icon: !sortAsc.value ? "check" : undefined,
+    action: () => {
+      sortAsc.value = false;
+      sortMenuShow.value = false;
+    },
+  },
+]);
 
 // Current-folder details for the compact header (Request: header should carry
 // the same kind of info pane A's hero does — name + item count).

@@ -13,7 +13,7 @@
           class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-hover text-ink-2 transition text-left"
           @click="(e) => onNavClick(e, navigate)"
         >
-          <span class="flex items-center text-[var(--c-lilac)]">
+          <span class="flex items-center text-[var(--color-ink-2)]">
             <Icon name="folder" :size="14" />
           </span>
           <span class="flex-1">{{ rootLabel || t("sidebar.myFiles") }}</span>
@@ -109,7 +109,7 @@
         @click="goProfile"
       >
         <div
-          class="w-7 h-7 rounded-full avatar-rainbow flex items-center justify-center text-white text-[11px] font-semibold shadow-sm shrink-0"
+          class="w-7 h-7 rounded-full avatar-accent flex items-center justify-center text-white text-[11px] font-semibold shadow-sm shrink-0"
         >
           {{ userInitials }}
         </div>
@@ -241,14 +241,14 @@ const adminSections = computed<NavSection[]>(() => [
     to: "/settings/users",
     label: t("settings.userManagement"),
     icon: "users",
-    hue: "var(--c-amber)",
+    hue: "var(--c-lilac)",
     matchPrefix: "/settings/users",
   },
   {
     to: "/settings/audit",
     label: t("settings.audit"),
     icon: "scroll-text",
-    hue: "var(--c-rose)",
+    hue: "var(--c-lilac)",
   },
   {
     to: "/settings/webhooks",

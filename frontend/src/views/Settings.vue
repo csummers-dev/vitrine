@@ -7,7 +7,7 @@
          the mobile drawer below takes over. -->
     <div class="w-[220px] shrink-0 max-md:hidden overflow-hidden flex flex-col">
       <div class="settings-rail-head">
-        <Icon name="settings-2" :size="15" class="text-[var(--c-lilac)]" />
+        <Icon name="settings-2" :size="15" class="text-[var(--color-ink-2)]" />
         <span>Settings</span>
       </div>
       <SettingsRail />
