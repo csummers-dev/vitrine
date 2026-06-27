@@ -113,117 +113,122 @@ const BY_EXT: Record<string, string> = {
 };
 
 // Tailwind class pairs (bg + text) — written as literals so the v4 scanner picks them up.
-const FOLDER_COLOR = "bg-amber-500 text-white";
-const DEFAULT_COLOR = "bg-zinc-500 text-white";
+// Calm Minimal: folders are navigation targets, so the one squircle that keeps
+// color is the accent (was a loud amber that dominated every row). Files stay
+// neutral grey — the folder/file split now reads accent-vs-ink and the tile
+// recolors with the user's accent pick. `--color-on-accent` keeps the glyph
+// legible on the light accents (cyan/amber).
+const FOLDER_COLOR = "bg-[var(--color-accent)] text-[var(--color-on-accent)]";
+const DEFAULT_COLOR = "bg-zinc-500/15 text-zinc-700 dark:text-zinc-300";
 
 const COLOR_BY_TYPE: Record<string, string> = {
-  audio: "bg-yellow-600 text-white",
-  blob: "bg-zinc-500 text-white",
-  image: "bg-pink-600 text-white",
-  pdf: "bg-rose-600 text-white",
-  text: "bg-zinc-500 text-white",
-  video: "bg-indigo-500 text-white",
-  invalid_link: "bg-red-500 text-white",
+  audio: "bg-yellow-500/15 text-yellow-700 dark:text-yellow-300",
+  blob: "bg-zinc-500/15 text-zinc-700 dark:text-zinc-300",
+  image: "bg-pink-500/15 text-pink-700 dark:text-pink-300",
+  pdf: "bg-rose-500/15 text-rose-700 dark:text-rose-300",
+  text: "bg-zinc-500/15 text-zinc-700 dark:text-zinc-300",
+  video: "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300",
+  invalid_link: "bg-red-500/15 text-red-700 dark:text-red-300",
 };
 
 const COLOR_BY_EXT: Record<string, string> = {
   // Image
-  ".ai": "bg-pink-600 text-white",
-  ".odg": "bg-pink-600 text-white",
-  ".xcf": "bg-pink-600 text-white",
+  ".ai": "bg-pink-500/15 text-pink-700 dark:text-pink-300",
+  ".odg": "bg-pink-500/15 text-pink-700 dark:text-pink-300",
+  ".xcf": "bg-pink-500/15 text-pink-700 dark:text-pink-300",
 
   // Presentation
-  ".odp": "bg-orange-600 text-white",
-  ".ppt": "bg-orange-600 text-white",
-  ".pptx": "bg-orange-600 text-white",
+  ".odp": "bg-orange-500/15 text-orange-700 dark:text-orange-300",
+  ".ppt": "bg-orange-500/15 text-orange-700 dark:text-orange-300",
+  ".pptx": "bg-orange-500/15 text-orange-700 dark:text-orange-300",
 
   // Spreadsheet / Database
-  ".csv": "bg-green-600 text-white",
-  ".db": "bg-green-600 text-white",
-  ".odb": "bg-green-600 text-white",
-  ".ods": "bg-green-600 text-white",
-  ".xls": "bg-green-600 text-white",
-  ".xlsx": "bg-green-600 text-white",
+  ".csv": "bg-green-500/15 text-green-700 dark:text-green-300",
+  ".db": "bg-green-500/15 text-green-700 dark:text-green-300",
+  ".odb": "bg-green-500/15 text-green-700 dark:text-green-300",
+  ".ods": "bg-green-500/15 text-green-700 dark:text-green-300",
+  ".xls": "bg-green-500/15 text-green-700 dark:text-green-300",
+  ".xlsx": "bg-green-500/15 text-green-700 dark:text-green-300",
 
   // Document
-  ".doc": "bg-rose-600 text-white",
-  ".docx": "bg-rose-600 text-white",
-  ".log": "bg-zinc-500 text-white",
-  ".odt": "bg-rose-600 text-white",
-  ".rtf": "bg-rose-600 text-white",
+  ".doc": "bg-rose-500/15 text-rose-700 dark:text-rose-300",
+  ".docx": "bg-rose-500/15 text-rose-700 dark:text-rose-300",
+  ".log": "bg-zinc-500/15 text-zinc-700 dark:text-zinc-300",
+  ".odt": "bg-rose-500/15 text-rose-700 dark:text-rose-300",
+  ".rtf": "bg-rose-500/15 text-rose-700 dark:text-rose-300",
 
   // Code (teal)
-  ".c": "bg-teal-600 text-white",
-  ".cpp": "bg-teal-600 text-white",
-  ".cs": "bg-teal-600 text-white",
-  ".css": "bg-teal-600 text-white",
-  ".go": "bg-teal-600 text-white",
-  ".h": "bg-teal-600 text-white",
-  ".html": "bg-teal-600 text-white",
-  ".java": "bg-teal-600 text-white",
-  ".js": "bg-teal-600 text-white",
-  ".json": "bg-teal-600 text-white",
-  ".kt": "bg-teal-600 text-white",
-  ".php": "bg-teal-600 text-white",
-  ".py": "bg-teal-600 text-white",
-  ".rb": "bg-teal-600 text-white",
-  ".rs": "bg-teal-600 text-white",
-  ".ts": "bg-teal-600 text-white",
-  ".tsx": "bg-teal-600 text-white",
-  ".vue": "bg-teal-600 text-white",
-  ".xml": "bg-teal-600 text-white",
-  ".yml": "bg-teal-600 text-white",
-  ".yaml": "bg-teal-600 text-white",
+  ".c": "bg-teal-500/15 text-teal-700 dark:text-teal-300",
+  ".cpp": "bg-teal-500/15 text-teal-700 dark:text-teal-300",
+  ".cs": "bg-teal-500/15 text-teal-700 dark:text-teal-300",
+  ".css": "bg-teal-500/15 text-teal-700 dark:text-teal-300",
+  ".go": "bg-teal-500/15 text-teal-700 dark:text-teal-300",
+  ".h": "bg-teal-500/15 text-teal-700 dark:text-teal-300",
+  ".html": "bg-teal-500/15 text-teal-700 dark:text-teal-300",
+  ".java": "bg-teal-500/15 text-teal-700 dark:text-teal-300",
+  ".js": "bg-teal-500/15 text-teal-700 dark:text-teal-300",
+  ".json": "bg-teal-500/15 text-teal-700 dark:text-teal-300",
+  ".kt": "bg-teal-500/15 text-teal-700 dark:text-teal-300",
+  ".php": "bg-teal-500/15 text-teal-700 dark:text-teal-300",
+  ".py": "bg-teal-500/15 text-teal-700 dark:text-teal-300",
+  ".rb": "bg-teal-500/15 text-teal-700 dark:text-teal-300",
+  ".rs": "bg-teal-500/15 text-teal-700 dark:text-teal-300",
+  ".ts": "bg-teal-500/15 text-teal-700 dark:text-teal-300",
+  ".tsx": "bg-teal-500/15 text-teal-700 dark:text-teal-300",
+  ".vue": "bg-teal-500/15 text-teal-700 dark:text-teal-300",
+  ".xml": "bg-teal-500/15 text-teal-700 dark:text-teal-300",
+  ".yml": "bg-teal-500/15 text-teal-700 dark:text-teal-300",
+  ".yaml": "bg-teal-500/15 text-teal-700 dark:text-teal-300",
 
   // Executable (slate)
-  ".apk": "bg-slate-600 text-white",
-  ".bat": "bg-slate-600 text-white",
-  ".exe": "bg-slate-600 text-white",
-  ".jar": "bg-slate-600 text-white",
-  ".ps1": "bg-slate-600 text-white",
-  ".sh": "bg-slate-600 text-white",
+  ".apk": "bg-slate-500/15 text-slate-700 dark:text-slate-300",
+  ".bat": "bg-slate-500/15 text-slate-700 dark:text-slate-300",
+  ".exe": "bg-slate-500/15 text-slate-700 dark:text-slate-300",
+  ".jar": "bg-slate-500/15 text-slate-700 dark:text-slate-300",
+  ".ps1": "bg-slate-500/15 text-slate-700 dark:text-slate-300",
+  ".sh": "bg-slate-500/15 text-slate-700 dark:text-slate-300",
 
   // Installer (amber)
-  ".deb": "bg-amber-600 text-white",
-  ".msi": "bg-amber-600 text-white",
-  ".pkg": "bg-amber-600 text-white",
-  ".rpm": "bg-amber-600 text-white",
+  ".deb": "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  ".msi": "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  ".pkg": "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  ".rpm": "bg-amber-500/15 text-amber-700 dark:text-amber-300",
 
   // Compressed (orange)
-  ".7z": "bg-orange-600 text-white",
-  ".bz2": "bg-orange-600 text-white",
-  ".cab": "bg-orange-600 text-white",
-  ".gz": "bg-orange-600 text-white",
-  ".rar": "bg-orange-600 text-white",
-  ".tar": "bg-orange-600 text-white",
-  ".tgz": "bg-orange-600 text-white",
-  ".xz": "bg-orange-600 text-white",
-  ".zip": "bg-orange-600 text-white",
-  ".zst": "bg-orange-600 text-white",
+  ".7z": "bg-orange-500/15 text-orange-700 dark:text-orange-300",
+  ".bz2": "bg-orange-500/15 text-orange-700 dark:text-orange-300",
+  ".cab": "bg-orange-500/15 text-orange-700 dark:text-orange-300",
+  ".gz": "bg-orange-500/15 text-orange-700 dark:text-orange-300",
+  ".rar": "bg-orange-500/15 text-orange-700 dark:text-orange-300",
+  ".tar": "bg-orange-500/15 text-orange-700 dark:text-orange-300",
+  ".tgz": "bg-orange-500/15 text-orange-700 dark:text-orange-300",
+  ".xz": "bg-orange-500/15 text-orange-700 dark:text-orange-300",
+  ".zip": "bg-orange-500/15 text-orange-700 dark:text-orange-300",
+  ".zst": "bg-orange-500/15 text-orange-700 dark:text-orange-300",
 
   // Disk image (violet)
-  ".ccd": "bg-violet-600 text-white",
-  ".dmg": "bg-violet-600 text-white",
-  ".iso": "bg-violet-600 text-white",
-  ".mdf": "bg-violet-600 text-white",
-  ".vdi": "bg-violet-600 text-white",
-  ".vhd": "bg-violet-600 text-white",
-  ".vmdk": "bg-violet-600 text-white",
-  ".wim": "bg-violet-600 text-white",
+  ".ccd": "bg-violet-500/15 text-violet-700 dark:text-violet-300",
+  ".dmg": "bg-violet-500/15 text-violet-700 dark:text-violet-300",
+  ".iso": "bg-violet-500/15 text-violet-700 dark:text-violet-300",
+  ".mdf": "bg-violet-500/15 text-violet-700 dark:text-violet-300",
+  ".vdi": "bg-violet-500/15 text-violet-700 dark:text-violet-300",
+  ".vhd": "bg-violet-500/15 text-violet-700 dark:text-violet-300",
+  ".vmdk": "bg-violet-500/15 text-violet-700 dark:text-violet-300",
+  ".wim": "bg-violet-500/15 text-violet-700 dark:text-violet-300",
 
   // Font (purple)
-  ".otf": "bg-purple-600 text-white",
-  ".ttf": "bg-purple-600 text-white",
-  ".woff": "bg-purple-600 text-white",
-  ".woff2": "bg-purple-600 text-white",
+  ".otf": "bg-purple-500/15 text-purple-700 dark:text-purple-300",
+  ".ttf": "bg-purple-500/15 text-purple-700 dark:text-purple-300",
+  ".woff": "bg-purple-500/15 text-purple-700 dark:text-purple-300",
+  ".woff2": "bg-purple-500/15 text-purple-700 dark:text-purple-300",
 
   // Markdown
-  ".md": "bg-slate-600 text-white",
-  ".markdown": "bg-slate-600 text-white",
+  ".md": "bg-slate-500/15 text-slate-700 dark:text-slate-300",
+  ".markdown": "bg-slate-500/15 text-slate-700 dark:text-slate-300",
 
   // Comic books (violet, distinct from the orange archives)
-  ".cbz": "bg-violet-600 text-white",
-  ".cbr": "bg-violet-600 text-white",
+  ".cbz": "bg-violet-500/15 text-violet-700 dark:text-violet-300",
+  ".cbr": "bg-violet-500/15 text-violet-700 dark:text-violet-300",
 };
 
 // Map common media extensions to the server's `type` buckets. The backend tags

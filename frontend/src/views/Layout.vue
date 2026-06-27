@@ -17,9 +17,11 @@
       <div :style="{ width: uploadStore.displayedPercent + '%' }"></div>
     </div>
 
-    <!-- Inline sidebar — visible at sm+ (640px). Hidden below sm; the
-         drawer instance below takes over for mobile. -->
-    <sidebar class="max-sm:hidden" />
+    <!-- Inline sidebar — visible at md+ (768px), where the full 256px rail
+         fits. Below md it's hidden and the hamburger-triggered drawer takes
+         over: there's no cramped icon-rail middle state — it's full sidebar OR
+         on-demand drawer, nothing in between. -->
+    <sidebar class="max-md:hidden" />
 
     <!-- Mobile drawer — purpose-built SidebarDrawer (not the inline
          Sidebar). The inline Sidebar's responsive max-md icon-rail

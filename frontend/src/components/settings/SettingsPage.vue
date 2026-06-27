@@ -54,7 +54,7 @@ defineProps<{
    its left-rail nav icon. Hue comes from the `accent` prop (--page-accent),
    defaulting to the app accent. */
 .settings-page__icon {
-  --page-accent: var(--c-lilac, #5e6ad2);
+  --page-accent: var(--color-accent);
   width: 40px;
   height: 40px;
   border-radius: 11px;

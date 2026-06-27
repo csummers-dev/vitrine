@@ -7,8 +7,9 @@
     <div class="h-11 px-4 flex items-center justify-between shrink-0">
       <div class="text-[12px] font-semibold text-ink-2">Details</div>
       <button
+        v-if="isMobile || !collapsed"
         @click="isMobile ? close() : toggleCollapse()"
-        class="w-6 h-6 rounded hover:bg-hover flex items-center justify-center text-[var(--c-lilac)] transition"
+        class="w-6 h-6 rounded hover:bg-hover flex items-center justify-center text-[var(--color-ink-2)] transition"
         :title="isMobile ? 'Close' : 'Collapse panel'"
         :aria-label="isMobile ? 'Close info pane' : 'Collapse info pane'"
       >
@@ -385,7 +386,7 @@
        so the pane can be reclaimed without losing the entry point. -->
   <button
     v-else-if="showRail"
-    class="info-pane-rail shrink-0 border-l border-line bg-canvas flex items-start justify-center pt-3 text-[var(--c-lilac)] hover:bg-hover transition"
+    class="info-pane-rail shrink-0 border-l border-line bg-canvas flex items-start justify-center pt-3 text-[var(--color-ink-2)] hover:bg-hover transition"
     title="Show details"
     aria-label="Show details panel"
     @click="toggleCollapse"
@@ -524,26 +525,35 @@ const updateIsMobile = () => {
     window.matchMedia("(max-width: 1023px)").matches;
 };
 
-// Desktop collapse-to-rail, persisted across sessions.
+// Desktop collapse-to-rail, persisted across sessions. Calm Minimal: defaults
+// to collapsed so an empty 320px column isn't parked when nothing is selected —
+// the pane opens automatically on selection (see paneVisible), and the user can
+// still pin it open from the rail.
 const collapsed = ref<boolean>(
-  prefs.get<boolean>("detailsPaneCollapsed", false)
+  prefs.get<boolean>("detailsPaneCollapsed", true)
 );
 const toggleCollapse = () => {
-  collapsed.value = !collapsed.value;
+  // When the pane is open only because something is selected, the chevron
+  // collapses it for next time (it stays visible while the selection lasts);
+  // otherwise it toggles the pin.
+  collapsed.value = selectedCount.value > 0 ? true : !collapsed.value;
   void prefs.set("detailsPaneCollapsed", collapsed.value);
 };
 
-// Full pane: desktop always (unless collapsed), or mobile when something
-// is selected (overlay). Collapsed rail: desktop only.
+// Full pane (desktop): an item is selected (auto-open) OR the user pinned it
+// open (!collapsed). Mobile: opt-in overlay. Collapsed rail: desktop, nothing
+// selected, not pinned.
 const paneVisible = computed(
   () =>
-    (!isMobile.value && !collapsed.value) ||
+    (!isMobile.value && (selectedCount.value > 0 || !collapsed.value)) ||
     // Mobile: opt-in only. The sheet used to auto-open on any selection,
     // which covered the row and hijacked the user's next tap; now it opens
     // exclusively from the selection toolbar's Details button.
     (isMobile.value && layoutStore.mobileDetailsOpen)
 );
-const showRail = computed(() => !isMobile.value && collapsed.value);
+const showRail = computed(
+  () => !isMobile.value && collapsed.value && selectedCount.value === 0
+);
 
 // Folder summary (nothing selected).
 const folderName = computed(() => fileStore.req?.name || "Home");
@@ -965,17 +975,17 @@ onUnmounted(() => {
   justify-content: center;
   margin-bottom: 12px;
 }
-/* Folder summary icon mirrors the GRID folder tile exactly: the vivid amber-500
-   base (same Tailwind token the listing uses) + the white diagonal sheen + a
-   white filled folder glyph. */
+/* Folder summary icon mirrors the GRID folder tile exactly: the accent fill +
+   a soft diagonal sheen + the theme-correct on-accent folder glyph (was a
+   hardcoded amber-500 base + white glyph — Calm Minimal). */
 .ip-summary__icon--folder {
-  background-color: var(--color-amber-500);
+  background-color: var(--color-accent);
   background-image: linear-gradient(
     140deg,
-    rgba(255, 255, 255, 0.3),
+    rgba(255, 255, 255, 0.22),
     rgba(255, 255, 255, 0) 60%
   );
-  color: #fff;
+  color: var(--color-on-accent);
 }
 .ip-summary__icon--accent {
   background: var(--color-accent-soft, rgba(94, 106, 210, 0.12));
@@ -1073,10 +1083,19 @@ onUnmounted(() => {
 }
 
 .preview-mesh {
+  /* Calm Minimal: a single faint accent wash over the surface (was a
+     pink/amber/indigo three-color mesh). Follows the accent picker. */
   background:
-    radial-gradient(at 20% 20%, rgba(244, 114, 182, 0.18) 0%, transparent 50%),
-    radial-gradient(at 80% 30%, rgba(251, 191, 36, 0.15) 0%, transparent 50%),
-    radial-gradient(at 60% 80%, rgba(94, 106, 210, 0.18) 0%, transparent 50%),
+    radial-gradient(
+      at 25% 18%,
+      rgb(var(--accent-rgb) / 0.1) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      at 80% 78%,
+      rgb(var(--accent-rgb) / 0.06) 0%,
+      transparent 55%
+    ),
     var(--color-surface, #ffffff);
 }
 
@@ -1084,9 +1103,16 @@ onUnmounted(() => {
    surface, and let the surface token drive the base color. */
 html.dark .preview-mesh {
   background:
-    radial-gradient(at 20% 20%, rgba(244, 114, 182, 0.22) 0%, transparent 55%),
-    radial-gradient(at 80% 30%, rgba(251, 191, 36, 0.18) 0%, transparent 55%),
-    radial-gradient(at 60% 80%, rgba(94, 106, 210, 0.24) 0%, transparent 55%),
+    radial-gradient(
+      at 25% 18%,
+      rgb(var(--accent-rgb) / 0.16) 0%,
+      transparent 58%
+    ),
+    radial-gradient(
+      at 80% 78%,
+      rgb(var(--accent-rgb) / 0.1) 0%,
+      transparent 58%
+    ),
     var(--color-surface);
 }
 
@@ -1140,16 +1166,17 @@ html.dark .preview-mesh {
   --action-hue: var(--c-rose);
 }
 
-/* Always-on colored icon (Lucide svg draws with currentColor). */
+/* Calm Minimal: resting action icons are muted ink (chrome), not per-action
+   hues. Lucide svg draws with currentColor. */
 .info-action :deep(svg) {
-  color: var(--action-hue);
+  color: var(--color-ink-2, #52525b);
 }
 
-/* Hover tints the tile with the action's own hue. color-mix degrades
-   gracefully (the icon color still applies) on engines that lack it. */
+/* Hover tints the tile with the single accent (was the per-action hue).
+   color-mix degrades gracefully on engines that lack it. */
 .info-action:hover {
-  background: color-mix(in srgb, var(--action-hue) 12%, var(--color-surface));
-  border-color: color-mix(in srgb, var(--action-hue) 40%, var(--color-line));
+  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-line));
   color: var(--color-ink-1, #18181b);
 }
 /* Delete: turn the label red on hover too, for an unmistakable danger cue. */

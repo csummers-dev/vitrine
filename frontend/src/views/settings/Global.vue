@@ -2,7 +2,7 @@
   <SettingsPage
     :title="t('settings.globalSettings')"
     icon="settings-2"
-    accent="var(--c-lilac)"
+    accent="var(--color-accent)"
     description="System-wide configuration. Applies to every account on this filebrowser instance."
   >
     <template v-if="settings">

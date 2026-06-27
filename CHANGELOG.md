@@ -2,6 +2,53 @@
 
 All notable changes to **filebrowser pretty**.
 
+## v2.6.0 — Calm Minimal redesign
+
+A top-to-bottom visual redesign — a calmer, more focused look — plus a round of
+layout and drag-and-drop refinements. Your files, settings, and shares all work
+exactly as before; everything just looks (and reads) cleaner.
+
+**A calmer look — "Calm Minimal"**
+
+- **One accent, everything else neutral.** The old multi-color chrome is gone. You
+  pick a single accent color (six hues — violet by default) in Settings → Profile,
+  and it's used only where it carries meaning: the active folder, primary buttons,
+  the breadcrumb home, and the current selection. Every other icon is a quiet,
+  uniform ink color.
+- **Refined light & dark themes** on a deeper, flatter canvas, with the ambient
+  background reduced to a single faint accent wash.
+- **Muted file-type icons** — file types stay recognizable at a glance, but the
+  colors are desaturated tint-chips instead of loud fills; folders are the one
+  solid-accent tile.
+- **Accessible contrast.** Text and chrome colors were tuned to meet WCAG AA.
+
+**Header & navigation**
+
+- **The breadcrumb leads the header.** The path now sits at the top as the primary
+  location nav (the current folder is the last crumb), replacing the large folder
+  title + "FOLDER" eyebrow and the separate bottom path bar. The header is
+  noticeably shorter, with a compact item count beside the path.
+
+**Listing & controls**
+
+- **One Sort control.** The two sort buttons (field + direction) merged into a
+  single Sort button whose popover holds the field, the Ascending/Descending
+  direction, and the secondary "then by" sort. (List-view column headers still flip
+  direction with a click.)
+- **The details pane starts collapsed** and opens automatically when you select a
+  file — so the listing gets the full width until you actually need details.
+- **Uniform gallery cards.** Folder and file tiles in gallery view are now the same
+  size, so rows line up cleanly instead of folders rendering smaller than files.
+
+**Drag & drop**
+
+- **Bigger breadcrumb drop targets.** While you drag a file, each breadcrumb folder
+  grows into a larger, clearly-highlighted drop zone (filling the row height and
+  bridging the gaps) so it's obvious where it will land.
+- **Escape reliably cancels a drag.** Pressing Esc mid-drag now always clears the
+  floating Copy/Move badge and the drag state — previously the badge could stay
+  stranded on screen.
+
 ## v2.5.2 — Security hardening & code-quality pass
 
 The result of a top-to-bottom security and code-quality audit of the whole app,

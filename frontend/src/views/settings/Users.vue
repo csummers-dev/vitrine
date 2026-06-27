@@ -2,7 +2,7 @@
   <SettingsPage
     title="User Management"
     icon="users"
-    accent="var(--c-amber)"
+    accent="var(--color-accent)"
     description="Add and manage accounts that can sign in to this filebrowser instance."
   >
     <SettingsSection
@@ -255,19 +255,10 @@ const summaryPerms = (user: IUser) => {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
-/* Rainbow conic — matches the colorful user avatar in the sidebar/drawer. */
+/* Calm Minimal: avatars follow the single accent (was a six-hue conic). */
 .users-card__avatar--admin,
 .users-card__avatar--user {
-  background: conic-gradient(
-    from 210deg,
-    var(--c-lilac),
-    var(--c-blue),
-    var(--c-teal),
-    var(--c-green),
-    var(--c-amber),
-    var(--c-rose),
-    var(--c-lilac)
-  );
+  background: var(--accent-gradient);
 }
 
 /* Identity column */

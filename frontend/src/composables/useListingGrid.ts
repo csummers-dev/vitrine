@@ -62,11 +62,12 @@ export interface ListingGridOptions {
 const GUTTER = 12; // matches CSS `gap: 12px`
 const MIN_GRID = 160; // matches `minmax(160px, 1fr)`
 const MIN_GALLERY = 220; // matches `minmax(220px, 1fr)` (file tiles)
-// Folders get NARROWER gallery tracks → smaller, more-compact tiles. They
-// sit in their own section above the divider and carry no media thumbnail,
-// so they read as quiet "jump here" chips rather than hero tiles. Keep this
-// in sync with `.listing-section--dirs` minmax() in listing.css.
-const MIN_GALLERY_DIR = 150; // matches `minmax(150px, 1fr)` (folder tiles)
+// Calm Minimal: folder tiles now share the SAME track width as file tiles so
+// the gallery reads as one uniform 4:3 grid. Folders used to get narrower
+// 150px tracks (smaller tiles above the divider), which looked ragged against
+// the larger file rows below. Keep in sync with `.listing-section--dirs` in
+// listing.css.
+const MIN_GALLERY_DIR = MIN_GALLERY; // 220 — folder tiles match file tiles
 // Extra rows rendered above + below the viewport so a flick doesn't reveal
 // blank space before the scroll handler catches up.
 const BUFFER_ROWS = 3;
@@ -125,11 +126,10 @@ export function useListingGrid(opts: ListingGridOptions) {
       const f = galleryMetrics(width, MIN_GALLERY);
       filesCols.value = f.c;
       filesTileH.value = f.th;
-      // Folders use narrower tracks AND now render as grid-style cards
-      // (amber media block + name footer), so they're no longer a fixed 4:3.
-      // Keep the column count from the track width, but measure the real tile
-      // height from the DOM (falling back to the 4:3 metric before a tile has
-      // rendered) so the windowing math matches the cards' actual height.
+      // Folders now share the file tracks (one uniform grid). Keep the column
+      // count from the track width, and measure the real tile height from the
+      // DOM (falling back to the 4:3 metric before a tile has rendered) so the
+      // windowing math matches the cards' actual height.
       const d = galleryMetrics(width, MIN_GALLERY_DIR);
       dirsCols.value = d.c;
       const dirsEl = opts.dirsSectionEl();

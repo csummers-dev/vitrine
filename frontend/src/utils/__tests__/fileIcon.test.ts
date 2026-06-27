@@ -70,7 +70,9 @@ describe("fileIcon", () => {
 
 describe("fileIconColor", () => {
   it("returns the folder color for directories", () => {
-    expect(fileIconColor({ isDir: true })).toBe("bg-amber-500 text-white");
+    expect(fileIconColor({ isDir: true })).toBe(
+      "bg-[var(--color-accent)] text-[var(--color-on-accent)]"
+    );
   });
 
   it("colors archives orange (locks the archive palette)", () => {
@@ -83,31 +85,39 @@ describe("fileIconColor", () => {
       "a.tgz",
       "backup.tar.gz",
     ]) {
-      expect(fileIconColor({ name }), name).toBe("bg-orange-600 text-white");
+      expect(fileIconColor({ name }), name).toBe(
+        "bg-orange-500/15 text-orange-700 dark:text-orange-300"
+      );
     }
   });
 
   it("uses the type color when the extension is unknown", () => {
     expect(fileIconColor({ name: "x.unknownext", type: "image" })).toBe(
-      "bg-pink-600 text-white"
+      "bg-pink-500/15 text-pink-700 dark:text-pink-300"
     );
   });
 
   it("colors media files by their inferred type when no type is given", () => {
-    expect(fileIconColor({ name: "IHYPH.jpg" })).toBe("bg-pink-600 text-white");
+    expect(fileIconColor({ name: "IHYPH.jpg" })).toBe(
+      "bg-pink-500/15 text-pink-700 dark:text-pink-300"
+    );
     expect(fileIconColor({ name: "07 TV OFF.m4a" })).toBe(
-      "bg-yellow-600 text-white"
+      "bg-yellow-500/15 text-yellow-700 dark:text-yellow-300"
     );
     expect(fileIconColor({ name: "clip.mp4" })).toBe(
-      "bg-indigo-500 text-white"
+      "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300"
     );
-    expect(fileIconColor({ name: "doc.pdf" })).toBe("bg-rose-600 text-white");
+    expect(fileIconColor({ name: "doc.pdf" })).toBe(
+      "bg-rose-500/15 text-rose-700 dark:text-rose-300"
+    );
   });
 
   it("falls back to the default color when nothing matches", () => {
-    expect(fileIconColor({})).toBe("bg-zinc-500 text-white");
+    expect(fileIconColor({})).toBe(
+      "bg-zinc-500/15 text-zinc-700 dark:text-zinc-300"
+    );
     expect(fileIconColor({ name: "mystery.qqq" })).toBe(
-      "bg-zinc-500 text-white"
+      "bg-zinc-500/15 text-zinc-700 dark:text-zinc-300"
     );
   });
 });

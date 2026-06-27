@@ -24,7 +24,7 @@
           <!-- Mobile: open the sidebar drawer (no top bar to host it). -->
           <button
             type="button"
-            class="fb-hero__menu hidden max-sm:inline-flex"
+            class="fb-hero__menu hidden max-md:inline-flex"
             aria-label="Open navigation menu"
             title="Open menu"
             @click="mobileNav.open"
@@ -32,89 +32,61 @@
             <Icon name="menu" :size="18" />
           </button>
 
+          <!-- Hero lead (Calm Minimal #1 + #3): the breadcrumb is now the
+               primary location nav — its last crumb is the current folder — with
+               the favorite star and a compact item count beside it. The former
+               FOLDER eyebrow + jumbo title + meta line were condensed away (the
+               breadcrumb shows where you are) and the bottom breadcrumb bar is
+               dropped in single-pane. Drag-to-parent + spring-up live on the
+               breadcrumb crumbs themselves now, so the section-title drop
+               handlers aren't needed here. Renaming the current folder swaps the
+               crumb row for an inline input. -->
           <div
             v-if="!layoutStore.loading && fileStore.req && fileStore.req.isDir"
-            class="section-title fb-hero__title"
-            :class="{ 'section-title--drop': sectionDropActive }"
-            @dragenter="onSectionDragEnter"
-            @dragover="onSectionDragOver"
-            @dragleave="onSectionDragLeave"
-            @drop="onSectionDrop"
+            class="fb-hero__lead min-w-0"
           >
-            <div class="min-w-0">
-              <div
-                class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] mb-1 flex items-center gap-1.5"
+            <input
+              v-if="isRenamingCurrentFolder"
+              ref="folderRenameInputEl"
+              v-model.trim="folderRenameValue"
+              class="folder-rename-input text-[15px] font-semibold text-ink-1 leading-tight truncate"
+              type="text"
+              autocomplete="off"
+              spellcheck="false"
+              @keydown.enter.prevent="submitFolderRename"
+              @keydown.esc.prevent="cancelFolderRename"
+              @blur="onFolderRenameBlur"
+            />
+            <div v-else class="fb-hero__crumbs">
+              <breadcrumbs base="/files" />
+              <button
+                v-if="fileStore.req?.isDir && currentFolderPath"
+                type="button"
+                class="current-fav-btn"
+                :class="{ 'current-fav-btn--active': currentFolderFavorited }"
+                :title="
+                  currentFolderFavorited
+                    ? 'Remove from Favorites'
+                    : 'Add to Favorites'
+                "
+                :aria-label="
+                  currentFolderFavorited
+                    ? 'Remove from Favorites'
+                    : 'Add to Favorites'
+                "
+                :aria-pressed="currentFolderFavorited"
+                @click.stop="onCurrentFolderFavToggle"
               >
-                <span>Folder</span>
-                <button
-                  v-if="parentFolderUrl"
-                  type="button"
-                  class="parent-up-btn"
-                  :title="`Go to parent folder${parentFolderName ? ` (${parentFolderName})` : ''}`"
-                  :aria-label="`Go to parent folder${parentFolderName ? ` (${parentFolderName})` : ''}`"
-                  @click.stop="goToParentFolder"
-                >
-                  <Icon name="arrow-up" :size="11" :stroke-width="2.2" />
-                </button>
-                <button
-                  v-if="fileStore.req?.isDir && currentFolderPath"
-                  type="button"
-                  class="current-fav-btn"
-                  :class="{ 'current-fav-btn--active': currentFolderFavorited }"
-                  :title="
-                    currentFolderFavorited
-                      ? 'Remove from Favorites'
-                      : 'Add to Favorites'
-                  "
-                  :aria-label="
-                    currentFolderFavorited
-                      ? 'Remove from Favorites'
-                      : 'Add to Favorites'
-                  "
-                  :aria-pressed="currentFolderFavorited"
-                  @click.stop="onCurrentFolderFavToggle"
-                >
-                  <Icon
-                    name="star"
-                    :size="11"
-                    :stroke-width="currentFolderFavorited ? 0 : 2"
-                    :fill="currentFolderFavorited ? 'currentColor' : 'none'"
-                  />
-                </button>
-              </div>
-              <input
-                v-if="isRenamingCurrentFolder"
-                ref="folderRenameInputEl"
-                v-model.trim="folderRenameValue"
-                class="folder-rename-input text-[22px] font-semibold text-ink-1 leading-tight truncate max-md:text-[18px]"
-                type="text"
-                autocomplete="off"
-                spellcheck="false"
-                @keydown.enter.prevent="submitFolderRename"
-                @keydown.esc.prevent="cancelFolderRename"
-                @blur="onFolderRenameBlur"
-              />
-              <h1
-                v-else
-                class="text-[22px] font-semibold leading-tight truncate max-md:text-[18px]"
-                :class="{ 'headline-gradient': !currentFolderAlias }"
-              >
-                <span :class="{ 'headline-gradient': currentFolderAlias }">{{
-                  folderTitle
-                }}</span
-                ><span
-                  v-if="currentFolderAlias"
-                  class="folder-alias"
-                  :title="`Favorite display name: ${currentFolderAlias}`"
-                  >({{ currentFolderAlias }})</span
-                >
-              </h1>
-              <div
-                class="mt-1 text-[13px] text-ink-3 tabular max-md:text-[12px] truncate"
-                :title="folderMeta"
-              >
-                {{ folderMeta }}
-              </div>
+                <Icon
+                  name="star"
+                  :size="13"
+                  :stroke-width="currentFolderFavorited ? 0 : 2"
+                  :fill="currentFolderFavorited ? 'currentColor' : 'none'"
+                />
+              </button>
+              <span class="fb-hero__count" :title="folderMeta">{{
+                folderCountLabel
+              }}</span>
             </div>
           </div>
           <div v-else class="fb-hero__title"></div>
@@ -137,7 +109,7 @@
                   :class="[
                     'h-6 w-7 rounded flex items-center justify-center transition',
                     viewMode === 'list'
-                      ? 'bg-elevated text-[var(--c-blue)] shadow-sm'
+                      ? 'bg-elevated text-[var(--color-ink-2)] shadow-sm'
                       : 'text-ink-3 hover:text-ink-1',
                   ]"
                   title="List"
@@ -150,7 +122,7 @@
                   :class="[
                     'h-6 w-7 rounded flex items-center justify-center transition',
                     viewMode === 'mosaic'
-                      ? 'bg-elevated text-[var(--c-blue)] shadow-sm'
+                      ? 'bg-elevated text-[var(--color-ink-2)] shadow-sm'
                       : 'text-ink-3 hover:text-ink-1',
                   ]"
                   title="Grid"
@@ -163,7 +135,7 @@
                   :class="[
                     'h-6 w-7 rounded flex items-center justify-center transition',
                     viewMode === 'mosaic gallery'
-                      ? 'bg-elevated text-[var(--c-blue)] shadow-sm'
+                      ? 'bg-elevated text-[var(--color-ink-2)] shadow-sm'
                       : 'text-ink-3 hover:text-ink-1',
                   ]"
                   title="Gallery"
@@ -180,7 +152,7 @@
                 :class="[
                   'h-7 w-7 rounded-md border border-line inline-flex items-center justify-center transition',
                   splitActive
-                    ? 'bg-elevated text-[var(--c-lilac)] shadow-sm'
+                    ? 'bg-elevated text-[var(--color-ink-2)] shadow-sm'
                     : 'bg-surface text-ink-2 hover:bg-elevated',
                 ]"
                 :title="splitActive ? 'Close split view' : 'Split view'"
@@ -190,34 +162,24 @@
                 <Icon
                   name="columns-2"
                   :size="14"
-                  class="text-[var(--c-lilac)]"
+                  class="text-[var(--color-ink-2)]"
                 />
               </button>
-              <!-- Icon-only at all widths (label dropped to save header room; the
-                   current sort field stays available via the title tooltip + the
-                   menu itself). -->
+              <!-- One consolidated Sort control: opens a popover with the sort
+                   field, direction (Ascending/Descending), and the secondary
+                   "Then by" criterion — replacing the former two-button field +
+                   direction pair. Icon-only at all widths; the active field +
+                   direction stay legible via the title tooltip. -->
               <button
                 class="h-7 w-7 rounded-md border border-line bg-surface hover:bg-elevated inline-flex items-center justify-center transition"
                 @click.stop="openSortMenu"
-                :title="`Sort: ${sortLabel}`"
-                :aria-label="`Sort: ${sortLabel}`"
+                :title="`Sort: ${sortLabel} · ${sortDirLabel}`"
+                :aria-label="`Sort: ${sortLabel}, ${sortDirLabel}`"
               >
                 <Icon
                   name="arrow-up-down"
                   :size="14"
-                  class="text-[var(--c-green)]"
-                />
-              </button>
-              <button
-                class="h-7 w-7 rounded-md border border-line bg-surface hover:bg-elevated inline-flex items-center justify-center transition"
-                @click="toggleSortDirection"
-                :title="`Sort direction: ${sortDirLabel}`"
-                :aria-label="`Sort direction: ${sortDirLabel}`"
-              >
-                <Icon
-                  :name="sortDirIcon"
-                  :size="14"
-                  class="text-[var(--c-blue)]"
+                  class="text-[var(--color-ink-2)]"
                 />
               </button>
               <button
@@ -283,7 +245,7 @@
             <Icon
               name="folder"
               :size="15"
-              class="compare-head__icon text-[var(--c-lilac)]"
+              class="compare-head__icon text-[var(--color-ink-2)]"
             />
             <span class="compare-head__name headline-gradient">{{
               folderTitle
@@ -307,27 +269,14 @@
             <button
               type="button"
               class="compare-btn compare-btn--icon"
-              :title="`Sort: ${sortLabel}`"
-              :aria-label="`Sort: ${sortLabel}`"
+              :title="`Sort: ${sortLabel} · ${sortDirLabel}`"
+              :aria-label="`Sort: ${sortLabel}, ${sortDirLabel}`"
               @click.stop="openSortMenu"
             >
               <Icon
                 name="arrow-up-down"
                 :size="14"
-                class="text-[var(--c-green)]"
-              />
-            </button>
-            <button
-              type="button"
-              class="compare-btn"
-              :title="`Sort direction: ${sortDirLabel}`"
-              :aria-label="`Sort direction: ${sortDirLabel}`"
-              @click="toggleSortDirection"
-            >
-              <Icon
-                :name="sortDirIcon"
-                :size="14"
-                class="text-[var(--c-blue)]"
+                class="text-[var(--color-ink-2)]"
               />
             </button>
             <span class="compare-head__sep" aria-hidden="true"></span>
@@ -342,7 +291,7 @@
               <Icon
                 name="folder-plus"
                 :size="14"
-                class="text-[var(--c-lilac)]"
+                class="text-[var(--color-ink-2)]"
               />
             </button>
             <button
@@ -353,7 +302,11 @@
               :aria-label="t('buttons.upload')"
               @click="uploadFunc"
             >
-              <Icon name="upload" :size="14" class="text-[var(--c-blue)]" />
+              <Icon
+                name="upload"
+                :size="14"
+                class="text-[var(--color-ink-2)]"
+              />
             </button>
             <button
               type="button"
@@ -647,7 +600,7 @@
                 class="listing-virtual"
                 :items="listRows"
                 :item-size="null"
-                :min-item-size="44"
+                :min-item-size="40"
                 key-field="id"
                 :buffer="320"
                 data-clear-on-click="true"
@@ -820,10 +773,9 @@
             @click="download"
             :title="t('buttons.download')"
           >
-            <!-- V3-C #24: colorful action icons on the dark pill (labels stay
-                 white). Bright 300/400 hues read well on the inverse surface in
-                 both themes. -->
-            <Icon name="download" :size="14" class="text-sky-400" />
+            <!-- Calm Minimal: action icons are a uniform soft white on the dark
+                 pill (was per-action bright hues), matching the white labels. -->
+            <Icon name="download" :size="14" class="text-white/80" />
             <span>{{ t("buttons.download") }}</span>
           </button>
           <button
@@ -831,7 +783,7 @@
             @click="layoutStore.showHover('copy')"
             :title="t('buttons.copyFiles')"
           >
-            <Icon name="copy" :size="14" class="text-teal-300" />
+            <Icon name="copy" :size="14" class="text-white/80" />
             <span>{{ t("buttons.copyFiles") }}</span>
           </button>
           <button
@@ -839,7 +791,7 @@
             @click="layoutStore.showHover('move')"
             :title="t('buttons.moveFiles')"
           >
-            <Icon name="forward" :size="14" class="text-indigo-300" />
+            <Icon name="forward" :size="14" class="text-white/80" />
             <span>{{ t("buttons.moveFiles") }}</span>
           </button>
           <!-- v1.3 S4-2: Bulk rename pill button. Only renders for multi-select
@@ -850,7 +802,7 @@
             @click="bulkRename.open"
             title="Bulk rename"
           >
-            <Icon name="pencil" :size="14" class="text-amber-400" />
+            <Icon name="pencil" :size="14" class="text-white/80" />
             <span>Rename</span>
           </button>
           <!-- 1.6.0: batch-edit ID3/Vorbis tags across the audio files in the
@@ -860,7 +812,7 @@
             @click="layoutStore.showHover('audio-tags')"
             :title="`Edit tags on ${bulkAudioCount} audio files`"
           >
-            <Icon name="music" :size="14" class="text-fuchsia-300" />
+            <Icon name="music" :size="14" class="text-white/80" />
             <span>Edit tags</span>
           </button>
           <!-- 2.4.0 Stage 5 / K: bulk add/remove user tags across the whole
@@ -870,7 +822,7 @@
             @click="openBulkTags"
             :title="`Tag ${fileStore.selectedCount} items`"
           >
-            <Icon name="tag" :size="14" class="text-sky-300" />
+            <Icon name="tag" :size="14" class="text-white/80" />
             <span>Tags</span>
           </button>
           <button
@@ -879,7 +831,7 @@
             class="multiple-selection__danger"
             :title="t('buttons.delete')"
           >
-            <Icon name="trash-2" :size="14" class="text-rose-400" />
+            <Icon name="trash-2" :size="14" class="text-white/80" />
             <span>{{ t("buttons.delete") }}</span>
           </button>
 
@@ -894,10 +846,12 @@
             <Icon name="x" :size="14" />
           </button>
         </div>
-        <!-- V2-J: directory breadcrumb path — bottom of the primary column,
-             left-aligned, border/background hugging the path text only (no
-             item count). Listing pages only (absent on preview + settings). -->
-        <div class="fb-breadcrumb-bar">
+        <!-- Bottom breadcrumb path — split mode only. In single-pane the
+             breadcrumb now leads the hero at the TOP (Calm Minimal #3), so a
+             bottom bar would duplicate it; in split mode pane A keeps its path
+             here (its compact header has no room) and pane B mirrors it with its
+             own footer crumbs. Listing pages only. -->
+        <div v-if="splitActive" class="fb-breadcrumb-bar">
           <div class="fb-breadcrumb-bar__crumbs">
             <breadcrumbs base="/files" />
           </div>
@@ -1411,24 +1365,6 @@ const parentFolderUrl = computed<string | null>(() => {
   return parent;
 });
 
-/** Human-readable name of the parent folder, used as the tooltip on
- *  the inline ↑ button. "/" → "root"; "/Documents/Letters/" → "Documents".
- *  Decoded so `%20` shows up as space. */
-const parentFolderName = computed<string>(() => {
-  const parent = parentFolderUrl.value;
-  if (!parent) return "";
-  // Trim trailing slash + extract the last segment. URL-decode so
-  // multibyte / spaced names render correctly in the title attribute.
-  const trimmed = parent.endsWith("/") ? parent.slice(0, -1) : parent;
-  const segments = trimmed.split("/").filter(Boolean);
-  if (segments.length === 0) return "root";
-  try {
-    return decodeURIComponent(segments[segments.length - 1]);
-  } catch {
-    return segments[segments.length - 1];
-  }
-});
-
 /** Click handler for the inline ↑ button. Same destination as the
  *  spring-load drag behavior so users get one mental model regardless
  *  of which input modality they're using. */
@@ -1454,17 +1390,6 @@ const onCurrentFolderFavToggle = () => {
   if (!currentFolderPath.value) return;
   favoritesComposable.toggle(currentFolderPath.value);
 };
-
-// The current folder's custom favorite display name (alias), if any — shown
-// alongside the real folder name in the header so a renamed favorite is
-// recognizable here too. Empty unless the folder is a favorite with a title,
-// and suppressed when the alias would just echo the real name.
-const currentFolderAlias = computed<string>(() => {
-  const p = currentFolderPath.value;
-  if (!p) return "";
-  const alias = favoritesComposable.titleFor(p).trim();
-  return alias && alias !== folderTitle.value ? alias : "";
-});
 
 const cancelSectionSpring = () => {
   if (sectionSpringTimer !== null) {
@@ -1828,6 +1753,15 @@ const folderMeta = computed(() => {
   return parts.join(" · ");
 });
 
+// Short item count for the hero crumb row (the full "N items · last updated…"
+// string is folderMeta, shown as the count's tooltip).
+const folderCountLabel = computed(() => {
+  const req = fileStore.req;
+  if (!req) return "";
+  const total = (req.numDirs ?? 0) + (req.numFiles ?? 0);
+  return `${total} ${total === 1 ? "item" : "items"}`;
+});
+
 // CH-1: render only the windowed slice of each grid section. Before the
 // first measure (window still {0,0}) fall back to a small bootstrap slice
 // so there ARE tiles to measure + fill the first paint.
@@ -2134,6 +2068,13 @@ onMounted(() => {
   // Cancel a pending parent spring-load + clear the pane-A drop overlay on an
   // Esc-cancelled drag (review #1).
   document.addEventListener("dragend", onListingDragEnd);
+  // Esc-cancel safety net: some browsers (and source-row unmount races) don't
+  // fire `dragend` when a drag is cancelled with Escape, which strands the
+  // Copy/Move badge + the drag snapshot (the snapshot freezes background
+  // refreshes). Catch Escape at the document in the CAPTURE phase — it fires
+  // even while the native drag owns the pointer — and run the same idempotent
+  // teardown as the dragend nets above, but only while a drag is in progress.
+  document.addEventListener("keydown", onDragCancelKey, true);
 });
 
 onBeforeUnmount(() => {
@@ -2165,6 +2106,7 @@ onBeforeUnmount(() => {
   document.removeEventListener("dragend", clearDragSnapshot);
   document.removeEventListener("dragend", resetOpacity);
   document.removeEventListener("dragend", onListingDragEnd);
+  document.removeEventListener("keydown", onDragCancelKey, true);
   stopDragScroll();
   endDragBadge();
 });
@@ -2380,6 +2322,21 @@ const preventDefault = (event: Event) => {
 // (see the drop/dragend listeners in onMounted). Idempotent.
 const clearDragSnapshot = () => {
   if (fileStore.draggedItems.length > 0) fileStore.draggedItems = [];
+};
+
+// Esc-cancel safety net (registered as a capture keydown in onMounted): when a
+// drag is cancelled with Escape and the browser doesn't fire `dragend` — or the
+// source row unmounted mid-drag — the Copy/Move badge + drag snapshot get
+// stranded on screen. Re-run the same idempotent teardown the dragend nets do.
+// Guarded on an active drag so a plain Escape (clear selection) is unaffected.
+const onDragCancelKey = (event: KeyboardEvent) => {
+  if (event.key !== "Escape") return;
+  if (fileStore.draggedItems.length === 0) return;
+  endDragBadge();
+  clearDragSnapshot();
+  resetOpacity();
+  onListingDragEnd();
+  stopDragScroll();
 };
 
 // HTML5 (mouse) drag edge auto-scroll. Touch drag already auto-scrolls via
@@ -3521,20 +3478,14 @@ const sortLabel = computed(() => {
   return by;
 });
 
-// Sort direction is its own first-class toggle (rather than "re-click the
-// active field to flip it," which read as a confusing swap). It persists
-// per-user via user.sorting.asc — server-side, so it sticks across folders
-// until the user changes it.
-const sortDirIcon = computed(() =>
-  ascOrdered.value ? "arrow-up-narrow-wide" : "arrow-down-wide-narrow"
-);
+// Human-readable sort direction, shown in the Sort button's tooltip and the
+// popover's Direction rows. Direction persists per-user via user.sorting.asc
+// (server-side), so it sticks across folders until changed. Changing it now
+// lives inside the consolidated Sort popover (see sortMenuItems) rather than a
+// separate toolbar toggle button.
 const sortDirLabel = computed(() =>
   ascOrdered.value ? "Ascending" : "Descending"
 );
-const toggleSortDirection = () => {
-  const by = (fileStore.req?.sorting.by ?? "name") as SortKey;
-  void sortRaw(by, !ascOrdered.value);
-};
 
 // ── Multi-column sort popover (v1.3 S3-4) ───────────────────────────
 // Replaces the legacy cycle button (and the brief S3-5-extension
@@ -3590,24 +3541,29 @@ const setSecondarySort = (criterion: SortCriterion | null) => {
   void prefs.set("sort.secondary", criterion);
 };
 
-/** Build the ContextMenu items array. Layout:
+/** Build the ContextMenu items array — the single consolidated Sort popover
+ *  (field + direction + secondary, replacing the old two-button pair). Layout:
  *
  *    PRIMARY                ← header
- *    Name           [arrow] ← active criterion shows direction arrow
+ *    Name           [check] ← active field is checked
  *    Size
  *    Modified
  *    Type
  *    ────────────           ← separator
+ *    DIRECTION              ← header
+ *    Ascending      [check] ← active direction is checked
+ *    Descending
+ *    ────────────           ← separator
  *    THEN BY                ← header
- *    None
- *    Name           [arrow]
+ *    None           [check]
+ *    Name           [arrow] ← secondary shows its own direction arrow
  *    Size
  *    Modified
  *    Type
  *
- * Clicking the active primary toggles its direction. Clicking an
- * inactive primary sets it to ascending. Same for secondary. "None"
- * clears the secondary. */
+ * Picking a primary field keeps the current direction; the Direction rows
+ * set it explicitly. Picking an inactive secondary sets it to ascending;
+ * re-picking it flips direction. "None" clears the secondary. */
 const sortMenuItems = computed<MenuItem[]>(() => {
   const primaryBy = (fileStore.req?.sorting.by ?? "name") as SortKey;
   const primaryAsc = fileStore.req?.sorting.asc ?? false;
@@ -3617,15 +3573,25 @@ const sortMenuItems = computed<MenuItem[]>(() => {
     { type: "header", label: "Primary" },
     ...SORT_OPTIONS.map((opt) => ({
       label: opt.label,
-      // A check marks the active field; direction is owned by the dedicated
-      // asc/desc toggle in the toolbar, so the menu no longer flips it.
+      // A check marks the active field. Picking a field keeps the current
+      // direction; direction is set in the Direction section below.
       icon: primaryBy === opt.key ? "check" : undefined,
       action: () => {
-        // Picking a field keeps the current direction; re-picking the active
-        // field is a no-op (use the toolbar toggle to change direction).
         setPrimarySort(opt.key, primaryAsc);
       },
     })),
+    { type: "separator" },
+    { type: "header", label: "Direction" },
+    {
+      label: "Ascending",
+      icon: primaryAsc ? "check" : undefined,
+      action: () => setPrimarySort(primaryBy, true),
+    },
+    {
+      label: "Descending",
+      icon: !primaryAsc ? "check" : undefined,
+      action: () => setPrimarySort(primaryBy, false),
+    },
     { type: "separator" },
     { type: "header", label: "Then by" },
     {
@@ -4513,15 +4479,50 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
 .fb-hero__menu:hover {
   background: var(--color-hover, rgba(24, 24, 27, 0.045));
 }
-/* `.section-title` already supplies the drop-target radius/transition; the
-   hero title just needs to flex + truncate. */
+/* Loading placeholder for the hero's left column (before the listing resolves). */
 .fb-hero__title {
-  /* Greedy but HIGHLY shrinkable: its h1 + subtitle carry `truncate`, so it
-     ellipsizes to absorb the squeeze when the details rail opens — yielding the
-     row's space to the control cluster before the cluster gives up any (the high
-     shrink factor makes the title lose width first). */
   flex: 1 8 auto;
   min-width: 0;
+}
+
+/* Hero lead (Calm Minimal #1 + #3): the breadcrumb-led location row that
+   replaced the FOLDER eyebrow + jumbo title + meta line. Greedy + shrinkable so
+   the crumb strip yields width to the control cluster on the right; the
+   breadcrumb scrolls horizontally inside itself when the path is long. */
+.fb-hero__lead {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+.fb-hero__crumbs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  width: 100%;
+}
+/* Compact item count after the path; the full "N items · last updated…" string
+   is the hover tooltip. A leading middot separates it from the star. */
+.fb-hero__count {
+  flex: none;
+  font-size: 12px;
+  color: var(--color-ink-3, #82828c);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.fb-hero__count::before {
+  content: "·";
+  margin: 0 6px 0 2px;
+  color: var(--color-ink-3, #82828c);
+}
+/* Inline rename input swaps in for the crumb row when renaming the folder. */
+.fb-hero__lead .folder-rename-input {
+  width: min(360px, 100%);
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0;
 }
 .fb-hero__cluster {
   display: flex;
@@ -4586,57 +4587,9 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   background: var(--color-surface, #fff);
 }
 
-/* Favorite display-name shown beside the real folder name in the header,
-   e.g. "Documents (Work)". Deliberately smaller + muted so it reads as a
-   secondary alias, not part of the folder name. */
-.folder-alias {
-  margin-left: 8px;
-  font-size: 0.62em;
-  font-weight: 500;
-  letter-spacing: 0;
-  color: var(--color-ink-3, #a1a1aa);
-  vertical-align: baseline;
-}
-
-/* Parent-folder ↑ button (H5). Inline with the FOLDER eyebrow label so
-   the visual weight matches the eyebrow's quiet caps treatment — small,
-   muted by default, accent-tinted on hover. Same destination as the
-   F2 spring-load on this section title; this is the click affordance
-   for users who don't drag-hover. */
-.parent-up-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  padding: 0;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  /* Colorful-UI: a blue navigation tint (matches the breadcrumb home glyph)
-     so the parent-up affordance reads as a nav control, not muted chrome. */
-  color: var(--c-blue, #3b82f6);
-  cursor: pointer;
-  transition:
-    background-color 0.1s ease,
-    color 0.1s ease;
-}
-
-.parent-up-btn:hover {
-  background: var(--color-hover, rgba(24, 24, 27, 0.045));
-  color: var(--c-blue, #3b82f6);
-  filter: brightness(0.94);
-}
-
-.parent-up-btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
-  outline-offset: 1px;
-  color: var(--c-blue, #3b82f6);
-}
-
-/* Current-folder favorites star (v1.3 S3-2). Sits next to the
-   parent-up button; matches its visual weight. Amber tint when
-   active so pinned folders read distinctly. */
+/* Current-folder favorites star (v1.3 S3-2). Sits next to the current-folder
+   crumb in the hero lead. Amber tint when active so pinned folders read
+   distinctly. */
 .current-fav-btn {
   display: inline-flex;
   align-items: center;
@@ -4675,7 +4628,6 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .parent-up-btn,
   .current-fav-btn {
     transition: none;
   }

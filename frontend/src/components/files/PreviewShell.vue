@@ -275,11 +275,10 @@ html.dark .preview-shell__stage {
 .preview-float--back:hover {
   background: var(--color-elevated, #f4f4f5);
 }
-/* V3-D #10: colorful Exit glyph. The arrow takes the brand accent so the
-   "leave preview" affordance pops against the neutral pill; the "Exit" label
-   stays ink-1 for legibility. :deep() reaches the svg inside the Icon child. */
+/* Calm Minimal: the Exit arrow is ink — uniform with the "Exit" label, no color
+   pop (was the brand accent). :deep() reaches the svg inside the Icon child. */
 .preview-float--back :deep(svg) {
-  color: var(--color-accent-ink, #5e6ad2);
+  color: var(--color-ink-1, #18181b);
 }
 .preview-float--actions {
   top: 14px;

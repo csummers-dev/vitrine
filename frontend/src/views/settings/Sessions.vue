@@ -2,7 +2,7 @@
   <SettingsPage
     title="Sessions"
     icon="monitor-smartphone"
-    accent="var(--c-green)"
+    accent="var(--color-accent)"
     description="Where you're signed in. The app uses a stateless token, so individual devices aren't tracked — but you can revoke every other session at once."
   >
     <SettingsSection

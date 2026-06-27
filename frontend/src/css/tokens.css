@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Wire Tailwind v4's `dark:` variant to the app's `html.dark` class (dark mode
+   is toggled by class, not prefers-color-scheme), so utilities like
+   `dark:text-pink-300` follow the chosen theme — used by the muted file-type
+   icon chips in utils/fileIcon.ts. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-accent: #5e6ad2;
   /* Accent used as TEXT on a tinted/selected surface. In light mode the base
@@ -14,17 +20,18 @@
      preset with a hand-picked secondary (RC-7). */
   --color-accent-grad: #7c87e5;
 
-  --color-canvas: #fafaf9;
+  /* Calm Minimal light surfaces — near-white canvas, true-white panels. */
+  --color-canvas: #fbfbfc;
   --color-surface: #ffffff;
-  --color-elevated: #f4f4f5;
+  --color-elevated: #f3f3f6;
 
-  --color-ink-1: #18181b;
-  --color-ink-2: #52525b;
-  --color-ink-3: #a1a1aa;
-  --color-ink-4: #d4d4d8;
+  --color-ink-1: #1a1a1f;
+  --color-ink-2: #56565f;
+  --color-ink-3: #73737b;
+  --color-ink-4: #bcbcc4;
 
-  --color-line: #ececec;
-  --color-line-strong: #d4d4d8;
+  --color-line: #ececef;
+  --color-line-strong: #dadae0;
 
   --color-hover: rgba(24, 24, 27, 0.045);
   --color-selected: rgba(94, 106, 210, 0.08);
@@ -136,12 +143,40 @@
    keeps #5e6ad2 in dark too; the other five lift to lighter tones for
    contrast on the dark canvas (overridden in html.dark below). */
 :root {
-  --c-lilac: #5e6ad2;
-  --c-blue: #3b82f6;
-  --c-teal: #0d9488;
-  --c-green: #16a34a;
+  /* Calm Minimal: the formerly-decorative nav / toolbar / icon hues collapse to
+     a single muted ink so the chrome reads monochrome (one accent only). Amber
+     (favorite stars) and rose (danger / trash) keep their meaning. */
+  --c-lilac: #6f6f78;
+  --c-blue: #6f6f78;
+  --c-teal: #6f6f78;
+  --c-green: #6f6f78;
   --c-amber: #d97706;
   --c-rose: #e11d48;
+}
+
+/* ── Accent engine (Calm Minimal redesign, Stage 0) ───────────────────────
+   The accent is the ONE highlight hue and is user-selectable (Profile →
+   useAccentColor). JS writes five SOURCE vars on <html> — --accent,
+   --accent-grad, --accent-strong, --accent-ink-dark, --accent-rgb — plus
+   --color-on-accent; everything below DERIVES from them, so a single picker
+   recolors the whole UI (incl. the ambient wash). Defaults here = Violet, so
+   first paint (pre-JS) is already correct. This block sits after @theme on
+   purpose: it overrides the @theme accent tokens with accent-driven values. */
+:root {
+  --accent: #8b5cf6;
+  --accent-grad: #a78bfa;
+  --accent-strong: #7c3aed;
+  --accent-ink-dark: #d6c8fb;
+  --accent-rgb: 139 92 246;
+  --color-on-accent: #ffffff;
+
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-grad: var(--accent-grad);
+  --color-accent-ink: var(--accent);
+  --color-accent-soft: rgb(var(--accent-rgb) / 0.1);
+  --color-accent-ring: rgb(var(--accent-rgb) / 0.3);
+  --color-selected: rgb(var(--accent-rgb) / 0.08);
 }
 
 /* ── Dark mode tokens (Stage 11b) ────────────────────────────────────────
@@ -158,18 +193,21 @@
    - accent stays the same lilac so the brand reads consistently
    - hover uses white at low alpha (vs. dark on light) */
 html.dark {
-  --color-accent-soft: rgba(94, 106, 210, 0.16);
-  --color-accent-ring: rgba(94, 106, 210, 0.45);
-  /* Light lilac so accent-colored TEXT stays legible on the dark canvas. */
-  --color-accent-ink: #c7ccfb;
+  --color-accent-soft: rgb(var(--accent-rgb) / 0.16);
+  --color-accent-ring: rgb(var(--accent-rgb) / 0.45);
+  /* Light accent tint so accent-colored TEXT stays legible on the dark canvas
+     (per-preset, driven by the accent picker). */
+  --color-accent-ink: var(--accent-ink-dark);
 
   /* Colorful UI palette — lilac primary stays #5e6ad2; the rest lift for the
      dark canvas. (Per the design rule: lilac is the only hue that keeps its
      base value in both themes.) */
-  --c-lilac: #5e6ad2;
-  --c-blue: #93c5fd;
-  --c-teal: #2dd4bf;
-  --c-green: #4ade80;
+  /* Calm Minimal: decorative hues → muted ink (monochrome chrome); amber +
+     rose keep their meaning (favorite stars / danger). */
+  --c-lilac: #9a9aa4;
+  --c-blue: #9a9aa4;
+  --c-teal: #9a9aa4;
+  --c-green: #9a9aa4;
   --c-amber: #fbbf24;
   --c-rose: #fb7185;
 
@@ -195,20 +233,21 @@ html.dark {
   --tint-file-bg: rgba(148, 163, 184, 0.2);
   --tint-file-fg: #e2e8f0;
 
-  --color-canvas: #0e0e10;
-  --color-surface: #18181b;
-  --color-elevated: #27272a;
+  /* Calm Minimal dark surfaces — deeper, cooler, quieter than the old set. */
+  --color-canvas: #0b0b0d;
+  --color-surface: #121216;
+  --color-elevated: #1b1b20;
 
-  --color-ink-1: #fafafa;
-  --color-ink-2: #d4d4d8;
-  --color-ink-3: #a1a1aa;
-  --color-ink-4: #52525b;
+  --color-ink-1: #ececf1;
+  --color-ink-2: #b4b4be;
+  --color-ink-3: #8a8a94;
+  --color-ink-4: #5a5a64;
 
-  --color-line: #27272a;
-  --color-line-strong: #3f3f46;
+  --color-line: #212127;
+  --color-line-strong: #2f2f37;
 
   --color-hover: rgba(255, 255, 255, 0.05);
-  --color-selected: rgba(94, 106, 210, 0.18);
+  --color-selected: rgb(var(--accent-rgb) / 0.18);
 
   /* In dark mode the pill should be a touch lighter than canvas (#0e0e10)
      so it reads as a floating element, not a flat patch. */

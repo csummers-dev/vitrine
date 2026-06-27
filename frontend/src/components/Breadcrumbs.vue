@@ -2,6 +2,7 @@
   <nav
     ref="navEl"
     class="breadcrumbs-nav flex items-center gap-0.5 text-[13px] min-w-0 text-ink-2"
+    :class="{ 'breadcrumbs-nav--drag': isDragActive }"
     :aria-label="t('files.home')"
   >
     <component
@@ -17,7 +18,7 @@
       @dragleave="onDragLeave('root')"
       @drop="onDrop(rootUrl, 'root', $event)"
     >
-      <Icon name="house" :size="14" class="text-[var(--c-blue)]" />
+      <Icon name="house" :size="14" class="text-[var(--color-accent)]" />
     </component>
 
     <!-- Compact ellipsis shown only at narrow widths when there are intermediate
@@ -166,6 +167,11 @@ const rootUrl = computed(() => `${props.base}/`);
 // crumb — dropping there would be a no-op move).
 
 const dragOver = ref<string | null>(null);
+
+// True while an in-app drag is in progress (fileStore.draggedItems is set on
+// dragstart and cleared on dragend). Drives the enlarged crumb drop targets in
+// the styles below so a dragged file is easy to drop onto an ancestor folder.
+const isDragActive = computed(() => fileStore.draggedItems.length > 0);
 
 const isDroppable = (target: string): boolean => {
   if (fileStore.selectedCount === 0) return false;
@@ -317,5 +323,21 @@ onBeforeUnmount(() => {
   background: var(--color-accent-soft, rgba(94, 106, 210, 0.1));
   box-shadow: 0 0 0 2px var(--color-accent, #5e6ad2);
   color: var(--color-accent, #5e6ad2);
+}
+
+/* While a file is being dragged in-app, every droppable crumb becomes a much
+   larger drop target so it's obvious which folder will receive the drop: the
+   visible pill grows (a bigger highlight) and a transparent hit-area extension
+   fills the row height and reaches back over the preceding chevron, so there
+   are no dead gaps between crumbs. The resting state is untouched. */
+.breadcrumbs-nav--drag .breadcrumb-link {
+  position: relative;
+  padding: 7px 11px;
+}
+.breadcrumbs-nav--drag .breadcrumb-link:not(.breadcrumb-link--current)::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: -7px 0 -7px -16px;
 }
 </style>

@@ -2,7 +2,7 @@
   <SettingsPage
     :title="t('settings.profileSettings')"
     icon="user"
-    accent="var(--c-blue)"
+    accent="var(--color-accent)"
     description="Personal preferences for your account. Toggles save automatically; password requires confirmation."
   >
     <!-- ── Preferences (auto-save toggles) ───────────────────────────── -->
@@ -88,11 +88,64 @@
         />
       </SettingsRow>
 
-      <!-- Ambient accent-mesh background (mirrors the login screen). Per-user,
-           syncs to the account; "Off" disables it entirely. -->
+      <!-- Accent color (Calm Minimal): the single highlight hue, applied live
+           across the app + the ambient wash. Six presets; default Violet. -->
+      <SettingsRow
+        label="Accent color"
+        description="The single highlight color used across the app — navigation, buttons, focus, and the background wash."
+      >
+        <div
+          class="accent-swatches"
+          role="radiogroup"
+          aria-label="Accent color"
+          style="display: flex; gap: 10px; align-items: center"
+        >
+          <button
+            v-for="p in accentPresets"
+            :key="p.name"
+            type="button"
+            role="radio"
+            :aria-checked="accent === p.name"
+            :aria-label="p.label"
+            :title="p.label"
+            style="
+              width: 24px;
+              height: 24px;
+              border-radius: 50%;
+              border: none;
+              padding: 0;
+              cursor: pointer;
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              transition:
+                box-shadow var(--dur-base) ease,
+                transform var(--dur-base) ease;
+            "
+            :style="{
+              background: p.value,
+              color: p.on,
+              boxShadow:
+                accent === p.name
+                  ? '0 0 0 2px var(--color-surface), 0 0 0 4px ' + p.value
+                  : '0 0 0 1px rgba(0, 0, 0, 0.08)',
+            }"
+            @click="setAccent(p.name)"
+          >
+            <Icon
+              v-if="accent === p.name"
+              name="check"
+              :size="13"
+              :stroke-width="3"
+            />
+          </button>
+        </div>
+      </SettingsRow>
+
+      <!-- Ambient accent wash behind the app shell (per-user; "Off" disables). -->
       <SettingsRow
         label="Background gradient"
-        description="A soft wash of all six accent colors behind the app, like the login screen. Syncs to your account."
+        description="A faint wash of your accent color behind the app. Syncs to your account."
       >
         <SegmentedControl
           v-model="bgIntensity"
@@ -209,6 +262,7 @@ import {
   useBackgroundGradient,
   type BgIntensity,
 } from "@/composables/useBackgroundGradient";
+import { useAccentColor } from "@/composables/useAccentColor";
 
 const { t } = useI18n();
 const authStore = useAuthStore();
@@ -279,6 +333,13 @@ const bgTranslucent = computed<boolean>({
   get: () => bg.translucent.value,
   set: (v) => bg.setTranslucent(v),
 });
+
+// Accent color (Calm Minimal). Singleton composable shared with the app-wide
+// bootstrap; setAccent persists to the prefs bag + recolors the UI live.
+const accentColor = useAccentColor();
+const accentPresets = accentColor.presets;
+const accent = accentColor.accent;
+const setAccent = accentColor.setAccent;
 
 // ── Password (explicit save) ─────────────────────────────────────────
 const password = ref<string>("");

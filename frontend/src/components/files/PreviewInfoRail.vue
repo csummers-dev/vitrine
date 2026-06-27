@@ -353,13 +353,13 @@ defineEmits<{
    lives inside the Icon child component, so it needs :deep() to pierce the
    scope; the --action-hue custom property inherits into it from the button. */
 .preview-info .info-action :deep(svg) {
-  color: var(--action-hue);
+  color: var(--color-ink-2, #52525b);
 }
 
-/* Hover tints the tile with the action's own hue (matches InfoPane). */
+/* Calm Minimal: hover tints with the single accent (was the per-action hue). */
 .preview-info .info-action:hover {
-  background: color-mix(in srgb, var(--action-hue) 12%, var(--color-surface));
-  border-color: color-mix(in srgb, var(--action-hue) 40%, var(--color-line));
+  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-line));
   color: var(--color-ink-1, #18181b);
 }
 .preview-info .info-action--danger:hover {

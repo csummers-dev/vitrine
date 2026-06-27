@@ -14,14 +14,14 @@
       @click="open"
       :aria-label="$t('search.search')"
     >
-      <Icon name="search" :size="14" class="text-[var(--c-blue)]" />
+      <Icon name="search" :size="14" class="text-[var(--color-ink-2)]" />
       <span class="search-trigger__label">Search</span>
       <kbd class="search-kbd">⌘K</kbd>
     </button>
 
     <!-- Active: input field overlay, mirrors the trigger's chrome -->
     <div v-if="active" id="input">
-      <Icon name="search" :size="14" class="text-[var(--c-blue)]" />
+      <Icon name="search" :size="14" class="text-[var(--color-ink-2)]" />
       <input
         type="text"
         ref="input"

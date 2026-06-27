@@ -2,7 +2,7 @@
   <SettingsPage
     title="Webhooks"
     icon="webhook"
-    accent="var(--c-teal)"
+    accent="var(--color-accent)"
     description="POST a JSON payload to external URLs when files change — wire up Discord, n8n, Home Assistant, or your own service. Deliveries are server-wide and retried on failure."
   >
     <SettingsSection

@@ -177,7 +177,7 @@
           </button>
         </div>
         <ul v-show="!isCollapsed('recent')" class="sd__recent-list">
-          <li v-for="(r, ri) in visibleRecents" :key="r.path">
+          <li v-for="r in visibleRecents" :key="r.path">
             <router-link
               :to="`/files${r.path}`"
               class="sd__recent-btn"
@@ -186,7 +186,7 @@
               <Icon
                 name="file"
                 :size="13"
-                :style="{ color: recentHue(ri) }"
+                :style="{ color: 'var(--color-ink-2, #52525b)' }"
                 class="sd__recent-icon"
               />
               <span class="sd__recent-name">{{ r.name }}</span>
@@ -380,18 +380,6 @@ const visibleRecents = computed(() =>
     ? recents.value
     : recents.value.slice(0, RECENTS_INITIAL)
 );
-// Cycle the recent-file icons through the six accent hues so the section
-// reads colorful — matches the desktop sidebar.
-const RECENT_HUES = [
-  "var(--c-lilac)",
-  "var(--c-blue)",
-  "var(--c-teal)",
-  "var(--c-green)",
-  "var(--c-amber)",
-  "var(--c-rose)",
-];
-const recentHue = (i: number): string => RECENT_HUES[i % RECENT_HUES.length];
-
 // ── Section collapse/expand ────────────────────────────────────────────
 // Shared with the desktop Sidebar via the SAME prefs key, so a collapsed
 // Favorites / Recent stays collapsed when you switch devices.
@@ -981,17 +969,8 @@ const onItemClick = (_event: MouseEvent) => {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  /* Rainbow conic — matches the inline-sidebar avatar in the Colorful UI. */
-  background: conic-gradient(
-    from 210deg,
-    var(--c-lilac),
-    var(--c-blue),
-    var(--c-teal),
-    var(--c-green),
-    var(--c-amber),
-    var(--c-rose),
-    var(--c-lilac)
-  );
+  /* Calm Minimal: follows the single accent (was a six-hue rainbow conic). */
+  background: var(--accent-gradient);
   color: white;
   display: inline-flex;
   align-items: center;

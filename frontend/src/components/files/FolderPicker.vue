@@ -8,7 +8,7 @@
         :class="{ 'is-current': segments.length === 0 }"
         @click="navigate('/files/')"
       >
-        <Icon name="house" :size="13" />
+        <Icon name="house" :size="13" class="text-[var(--color-accent)]" />
         <span>Home</span>
       </button>
       <template v-for="(seg, i) in segments" :key="i">
@@ -32,7 +32,9 @@
          path, then drops into it so it becomes the chosen destination. Shown
          above the list so it's visible even when the folder has no subfolders. -->
     <div v-if="creating" class="folder-picker__create">
-      <span class="folder-picker__icon bg-amber-50 text-amber-500">
+      <span
+        class="folder-picker__icon bg-[var(--color-accent-soft)] text-[var(--color-accent)]"
+      >
         <Icon
           name="folder"
           :size="14"
@@ -79,7 +81,9 @@
           class="folder-picker__row"
           @click="navigate(folder.url)"
         >
-          <span class="folder-picker__icon bg-amber-50 text-amber-500">
+          <span
+            class="folder-picker__icon bg-[var(--color-accent-soft)] text-[var(--color-accent)]"
+          >
             <Icon
               name="folder"
               :size="14"

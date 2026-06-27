@@ -111,7 +111,7 @@
           <Icon
             name="folder"
             :size="14"
-            class="text-[var(--c-lilac)] shrink-0"
+            class="text-[var(--color-ink-2)] shrink-0"
           />
           <span class="flex-1 max-md:hidden s-hide">{{
             rootLabel || $t("sidebar.myFiles")
@@ -140,7 +140,7 @@
           <Icon
             name="trash-2"
             :size="14"
-            class="text-[var(--c-rose)] shrink-0"
+            class="text-[var(--color-ink-2)] shrink-0"
           />
           <span class="flex-1 max-md:hidden s-hide">{{
             $t("sidebar.trash")
@@ -385,7 +385,11 @@
       <div class="sidebar-storage p-3 rounded-lg border border-line bg-surface">
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-1.5">
-            <Icon name="hard-drive" :size="14" class="text-[var(--c-teal)]" />
+            <Icon
+              name="hard-drive"
+              :size="14"
+              class="text-[var(--color-ink-2)]"
+            />
             <span class="text-[12px] font-semibold text-ink-1">Storage</span>
           </div>
           <span class="text-[11px] text-ink-3 tabular"
@@ -416,7 +420,7 @@
         :title="user.username"
       >
         <div
-          class="w-7 h-7 max-md:w-9 max-md:h-9 rounded-full avatar-rainbow flex items-center justify-center text-white text-[11px] font-semibold shadow-sm shrink-0"
+          class="w-7 h-7 max-md:w-9 max-md:h-9 rounded-full avatar-accent flex items-center justify-center text-white text-[11px] font-semibold shadow-sm shrink-0"
         >
           {{ userInitials }}
         </div>
@@ -958,18 +962,10 @@ export default {
   },
   methods: {
     ...mapActions(useLayoutStore, ["closeHovers", "showHover"]),
-    // Colorful UI: cycle the recent-files icons through the six accent hues
-    // (theme-aware tokens) so the Recent section reads colorful, not uniform.
-    recentHue(i) {
-      const hues = [
-        "var(--c-lilac)",
-        "var(--c-blue)",
-        "var(--c-teal)",
-        "var(--c-green)",
-        "var(--c-amber)",
-        "var(--c-rose)",
-      ];
-      return hues[i % hues.length];
+    // Calm Minimal: recent-file icons are a uniform muted ink (chrome), not the
+    // old six-hue cycle.
+    recentHue() {
+      return "var(--color-ink-2, #52525b)";
     },
     abortOngoingFetchUsage() {
       this.usageAbortController.abort();

@@ -2,7 +2,7 @@
   <SettingsPage
     title="Audit Log"
     icon="scroll-text"
-    accent="var(--c-rose)"
+    accent="var(--color-accent)"
     description="A chronological record of file operations, shares, sign-ins, and settings changes across the server. Newest first."
   >
     <!-- ── Filters ──────────────────────────────────────────────────── -->

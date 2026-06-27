@@ -3,7 +3,7 @@
     :title="pageTitle"
     :description="pageDescription"
     icon="user-cog"
-    accent="var(--c-amber)"
+    accent="var(--color-accent)"
   >
     <form v-if="user" class="user-edit" @submit.prevent="save">
       <UserForm

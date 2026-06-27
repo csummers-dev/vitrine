@@ -99,7 +99,7 @@
           <Icon
             :name="fitToScreen ? 'maximize-2' : 'maximize'"
             :size="14"
-            class="text-[var(--c-teal)]"
+            class="text-[var(--color-ink-2)]"
           />
         </button>
         <!-- Edit (S5-4) — opens the canvas image editor. Needs create
@@ -113,7 +113,11 @@
           @click="imageEditorOpen = true"
         >
           <!-- V2 #13: colourful (orange) edit icon, not the whole button. -->
-          <Icon name="pencil-ruler" :size="14" class="text-[#fb923c]" />
+          <Icon
+            name="pencil-ruler"
+            :size="14"
+            class="text-[var(--color-ink-2)]"
+          />
           <span class="max-md:hidden">Edit</span>
         </button>
       </template>
@@ -535,7 +539,7 @@
                 <Icon
                   :name="textRenderMarkdown ? 'code' : 'book-open'"
                   :size="14"
-                  class="text-[var(--c-lilac)]"
+                  class="text-[var(--color-ink-2)]"
                 />
                 <span>{{
                   textRenderMarkdown ? "Raw source" : "Rendered"
@@ -552,7 +556,7 @@
                 <Icon
                   :name="textSoftWrap ? 'wrap-text' : 'pilcrow'"
                   :size="14"
-                  class="text-[var(--c-teal)]"
+                  class="text-[var(--color-ink-2)]"
                 />
                 <span>{{ textSoftWrap ? "Soft wrap" : "No wrap" }}</span>
               </button>
@@ -562,7 +566,11 @@
                 class="preview-text-btn"
                 @click="editAsText"
               >
-                <Icon name="file-pen-line" :size="14" class="text-[#fb923c]" />
+                <Icon
+                  name="file-pen-line"
+                  :size="14"
+                  class="text-[var(--color-ink-2)]"
+                />
                 <span>Edit as text</span>
               </button>
             </div>
