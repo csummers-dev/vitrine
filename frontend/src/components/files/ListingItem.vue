@@ -636,9 +636,22 @@ const onRenameBlur = () => {
   // input bounds and releasing — they didn't intend to leave the input.
   // Refocus on the next tick instead of cancelling.
   if (mouseDownInsideInput) {
+    // Capture the text selection the drag built up BEFORE refocusing — a bare
+    // focus() drops the highlight, which used to force the user to re-select
+    // their text every time they released the mouse away from the row. The
+    // range is still intact at blur time; re-applying it after focus lets the
+    // user let go of the mouse ANYWHERE without losing the selection.
+    const el = renameInputEl.value;
+    const start = el?.selectionStart ?? null;
+    const end = el?.selectionEnd ?? null;
+    const dir = el?.selectionDirection ?? undefined;
     nextTick(() => {
-      const el = renameInputEl.value;
-      if (el && isRenaming.value) el.focus();
+      const input = renameInputEl.value;
+      if (!input || !isRenaming.value) return;
+      input.focus();
+      if (start !== null && end !== null) {
+        input.setSelectionRange(start, end, dir);
+      }
     });
     return;
   }
