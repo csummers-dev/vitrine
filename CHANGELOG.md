@@ -2,6 +2,19 @@
 
 All notable changes to **filebrowser pretty**.
 
+## v2.6.2 — Security patch
+
+A dependency and toolchain update that clears every known security advisory. No
+functional or visual changes — your files, settings, and shares behave exactly as in
+2.6.1.
+
+- **Updated `golang.org/x/image` to v0.43.0**, fixing two TIFF image-decoding flaws (a
+  decoder panic on a malformed strip offset, and an unbounded tile allocation) that
+  were reachable when the server decodes uploaded images for thumbnails and previews.
+- **Moved the build to the Go 1.25.11 toolchain**, picking up the current batch of Go
+  standard-library security patches.
+- Verified clean with `govulncheck` — zero advisories affecting the code.
+
 ## v2.6.1 — Details pane & rename polish
 
 Two small follow-ups to the Calm Minimal redesign, plus a big expansion of the
