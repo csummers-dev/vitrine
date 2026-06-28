@@ -2,6 +2,25 @@
 
 All notable changes to **filebrowser pretty**.
 
+## v2.6.1 — Details pane & rename polish
+
+Two small follow-ups to the Calm Minimal redesign, plus a big expansion of the
+automated test suite. Nothing about your files, settings, or shares changes.
+
+- **The details pane stays where you put it.** Selecting a file or folder no longer
+  forces the details pane open — it now follows only the collapse/expand toggle, so
+  clicking around the listing never interrupts what you were doing. Expand it from the
+  rail whenever you want it, and it remembers your choice.
+- **Renaming keeps your text selection.** When you drag to select part of a name and
+  let go of the mouse away from the row, the highlighted text stays selected instead
+  of clearing — selecting a long stretch to overwrite is no longer fiddly.
+
+**Under the hood**
+
+- Substantially expanded automated tests — backend auth/IDOR, password, and command-
+  parser units, plus frontend store/composable coverage and the first component-mount
+  tests (383 frontend tests + new Go suites, all green). No runtime changes.
+
 ## v2.6.0 — Calm Minimal redesign
 
 A top-to-bottom visual redesign — a calmer, more focused look — plus a round of

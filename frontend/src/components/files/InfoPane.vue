@@ -525,35 +525,35 @@ const updateIsMobile = () => {
     window.matchMedia("(max-width: 1023px)").matches;
 };
 
-// Desktop collapse-to-rail, persisted across sessions. Calm Minimal: defaults
-// to collapsed so an empty 320px column isn't parked when nothing is selected —
-// the pane opens automatically on selection (see paneVisible), and the user can
-// still pin it open from the rail.
+// Desktop collapse-to-rail, persisted across sessions. Calm Minimal: defaults to
+// collapsed (a slim rail) so an empty 320px column isn't parked.
+//
+// The pane's visibility follows ONLY this collapsed/expanded toggle — selecting a
+// file or folder no longer force-opens it, so clicking around the listing never
+// interrupts the user's flow. Selection drives the pane's CONTENT (which details
+// to show) when it IS open; it no longer decides whether it's open.
 const collapsed = ref<boolean>(
   prefs.get<boolean>("detailsPaneCollapsed", true)
 );
 const toggleCollapse = () => {
-  // When the pane is open only because something is selected, the chevron
-  // collapses it for next time (it stays visible while the selection lasts);
-  // otherwise it toggles the pin.
-  collapsed.value = selectedCount.value > 0 ? true : !collapsed.value;
+  // A plain pin toggle: the rail's expand affordance opens it, the open pane's
+  // chevron collapses it. The state sticks regardless of what's selected.
+  collapsed.value = !collapsed.value;
   void prefs.set("detailsPaneCollapsed", collapsed.value);
 };
 
-// Full pane (desktop): an item is selected (auto-open) OR the user pinned it
-// open (!collapsed). Mobile: opt-in overlay. Collapsed rail: desktop, nothing
-// selected, not pinned.
+// Full pane (desktop): shown only when the user has expanded it (!collapsed),
+// independent of selection. Mobile: opt-in overlay. Collapsed rail: desktop,
+// whenever collapsed.
 const paneVisible = computed(
   () =>
-    (!isMobile.value && (selectedCount.value > 0 || !collapsed.value)) ||
+    (!isMobile.value && !collapsed.value) ||
     // Mobile: opt-in only. The sheet used to auto-open on any selection,
     // which covered the row and hijacked the user's next tap; now it opens
     // exclusively from the selection toolbar's Details button.
     (isMobile.value && layoutStore.mobileDetailsOpen)
 );
-const showRail = computed(
-  () => !isMobile.value && collapsed.value && selectedCount.value === 0
-);
+const showRail = computed(() => !isMobile.value && collapsed.value);
 
 // Folder summary (nothing selected).
 const folderName = computed(() => fileStore.req?.name || "Home");
