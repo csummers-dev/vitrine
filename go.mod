@@ -1,6 +1,6 @@
 module github.com/filebrowser/filebrowser/v2
 
-go 1.25.0
+go 1.25.11
 
 require (
 	github.com/asdine/storm/v3 v3.2.1
@@ -37,9 +37,9 @@ require (
 	go.etcd.io/bbolt v1.4.3
 	go.senan.xyz/taglib v0.12.0
 	golang.org/x/crypto v0.52.0
-	golang.org/x/image v0.41.0
-	golang.org/x/sync v0.20.0
-	golang.org/x/text v0.37.0
+	golang.org/x/image v0.43.0
+	golang.org/x/sync v0.21.0
+	golang.org/x/text v0.38.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v3 v3.0.1
 )
