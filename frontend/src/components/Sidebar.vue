@@ -309,7 +309,7 @@
             class="list-none m-0 p-0 space-y-0.5"
           >
             <li
-              v-for="(r, ri) in visibleRecents"
+              v-for="r in visibleRecents"
               :key="r.path"
               @contextmenu="onRecentContextMenu(r, $event)"
             >

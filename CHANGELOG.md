@@ -2,6 +2,21 @@
 
 All notable changes to **filebrowser pretty**.
 
+## v2.7.3 — Trash fix & housekeeping
+
+- **Fixed: "Delete forever" failing with 403 Forbidden.** Emptying a trashed
+  folder that contained a read-only subdirectory (or one owned with
+  restrictive permissions by another service — easy to hit on a NAS where
+  several containers write the same volume) failed, because deleting needs
+  write access on every directory inside. Trash deletion now lifts the
+  directory permissions inside the trash and pushes through — you already
+  chose to delete it.
+- Two dead-code removals that slipped past local checks and failed CI lint on
+  the 2.7.2 push (an unused loop index in the sidebar's recents list and an
+  unused store handle in the mobile drawer).
+- Updated `golang.org/x/net` from 0.54.0 to 0.55.0 (indirect dependency,
+  Dependabot).
+
 ## v2.7.2 — Branding, sidebar & header refinements
 
 A refinement patch: your logo and favicon become theme-aware, the sidebar slims
