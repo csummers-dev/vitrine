@@ -105,67 +105,20 @@
             <!-- Control cluster — single adaptive row. Share + Download collapse
                  into the ⋯ More menu to save space (V2-J). -->
             <div class="fb-hero__cluster">
-              <div
-                v-if="!splitActive"
-                class="h-7 p-0.5 rounded-md border border-line bg-surface flex items-center"
-              >
-                <button
-                  @click="setView('list')"
-                  :class="[
-                    'h-6 w-7 rounded flex items-center justify-center transition',
-                    viewMode === 'list'
-                      ? 'bg-elevated text-[var(--color-ink-2)] shadow-sm'
-                      : 'text-ink-3 hover:text-ink-1',
-                  ]"
-                  title="List"
-                  aria-label="List view"
-                >
-                  <Icon name="list" :size="14" />
-                </button>
-                <button
-                  @click="setView('mosaic')"
-                  :class="[
-                    'h-6 w-7 rounded flex items-center justify-center transition',
-                    viewMode === 'mosaic'
-                      ? 'bg-elevated text-[var(--color-ink-2)] shadow-sm'
-                      : 'text-ink-3 hover:text-ink-1',
-                  ]"
-                  title="Grid"
-                  aria-label="Grid view"
-                >
-                  <Icon name="layout-grid" :size="14" />
-                </button>
-                <button
-                  @click="setView('mosaic gallery')"
-                  :class="[
-                    'h-6 w-7 rounded flex items-center justify-center transition',
-                    viewMode === 'mosaic gallery'
-                      ? 'bg-elevated text-[var(--color-ink-2)] shadow-sm'
-                      : 'text-ink-3 hover:text-ink-1',
-                  ]"
-                  title="Gallery"
-                  aria-label="Gallery view"
-                >
-                  <Icon name="image" :size="14" />
-                </button>
-              </div>
-              <!-- Dual-pane split toggle (2.5.0). Hidden when there isn't room for
-                 two panes (narrow / mobile). Highlighted while the split is on. -->
+              <!-- One consolidated View control (v2.7.2 header declutter):
+                   the 3-button layout switcher + the split toggle collapse
+                   into a single popover. The trigger wears the ACTIVE mode's
+                   icon so the current layout stays glanceable; the menu holds
+                   List / Grid / Gallery plus Split view. -->
               <button
-                v-if="splitAvailable"
-                @click="toggleSplit"
-                :class="[
-                  'h-7 w-7 rounded-md border border-line inline-flex items-center justify-center transition',
-                  splitActive
-                    ? 'bg-elevated text-[var(--color-ink-2)] shadow-sm'
-                    : 'bg-surface text-ink-2 hover:bg-elevated',
-                ]"
-                :title="splitActive ? 'Close split view' : 'Split view'"
-                :aria-label="splitActive ? 'Close split view' : 'Split view'"
-                :aria-pressed="splitActive"
+                class="h-7 w-7 rounded-md border border-line bg-surface hover:bg-elevated inline-flex items-center justify-center transition"
+                @click.stop="openViewMenu"
+                :title="`View: ${viewModeLabel}`"
+                :aria-label="`View options — current: ${viewModeLabel}`"
+                aria-haspopup="menu"
               >
                 <Icon
-                  name="columns-2"
+                  :name="viewModeIcon"
                   :size="14"
                   class="text-[var(--color-ink-2)]"
                 />
@@ -340,6 +293,13 @@
           :pos="sortMenuPos"
           :items="sortMenuItems"
           @hide="sortMenuShow = false"
+        />
+        <!-- View popover (v2.7.2): layout + split, one trigger. -->
+        <context-menu
+          :show="viewMenuShow"
+          :pos="viewMenuPos"
+          :items="viewMenuItems"
+          @hide="viewMenuShow = false"
         />
         <!-- Type filter chips (v2.7): client-side filter for the current
              folder's FILES (folders always stay visible). Rendered only when
@@ -3715,6 +3675,58 @@ const SORT_OPTIONS: Array<{ key: SortKey; label: string }> = [
   { key: "extension", label: "Type" },
 ];
 
+// ── View menu (v2.7.2 header declutter) ────────────────────────────
+// One popover replaces the 3-button layout switcher + the split toggle —
+// the cluster read as a crowd. Same anchoring + toggle-on-reclick
+// conventions as the Sort popover below; a check marks the active choice.
+const VIEW_OPTIONS = [
+  { key: "list", label: "List", icon: "list" },
+  { key: "mosaic", label: "Grid", icon: "layout-grid" },
+  { key: "mosaic gallery", label: "Gallery", icon: "image" },
+] as const;
+
+const viewMenuShow = ref(false);
+const viewMenuPos = ref({ x: 0, y: 0 });
+
+const viewModeIcon = computed(
+  () => VIEW_OPTIONS.find((o) => o.key === viewMode.value)?.icon ?? "list"
+);
+const viewModeLabel = computed(
+  () => VIEW_OPTIONS.find((o) => o.key === viewMode.value)?.label ?? "List"
+);
+
+const openViewMenu = (event: MouseEvent) => {
+  if (viewMenuShow.value) {
+    viewMenuShow.value = false;
+    return;
+  }
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  viewMenuPos.value = { x: rect.left, y: rect.bottom + 4 };
+  viewMenuShow.value = true;
+};
+
+const viewMenuItems = computed<MenuItem[]>(() => {
+  const items: MenuItem[] = [
+    { type: "header", label: "Layout" },
+    ...VIEW_OPTIONS.map((o) => ({
+      label: o.label,
+      icon: viewMode.value === o.key ? "check" : o.icon,
+      action: () => void setView(o.key),
+    })),
+  ];
+  if (splitAvailable.value) {
+    items.push(
+      { type: "separator" },
+      {
+        label: splitActive.value ? "Close split view" : "Split view",
+        icon: splitActive.value ? "check" : "columns-2",
+        action: () => toggleSplit(),
+      }
+    );
+  }
+  return items;
+});
+
 const sortMenuShow = ref(false);
 const sortMenuPos = ref<{ x: number; y: number }>({ x: 0, y: 0 });
 
@@ -4663,6 +4675,13 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   .fb-hero {
     padding: 12px 16px 10px;
     flex-wrap: wrap;
+  }
+  /* Phones (v2.7.2): let the right column absorb the row's slack so the
+     full-width search pill (see header.css) actually gets width to fill —
+     the cluster stays right-aligned above it. */
+  .fb-hero__right {
+    flex: 1 1 auto;
+    gap: 8px;
   }
 }
 

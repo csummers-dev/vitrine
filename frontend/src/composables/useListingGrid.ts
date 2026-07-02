@@ -62,6 +62,14 @@ export interface ListingGridOptions {
 const GUTTER = 12; // matches CSS `gap: 12px`
 const MIN_GRID = 160; // matches `minmax(160px, 1fr)`
 const MIN_GALLERY = 220; // matches `minmax(220px, 1fr)` (file tiles)
+// Mobile (v2.7.2): under ~520px of container the CSS grid narrows its tracks
+// to minmax(150px, 1fr) so phones get a 2-up gallery — mirror that here so
+// the virtualization math matches the real column count. Keep both numbers
+// in sync with the @media block in listing.css.
+const MIN_GALLERY_NARROW = 150;
+const NARROW_GALLERY_AT = 520;
+const effectiveGalleryMin = (w: number, min: number): number =>
+  w < NARROW_GALLERY_AT ? MIN_GALLERY_NARROW : min;
 // Calm Minimal: folder tiles now share the SAME track width as file tiles so
 // the gallery reads as one uniform 4:3 grid. Folders used to get narrower
 // 150px tracks (smaller tiles above the divider), which looked ragged against
@@ -123,14 +131,17 @@ export function useListingGrid(opts: ListingGridOptions) {
 
     if (opts.gallery()) {
       // Files use the standard tracks and stay full-bleed 4:3.
-      const f = galleryMetrics(width, MIN_GALLERY);
+      const f = galleryMetrics(width, effectiveGalleryMin(width, MIN_GALLERY));
       filesCols.value = f.c;
       filesTileH.value = f.th;
       // Folders now share the file tracks (one uniform grid). Keep the column
       // count from the track width, and measure the real tile height from the
       // DOM (falling back to the 4:3 metric before a tile has rendered) so the
       // windowing math matches the cards' actual height.
-      const d = galleryMetrics(width, MIN_GALLERY_DIR);
+      const d = galleryMetrics(
+        width,
+        effectiveGalleryMin(width, MIN_GALLERY_DIR)
+      );
       dirsCols.value = d.c;
       const dirsEl = opts.dirsSectionEl();
       const dirTile = dirsEl?.querySelector<HTMLElement>(".item:not(.header)");

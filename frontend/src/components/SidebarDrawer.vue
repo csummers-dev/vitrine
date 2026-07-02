@@ -21,27 +21,9 @@
          pinned (flex-shrink:0); everything here scrolls, so on a short
          viewport the footer is never clipped (the reported cut-off). -->
     <div class="sd__scroll">
-      <!-- ── Primary actions ──────────────────────────────────────────── -->
-      <div v-if="user?.perm.create" class="sd__primary">
-        <button
-          type="button"
-          class="sd__btn sd__btn--primary"
-          @click="newDir"
-          :aria-label="t('sidebar.newFolder')"
-        >
-          <Icon name="folder-plus" :size="15" />
-          <span>{{ t("sidebar.newFolder") }}</span>
-        </button>
-        <button
-          type="button"
-          class="sd__btn sd__btn--ghost"
-          @click="newFile"
-          :aria-label="t('sidebar.newFile')"
-          :title="t('sidebar.newFile')"
-        >
-          <Icon name="file-plus" :size="15" />
-        </button>
-      </div>
+      <!-- v2.7.2: create buttons removed (matching the desktop rail) — the
+           drawer is navigation; creation lives in the listing's ⋯ menu and
+           the empty-folder upload CTA. -->
 
       <!-- ── Navigation ───────────────────────────────────────────────── -->
       <nav v-if="isLoggedIn" class="sd__section sd__nav">
@@ -59,6 +41,18 @@
           <span v-if="filesCount > 0" class="sd__navrow-count">
             {{ filesCount }}
           </span>
+        </button>
+
+        <!-- Trash (v2.7.2): the drawer had NO route to the recycle bin at all
+           — desktop parity, and on mobile this is the only way in. -->
+        <button
+          type="button"
+          class="sd__navrow"
+          :class="{ 'is-active': isTrash }"
+          @click="goTrash"
+        >
+          <Icon name="trash-2" :size="15" />
+          <span class="sd__navrow-label">{{ t("sidebar.trash") }}</span>
         </button>
 
         <!-- Settings + Profile both live on the user row at the bottom (the
@@ -458,9 +452,9 @@ const onFavTap = (path: string, event: MouseEvent) => {
 };
 
 // ── Actions ────────────────────────────────────────────────────────────
-const newDir = () => layoutStore.showHover("newDir");
-const newFile = () => layoutStore.showHover("newFile");
 const goFiles = () => router.push("/files/");
+const goTrash = () => router.push("/trash");
+const isTrash = computed(() => route.path.startsWith("/trash"));
 const goProfile = () => router.push("/settings/profile");
 const logout = () => auth.logout();
 
@@ -500,6 +494,9 @@ const onItemClick = (_event: MouseEvent) => {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  /* v2.7.2: the removed create-button row used to provide the top spacing —
+     keep a touch of air between the header and the first section. */
+  padding-top: 6px;
 }
 
 /* ── Workspace header ────────────────────────────────────────────────── */
@@ -550,55 +547,6 @@ const onItemClick = (_event: MouseEvent) => {
 .sd__brand-version:hover {
   color: var(--color-accent, #6e72d9);
   text-decoration: underline;
-}
-
-/* ── Primary actions row ─────────────────────────────────────────────── */
-.sd__primary {
-  display: flex;
-  gap: 8px;
-  padding: 12px 16px 8px;
-  flex-shrink: 0;
-}
-
-.sd__btn {
-  height: 36px;
-  border-radius: 8px;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  cursor: pointer;
-  transition:
-    background-color var(--dur-base) ease,
-    border-color var(--dur-base) ease,
-    color var(--dur-base) ease;
-}
-
-.sd__btn--primary {
-  flex: 1;
-  background: var(--accent-gradient);
-  color: white;
-  border: 1px solid var(--color-accent, #6e72d9);
-  box-shadow: 0 1px 2px rgba(110, 114, 217, 0.18);
-}
-
-.sd__btn--primary:hover {
-  background: var(--accent-gradient-strong);
-}
-
-.sd__btn--ghost {
-  width: 36px;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
-}
-
-.sd__btn--ghost:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
 }
 
 /* ── Section + nav rows ──────────────────────────────────────────────── */

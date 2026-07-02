@@ -142,9 +142,9 @@ html[dir="rtl"] #search.active #input {
   left: 0;
 }
 
-@media (max-width: 800px) {
-  /* Below 800px, collapse the idle pill to icon-button width (label hidden
-     via CSS below). */
+@media (max-width: 800px) and (min-width: 768px) {
+  /* Tablet squeeze (768–800px): collapse the idle pill to icon-button width
+     (label hidden via CSS below). */
   #search {
     width: 36px;
     max-width: 36px;
@@ -159,6 +159,25 @@ html[dir="rtl"] #search.active #input {
   }
   /* The active input still overlays leftward from the (now 36px) trigger slot,
      so no narrow-only override is needed. */
+}
+
+/* Phones (v2.7.2): the collapsed 36px icon floated alone on its own row and
+   read as a stranded circle. Go the other way — a full-width search pill,
+   the classic mobile pattern. The expanded input + results dropdown share the
+   pill's width, so activation is an in-place morph rather than an overlay
+   growing sideways. (The keyboard hint stays hidden — no ⌘K on touch.) */
+@media (max-width: 767px) {
+  #search {
+    width: 100%;
+    max-width: none;
+    --search-w-expanded: 100%;
+  }
+  #search .search-kbd {
+    display: none;
+  }
+  .search-trigger {
+    justify-content: flex-start;
+  }
 }
 
 /* Inactive: button-shaped trigger */
