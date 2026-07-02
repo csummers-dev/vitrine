@@ -2,6 +2,33 @@
 
 All notable changes to **filebrowser pretty**.
 
+## v2.7.1 — The panel shell
+
+A visual patch on top of 2.7.0: the layout now actually shows the depth the new
+palette was built for. (2.7.0's canvas and panel colors were right, but the
+files view painted everything with the page background, so the whole app read
+as one flat color.)
+
+- **Content floats as panels.** The file listing, the second pane in split
+  view, and the details rail are now rounded surface cards with a hairline
+  border and a soft shadow, sitting on the deeper canvas with a small gutter —
+  the layout the Dusty Minimal palette was designed around. Split view reads as
+  two clean cards side by side.
+- **The sidebar went chromeless.** Its right border is gone; the gutter alone
+  separates it from the content card, and its accent button and storage card
+  stand out as the rail's only chrome.
+- **Trash matches.** The Trash page sits in the same floating panel as the
+  files view instead of stretching edge to edge.
+- **Ambient background still works.** With the mesh and translucent surfaces
+  enabled, the panels thin slightly so the glow shows through — without
+  flattening the canvas-and-panel depth again. On phones the gutters collapse
+  and the page itself becomes the panel, as before.
+- **Theme-aware branding.** The logo in the sidebar, mobile drawer, and login
+  card now switches between its light and dark variants with your theme, the
+  favicon follows your system's light/dark appearance live (the browser tab
+  it sits on is drawn by the OS theme, not the app's), and the installed-app
+  icons use the new light set.
+
 ## v2.7.0 — Dusty Minimal & a quality-of-life batch
 
 A follow-up pass on the Calm Minimal redesign — the whole palette relaxes into

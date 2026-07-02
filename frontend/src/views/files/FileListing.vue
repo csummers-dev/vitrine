@@ -1,6 +1,11 @@
 <template>
   <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
-    <div class="flex-1 flex min-h-0 overflow-hidden">
+    <!-- fb-columns (v2.7): the content columns float as SURFACE PANELS on the
+         deeper canvas (gutter + rounded hairline cards — see listing.css).
+         This makes the canvas↔surface separation actually visible; before,
+         the main column was transparent over the shell canvas and the whole
+         app read as one flat sheet. -->
+    <div class="fb-columns flex-1 flex min-h-0 overflow-hidden">
       <!-- Primary column (V2-J): hero + scrolling listing + bottom breadcrumb
            bar, stacked. The details rail (InfoPane) sits beside it as a
            full-height sibling. -->

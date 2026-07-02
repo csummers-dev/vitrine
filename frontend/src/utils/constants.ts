@@ -13,9 +13,12 @@ const recaptcha: string = window.FileBrowser.ReCaptcha;
 const recaptchaKey: string = window.FileBrowser.ReCaptchaKey;
 const signup: boolean = window.FileBrowser.Signup;
 const version: string = window.FileBrowser.Version;
-// PNG brand mark used by the sidebar/drawer top-left glyph (logo.svg is the
-// login-screen wordmark). Served from public/img/logo.png.
-const logoPngURL = `${staticURL}/img/logo.png`;
+// PNG brand marks used by the sidebar/drawer top-left glyph and the login
+// card. Two variants (v2.7.x): the app picks per the ACTIVE theme via
+// useBrandLogo (html.dark), not prefers-color-scheme, so the mark always
+// matches the chrome around it. Served from public/img/.
+const logoLightPngURL = `${staticURL}/img/logo-light.png`;
+const logoDarkPngURL = `${staticURL}/img/logo-dark.png`;
 const noAuth: boolean = window.FileBrowser.NoAuth;
 const authMethod = window.FileBrowser.AuthMethod;
 const logoutPage: string = window.FileBrowser.LogoutPage;
@@ -60,7 +63,8 @@ export {
   disableExternal,
   disableUsedPercentage,
   baseURL,
-  logoPngURL,
+  logoLightPngURL,
+  logoDarkPngURL,
   recaptcha,
   recaptchaKey,
   signup,

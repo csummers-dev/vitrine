@@ -615,7 +615,7 @@ const onSave = async () => {
   margin-bottom: 16px;
   padding: 10px 12px;
   border-radius: 8px;
-  background: color-mix(in srgb, var(--c-amber) 14%, transparent);
+  background: var(--status-warning-soft);
   color: var(--color-ink-2, #52525b);
   font-size: 12.5px;
   line-height: 1.4;
