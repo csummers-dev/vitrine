@@ -66,31 +66,13 @@
         </button>
       </div>
 
-      <!-- Primary actions -->
-      <div
-        v-if="user.perm.create"
-        class="px-3 pb-2 flex gap-1.5 max-md:flex-col max-md:items-center s-rail-row"
-      >
-        <button
-          @click="showHover('newDir')"
-          class="flex-1 h-8 rounded-md btn-accent-gradient text-white text-[13px] font-medium flex items-center justify-center gap-1.5 transition shadow-sm max-md:flex-none max-md:w-10 max-md:h-10 max-md:p-0 s-rail-btn"
-          :title="$t('sidebar.newFolder')"
-          :aria-label="$t('sidebar.newFolder')"
-        >
-          <Icon name="folder-plus" :size="14" />
-          <span class="max-md:hidden s-hide">{{
-            $t("sidebar.newFolder")
-          }}</span>
-        </button>
-        <button
-          @click="showHover('newFile')"
-          class="sidebar-newfile w-8 h-8 max-md:w-10 max-md:h-10 rounded-md border flex items-center justify-center transition s-rail-btn"
-          :title="$t('sidebar.newFile')"
-          :aria-label="$t('sidebar.newFile')"
-        >
-          <Icon name="file-plus" :size="14" />
-        </button>
-      </div>
+      <!-- v2.7.x: the "New folder" / "new file" CTA block is GONE from the
+           rail. Creation lives where content lives — the listing's ⋯ menu,
+           the empty-space right-click, the split header's button, and the
+           inline new-item row — so the sidebar stays pure navigation (the
+           gradient slab was also the last heavy chrome on the canvas rail).
+           The mobile DRAWER keeps its create buttons: touch has no
+           right-click, so the drawer stays the command hub there. -->
 
       <!-- Quick links -->
       <nav
@@ -111,7 +93,12 @@
           <Icon
             name="folder"
             :size="14"
-            class="text-[var(--color-ink-2)] shrink-0"
+            class="shrink-0"
+            :class="
+              mainNavActive
+                ? 'text-[var(--color-accent-ink)]'
+                : 'text-[var(--color-ink-2)]'
+            "
           />
           <span class="flex-1 max-md:hidden s-hide">{{
             rootLabel || $t("sidebar.myFiles")
@@ -140,7 +127,12 @@
           <Icon
             name="trash-2"
             :size="14"
-            class="text-[var(--color-ink-2)] shrink-0"
+            class="shrink-0"
+            :class="
+              trashNavActive
+                ? 'text-[var(--color-accent-ink)]'
+                : 'text-[var(--color-ink-2)]'
+            "
           />
           <span class="flex-1 max-md:hidden s-hide">{{
             $t("sidebar.trash")
@@ -207,7 +199,7 @@
           <div class="px-2 pb-1.5">
             <button
               type="button"
-              class="flex items-center gap-1 text-[10px] font-semibold text-ink-3 uppercase tracking-[0.06em] hover:text-ink-2 transition"
+              class="flex items-center gap-1 text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] hover:text-ink-2 transition"
               :aria-expanded="!isSectionCollapsed('favorites')"
               @click="toggleSection('favorites')"
             >
@@ -298,7 +290,7 @@
           <div class="px-2 pb-1.5 flex items-center justify-between gap-2">
             <button
               type="button"
-              class="flex items-center gap-1 text-[10px] font-semibold text-ink-3 uppercase tracking-[0.06em] hover:text-ink-2 transition"
+              class="flex items-center gap-1 text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] hover:text-ink-2 transition"
               :aria-expanded="!isSectionCollapsed('recent')"
               @click="toggleSection('recent')"
             >
@@ -330,8 +322,7 @@
                 <Icon
                   name="file"
                   :size="12"
-                  :style="{ color: recentHue(ri) }"
-                  class="shrink-0"
+                  class="text-[var(--color-ink-3)] shrink-0"
                 />
                 <span class="truncate flex-1">{{ recentLabel(r.name) }}</span>
               </router-link>
@@ -409,10 +400,15 @@
       </div>
     </div>
 
-    <!-- User row -->
+    <!-- User row (inset divider — a full-bleed line read as leftover chrome
+         on the chromeless rail; collapsed/mobile rails stay divider-less) -->
     <div
       v-if="isLoggedIn"
-      class="px-3 pb-3 border-t border-line pt-3 flex items-center gap-1.5 max-md:px-0 max-md:flex-col max-md:gap-1 s-rail-row"
+      class="mx-4 border-t border-line max-md:hidden s-hide"
+    ></div>
+    <div
+      v-if="isLoggedIn"
+      class="px-3 pb-3 pt-2 flex items-center gap-1.5 max-md:px-0 max-md:flex-col max-md:gap-1 s-rail-row"
     >
       <button
         @click="toAccountSettings"
@@ -964,12 +960,9 @@ export default {
     },
   },
   methods: {
-    ...mapActions(useLayoutStore, ["closeHovers", "showHover"]),
+    ...mapActions(useLayoutStore, ["closeHovers"]),
     // Calm Minimal: recent-file icons are a uniform muted ink (chrome), not the
     // old six-hue cycle.
-    recentHue() {
-      return "var(--color-ink-2, #52525b)";
-    },
     abortOngoingFetchUsage() {
       this.usageAbortController.abort();
     },
@@ -1049,15 +1042,6 @@ export default {
 /* New-file button: green-tinted so the secondary "create" action reads as
    colorful alongside the accent-gradient New folder button (rather than a
    flat neutral square). */
-.sidebar-newfile {
-  color: var(--c-green);
-  border-color: color-mix(in srgb, var(--c-green) 30%, var(--color-line));
-  background: color-mix(in srgb, var(--c-green) 10%, var(--color-surface));
-}
-.sidebar-newfile:hover {
-  background: color-mix(in srgb, var(--c-green) 18%, var(--color-surface));
-}
-
 /* ── Favorites drag affordances ──────────────────────────────────────
    Reordering a favorite must NOT look like moving a file *into* a folder.
    Move-into keeps the solid accent ring (set via Tailwind in the template);

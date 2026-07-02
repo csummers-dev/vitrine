@@ -942,6 +942,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }
 
+
 /* Calm Minimal: the folder section shares the SAME track width as the file
    section (both minmax(220px) from rule A) so folder + file tiles are the same
    size and the gallery reads as one uniform 4:3 grid. Folders used to get
@@ -1696,5 +1697,19 @@ html.dark .fb-columns > .info-pane-rail {
     border: 0;
     border-left: 1px solid var(--color-line);
     box-shadow: none;
+  }
+}
+
+/* Mobile gallery tracks (v2.7.2): 220px tracks yield ONE enormous column on
+   a phone — narrow them so the gallery reads 2-up. Lives at the END of the
+   file: the dirs section's own track rule ties on specificity, so source
+   order is what wins here (media queries add no priority). Media (not
+   container) query is safe: split forces list mode, so the gallery only
+   renders at full content width. Kept in sync with effectiveGalleryMin() in
+   composables/useListingGrid.ts. */
+@media (max-width: 520px) {
+  :is(#listing, .fb-listing).mosaic.gallery .listing-section,
+  :is(#listing, .fb-listing).mosaic.gallery .listing-section--dirs {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
 }

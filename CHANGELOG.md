@@ -2,6 +2,38 @@
 
 All notable changes to **filebrowser pretty**.
 
+## v2.7.2 — Branding, sidebar & header refinements
+
+A refinement patch: your logo and favicon become theme-aware, the sidebar slims
+down to pure navigation, and the header sheds its button crowd.
+
+- **Theme-aware branding.** The logo in the sidebar, mobile drawer, and login
+  card now switches between its light and dark variants with your theme, the
+  favicon follows your system's light/dark appearance live (the browser tab
+  it sits on is drawn by the OS theme, not the app's), and the installed-app
+  icons use the new light set.
+- **Truer favorites gold.** Favorite stars share one color everywhere and it's
+  a luminous gold again (the dusty pass had muddied it to brown in light
+  mode). Gold now means favorites only — the Rename action button and the
+  conflict-dialog icon that borrowed it use their proper muted and warning
+  tones.
+- **A quieter sidebar.** The New folder / new file buttons left the rail (and
+  the mobile drawer) — creation lives in the listing: the ⋯ menu, right-click
+  on empty space, and the split-view header. A detail pass rides along: the
+  active nav item's icon now tints with its label, the Favorites/Recent
+  section labels match the app's eyebrow size, and the account row's divider
+  is inset instead of running edge to edge.
+- **A calmer header.** The toolbar's crowd of buttons thins to four: View,
+  Sort, Upload, and ⋯. The new View button wears the current layout's icon
+  and opens one popover holding List / Grid / Gallery and Split view —
+  replacing the three-button switcher and the separate split toggle.
+- **A real mobile pass.** Gallery view is a proper two-up grid on phones
+  (tiles used to render one enormous column), search is a full-width pill
+  instead of a stranded icon on its own row, Quick Look fits the screen
+  (its panel used to overflow), and the drawer gained the Trash entry it
+  never had — previously there was no way to reach the recycle bin on
+  mobile at all.
+
 ## v2.7.1 — The panel shell
 
 A visual patch on top of 2.7.0: the layout now actually shows the depth the new
@@ -23,11 +55,6 @@ as one flat color.)
   enabled, the panels thin slightly so the glow shows through — without
   flattening the canvas-and-panel depth again. On phones the gutters collapse
   and the page itself becomes the panel, as before.
-- **Theme-aware branding.** The logo in the sidebar, mobile drawer, and login
-  card now switches between its light and dark variants with your theme, the
-  favicon follows your system's light/dark appearance live (the browser tab
-  it sits on is drawn by the OS theme, not the app's), and the installed-app
-  icons use the new light set.
 
 ## v2.7.0 — Dusty Minimal & a quality-of-life batch
 

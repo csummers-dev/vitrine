@@ -378,6 +378,31 @@ watch(item, (v, old) => {
   transform: scale(0.98);
 }
 
+/* Phones (v2.7.2): the desktop 40px gutter + 320px min-width overflowed a
+   375px viewport. Slim gutters, let the panel span the screen, and size the
+   document frames to match. */
+@media (max-width: 640px) {
+  .quick-peek {
+    padding: 12px;
+  }
+  .quick-peek__panel {
+    min-width: 0;
+    width: 100%;
+    max-width: calc(100vw - 24px);
+    max-height: 92vh;
+  }
+  .quick-peek__media {
+    max-height: calc(92vh - 50px);
+  }
+  .quick-peek__doc {
+    width: 100%;
+    height: calc(92vh - 50px);
+  }
+  .quick-peek__fallback {
+    padding: 32px 20px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .quick-peek-enter-active,
   .quick-peek-leave-active,
