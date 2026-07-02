@@ -201,13 +201,13 @@ const summaryPerms = (user: IUser) => {
 
 .users-btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #5e6ad2);
+  border-color: var(--color-accent, #6e72d9);
   color: white;
 }
 
 .users-btn--primary:hover {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #4f5ac4);
+  border-color: var(--color-accent-strong, #575cc7);
 }
 
 /* ── User list ───────────────────────────────────────────────────────── */
@@ -303,8 +303,8 @@ const summaryPerms = (user: IUser) => {
 }
 
 .users-card__chip.is-admin {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.1));
-  color: var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
+  color: var(--color-accent, #6e72d9);
 }
 
 .users-card__scope {

@@ -35,3 +35,21 @@ export function displayName(
   if (isDir || showExt) return name;
   return splitExtension(name).base;
 }
+
+/**
+ * The name a clipboard-pasted file should upload under (v2.7 paste-to-upload).
+ *
+ * Screenshots and copied images land on the OS clipboard under a generic name
+ * (macOS/Chrome: "image.png") — every paste would collide with the last one
+ * and drag the user through the conflict dialog. Those get a timestamped name
+ * instead ("Pasted 2026-07-01 at 22.41.03.png"); anything with a real name
+ * (a file copied in Finder keeps its own name) passes through untouched.
+ */
+export function pastedFileName(name: string, when: Date): string {
+  if (!/^image\.(png|jpe?g|gif|webp|tiff?|bmp)$/i.test(name)) return name;
+  const { ext } = splitExtension(name);
+  const p = (n: number) => String(n).padStart(2, "0");
+  const day = `${when.getFullYear()}-${p(when.getMonth() + 1)}-${p(when.getDate())}`;
+  const time = `${p(when.getHours())}.${p(when.getMinutes())}.${p(when.getSeconds())}`;
+  return `Pasted ${day} at ${time}${ext}`;
+}

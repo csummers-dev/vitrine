@@ -74,37 +74,37 @@ const toneClass = computed(() => `is-${props.tone}`);
      matching the app's accent-gradient treatment elsewhere. */
   background: linear-gradient(
     140deg,
-    var(--color-accent-soft, rgba(94, 106, 210, 0.1)) 0%,
+    var(--color-accent-soft, rgba(110, 114, 217, 0.1)) 0%,
     var(--color-elevated, #f4f4f5) 100%
   );
-  color: var(--color-accent, #5e6ad2);
-  box-shadow: inset 0 0 0 1px var(--color-accent-soft, rgba(94, 106, 210, 0.1));
+  color: var(--color-accent, #6e72d9);
+  box-shadow: inset 0 0 0 1px var(--color-accent-soft, rgba(110, 114, 217, 0.1));
 }
 
 .empty-state__icon.is-info {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.1));
-  color: var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
+  color: var(--color-accent, #6e72d9);
 }
 
 .empty-state__icon.is-danger {
-  background: rgba(220, 38, 38, 0.12);
-  color: #dc2626;
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
 }
 
 .empty-state__icon.is-warn {
-  background: rgba(217, 119, 6, 0.12);
-  color: #d97706;
+  background: var(--status-warning-soft);
+  color: var(--status-warning);
 }
 
 /* Dark-mode tinting for status chips */
 html.dark .empty-state__icon.is-danger {
-  background: rgba(220, 38, 38, 0.18);
-  color: #f87171;
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
 }
 
 html.dark .empty-state__icon.is-warn {
-  background: rgba(217, 119, 6, 0.2);
-  color: #fbbf24;
+  background: var(--status-warning-soft);
+  color: var(--status-warning);
 }
 
 .empty-state__title {

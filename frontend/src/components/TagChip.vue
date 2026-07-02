@@ -163,7 +163,7 @@ const onRemove = (event: MouseEvent) => {
 }
 
 .tag-chip--interactive:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 1px;
 }
 

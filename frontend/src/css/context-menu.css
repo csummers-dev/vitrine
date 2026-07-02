@@ -84,12 +84,13 @@
   border: 0;
 }
 
-/* Danger items (delete) */
+/* Danger items (delete) — dusty status red; flips to the pastel in dark
+   (was `--red`, the legacy saturated Material value). */
 .context-menu #delete-button:hover {
-  background: rgba(239, 68, 68, 0.08);
-  color: var(--color-red, var(--red));
+  background: rgba(176, 96, 96, 0.08);
+  color: var(--status-danger);
 }
 
 .context-menu #delete-button:hover svg {
-  color: var(--color-red, var(--red));
+  color: var(--status-danger);
 }

@@ -437,6 +437,7 @@ import { useFavorites } from "@/composables/useFavorites";
 import { useFavoriteTitleDialog } from "@/composables/useFavoriteTitleDialog";
 import { useListingNavigation } from "@/composables/useListingNavigation";
 import { TypeaheadSession } from "@/utils/typeahead";
+import { useQuickPeek } from "@/composables/useQuickPeek";
 import { sortListing } from "@/utils/secondarySort";
 import { copy as copyToClipboard } from "@/utils/clipboard";
 import * as upload from "@/utils/upload";
@@ -1215,6 +1216,14 @@ const typeaheadPushB = (ch: string) => {
   revealRow(matchIndex);
 };
 
+// Quick Look: pane B's "single selected item" getter for the shared peek
+// overlay (rendered once in FileListing; state lives in the singleton).
+const quickPeek = useQuickPeek();
+const singleSelectedItemB = (): ResourceItem | null =>
+  panes.selected.length === 1
+    ? (panes.req?.items[panes.selected[0]] ?? null)
+    : null;
+
 const onPaneKeydown = (event: KeyboardEvent) => {
   if (!panes.split || panes.activePane !== "b") return;
   if (layoutStore.currentPrompt !== null) return; // a global prompt owns the keys
@@ -1272,6 +1281,22 @@ const onPaneKeydown = (event: KeyboardEvent) => {
         event.preventDefault();
         paneActions.remove(undefined, event.shiftKey);
         return;
+      case " ": {
+        // Quick Look, mirroring pane A: Space with a single selected item
+        // toggles the peek overlay; a space mid-type-ahead still joins the
+        // search prefix. The one <QuickPeek/> instance (in FileListing) shows
+        // whichever pane's getter opened it.
+        if (typeaheadB.isActive()) {
+          event.preventDefault();
+          typeaheadPushB(event.key);
+          return;
+        }
+        const peekItem = singleSelectedItemB();
+        if (!peekItem) return;
+        event.preventDefault();
+        quickPeek.toggle(singleSelectedItemB);
+        return;
+      }
     }
     // Type-ahead — printable single chars (and a space mid-session, e.g.
     // "My Doc"), matching FileListing's behaviour.
@@ -1325,18 +1350,18 @@ onBeforeUnmount(() => {
    split-only header shares one source of truth. Only the pane-B-specific active
    tint stays scoped here (pane A uses `.fb-primary--active`). */
 .compare-pane--active .compare-head {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.06));
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.06));
   /* Accent underline so the active pane reads clearly from its header alone
      (the edge ring was removed). Inset shadow → no layout shift. */
-  box-shadow: inset 0 -2px 0 0 var(--color-accent, #5e6ad2);
+  box-shadow: inset 0 -2px 0 0 var(--color-accent, #6e72d9);
 }
 /* Parent spring-load drop target (#18): dragging a selection onto pane B's
    header navigates up a folder. Matches pane A's `.compare-head--drop`. The
    accent ring wins over the active-pane underline while a drag hovers. */
 .compare-head--drop,
 .compare-pane--active .compare-head--drop {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.08));
-  box-shadow: inset 0 0 0 2px var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.08));
+  box-shadow: inset 0 0 0 2px var(--color-accent, #6e72d9);
 }
 
 /* Per-pane breadcrumb at the bottom of pane B (Request #3). Mirrors pane A's
@@ -1467,8 +1492,8 @@ onBeforeUnmount(() => {
   background: rgba(255, 255, 255, 0.12);
 }
 .compare-pill__btn--danger:hover {
-  background: rgba(239, 68, 68, 0.2);
-  color: rgb(252, 165, 165);
+  background: rgba(176, 96, 96, 0.2);
+  color: var(--status-danger);
 }
 
 .compare-body {
@@ -1480,10 +1505,10 @@ onBeforeUnmount(() => {
 }
 /* Cross-pane drop affordance — a dashed accent frame while a drag hovers. */
 .compare-body--drop {
-  outline: 2px dashed var(--color-accent, #5e6ad2);
+  outline: 2px dashed var(--color-accent, #6e72d9);
   outline-offset: -4px;
   border-radius: 8px;
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.06));
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.06));
 }
 
 /* The `.fb-listing.list` container picks up the global row layout from

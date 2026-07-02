@@ -1658,7 +1658,7 @@ const { lengthY } = useSwipe(stageEl, {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-accent, #5e6ad2);
+  color: var(--color-accent, #6e72d9);
 }
 
 .preview-spin {
@@ -1699,12 +1699,12 @@ const { lengthY } = useSwipe(stageEl, {
 /* Archive-orange squircle matches the file-icon system tint for .zip
    files in the listing — visual continuity from row to preview. */
 .preview-blob__icon--zip {
-  background: rgba(251, 146, 60, 0.16);
-  color: #c2410c;
+  background: var(--tint-archive-bg);
+  color: var(--tint-archive-fg);
 }
 html.dark .preview-blob__icon--zip {
-  background: rgba(251, 146, 60, 0.22);
-  color: #fdba74;
+  background: var(--tint-archive-bg);
+  color: var(--tint-archive-fg);
 }
 
 .preview-blob__title {
@@ -1743,7 +1743,7 @@ html.dark .preview-blob__icon--zip {
 
 .preview-blob__btn--primary {
   background: var(--accent-gradient);
-  border: 1px solid var(--color-accent, #5e6ad2);
+  border: 1px solid var(--color-accent, #6e72d9);
   color: white;
 }
 .preview-blob__btn--primary:hover {
@@ -1784,7 +1784,7 @@ html.dark .preview-blob__icon--zip {
   border-radius: 4px;
 }
 .preview-page__input:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 1px;
 }
 .preview-page__sep {
@@ -1856,8 +1856,8 @@ html.dark .preview-blob__icon--zip {
   color: var(--color-ink-1, #18181b);
 }
 .preview-fit__btn.is-active {
-  background: var(--color-selected, rgba(94, 106, 210, 0.08));
-  color: var(--color-accent, #5e6ad2);
+  background: var(--color-selected, rgba(110, 114, 217, 0.08));
+  color: var(--color-accent, #6e72d9);
   border-color: transparent;
 }
 
@@ -1893,7 +1893,7 @@ html.dark .preview-blob__icon--zip {
   color: var(--color-ink-1, #18181b);
 }
 .preview-toolbar-format__btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 1px;
 }
 /* When the label is hidden at narrow widths, shrink to icon-only square
@@ -1972,9 +1972,9 @@ html.dark .preview-info__artwork {
   color: var(--color-ink-1, #18181b);
 }
 .preview-epub-theme-btn.is-active {
-  background: var(--color-selected, rgba(94, 106, 210, 0.08));
+  background: var(--color-selected, rgba(110, 114, 217, 0.08));
   border-color: transparent;
-  color: var(--color-accent-ink, #5e6ad2);
+  color: var(--color-accent-ink, #6e72d9);
 }
 
 /* 2.1 #3: text-view controls in the details rail — full-width stacked buttons
@@ -2008,7 +2008,7 @@ html.dark .preview-info__artwork {
   background: var(--color-elevated, #f4f4f5);
 }
 .preview-text-btn.is-active {
-  background: var(--color-selected, rgba(94, 106, 210, 0.08));
+  background: var(--color-selected, rgba(110, 114, 217, 0.08));
   border-color: transparent;
 }
 
@@ -2068,12 +2068,12 @@ html.dark .preview-info__artwork {
   color: var(--color-ink-1, #18181b);
 }
 .preview-epub-toc__item.is-active {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.1));
-  color: var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
+  color: var(--color-accent, #6e72d9);
   font-weight: 600;
 }
 .preview-epub-toc__item:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: -2px;
 }
 </style>

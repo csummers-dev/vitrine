@@ -73,40 +73,43 @@ const parts = computed<{ text: string; accent: boolean; chars: string[] }[]>(
   font-weight: inherit;
 }
 .brand-name__ltr--0 {
-  color: #5e6ad2;
+  color: #545aae;
 } /* lilac */
 .brand-name__ltr--1 {
-  color: #3b82f6;
+  color: #4a6da3;
 } /* blue */
 .brand-name__ltr--2 {
-  color: #0d9488;
+  color: #35786c;
 } /* teal */
 .brand-name__ltr--3 {
-  color: #16a34a;
+  color: #4d7a4e;
 } /* green */
 .brand-name__ltr--4 {
-  color: #d97706;
+  color: #9c5f45;
 } /* orange */
 .brand-name__ltr--5 {
-  color: #e11d48;
+  color: #a84e4e;
 } /* red */
 
-/* Lilac is the brand primary and reads well on light AND dark, so it keeps its
-   base #5e6ad2 in dark (no override) — unlike the other five, which lift to
-   lighter tones for contrast on the dark canvas. */
+/* Dusty palette (v2.7): the light values above are deep enough for the light
+   canvas, so every letter — lilac included — lifts to its dusty pastel in
+   dark. */
+:global(html.dark) .brand-name__ltr--0 {
+  color: #a9aede;
+}
 :global(html.dark) .brand-name__ltr--1 {
-  color: #93c5fd;
+  color: #a3bede;
 }
 :global(html.dark) .brand-name__ltr--2 {
-  color: #2dd4bf;
+  color: #93c4ba;
 }
 :global(html.dark) .brand-name__ltr--3 {
-  color: #4ade80;
+  color: #a3c4a4;
 }
 :global(html.dark) .brand-name__ltr--4 {
-  color: #fbbf24;
+  color: #d3a58e;
 }
 :global(html.dark) .brand-name__ltr--5 {
-  color: #fb7185;
+  color: #dda0a0;
 }
 </style>

@@ -151,8 +151,8 @@ const cancel = () => {
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.1));
-  color: var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
+  color: var(--color-accent, #6e72d9);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -163,8 +163,8 @@ const cancel = () => {
 }
 
 .cpw__icon.is-error {
-  background: #fef2f2;
-  color: #dc2626;
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
 }
 
 .cpw__text {
@@ -204,18 +204,18 @@ const cancel = () => {
 }
 
 .cpw__input:focus {
-  border-color: var(--color-accent, #5e6ad2);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  border-color: var(--color-accent, #6e72d9);
+  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
 }
 
 .cpw__input.is-error {
-  border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+  border-color: var(--status-danger-fill);
+  box-shadow: 0 0 0 3px var(--status-danger-soft);
 }
 
 .cpw__input.is-error:focus {
-  border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25);
+  border-color: var(--status-danger-fill);
+  box-shadow: 0 0 0 3px rgba(176, 96, 96, 0.25);
 }
 
 .cpw__input:disabled {
@@ -227,7 +227,7 @@ const cancel = () => {
 .cpw__error {
   margin: 6px 0 0;
   font-size: 12px;
-  color: #dc2626;
+  color: var(--status-danger);
   line-height: 1.4;
 }
 
@@ -259,7 +259,7 @@ const cancel = () => {
 }
 
 .cpw__btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 1px;
 }
 
@@ -276,13 +276,13 @@ const cancel = () => {
 
 .cpw__btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #5e6ad2);
+  border-color: var(--color-accent, #6e72d9);
   color: white;
 }
 
 .cpw__btn--primary:hover:not(:disabled) {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #4f5ac4);
+  border-color: var(--color-accent-strong, #575cc7);
 }
 
 .cpw__btn:disabled {

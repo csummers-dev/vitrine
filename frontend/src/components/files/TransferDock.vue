@@ -130,10 +130,12 @@ import {
 } from "vue";
 import { useToast } from "vue-toastification";
 import Icon from "@/components/Icon.vue";
+import UndoToast from "@/components/UndoToast.vue";
 import { filesize } from "@/utils";
 import { transferPercent, type TransferJob } from "@/api/jobs";
 import { useTransfers } from "@/composables/useTransfers";
 import {
+  buildUndoMoveItems,
   isTransferRowVisible,
   shouldAutoSelectTransfer,
   transferTouchesFolder,
@@ -147,7 +149,7 @@ import { useFileStore } from "@/stores/file";
 import { usePanesStore } from "@/stores/panes";
 import { useUploadStore } from "@/stores/upload";
 
-const { jobs, bootstrap, cancel, dismiss, retry } = useTransfers();
+const { jobs, bootstrap, cancel, dismiss, retry, start } = useTransfers();
 const fileStore = useFileStore();
 const panesStore = usePanesStore();
 const uploadStore = useUploadStore();
@@ -179,6 +181,51 @@ const onRetry = async (id: string): Promise<void> => {
     next.delete(id);
     retrying.value = next;
   }
+};
+
+// ── Move-undo toast ─────────────────────────────────────────────────────
+// A completed MOVE is reversible: the job's fromPaths/toPaths are index-
+// aligned (jobs.Snapshot builds both from the same items slice), so undo is a
+// fresh move job with every pair flipped. Copies are excluded — "undoing" a
+// copy would DELETE files, which doesn't belong on a toast. The undo runs
+// through the normal transfer pipeline, so it gets the dock, retry, and (when
+// IT settles) its own undo toast — which acts as redo.
+const UNDO_WINDOW_MS = 5000;
+
+const undoMove = (j: TransferJob): void => {
+  const reversed = buildUndoMoveItems(j);
+  if (reversed.length === 0) return;
+  void start("move", reversed).catch((e) => {
+    toast.error((e as Error)?.message || "Couldn't undo the move");
+  });
+};
+
+const offerMoveUndo = (j: TransferJob): void => {
+  if (j.kind !== "move") return;
+  if (buildUndoMoveItems(j).length === 0) return;
+  const message =
+    j.itemCount === 1 && j.name
+      ? `Moved “${j.name}”`
+      : `Moved ${j.itemCount} items`;
+  const toastId = toast(
+    {
+      component: UndoToast,
+      props: {
+        message,
+        icon: "corner-up-left",
+        onClick: () => {
+          toast.dismiss(toastId);
+          undoMove(j);
+        },
+      },
+    },
+    {
+      timeout: UNDO_WINDOW_MS,
+      closeOnClick: false,
+      icon: false,
+      toastClassName: "toast--undo",
+    }
+  );
 };
 
 // Both this dock and the upload dock anchor to the bottom-right corner. When an
@@ -447,6 +494,10 @@ watch(
         // Dual-pane: also refresh pane B (a cheap re-fetch; no-op if its folder
         // wasn't touched), so a cross-pane move/copy settles in both panes.
         panesStore.refreshB();
+        // Offer to reverse a completed move. Only fires for a settle OBSERVED
+        // this session — the `prev !== undefined` guard above excludes jobs
+        // first seen already-terminal (e.g. rehydrated after a reload).
+        if (j.status === "completed") offerMoveUndo(j);
       }
       prevStatus.set(j.id, j.status);
 
@@ -551,19 +602,19 @@ html.dark .transfer-dock {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.12));
-  color: var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.12));
+  color: var(--color-accent, #6e72d9);
   transition:
     background-color 0.3s ease,
     color 0.3s ease;
 }
 .transfer-dock__icon.is-done {
   background: rgba(16, 185, 129, 0.16);
-  color: #047857;
+  color: var(--status-success);
 }
 html.dark .transfer-dock__icon.is-done {
   background: rgba(16, 185, 129, 0.2);
-  color: #34d399;
+  color: var(--status-success);
 }
 .transfer-dock__summary {
   flex: 1;
@@ -658,11 +709,11 @@ html.dark .transfer-dock__icon.is-done {
   color: var(--color-ink-1, #18181b);
 }
 .transfer-dock__btn--retry {
-  color: var(--color-accent, #5e6ad2);
+  color: var(--color-accent, #6e72d9);
 }
 .transfer-dock__btn--retry:hover {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.12));
-  color: var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.12));
+  color: var(--color-accent, #6e72d9);
 }
 .transfer-dock__btn--retry.is-busy {
   cursor: default;
@@ -683,7 +734,7 @@ html.dark .transfer-dock__icon.is-done {
 }
 .transfer-dock__path {
   font-size: 11px;
-  color: var(--color-accent, #5e6ad2);
+  color: var(--color-accent, #6e72d9);
   margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -698,7 +749,7 @@ html.dark .transfer-dock__icon.is-done {
   text-overflow: ellipsis;
 }
 .transfer-dock__note.is-error {
-  color: var(--color-danger, #dc2626);
+  color: var(--status-danger);
 }
 .transfer-dock__note.is-muted {
   font-style: italic;
@@ -714,14 +765,14 @@ html.dark .transfer-dock__icon.is-done {
 .transfer-dock__bar-fill {
   height: 100%;
   border-radius: 999px;
-  background: var(--color-accent, #5e6ad2);
+  background: var(--color-accent, #6e72d9);
   transition: width 0.3s ease;
 }
 .transfer-dock__row.is-done .transfer-dock__bar-fill {
-  background: #10b981;
+  background: var(--status-success-fill);
 }
 .transfer-dock__row.is-error .transfer-dock__bar-fill {
-  background: var(--color-danger, #dc2626);
+  background: var(--status-danger-fill);
 }
 .transfer-dock__row.is-canceled .transfer-dock__bar-fill,
 .transfer-dock__row.is-interrupted .transfer-dock__bar-fill {

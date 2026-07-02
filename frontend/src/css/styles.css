@@ -293,32 +293,33 @@ html[dir="rtl"] .card.floating .card-content .file-list {
    red = failure, amber = needs-attention, accent = informational, and a
    neutral zinc for bare/generic toasts. */
 .Vue-Toastification__toast--success {
-  background: #047857 !important;
+  background: var(--status-success-fill) !important;
 }
 
 .Vue-Toastification__toast--error {
-  background: #b91c1c !important;
+  background: var(--status-danger-fill-strong) !important;
 }
 
 .Vue-Toastification__toast--info {
-  background: var(--color-accent, #5e6ad2) !important;
+  background: var(--color-accent, #6e72d9) !important;
 }
 
 .Vue-Toastification__toast--warning {
-  background: #b45309 !important;
+  background: var(--status-warning-fill) !important;
 }
 
 .Vue-Toastification__toast--default {
-  background: #3f3f46 !important;
+  /* Neutral toast, tinted like the dusty ink scale (was hueless zinc). */
+  background: #403e4a !important;
 }
 
-/* Delete / Undo toast — dark orange so a destructive-but-reversible action
-   reads distinctly from neutral toasts (it used to share the grey `default`
-   skin). The body is forced to allow its child to shrink so a long file name
-   wraps inside the toast instead of widening it off-screen (UndoToast caps the
-   name at two lines). */
+/* Delete / Undo toast — dusty clay (v2.7 palette) so a destructive-but-
+   reversible action reads distinctly from neutral toasts (it used to share
+   the grey `default` skin). The body is forced to allow its child to shrink
+   so a long file name wraps inside the toast instead of widening it
+   off-screen (UndoToast caps the name at two lines). */
 .Vue-Toastification__toast.toast--undo {
-  background: #c2410c !important;
+  background: #9c5f45 !important;
 }
 .Vue-Toastification__toast.toast--undo .Vue-Toastification__toast-body {
   min-width: 0 !important;
@@ -422,7 +423,7 @@ html[dir="rtl"] .card.floating .card-content .file-list {
   font-size: 13px;
   font-weight: 500;
   text-decoration: none;
-  box-shadow: 0 4px 12px -2px rgba(94, 106, 210, 0.4);
+  box-shadow: 0 4px 12px -2px rgba(110, 114, 217, 0.4);
   transition: top var(--dur-base) ease;
 }
 
@@ -464,8 +465,8 @@ html[dir="rtl"] .card.floating .card-content .file-list {
 }
 
 .fb-select:focus {
-  border-color: var(--color-accent, #5e6ad2);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  border-color: var(--color-accent, #6e72d9);
+  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
 }
 
 .fb-select:disabled {
@@ -497,8 +498,8 @@ html.dark .fb-select {
 }
 
 .fb-input:focus {
-  border-color: var(--color-accent, #5e6ad2);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  border-color: var(--color-accent, #6e72d9);
+  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
 }
 
 .fb-input--mono {
@@ -542,27 +543,27 @@ html.dark .fb-select {
 }
 
 .confirm-prompt__icon.is-danger {
-  background: #fef2f2;
-  color: #dc2626;
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
 }
 .confirm-prompt__icon.is-warn {
-  background: rgba(217, 119, 6, 0.12);
-  color: #d97706;
+  background: var(--status-warning-soft);
+  color: var(--status-warning);
 }
 .confirm-prompt__icon.is-info {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.1));
-  color: var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
+  color: var(--color-accent, #6e72d9);
 }
 
 /* Dark-mode tinting for status chips (red/amber backgrounds need brighter
    alpha to read against dark canvas). */
 html.dark .confirm-prompt__icon.is-danger {
-  background: rgba(220, 38, 38, 0.18);
-  color: #f87171;
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
 }
 html.dark .confirm-prompt__icon.is-warn {
-  background: rgba(217, 119, 6, 0.2);
-  color: #fbbf24;
+  background: var(--status-warning-soft);
+  color: var(--status-warning);
 }
 
 .confirm-prompt__text {
@@ -610,7 +611,7 @@ html.dark .confirm-prompt__icon.is-warn {
 }
 
 .confirm-prompt__btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 1px;
 }
 
@@ -626,22 +627,22 @@ html.dark .confirm-prompt__icon.is-warn {
 
 .confirm-prompt__btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #5e6ad2);
+  border-color: var(--color-accent, #6e72d9);
   color: white;
 }
 .confirm-prompt__btn--primary:hover {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #4f5ac4);
+  border-color: var(--color-accent-strong, #575cc7);
 }
 
 .confirm-prompt__btn--danger {
-  background: #dc2626;
-  border-color: #dc2626;
+  background: var(--status-danger-fill);
+  border-color: var(--status-danger-fill);
   color: white;
 }
 .confirm-prompt__btn--danger:hover {
-  background: #b91c1c;
-  border-color: #b91c1c;
+  background: var(--status-danger-fill-strong);
+  border-color: var(--status-danger-fill-strong);
 }
 
 .confirm-prompt__btn:disabled {

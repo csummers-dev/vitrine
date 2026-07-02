@@ -180,8 +180,8 @@ const uploadFolder = () => openUpload(true);
 }
 
 .upload-prompt__choice:hover {
-  border-color: var(--color-accent, #5e6ad2);
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.06));
+  border-color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.06));
 }
 
 .upload-prompt__choice:active {
@@ -189,7 +189,7 @@ const uploadFolder = () => openUpload(true);
 }
 
 .upload-prompt__choice:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 1px;
 }
 
@@ -197,8 +197,8 @@ const uploadFolder = () => openUpload(true);
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.1));
-  color: var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
+  color: var(--color-accent, #6e72d9);
   display: flex;
   align-items: center;
   justify-content: center;

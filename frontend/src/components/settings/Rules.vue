@@ -164,7 +164,7 @@ export default {
 
 .rules__verdict.is-allow {
   background: rgba(4, 120, 87, 0.1);
-  color: #047857;
+  color: var(--status-success);
 }
 
 .rules__verdict.is-allow:hover {
@@ -172,12 +172,12 @@ export default {
 }
 
 .rules__verdict.is-deny {
-  background: rgba(220, 38, 38, 0.1);
-  color: #dc2626;
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
 }
 
 .rules__verdict.is-deny:hover {
-  background: rgba(220, 38, 38, 0.18);
+  background: var(--status-danger-soft);
 }
 
 /* ── Mode chip (Path / Regex toggle) ────────────────────────────────── */
@@ -202,9 +202,9 @@ export default {
 }
 
 .rules__mode.is-on {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.1));
-  color: var(--color-accent, #5e6ad2);
-  border-color: rgba(94, 106, 210, 0.25);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
+  color: var(--color-accent, #6e72d9);
+  border-color: rgba(110, 114, 217, 0.25);
 }
 
 .rules__mode:hover {
@@ -212,7 +212,7 @@ export default {
 }
 
 .rules__mode.is-on:hover {
-  color: var(--color-accent-strong, #4f5ac4);
+  color: var(--color-accent-strong, #575cc7);
 }
 
 /* ── Pattern input ──────────────────────────────────────────────────── */
@@ -236,8 +236,8 @@ export default {
 
 .rules__input:focus {
   background: var(--color-surface, #fff);
-  border-color: var(--color-accent, #5e6ad2);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  border-color: var(--color-accent, #6e72d9);
+  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
 }
 
 /* ── Delete icon button ─────────────────────────────────────────────── */
@@ -260,9 +260,9 @@ export default {
 }
 
 .rules__delete:hover {
-  background: #fef2f2;
-  color: #dc2626;
-  border-color: #fecaca;
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
+  border-color: var(--status-danger-ring);
 }
 
 /* ── Empty state ────────────────────────────────────────────────────── */
@@ -304,14 +304,14 @@ export default {
 }
 
 .rules__add:hover {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.08));
-  border-color: var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.08));
+  border-color: var(--color-accent, #6e72d9);
   border-style: solid;
-  color: var(--color-accent, #5e6ad2);
+  color: var(--color-accent, #6e72d9);
 }
 
 .rules__add:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 1px;
 }
 </style>

@@ -1,19 +1,24 @@
 :root {
-  --blue: #2196f3;
-  --dark-blue: #1e88e5;
-  --red: #f44336;
-  --dark-red: #d32f2f;
+  /* Legacy palette (pre-redesign Material values), still consumed by a few
+     older surfaces (boot spinner, legacy .button, share view, shell, CSV /
+     epub viewers). v2.7 dusty pass: the values now RESOLVE to the live
+     tokens — blue follows the accent picker, red follows the status danger
+     tokens — so no legacy surface can render the old saturated palette. */
+  --blue: var(--color-accent, #6e72d9);
+  --dark-blue: var(--color-accent-strong, #575cc7);
+  --red: var(--status-danger-fill, #ad5560);
+  --dark-red: var(--status-danger-fill-strong, #97434d);
   --moon-grey: #f2f2f2;
 
-  --icon-red: #da4453;
-  --icon-orange: #f47750;
-  --icon-yellow: #fdbc4b;
-  --icon-green: #2ecc71;
-  --icon-blue: #1d99f3;
-  --icon-violet: #9b59b6;
+  --icon-red: #b5525e;
+  --icon-orange: #bd7f63;
+  --icon-yellow: #b08434;
+  --icon-green: #74a075;
+  --icon-blue: var(--color-accent, #6e72d9);
+  --icon-violet: #9180c9;
 
-  --input-red: rgb(252, 208, 205);
-  --input-green: rgb(201, 242, 218);
+  --input-red: var(--status-danger-soft, rgba(176, 96, 96, 0.1));
+  --input-green: var(--status-success-soft, rgba(93, 138, 94, 0.14));
 
   --item-selected: white;
 
@@ -36,9 +41,8 @@
 }
 
 :root.dark {
-  --input-red: rgb(115, 48, 45);
-  --input-green: rgb(20, 122, 65);
-
+  /* --input-red / --input-green need no dark overrides anymore — they
+     resolve to the status -soft tokens, which flip under html.dark. */
   --action: rgb(255, 255, 255);
 
   --background: rgb(20, 29, 36);

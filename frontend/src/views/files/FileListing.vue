@@ -336,6 +336,38 @@
           :items="sortMenuItems"
           @hide="sortMenuShow = false"
         />
+        <!-- Type filter chips (v2.7): client-side filter for the current
+             folder's FILES (folders always stay visible). Rendered only when
+             the folder actually mixes ≥2 categories, and not in split (the
+             half-width panes have no room for a chip row). -->
+        <div
+          v-if="showTypeChips"
+          class="fb-type-chips"
+          role="group"
+          aria-label="Filter files by type"
+        >
+          <button
+            type="button"
+            class="fb-type-chip"
+            :class="{ 'fb-type-chip--on': typeFilter === 'all' }"
+            :aria-pressed="typeFilter === 'all'"
+            @click="setTypeFilter('all')"
+          >
+            All
+          </button>
+          <button
+            v-for="opt in typeChipList"
+            :key="opt.key"
+            type="button"
+            class="fb-type-chip"
+            :class="{ 'fb-type-chip--on': typeFilter === opt.key }"
+            :aria-pressed="typeFilter === opt.key"
+            @click="setTypeFilter(opt.key)"
+          >
+            {{ opt.label }}
+            <span class="fb-type-chip__n">{{ opt.count }}</span>
+          </button>
+        </div>
         <section
           ref="scrollSection"
           class="flex-1 flex flex-col min-w-0 min-h-0 overflow-y-auto ptr-host"
@@ -594,9 +626,17 @@
                  incremental `showLimit` windowing in the v-else branch —
                  their tiles wrap to variable heights, so list-first per
                  the locked Stage 6 plan. -->
+              <!-- `:key` on typeFilter: shrinking `items` IN PLACE leaves the
+                 RecycleScroller's pooled row views visible at their old
+                 offsets (the wrapper resizes but stale views linger — v2.7
+                 chips bug, verified live). Nothing else shrinks the list
+                 without swapping `req`, so re-creating the scroller per
+                 filter state is the surgical fix; scroll resets, which a
+                 filter change wants anyway. -->
               <RecycleScroller
                 v-if="isListVirtual"
                 ref="listScroller"
+                :key="'vlist-' + typeFilter"
                 class="listing-virtual"
                 :items="listRows"
                 :item-size="null"
@@ -863,6 +903,10 @@
       <InfoPane v-else />
     </div>
 
+    <!-- Space-bar quick preview (Quick Look). One instance serves both panes;
+         it teleports to <body> and reads the useQuickPeek singleton. -->
+    <QuickPeek />
+
     <!-- Delete confirmation (Stage 8; trash-aware since 2.4.0 Stage 2). -->
     <ConfirmDialog
       :open="confirmOpen"
@@ -988,6 +1032,15 @@ import Search from "@/components/Search.vue";
 import Item from "@/components/files/ListingItem.vue";
 import InfoPane from "@/components/files/InfoPane.vue";
 import ComparePane from "@/components/files/ComparePane.vue";
+import QuickPeek from "@/components/files/QuickPeek.vue";
+import { useQuickPeek } from "@/composables/useQuickPeek";
+import {
+  typeFilterCategory,
+  TYPE_FILTER_LABELS,
+  TYPE_FILTER_ORDER,
+  type TypeFilterKey,
+} from "@/utils/typeFilter";
+import { pastedFileName } from "@/utils/filename";
 import ImageHoverPreview from "@/components/files/ImageHoverPreview.vue";
 import InlineNewItem from "@/components/files/InlineNewItem.vue";
 import ListingSkeleton from "@/components/files/ListingSkeleton.vue";
@@ -1583,7 +1636,7 @@ const listingTouchDrag = useTouchDrag<{ index: number }>({
     if (highlightEl !== touchHighlightEl) {
       clearTouchHighlight();
       if (highlightEl) {
-        highlightEl.style.outline = "2px solid var(--color-accent, #5e6ad2)";
+        highlightEl.style.outline = "2px solid var(--color-accent, #6e72d9)";
         highlightEl.style.outlineOffset = "-2px";
         touchHighlightEl = highlightEl;
       }
@@ -1781,7 +1834,12 @@ const items = computed(() => {
   fileStore.req?.items.forEach((item) => {
     if (item.isDir) {
       dirs.push(item);
-    } else {
+    } else if (
+      typeFilter.value === "all" ||
+      typeFilterCategory(item) === typeFilter.value
+    ) {
+      // v2.7 type chips: files are filtered client-side; folders are exempt
+      // (hiding the way forward would turn the filter into a trap).
       files.push(item);
     }
   });
@@ -2021,6 +2079,7 @@ onMounted(() => {
 
   // Add the needed event listeners to the window and document.
   window.addEventListener("keydown", keyEvent);
+  document.addEventListener("paste", onPasteUpload);
   window.addEventListener("scroll", scrollEvent);
   window.addEventListener("resize", windowsResize);
 
@@ -2080,6 +2139,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   // Remove event listeners before destroying this page.
   window.removeEventListener("keydown", keyEvent);
+  document.removeEventListener("paste", onPasteUpload);
   window.removeEventListener("scroll", scrollEvent);
   window.removeEventListener("resize", windowsResize);
 
@@ -2112,6 +2172,62 @@ onBeforeUnmount(() => {
 });
 
 const base64 = (name: string) => Base64.encodeURI(name);
+
+// ── Type filter chips (v2.7) ─────────────────────────────────────────
+// Session-scoped, resets on navigation: the filter answers "show me the
+// photos in THIS mess", it isn't a saved preference.
+const typeFilter = ref<TypeFilterKey | "all">("all");
+
+const typeFilterCounts = computed(() => {
+  const counts = new Map<TypeFilterKey, number>();
+  for (const it of fileStore.req?.items ?? []) {
+    const c = typeFilterCategory(it);
+    if (c !== null) counts.set(c, (counts.get(c) ?? 0) + 1);
+  }
+  return counts;
+});
+
+const typeChipList = computed(() =>
+  TYPE_FILTER_ORDER.filter((k) => typeFilterCounts.value.has(k)).map((k) => ({
+    key: k,
+    label: TYPE_FILTER_LABELS[k],
+    count: typeFilterCounts.value.get(k) ?? 0,
+  }))
+);
+
+// Chips only earn their row when the folder actually mixes categories; a
+// folder of nothing-but-photos has nothing to filter. Hidden in split (no
+// room) — the filter itself also resets on any navigation below.
+const showTypeChips = computed(
+  () => !splitActive.value && typeFilterCounts.value.size >= 2
+);
+
+const setTypeFilter = (key: TypeFilterKey | "all") => {
+  // Clicking the active chip toggles back to All.
+  typeFilter.value = typeFilter.value === key && key !== "all" ? "all" : key;
+};
+
+// New folder, clean slate — and drop any selection the filter change just
+// hid (invisible selected rows would make ⌘-actions feel haunted).
+watch(
+  () => fileStore.req?.url,
+  () => {
+    typeFilter.value = "all";
+  }
+);
+watch(typeFilter, () => {
+  fileStore.selected = [];
+  fileStore.activeIndex = -1;
+  fileStore.anchorIndex = -1;
+});
+
+// Quick Look: the peek shows "pane A's single selected item" and follows the
+// selection while open (arrows keep working — QuickPeek lets them through).
+const quickPeek = useQuickPeek();
+const singleSelectedItem = (): ResourceItem | null =>
+  fileStore.selected.length === 1
+    ? (fileStore.req?.items[fileStore.selected[0]] ?? null)
+    : null;
 
 const keyEvent = (event: KeyboardEvent) => {
   // No prompts are shown
@@ -2212,6 +2328,24 @@ const keyEvent = (event: KeyboardEvent) => {
           if (delItems.length === 0) return;
           event.preventDefault();
           openDeleteConfirm(delItems, event.shiftKey);
+          return;
+        }
+        case " ": {
+          // Quick Look (v2.7, deliberate re-add after WS10 dropped the old
+          // one): Space with a SINGLE selected item opens the peek overlay.
+          // Mid-type-ahead a space still joins the search prefix ("My Doc"),
+          // so type-ahead keeps priority. No selection → let the browser
+          // scroll as usual. Closing is handled by QuickPeek itself (its
+          // capture-phase handler eats Space/Esc while open).
+          if (typeahead.isActive()) {
+            event.preventDefault();
+            typeaheadPush(event.key);
+            return;
+          }
+          const peekItem = singleSelectedItem();
+          if (!peekItem) return;
+          event.preventDefault();
+          quickPeek.toggle(singleSelectedItem);
           return;
         }
         default:
@@ -2716,6 +2850,81 @@ const drop = async (event: DragEvent) => {
 
   upload.handleFiles(files, path);
   if (!inPaneB) fileStore.setPreselect(buildPreselect(files));
+};
+
+// ── Paste-to-upload (v2.7) ───────────────────────────────────────────
+// ⌘V with FILES on the OS clipboard (a screenshot, a Finder copy) uploads
+// them into the active pane's folder. Registered on `document` (like the OS
+// drop handler) so it works wherever focus sits, with the same guards the
+// keyboard handler uses. The app's own cut/copy clipboard keeps priority:
+// when it's armed, ⌘V means "paste those items" (handled in keyEvent) and
+// this handler stays out of the way.
+const onPasteUpload = async (event: ClipboardEvent) => {
+  if (layoutStore.currentPrompt !== null) return;
+  if (!authStore.user?.perm.create) return;
+  if (clipboardStore.key !== "") return; // internal clipboard wins
+  const t = event.target as HTMLElement | null;
+  const tag = t?.tagName?.toLowerCase();
+  if (tag === "input" || tag === "textarea" || t?.isContentEditable) return;
+  const clipFiles = event.clipboardData?.files;
+  if (!clipFiles || clipFiles.length === 0) return; // plain text — not ours
+  event.preventDefault();
+
+  // Paste lands in the ACTIVE pane's folder (split) or the current route.
+  const inPaneB = splitActive.value && panes.activePane === "b";
+  const basePath = inPaneB ? panes.secondaryPath : route.path;
+  const path = basePath.endsWith("/") ? basePath : basePath + "/";
+
+  const now = new Date();
+  const uploadFiles: UploadList = [];
+  for (let i = 0; i < clipFiles.length; i++) {
+    const file = clipFiles[i];
+    uploadFiles.push({
+      file,
+      // Generic clipboard names ("image.png") get a timestamp so repeat
+      // pastes don't fight the conflict dialog every time.
+      name: pastedFileName(file.name, now),
+      size: file.size,
+      isDir: false,
+    });
+  }
+
+  const buildPreselect = (sourceFiles: typeof uploadFiles) =>
+    sourceFiles.map((f) => removePrefix(path) + f.name);
+
+  const conflict = await upload.checkConflict(uploadFiles, path);
+  if (conflict.length > 0) {
+    layoutStore.showHover({
+      prompt: "resolve-conflict",
+      props: {
+        conflict: conflict,
+        isUploadAction: true,
+        to: path,
+      },
+      confirm: (e: Event, result: Array<ConflictingResource>) => {
+        e.preventDefault();
+        layoutStore.closeHovers();
+        for (let i = result.length - 1; i >= 0; i--) {
+          const item = result[i];
+          if (item.checked.length == 2) {
+            continue;
+          } else if (item.checked.length == 1 && item.checked[0] == "origin") {
+            uploadFiles[item.index].overwrite = true;
+          } else {
+            uploadFiles.splice(item.index, 1);
+          }
+        }
+        if (uploadFiles.length > 0) {
+          upload.handleFiles(uploadFiles, path, true);
+          if (!inPaneB) fileStore.setPreselect(buildPreselect(uploadFiles));
+        }
+      },
+    });
+    return;
+  }
+
+  upload.handleFiles(uploadFiles, path);
+  if (!inPaneB) fileStore.setPreselect(buildPreselect(uploadFiles));
 };
 
 const uploadInput = async (event: Event) => {
@@ -4204,10 +4413,10 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
    primary pane lights it up identically. Split-only (the flag is gated on
    `splitActive`), so single-pane drag never shows this. */
 .scroll-section--drop {
-  outline: 2px dashed var(--color-accent, #5e6ad2);
+  outline: 2px dashed var(--color-accent, #6e72d9);
   outline-offset: -4px;
   border-radius: 8px;
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.06));
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.06));
 }
 
 #listing.listing--virtual {
@@ -4279,7 +4488,7 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
   align-items: center;
   justify-content: center;
   background: var(--color-surface, #fff);
-  color: var(--color-accent, #5e6ad2);
+  color: var(--color-accent, #6e72d9);
   border: 1px solid var(--color-line, #ececec);
   box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
 }
@@ -4312,8 +4521,8 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
   position: fixed;
   z-index: 900;
   pointer-events: none;
-  border: 1px solid var(--color-accent, #5e6ad2);
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.12));
+  border: 1px solid var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.12));
   border-radius: 2px;
 }
 
@@ -4375,7 +4584,7 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
   outline: none;
 }
 #file-selection :deep(.action:focus-visible) {
-  box-shadow: 0 0 0 2px var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  box-shadow: 0 0 0 2px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
 }
 /* The Action component renders a `<span>{{ label }}</span>` inside;
    in this mobile context we want icon-only tap targets, so hide the
@@ -4387,13 +4596,13 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
    different from neutral ones. */
 #file-selection :deep(.action[title="Delete"]:hover),
 #file-selection :deep(.action[title="Delete"]:focus-visible) {
-  background: #fef2f2;
-  color: #b91c1c;
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
 }
 html.dark #file-selection :deep(.action[title="Delete"]:hover),
 html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   background: rgba(127, 29, 29, 0.25);
-  color: #fca5a5;
+  color: var(--status-danger);
 }
 
 .file-selection-margin-bottom {
@@ -4414,15 +4623,15 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   margin: 0 4px;
 }
 .section-title--drop {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.08));
-  box-shadow: inset 0 0 0 2px var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.08));
+  box-shadow: inset 0 0 0 2px var(--color-accent, #6e72d9);
 }
 /* Split-header parent spring-load target (#18): dragging a selection onto pane
    A's compact header navigates up a folder, mirroring the single-pane
    section-title drop affordance above. */
 .compare-head--drop {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.08));
-  box-shadow: inset 0 0 0 2px var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.08));
+  box-shadow: inset 0 0 0 2px var(--color-accent, #6e72d9);
 }
 
 /* ── V2-J unified hero (title + control cluster) ─────────────────────────
@@ -4450,6 +4659,60 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
     padding: 12px 16px 10px;
     flex-wrap: wrap;
   }
+}
+
+/* ── Type filter chips (v2.7) ──────────────────────────────────────────
+   A quiet pill row between the hero and the listing. Rest state is nearly
+   invisible (hairline border, muted ink); the active chip takes the
+   selection tint so "filtered" reads with the same vocabulary as
+   "selected". */
+.fb-type-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 0 20px 10px;
+  flex-shrink: 0;
+}
+.fb-type-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--radius-full, 9999px);
+  border: 1px solid var(--color-line);
+  background: transparent;
+  color: var(--color-ink-2);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-base) var(--ease),
+    border-color var(--dur-base) var(--ease),
+    color var(--dur-base) var(--ease);
+}
+.fb-type-chip:hover {
+  background: var(--color-hover);
+  color: var(--color-ink-1);
+}
+.fb-type-chip:focus-visible {
+  outline: 2px solid var(--color-accent-ring);
+  outline-offset: 1px;
+}
+.fb-type-chip--on {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent-ring);
+  color: var(--color-accent-ink);
+}
+.fb-type-chip__n {
+  font-size: 11px;
+  color: var(--color-ink-4);
+}
+.fb-type-chip--on .fb-type-chip__n {
+  color: var(--color-accent-ink);
+  opacity: 0.75;
 }
 /* Hero right column: control cluster on top, search field directly beneath it,
    both right-aligned. (Search was previously a full-width second row below the
@@ -4558,8 +4821,8 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
    edge they left the middle empty. The centre divider stays a static 1px line
    (ComparePane's border-left). Mirrors pane B's `.compare-pane--active`. */
 .fb-primary--active .compare-head {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.06));
-  box-shadow: inset 0 -2px 0 0 var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.06));
+  box-shadow: inset 0 -2px 0 0 var(--color-accent, #6e72d9);
 }
 
 .fb-breadcrumb-bar {
@@ -4609,22 +4872,22 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
 
 .current-fav-btn:hover {
   background: var(--color-hover, rgba(24, 24, 27, 0.045));
-  color: var(--tag-color-amber-fg, #b45309);
+  color: var(--tag-color-amber-fg, #8a6a32);
 }
 
 .current-fav-btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 1px;
 }
 
 .current-fav-btn--active {
   /* Warm favorite gold — matches the sidebar favorite stars (was the amber
      tag token, a dark brown in light mode). */
-  color: #f59e0b;
+  color: var(--c-amber);
 }
 
 .current-fav-btn--active:hover {
-  background: rgba(245, 158, 11, 0.12);
+  background: color-mix(in srgb, var(--c-amber) 14%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -4643,7 +4906,7 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   padding: 0 14px;
   border-radius: 8px;
   background: var(--accent-gradient);
-  border: 1px solid var(--color-accent, #5e6ad2);
+  border: 1px solid var(--color-accent, #6e72d9);
   color: white;
   font-family: inherit;
   font-size: 13px;
@@ -4657,12 +4920,12 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
 
 .empty-cta:hover {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #4f5ac4);
-  box-shadow: 0 4px 12px -4px rgba(94, 106, 210, 0.4);
+  border-color: var(--color-accent-strong, #575cc7);
+  box-shadow: 0 4px 12px -4px rgba(110, 114, 217, 0.4);
 }
 
 .empty-cta:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 2px;
 }
 
@@ -4718,7 +4981,7 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
     box-shadow var(--dur-base) ease;
 }
 .folder-rename-input:focus {
-  border-color: var(--color-accent, #5e6ad2);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  border-color: var(--color-accent, #6e72d9);
+  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
 }
 </style>

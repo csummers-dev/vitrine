@@ -363,13 +363,13 @@ defineEmits<{
   color: var(--color-ink-1, #18181b);
 }
 .preview-info .info-action--danger:hover {
-  background: #fef2f2;
-  color: #b91c1c;
-  border-color: #fecaca;
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
+  border-color: var(--status-danger-ring);
 }
 html.dark .preview-info .info-action--danger:hover {
   background: rgba(127, 29, 29, 0.16);
-  color: #fca5a5;
+  color: var(--status-danger);
   border-color: rgba(248, 113, 113, 0.4);
 }
 

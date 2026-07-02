@@ -9,168 +9,169 @@
  * specific utility classes here and swap to deep-bg + bright-text variants
  * when `html.dark` is active.
  *
- * Backgrounds use `*-500 @ 16% alpha` so they blend with the canvas
- * instead of looking like solid coloured patches. Text uses `*-300` so
- * the icon stays visibly tinted.
+ * Backgrounds use the dusty palette (v2.7) at low alpha so they blend with
+ * the canvas instead of looking like solid coloured patches. Text uses the
+ * matching dusty pastel so the icon stays visibly tinted without glowing —
+ * values track the 300-stop overrides in tokens.css.
  */
 
 html.dark {
   /* ── Backgrounds (deep, low-alpha for blend) ─────────────────────────── */
   .bg-amber-50 {
-    background-color: rgba(245, 158, 11, 0.16) !important;
+    background-color: rgba(190, 160, 100, 0.16) !important;
   }
   .bg-rose-50 {
-    background-color: rgba(244, 63, 94, 0.16) !important;
+    background-color: rgba(200, 130, 130, 0.16) !important;
   }
   .bg-pink-50 {
-    background-color: rgba(236, 72, 153, 0.16) !important;
+    background-color: rgba(205, 140, 165, 0.16) !important;
   }
   .bg-indigo-50 {
-    background-color: rgba(99, 102, 241, 0.16) !important;
+    background-color: rgba(150, 155, 215, 0.16) !important;
   }
   .bg-yellow-50 {
-    background-color: rgba(234, 179, 8, 0.16) !important;
+    background-color: rgba(190, 170, 100, 0.16) !important;
   }
   .bg-teal-50 {
-    background-color: rgba(20, 184, 166, 0.16) !important;
+    background-color: rgba(110, 175, 160, 0.16) !important;
   }
   .bg-green-50 {
-    background-color: rgba(34, 197, 94, 0.16) !important;
+    background-color: rgba(120, 165, 122, 0.16) !important;
   }
   .bg-orange-50 {
-    background-color: rgba(249, 115, 22, 0.16) !important;
+    background-color: rgba(195, 140, 110, 0.16) !important;
   }
   .bg-violet-50 {
-    background-color: rgba(139, 92, 246, 0.16) !important;
+    background-color: rgba(160, 140, 215, 0.16) !important;
   }
   .bg-red-50 {
-    background-color: rgba(239, 68, 68, 0.16) !important;
+    background-color: rgba(200, 120, 120, 0.16) !important;
   }
   .bg-sky-50 {
-    background-color: rgba(14, 165, 233, 0.16) !important;
+    background-color: rgba(125, 170, 205, 0.16) !important;
   }
   .bg-emerald-50 {
-    background-color: rgba(16, 185, 129, 0.16) !important;
+    background-color: rgba(115, 175, 150, 0.16) !important;
   }
   .bg-cyan-50 {
-    background-color: rgba(6, 182, 212, 0.16) !important;
+    background-color: rgba(115, 180, 190, 0.16) !important;
   }
 
   /* Lighter-100 backgrounds get the same treatment */
   .bg-zinc-100 {
-    background-color: rgba(161, 161, 170, 0.18) !important;
+    background-color: rgba(185, 183, 195, 0.16) !important;
   }
   .bg-slate-100 {
-    background-color: rgba(148, 163, 184, 0.18) !important;
+    background-color: rgba(182, 188, 200, 0.16) !important;
   }
   .bg-stone-100 {
-    background-color: rgba(168, 162, 158, 0.18) !important;
+    background-color: rgba(180, 175, 168, 0.16) !important;
   }
   .bg-neutral-100 {
-    background-color: rgba(163, 163, 163, 0.18) !important;
+    background-color: rgba(180, 180, 180, 0.16) !important;
   }
   .bg-gray-100 {
-    background-color: rgba(156, 163, 175, 0.18) !important;
+    background-color: rgba(175, 180, 190, 0.16) !important;
   }
 
-  /* ── Text colours (brighten so the tint reads on dark bg) ───────────── */
+  /* ── Text colours (dusty pastels so the tint reads on dark bg) ───────── */
   .text-amber-500 {
-    color: #fbbf24 !important;
+    color: #d4bb85 !important;
   }
   .text-amber-600 {
-    color: #fbbf24 !important;
+    color: #d4bb85 !important;
   }
   .text-amber-700 {
-    color: #f59e0b !important;
+    color: #c9a96a !important;
   }
   .text-rose-500 {
-    color: #fb7185 !important;
+    color: #d8a3a3 !important;
   }
   .text-rose-600 {
-    color: #fb7185 !important;
+    color: #d8a3a3 !important;
   }
   .text-pink-500 {
-    color: #f472b6 !important;
+    color: #d9a8ba !important;
   }
   .text-pink-600 {
-    color: #f472b6 !important;
+    color: #d9a8ba !important;
   }
   .text-indigo-500 {
-    color: #818cf8 !important;
+    color: #a9aede !important;
   }
   .text-indigo-600 {
-    color: #818cf8 !important;
+    color: #a9aede !important;
   }
   .text-yellow-500 {
-    color: #facc15 !important;
+    color: #d4c285 !important;
   }
   .text-yellow-600 {
-    color: #facc15 !important;
+    color: #d4c285 !important;
   }
   .text-yellow-700 {
-    color: #eab308 !important;
+    color: #c9b46a !important;
   }
   .text-teal-500 {
-    color: #2dd4bf !important;
+    color: #93c4ba !important;
   }
   .text-teal-600 {
-    color: #2dd4bf !important;
+    color: #93c4ba !important;
   }
   .text-green-500 {
-    color: #4ade80 !important;
+    color: #a3c4a4 !important;
   }
   .text-green-600 {
-    color: #4ade80 !important;
+    color: #a3c4a4 !important;
   }
   .text-orange-500 {
-    color: #fb923c !important;
+    color: #d3a58e !important;
   }
   .text-orange-600 {
-    color: #fb923c !important;
+    color: #d3a58e !important;
   }
   .text-violet-500 {
-    color: #a78bfa !important;
+    color: #b9aae0 !important;
   }
   .text-violet-600 {
-    color: #a78bfa !important;
+    color: #b9aae0 !important;
   }
   .text-red-500 {
-    color: #f87171 !important;
+    color: #dda0a0 !important;
   }
   .text-red-600 {
-    color: #f87171 !important;
+    color: #dda0a0 !important;
   }
   .text-sky-500 {
-    color: #38bdf8 !important;
+    color: #9fc0dd !important;
   }
   .text-sky-600 {
-    color: #38bdf8 !important;
+    color: #9fc0dd !important;
   }
   .text-emerald-500 {
-    color: #34d399 !important;
+    color: #97c4ad !important;
   }
   .text-emerald-600 {
-    color: #34d399 !important;
+    color: #97c4ad !important;
   }
   .text-cyan-500 {
-    color: #22d3ee !important;
+    color: #8fc3cf !important;
   }
   .text-cyan-600 {
-    color: #22d3ee !important;
+    color: #8fc3cf !important;
   }
   .text-zinc-500 {
-    color: #d4d4d8 !important;
+    color: #c9c7d1 !important;
   }
   .text-zinc-600 {
-    color: #d4d4d8 !important;
+    color: #c9c7d1 !important;
   }
   .text-slate-500 {
-    color: #cbd5e1 !important;
+    color: #b6bcc8 !important;
   }
   .text-slate-600 {
-    color: #cbd5e1 !important;
+    color: #b6bcc8 !important;
   }
   .text-slate-700 {
-    color: #cbd5e1 !important;
+    color: #b6bcc8 !important;
   }
 }

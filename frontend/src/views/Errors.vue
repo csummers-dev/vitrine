@@ -221,18 +221,18 @@ const goBack = () => {
 }
 
 .error-page__icon.danger {
-  background: rgba(220, 38, 38, 0.1);
-  color: #dc2626;
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
 }
 
 .error-page__icon.warn {
-  background: rgba(217, 119, 6, 0.12);
-  color: #d97706;
+  background: var(--status-warning-soft);
+  color: var(--status-warning);
 }
 
 .error-page__icon.info {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.1));
-  color: var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
+  color: var(--color-accent, #6e72d9);
 }
 
 .error-page__code {
@@ -293,7 +293,7 @@ const goBack = () => {
 }
 
 .error-page__btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 1px;
 }
 
@@ -310,13 +310,13 @@ const goBack = () => {
 
 .error-page__btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #5e6ad2);
+  border-color: var(--color-accent, #6e72d9);
   color: white;
 }
 
 .error-page__btn--primary:hover {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #4f5ac4);
+  border-color: var(--color-accent-strong, #575cc7);
 }
 
 /* When showHeader is on (embedded errors), the body should sit BELOW the

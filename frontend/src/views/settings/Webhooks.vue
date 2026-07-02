@@ -374,8 +374,8 @@ load();
     border-color var(--dur-base) ease;
 }
 .wh-add-btn:hover:not(:disabled) {
-  border-color: var(--color-accent, #5e6ad2);
-  color: var(--color-accent, #5e6ad2);
+  border-color: var(--color-accent, #6e72d9);
+  color: var(--color-accent, #6e72d9);
 }
 .wh-add-btn:disabled {
   opacity: 0.5;
@@ -457,7 +457,7 @@ load();
 }
 .wh-btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #5e6ad2);
+  border-color: var(--color-accent, #6e72d9);
   color: #fff;
 }
 .wh-btn--primary:hover:not(:disabled) {
@@ -536,10 +536,10 @@ load();
   gap: 4px;
 }
 .wh-status--success {
-  color: #16a34a;
+  color: var(--status-success);
 }
 .wh-status--failed {
-  color: #dc2626;
+  color: var(--status-danger);
 }
 .wh-status--idle {
   color: var(--color-ink-3, #a1a1aa);
@@ -572,8 +572,8 @@ load();
   color: var(--color-ink-1, #18181b);
 }
 .wh-icon-btn--danger:hover:not(:disabled) {
-  border-color: rgba(220, 38, 38, 0.4);
-  color: #dc2626;
+  border-color: var(--status-danger-ring);
+  color: var(--status-danger);
 }
 .wh-icon-btn:disabled {
   opacity: 0.5;

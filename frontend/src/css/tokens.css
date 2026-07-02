@@ -7,34 +7,37 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-accent: #5e6ad2;
+  --color-accent: #6e72d9;
   /* Accent used as TEXT on a tinted/selected surface. In light mode the base
-     accent reads fine on the pale selection fill; on the dark canvas #5e6ad2 is
-     too dark to read (V2 #17), so html.dark lifts this to a light lilac. */
+     accent reads fine on the pale selection fill; on the dark canvas the base
+     is too dark to read (V2 #17), so html.dark lifts this to a light tint. */
   --color-accent-ink: var(--color-accent);
-  --color-accent-strong: #4f5ac4;
-  --color-accent-soft: rgba(94, 106, 210, 0.1);
-  --color-accent-ring: rgba(94, 106, 210, 0.3);
+  --color-accent-strong: #575cc7;
+  --color-accent-soft: rgba(110, 114, 217, 0.1);
+  --color-accent-ring: rgba(110, 114, 217, 0.3);
   /* Gradient end-stop for accent gradients (e.g. the sidebar storage
-     bar). Default = lighter lilac; the accent picker overrides per
+     bar). Default = lighter iris; the accent picker overrides per
      preset with a hand-picked secondary (RC-7). */
-  --color-accent-grad: #7c87e5;
+  --color-accent-grad: #9095e6;
 
-  /* Calm Minimal light surfaces — near-white canvas, true-white panels. */
-  --color-canvas: #fbfbfc;
+  /* Dusty Minimal light surfaces (v2.7) — the canvas drops a full step below
+     the true-white panels and every neutral carries a whisper of the accent's
+     violet, so panels read as panels and the gray scale stops looking "dirty"
+     next to the accent (the Linear trick). */
+  --color-canvas: #efeff4;
   --color-surface: #ffffff;
-  --color-elevated: #f3f3f6;
+  --color-elevated: #e8e7ee;
 
-  --color-ink-1: #1a1a1f;
-  --color-ink-2: #56565f;
-  --color-ink-3: #73737b;
-  --color-ink-4: #bcbcc4;
+  --color-ink-1: #17161d;
+  --color-ink-2: #4c4a57;
+  --color-ink-3: #747180;
+  --color-ink-4: #b3b1bf;
 
-  --color-line: #ececef;
-  --color-line-strong: #dadae0;
+  --color-line: #dbdae3;
+  --color-line-strong: #c8c6d4;
 
-  --color-hover: rgba(24, 24, 27, 0.045);
-  --color-selected: rgba(94, 106, 210, 0.08);
+  --color-hover: rgba(28, 26, 44, 0.05);
+  --color-selected: rgba(110, 114, 217, 0.08);
 
   /* Always-dark contrast surface for floating pills/toasts that should
      stand out against the page regardless of theme. In light mode this is
@@ -68,22 +71,73 @@
 
      Names map 1:1 with the backend `tags.ValidColors` palette — adding
      a color requires bumping both. */
-  --tag-color-lilac-bg: rgba(94, 106, 210, 0.12);
-  --tag-color-lilac-fg: #4f5ac4;
-  --tag-color-blue-bg: rgba(59, 130, 246, 0.12);
-  --tag-color-blue-fg: #2563eb;
-  --tag-color-green-bg: rgba(34, 197, 94, 0.14);
-  --tag-color-green-fg: #15803d;
-  --tag-color-amber-bg: rgba(217, 119, 6, 0.14);
-  --tag-color-amber-fg: #b45309;
-  --tag-color-red-bg: rgba(239, 68, 68, 0.12);
-  --tag-color-red-fg: #b91c1c;
-  --tag-color-pink-bg: rgba(236, 72, 153, 0.12);
-  --tag-color-pink-fg: #be185d;
-  --tag-color-slate-bg: rgba(100, 116, 139, 0.14);
-  --tag-color-slate-fg: #475569;
-  --tag-color-teal-bg: rgba(20, 184, 166, 0.14);
-  --tag-color-teal-fg: #0f766e;
+  --tag-color-lilac-bg: rgba(106, 111, 192, 0.13);
+  --tag-color-lilac-fg: #545aae;
+  --tag-color-blue-bg: rgba(90, 127, 184, 0.13);
+  --tag-color-blue-fg: #4a6da3;
+  --tag-color-green-bg: rgba(93, 138, 94, 0.13);
+  --tag-color-green-fg: #4d7a4e;
+  --tag-color-amber-bg: rgba(160, 125, 63, 0.15);
+  --tag-color-amber-fg: #8a6a32;
+  --tag-color-red-bg: rgba(176, 96, 96, 0.13);
+  --tag-color-red-fg: #a05252;
+  --tag-color-pink-bg: rgba(168, 93, 118, 0.13);
+  --tag-color-pink-fg: #97536a;
+  --tag-color-slate-bg: rgba(110, 108, 122, 0.14);
+  --tag-color-slate-fg: #5d5b68;
+  --tag-color-teal-bg: rgba(63, 133, 120, 0.13);
+  --tag-color-teal-fg: #35786c;
+
+  /* ── Dusty ramp overrides (v2.7) ─────────────────────────────────────
+     utils/fileIcon.ts colors the listing squircles with stock Tailwind
+     utilities (bg-X-500/15, text-X-700, dark:text-X-300). The stock hues
+     sit at wildly different perceived lightness and chroma (amber glows,
+     indigo sulks, pink shouts), which made a mixed folder read as
+     confetti. Re-anchoring the stops fileIcon uses to the dusty palette —
+     chroma roughly halved, lightness evened per stop — recolors every
+     utility everywhere without forking the icon map. 300 = dark-mode
+     pastel text, 500 = chip fill (used at /15 alpha), 700 = light-mode
+     text. */
+  --color-pink-300: #d9a8ba;
+  --color-pink-500: #b96f88;
+  --color-pink-700: #97536a;
+  --color-rose-300: #d8a3a3;
+  --color-rose-500: #bd7272;
+  --color-rose-700: #a05252;
+  --color-red-300: #dda0a0;
+  --color-red-500: #c26161;
+  --color-red-700: #a84e4e;
+  --color-indigo-300: #a9aede;
+  --color-indigo-500: #7a80c4;
+  --color-indigo-700: #565db1;
+  --color-violet-300: #b9aae0;
+  --color-violet-500: #9180c9;
+  --color-violet-700: #6f5da8;
+  --color-purple-300: #c3aede;
+  --color-purple-500: #9a7ec4;
+  --color-purple-700: #7f68a8;
+  --color-teal-300: #93c4ba;
+  --color-teal-500: #5a9d90;
+  --color-teal-700: #35786c;
+  --color-green-300: #a3c4a4;
+  --color-green-500: #74a075;
+  --color-green-700: #4d7a4e;
+  --color-amber-50: #f5efe1;
+  --color-amber-300: #d4bb85;
+  --color-amber-500: #b08434;
+  --color-amber-700: #8a6a32;
+  --color-yellow-300: #d4c285;
+  --color-yellow-500: #b09a44;
+  --color-yellow-700: #8a7a32;
+  --color-orange-300: #d3a58e;
+  --color-orange-500: #bd7f63;
+  --color-orange-700: #9c5f45;
+  --color-slate-300: #b6bcc8;
+  --color-slate-500: #7d828f;
+  --color-slate-700: #5d6472;
+  --color-zinc-300: #c9c7d1;
+  --color-zinc-500: #7c7a86;
+  --color-zinc-700: #57555f;
 }
 
 /* ── Preview file-type tints ──────────────────────────────────────────────
@@ -91,28 +145,28 @@
    the details rail. Single source so those two surfaces can't drift (the
    dark variants flip in html.dark below). */
 :root {
-  --tint-image-bg: rgba(236, 72, 153, 0.16);
-  --tint-image-fg: #be185d;
-  --tint-video-bg: rgba(99, 102, 241, 0.16);
-  --tint-video-fg: #4338ca;
-  --tint-audio-bg: rgba(250, 204, 21, 0.22);
-  --tint-audio-fg: #a16207;
-  --tint-pdf-bg: rgba(244, 63, 94, 0.16);
-  --tint-pdf-fg: #be123c;
-  --tint-text-bg: rgba(82, 82, 91, 0.12);
-  --tint-text-fg: #3f3f46;
-  --tint-archive-bg: rgba(251, 146, 60, 0.16);
-  --tint-archive-fg: #c2410c;
-  --tint-epub-bg: rgba(20, 184, 166, 0.16);
-  --tint-epub-fg: #0f766e;
-  --tint-csv-bg: rgba(34, 197, 94, 0.16);
-  --tint-csv-fg: #15803d;
+  --tint-image-bg: rgba(168, 93, 118, 0.13);
+  --tint-image-fg: #97536a;
+  --tint-video-bg: rgba(96, 103, 177, 0.13);
+  --tint-video-fg: #565db1;
+  --tint-audio-bg: rgba(160, 125, 63, 0.15);
+  --tint-audio-fg: #8a6a32;
+  --tint-pdf-bg: rgba(176, 96, 96, 0.13);
+  --tint-pdf-fg: #a05252;
+  --tint-text-bg: rgba(87, 85, 95, 0.12);
+  --tint-text-fg: #57555f;
+  --tint-archive-bg: rgba(171, 106, 79, 0.14);
+  --tint-archive-fg: #9c5f45;
+  --tint-epub-bg: rgba(63, 133, 120, 0.13);
+  --tint-epub-fg: #35786c;
+  --tint-csv-bg: rgba(93, 138, 94, 0.13);
+  --tint-csv-fg: #4d7a4e;
   /* V2 #10: comics get the violet identity they have in the listing. */
-  --tint-comic-bg: rgba(139, 92, 246, 0.16);
-  --tint-comic-fg: #6d28d9;
+  --tint-comic-bg: rgba(122, 104, 184, 0.14);
+  --tint-comic-fg: #6f5da8;
   /* V2 #11: generic fallback — coloured (slate), never flat grey. */
-  --tint-file-bg: rgba(100, 116, 139, 0.14);
-  --tint-file-fg: #475569;
+  --tint-file-bg: rgba(110, 108, 122, 0.14);
+  --tint-file-fg: #5d5b68;
 }
 
 /* ── Accent gradients ────────────────────────────────────────────────────
@@ -140,18 +194,41 @@
 /* ── Colorful UI palette ──────────────────────────────────────────────────
    The six accent hues used across the app (sidebar nav icons, storage bar,
    avatar, etc.). Lilac is the brand primary and reads on both themes, so it
-   keeps #5e6ad2 in dark too; the other five lift to lighter tones for
+   keeps #6e72d9 in dark too; the other five lift to lighter tones for
    contrast on the dark canvas (overridden in html.dark below). */
 :root {
   /* Calm Minimal: the formerly-decorative nav / toolbar / icon hues collapse to
      a single muted ink so the chrome reads monochrome (one accent only). Amber
-     (favorite stars) and rose (danger / trash) keep their meaning. */
-  --c-lilac: #6f6f78;
-  --c-blue: #6f6f78;
-  --c-teal: #6f6f78;
-  --c-green: #6f6f78;
-  --c-amber: #d97706;
-  --c-rose: #e11d48;
+     (favorite stars) and rose (danger / trash) keep their meaning, but soften
+     to the dusty palette (v2.7) so they stop shouting against the calm chrome. */
+  --c-lilac: #6f6d7a;
+  --c-blue: #6f6d7a;
+  --c-teal: #6f6d7a;
+  --c-green: #6f6d7a;
+  --c-amber: #b08434;
+  --c-rose: #b5525e;
+
+  /* ── Status palette (v2.7) ────────────────────────────────────────────
+     Semantic success / danger / warning for messages, chips, banners, and
+     toasts — dusty like everything else (was scattered stock Tailwind
+     hexes: #dc2626, #047857, #d97706, …). The base tokens are TEXT/ICON
+     tones and lift to pastels in dark; the -fill tokens are SOLID surfaces
+     (destructive buttons, progress bars, toast bodies) that stay deep in
+     both modes under white text; -soft/-ring are the tinted washes and
+     borders. --c-amber / --c-rose above stay the ICON hues (favorite
+     stars, trash) — these are for status messaging. */
+  --status-danger: #a84e4e;
+  --status-danger-fill: #ad5560;
+  --status-danger-fill-strong: #97434d;
+  --status-danger-soft: rgba(176, 96, 96, 0.1);
+  --status-danger-ring: rgba(176, 96, 96, 0.35);
+  --status-success: #4d7a4e;
+  --status-success-fill: #567f57;
+  --status-success-soft: rgba(93, 138, 94, 0.14);
+  --status-warning: #8a6a32;
+  --status-warning-fill: #8a6a32;
+  --status-warning-soft: rgba(160, 125, 63, 0.12);
+  --status-warning-ring: rgba(160, 125, 63, 0.35);
 }
 
 /* ── Accent engine (Calm Minimal redesign, Stage 0) ───────────────────────
@@ -159,15 +236,16 @@
    useAccentColor). JS writes five SOURCE vars on <html> — --accent,
    --accent-grad, --accent-strong, --accent-ink-dark, --accent-rgb — plus
    --color-on-accent; everything below DERIVES from them, so a single picker
-   recolors the whole UI (incl. the ambient wash). Defaults here = Violet, so
-   first paint (pre-JS) is already correct. This block sits after @theme on
-   purpose: it overrides the @theme accent tokens with accent-driven values. */
+   recolors the whole UI (incl. the ambient wash). Defaults here = Iris (the
+   dusty v2.7 default), so first paint (pre-JS) is already correct. This block
+   sits after @theme on purpose: it overrides the @theme accent tokens with
+   accent-driven values. */
 :root {
-  --accent: #8b5cf6;
-  --accent-grad: #a78bfa;
-  --accent-strong: #7c3aed;
-  --accent-ink-dark: #d6c8fb;
-  --accent-rgb: 139 92 246;
+  --accent: #6e72d9;
+  --accent-grad: #9095e6;
+  --accent-strong: #575cc7;
+  --accent-ink-dark: #c3c7f4;
+  --accent-rgb: 110 114 217;
   --color-on-accent: #ffffff;
 
   --color-accent: var(--accent);
@@ -199,52 +277,70 @@ html.dark {
      (per-preset, driven by the accent picker). */
   --color-accent-ink: var(--accent-ink-dark);
 
-  /* Colorful UI palette — lilac primary stays #5e6ad2; the rest lift for the
+  /* Colorful UI palette — lilac primary stays #6e72d9; the rest lift for the
      dark canvas. (Per the design rule: lilac is the only hue that keeps its
      base value in both themes.) */
   /* Calm Minimal: decorative hues → muted ink (monochrome chrome); amber +
-     rose keep their meaning (favorite stars / danger). */
-  --c-lilac: #9a9aa4;
-  --c-blue: #9a9aa4;
-  --c-teal: #9a9aa4;
-  --c-green: #9a9aa4;
-  --c-amber: #fbbf24;
-  --c-rose: #fb7185;
+     rose keep their meaning (favorite stars / danger), softened to the dusty
+     palette (v2.7). */
+  --c-lilac: #9b99a6;
+  --c-blue: #9b99a6;
+  --c-teal: #9b99a6;
+  --c-green: #9b99a6;
+  --c-amber: #d4b26a;
+  --c-rose: #dd98a1;
 
-  /* Preview file-type tints — dark variants of the light pairs above. */
-  --tint-image-bg: rgba(244, 114, 182, 0.22);
-  --tint-image-fg: #fbcfe8;
-  --tint-video-bg: rgba(129, 140, 248, 0.22);
-  --tint-video-fg: #c7d2fe;
-  --tint-audio-bg: rgba(250, 204, 21, 0.2);
-  --tint-audio-fg: #fde68a;
-  --tint-pdf-bg: rgba(251, 113, 133, 0.22);
-  --tint-pdf-fg: #fecdd3;
-  --tint-text-bg: rgba(161, 161, 170, 0.18);
-  --tint-text-fg: #e4e4e7;
-  --tint-archive-bg: rgba(251, 146, 60, 0.22);
-  --tint-archive-fg: #fdba74;
-  --tint-epub-bg: rgba(45, 212, 191, 0.22);
-  --tint-epub-fg: #99f6e4;
-  --tint-csv-bg: rgba(74, 222, 128, 0.2);
-  --tint-csv-fg: #bbf7d0;
-  --tint-comic-bg: rgba(167, 139, 250, 0.22);
-  --tint-comic-fg: #ddd6fe;
-  --tint-file-bg: rgba(148, 163, 184, 0.2);
-  --tint-file-fg: #e2e8f0;
+  /* Status palette — text tones lift to dusty pastels; fills stay deep
+     (white text), with hovers lifting instead of darkening. */
+  --status-danger: #dda0a0;
+  --status-danger-fill: #ad5560;
+  --status-danger-fill-strong: #bd6570;
+  --status-danger-soft: rgba(200, 130, 130, 0.14);
+  --status-danger-ring: rgba(200, 130, 130, 0.38);
+  --status-success: #a3c4a4;
+  --status-success-fill: #567f57;
+  --status-success-soft: rgba(120, 165, 122, 0.18);
+  --status-warning: #d4bb85;
+  --status-warning-fill: #8a6a32;
+  --status-warning-soft: rgba(190, 160, 100, 0.16);
+  --status-warning-ring: rgba(190, 160, 100, 0.4);
 
-  /* Calm Minimal dark surfaces — deeper, cooler, quieter than the old set. */
-  --color-canvas: #0b0b0d;
-  --color-surface: #121216;
-  --color-elevated: #1b1b20;
+  /* Preview file-type tints — dark variants of the light pairs above (dusty
+     pastels: chroma halved, lightness evened). */
+  --tint-image-bg: rgba(205, 140, 165, 0.18);
+  --tint-image-fg: #d9a8ba;
+  --tint-video-bg: rgba(150, 155, 215, 0.18);
+  --tint-video-fg: #a9aede;
+  --tint-audio-bg: rgba(190, 160, 100, 0.18);
+  --tint-audio-fg: #d4bb85;
+  --tint-pdf-bg: rgba(200, 130, 130, 0.18);
+  --tint-pdf-fg: #d8a3a3;
+  --tint-text-bg: rgba(185, 183, 195, 0.14);
+  --tint-text-fg: #c9c7d1;
+  --tint-archive-bg: rgba(195, 140, 110, 0.18);
+  --tint-archive-fg: #d3a58e;
+  --tint-epub-bg: rgba(110, 175, 160, 0.18);
+  --tint-epub-fg: #93c4ba;
+  --tint-csv-bg: rgba(120, 165, 122, 0.18);
+  --tint-csv-fg: #a3c4a4;
+  --tint-comic-bg: rgba(160, 140, 215, 0.18);
+  --tint-comic-fg: #b9aae0;
+  --tint-file-bg: rgba(160, 158, 175, 0.16);
+  --tint-file-fg: #b3b1c0;
 
-  --color-ink-1: #ececf1;
-  --color-ink-2: #b4b4be;
-  --color-ink-3: #8a8a94;
-  --color-ink-4: #5a5a64;
+  /* Dusty Minimal dark surfaces (v2.7) — same violet whisper as light, with a
+     slightly bigger canvas→surface step so panels keep reading as panels. */
+  --color-canvas: #0d0d12;
+  --color-surface: #16161d;
+  --color-elevated: #202029;
 
-  --color-line: #212127;
-  --color-line-strong: #2f2f37;
+  --color-ink-1: #efeef4;
+  --color-ink-2: #b5b3c1;
+  --color-ink-3: #8c8a9b;
+  --color-ink-4: #5e5c6c;
+
+  --color-line: #292833;
+  --color-line-strong: #383646;
 
   --color-hover: rgba(255, 255, 255, 0.05);
   --color-selected: rgb(var(--accent-rgb) / 0.18);
@@ -256,22 +352,22 @@ html.dark {
   /* Tag color palette — dark variants. Backgrounds bumped to higher
      alpha so they still read against the darker surface; foregrounds
      lifted to lighter tints so the labels stay legible. */
-  --tag-color-lilac-bg: rgba(94, 106, 210, 0.22);
-  --tag-color-lilac-fg: #a5b4fc;
-  --tag-color-blue-bg: rgba(59, 130, 246, 0.22);
-  --tag-color-blue-fg: #93c5fd;
-  --tag-color-green-bg: rgba(34, 197, 94, 0.22);
-  --tag-color-green-fg: #86efac;
-  --tag-color-amber-bg: rgba(217, 119, 6, 0.24);
-  --tag-color-amber-fg: #fcd34d;
-  --tag-color-red-bg: rgba(239, 68, 68, 0.22);
-  --tag-color-red-fg: #fca5a5;
-  --tag-color-pink-bg: rgba(236, 72, 153, 0.22);
-  --tag-color-pink-fg: #f9a8d4;
-  --tag-color-slate-bg: rgba(148, 163, 184, 0.2);
-  --tag-color-slate-fg: #cbd5e1;
-  --tag-color-teal-bg: rgba(20, 184, 166, 0.22);
-  --tag-color-teal-fg: #5eead4;
+  --tag-color-lilac-bg: rgba(140, 145, 210, 0.2);
+  --tag-color-lilac-fg: #b0b4e6;
+  --tag-color-blue-bg: rgba(120, 160, 205, 0.2);
+  --tag-color-blue-fg: #a3bede;
+  --tag-color-green-bg: rgba(120, 165, 122, 0.2);
+  --tag-color-green-fg: #a3c4a4;
+  --tag-color-amber-bg: rgba(190, 160, 100, 0.2);
+  --tag-color-amber-fg: #d4bb85;
+  --tag-color-red-bg: rgba(200, 130, 130, 0.2);
+  --tag-color-red-fg: #d8a3a3;
+  --tag-color-pink-bg: rgba(205, 140, 165, 0.2);
+  --tag-color-pink-fg: #d9a8ba;
+  --tag-color-slate-bg: rgba(160, 158, 175, 0.2);
+  --tag-color-slate-fg: #b8b6c4;
+  --tag-color-teal-bg: rgba(110, 175, 160, 0.2);
+  --tag-color-teal-fg: #93c4ba;
 
   /* Native form control hint — picks dark scrollbars, date pickers, etc. */
   color-scheme: dark;

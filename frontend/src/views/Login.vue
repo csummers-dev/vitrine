@@ -463,10 +463,10 @@ html.dark .login__mesh {
 .login-card__logo:has(.login-card__logo-fallback) {
   background: linear-gradient(
     135deg,
-    var(--color-accent, #5e6ad2) 0%,
-    var(--color-accent-strong, #4f5ac4) 100%
+    var(--color-accent, #6e72d9) 0%,
+    var(--color-accent-strong, #575cc7) 100%
   );
-  box-shadow: 0 1px 2px rgba(94, 106, 210, 0.4);
+  box-shadow: 0 1px 2px rgba(110, 114, 217, 0.4);
 }
 
 .login-card__logo-img {
@@ -512,8 +512,8 @@ html.dark .login__mesh {
   gap: 8px;
   padding: 8px 12px;
   border-radius: 8px;
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.1));
-  color: var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
+  color: var(--color-accent, #6e72d9);
   font-size: 12.5px;
   font-weight: 500;
   line-height: 1.4;
@@ -550,8 +550,8 @@ html.dark .login__mesh {
 }
 
 .login-input:focus {
-  border-color: var(--color-accent, #5e6ad2);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  border-color: var(--color-accent, #6e72d9);
+  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
 }
 
 .login-input:disabled {
@@ -561,17 +561,17 @@ html.dark .login__mesh {
 }
 
 .login-input.is-error {
-  border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+  border-color: var(--status-danger-fill);
+  box-shadow: 0 0 0 3px var(--status-danger-soft);
 }
 
 .login-input.is-error:focus {
-  border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25);
+  border-color: var(--status-danger-fill);
+  box-shadow: 0 0 0 3px rgba(176, 96, 96, 0.25);
 }
 
 .login-input.is-ok {
-  border-color: #10b981;
+  border-color: var(--status-success);
 }
 
 /* Wrap for inputs that host an in-field action (currently the password
@@ -627,7 +627,7 @@ html[dir="rtl"] .login-password-toggle {
 }
 
 .login-password-toggle:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 1px;
   color: var(--color-ink-1, #18181b);
 }
@@ -643,7 +643,7 @@ html[dir="rtl"] .login-password-toggle {
 }
 
 .login-helper--error {
-  color: #dc2626;
+  color: var(--status-danger);
 }
 
 /* ── Inline error chip (above submit) ───────────────────────────────── */
@@ -653,9 +653,9 @@ html[dir="rtl"] .login-password-toggle {
   gap: 8px;
   padding: 9px 12px;
   border-radius: 8px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #b91c1c;
+  background: var(--status-danger-soft);
+  border: 1px solid var(--status-danger-ring);
+  color: var(--status-danger);
   font-size: 12.5px;
   font-weight: 500;
   line-height: 1.4;
@@ -665,7 +665,7 @@ html[dir="rtl"] .login-password-toggle {
 .login-submit {
   height: 36px;
   border-radius: 8px;
-  border: 1px solid var(--color-accent, #5e6ad2);
+  border: 1px solid var(--color-accent, #6e72d9);
   background: var(--accent-gradient);
   color: white;
   font-family: inherit;
@@ -686,12 +686,12 @@ html[dir="rtl"] .login-password-toggle {
 
 .login-submit:hover:not(:disabled) {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #4f5ac4);
-  box-shadow: 0 4px 12px -4px rgba(94, 106, 210, 0.5);
+  border-color: var(--color-accent-strong, #575cc7);
+  box-shadow: 0 4px 12px -4px rgba(110, 114, 217, 0.5);
 }
 
 .login-submit:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 2px;
 }
 
@@ -724,7 +724,7 @@ html[dir="rtl"] .login-password-toggle {
   padding: 0;
   font: inherit;
   font-weight: 600;
-  color: var(--color-accent, #5e6ad2);
+  color: var(--color-accent, #6e72d9);
   cursor: pointer;
   /* Symmetric so the link reads with a space on BOTH sides whether it sits
      at the end ("…account? Sign in") or mid-sentence ("Click here to …"). */
@@ -738,7 +738,7 @@ html[dir="rtl"] .login-password-toggle {
   transition: color var(--dur-base) ease;
 }
 .login-card__version:hover {
-  color: var(--color-accent, #5e6ad2);
+  color: var(--color-accent, #6e72d9);
   text-decoration: underline;
 }
 
@@ -747,7 +747,7 @@ html[dir="rtl"] .login-password-toggle {
 }
 
 .login-toggle__link:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 2px;
   border-radius: 4px;
 }

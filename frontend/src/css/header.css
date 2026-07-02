@@ -80,8 +80,8 @@ header .action .counter {
 }
 
 .hb-btn--danger:hover {
-  background: rgba(239, 68, 68, 0.08);
-  color: #dc2626;
+  background: rgba(176, 96, 96, 0.08);
+  color: var(--status-danger);
 }
 
 .hb-btn__badge {

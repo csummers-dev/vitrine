@@ -588,11 +588,11 @@ onBeforeUnmount(() => {
   transform: scale(1.04);
 }
 .pdf-viewer__thumb.is-active {
-  border-color: var(--color-accent, #5e6ad2);
-  box-shadow: 0 0 0 2px var(--color-accent-soft, rgba(94, 106, 210, 0.1));
+  border-color: var(--color-accent, #6e72d9);
+  box-shadow: 0 0 0 2px var(--color-accent-soft, rgba(110, 114, 217, 0.1));
 }
 .pdf-viewer__thumb:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 2px;
 }
 .pdf-viewer__thumb canvas {
@@ -651,7 +651,7 @@ html.dark .pdf-viewer__stage {
 /* ── Loading / error states ─────────────────────────────────────── */
 .pdf-viewer__loading {
   margin: auto;
-  color: var(--color-accent, #5e6ad2);
+  color: var(--color-accent, #6e72d9);
 }
 
 .pdf-viewer__spin {

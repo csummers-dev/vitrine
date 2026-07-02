@@ -125,7 +125,7 @@ const doRevoke = async () => {
   border-radius: 8px;
   border: 1px solid var(--color-line, #ececec);
   background: var(--color-surface, #fff);
-  color: #dc2626;
+  color: var(--status-danger);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -134,15 +134,15 @@ const doRevoke = async () => {
     border-color var(--dur-base) ease;
 }
 .session-danger-btn:hover:not(:disabled) {
-  background: rgba(220, 38, 38, 0.06);
-  border-color: rgba(220, 38, 38, 0.4);
+  background: var(--status-danger-soft);
+  border-color: var(--status-danger-ring);
 }
 .session-danger-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
 html.dark .session-danger-btn {
-  color: #f87171;
+  color: var(--status-danger);
 }
 
 .session-spin {

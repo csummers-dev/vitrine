@@ -2,6 +2,94 @@
 
 All notable changes to **filebrowser pretty**.
 
+## v2.7.0 — Dusty Minimal & a quality-of-life batch
+
+A follow-up pass on the Calm Minimal redesign — the whole palette relaxes into
+softer, evened-out tones — plus a batch of everyday quality-of-life features:
+Quick Look previews, undo for moves and renames, faster ways to get around, and
+comic covers. Your files, settings, and shares work exactly as before.
+
+**A softer palette — "Dusty Minimal"**
+
+- **The canvas and panels finally separate.** The page background drops a real
+  step below the white panels (with hairlines you can actually see), so surfaces
+  read as surfaces instead of one flat sheet.
+- **Every neutral picks up a whisper of the accent's hue**, so the gray scale and
+  the accent read as one family instead of clashing.
+- **File-type colors stop shouting.** The tint palette (icons, tags, preview
+  chips) has its saturation roughly halved and its lightness evened out — color
+  still codes file type, it just no longer reads as confetti in a mixed folder.
+- **New default accent: Iris** — the same violet family, pulled back from the
+  saturation ceiling. It joins the picker as a seventh preset; if you've already
+  chosen an accent, your choice is kept.
+- **Matching touches everywhere:** the wordmark letters, favorite-star gold,
+  danger rose, and the undo toast all soften to the same palette, and the big
+  folder cards in grid/gallery views trade their solid accent fill for a calm
+  accent wash (the small list-row folder icon keeps the solid marker).
+- **Status colors joined the family.** Every success, error, and warning
+  surface — toasts, dialogs, error messages, form validation, banners — now
+  draws from one dusty status palette instead of scattered loud hexes, in both
+  themes. This also caught a few spots that had quietly kept the very old
+  pre-redesign palette (the boot spinner, legacy buttons, the right-click
+  Delete hover), which now follow your accent and the new tones.
+
+**Quick Look**
+
+- **Press Space to peek at the selected file** — images, video, audio, PDFs, and
+  text preview instantly in a frosted overlay without leaving the folder. Arrow
+  keys move through neighbors while the peek follows, Enter opens the file for
+  real, and Space or Esc dismisses. Works in both split-view panes.
+
+**Undo**
+
+- **Moves can be undone.** After a move completes, a toast offers Undo — clicking
+  it moves everything straight back (even items that were renamed to avoid a
+  conflict return to their original names).
+- **Renames can be undone** from the same kind of toast.
+- Deletes already had Undo via the Trash; now all three destructive actions are
+  reversible.
+
+**Getting around**
+
+- **Breadcrumb folder menus.** The chevrons between breadcrumbs are now buttons —
+  click one to list that level's folders and jump sideways (Comics → Music) in
+  one click.
+- **Type filter chips.** Folders that mix file kinds get a quiet chip row
+  (Images · Videos · Audio · Comics · Documents · Archives) that filters the
+  listing client-side. Folders always stay visible; the filter resets when you
+  navigate.
+- **Paste to upload.** ⌘V with files (or a screenshot) on the clipboard uploads
+  into the current folder — screenshots get tidy timestamped names instead of
+  colliding as "image.png".
+- **Share & download on hover.** Grid and gallery file tiles show quick Share and
+  Download buttons on hover, next to the favorite star.
+
+**Comic covers**
+
+- **CBZ and CBR comics now show their cover** (the first page) as their thumbnail
+  in the listing, gallery, and details pane — served by the same cached pipeline
+  as the other media covers, and shared with the comic reader so nothing is
+  extracted twice.
+
+**Fixes & polish**
+
+- Fixed the gallery tile caption, which rendered as "· 1h ago0 B" — it now reads
+  "0 B · Jul 1" like the grid.
+- List-view checkboxes appear on hover/selection instead of sitting on every row
+  (always visible on touch, where they're the multi-select entry point).
+- The Quick Look backdrop is frosted glass, matching the app's other floating
+  controls.
+- Keyboard focus now shows a consistent accent ring on the new controls — and
+  hover-revealed buttons become visible when focused, so tabbing never lands on
+  an invisible control.
+
+**Under the hood**
+
+- The frontend suite grew from 383 to 412 tests (45 files): move-undo path math,
+  the Quick Look state and overlay, breadcrumb sibling menus, type-filter
+  buckets, and pasted-file naming, plus a new Go test locking in which archive
+  extensions get comic covers.
+
 ## v2.6.2 — Security patch
 
 A dependency and toolchain update that clears every known security advisory. No

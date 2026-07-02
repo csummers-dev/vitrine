@@ -415,8 +415,8 @@ onBeforeUnmount(() => {
 }
 
 .settings-input:focus {
-  border-color: var(--color-accent, #5e6ad2);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  border-color: var(--color-accent, #6e72d9);
+  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
 }
 
 .settings-input--num {
@@ -438,7 +438,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: var(--color-accent, #5e6ad2);
+  color: var(--color-accent, #6e72d9);
   text-decoration: none;
 }
 
@@ -538,7 +538,7 @@ onBeforeUnmount(() => {
 
 .hook__textarea:focus {
   background: var(--color-surface, #fff);
-  border-top-color: var(--color-accent, #5e6ad2);
+  border-top-color: var(--color-accent, #6e72d9);
 }
 
 /* ── Sticky save bar ───────────────────────────────────────────────── */
@@ -580,13 +580,13 @@ onBeforeUnmount(() => {
 
 .global-actions__btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #5e6ad2);
+  border-color: var(--color-accent, #6e72d9);
   color: white;
 }
 
 .global-actions__btn--primary:hover {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #4f5ac4);
+  border-color: var(--color-accent-strong, #575cc7);
 }
 
 @media (max-width: 540px) {

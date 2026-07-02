@@ -547,7 +547,7 @@ const onItemClick = (_event: MouseEvent) => {
   transition: color var(--dur-base) ease;
 }
 .sd__brand-version:hover {
-  color: var(--color-accent, #5e6ad2);
+  color: var(--color-accent, #6e72d9);
   text-decoration: underline;
 }
 
@@ -580,8 +580,8 @@ const onItemClick = (_event: MouseEvent) => {
   flex: 1;
   background: var(--accent-gradient);
   color: white;
-  border: 1px solid var(--color-accent, #5e6ad2);
-  box-shadow: 0 1px 2px rgba(94, 106, 210, 0.18);
+  border: 1px solid var(--color-accent, #6e72d9);
+  box-shadow: 0 1px 2px rgba(110, 114, 217, 0.18);
 }
 
 .sd__btn--primary:hover {
@@ -650,9 +650,9 @@ const onItemClick = (_event: MouseEvent) => {
 .sd__navrow.is-active {
   background: var(
     --color-selected,
-    var(--color-accent-soft, rgba(94, 106, 210, 0.1))
+    var(--color-accent-soft, rgba(110, 114, 217, 0.1))
   );
-  color: var(--color-accent, #5e6ad2);
+  color: var(--color-accent, #6e72d9);
   font-weight: 600;
 }
 
@@ -727,7 +727,7 @@ const onItemClick = (_event: MouseEvent) => {
 .sd__fav-star {
   /* Warm gold that reads on both the light canvas and the dark sidebar.
      (Was #b45309 — a dark brown that looked muddy in light mode.) */
-  color: #f59e0b;
+  color: var(--c-amber);
   flex-shrink: 0;
 }
 
@@ -820,7 +820,7 @@ const onItemClick = (_event: MouseEvent) => {
   transition: color var(--dur-base) ease;
 }
 .sd__viewall:hover {
-  color: var(--color-accent, #5e6ad2);
+  color: var(--color-accent, #6e72d9);
 }
 
 /* ── Recent list ─────────────────────────────────────────────────────── */
@@ -918,8 +918,8 @@ const onItemClick = (_event: MouseEvent) => {
   /* RC-7: track the accent + its per-preset gradient end-stop. */
   background: linear-gradient(
     90deg,
-    var(--color-accent, #5e6ad2) 0%,
-    var(--color-accent-grad, #7c87e5) 100%
+    var(--color-accent, #6e72d9) 0%,
+    var(--color-accent-grad, #9095e6) 100%
   );
   transition: width 0.3s ease;
 }

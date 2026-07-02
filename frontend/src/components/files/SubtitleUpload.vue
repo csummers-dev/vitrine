@@ -205,14 +205,14 @@ const upload = async () => {
 }
 .sub-upload__zone:hover,
 .sub-upload__zone:focus-visible {
-  border-color: var(--color-accent, #5e6ad2);
+  border-color: var(--color-accent, #6e72d9);
   color: var(--color-ink-2, #52525b);
   outline: none;
 }
 .sub-upload__zone.is-over {
-  border-color: var(--color-accent, #5e6ad2);
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.08));
-  color: var(--color-accent, #5e6ad2);
+  border-color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.08));
+  color: var(--color-accent, #6e72d9);
 }
 .sub-upload__zone-text {
   min-width: 0;
@@ -256,8 +256,8 @@ const upload = async () => {
     box-shadow var(--dur-base) ease;
 }
 .sub-upload__lang-input:focus {
-  border-color: var(--color-accent, #5e6ad2);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  border-color: var(--color-accent, #6e72d9);
+  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
 }
 
 .sub-upload__btn {
@@ -277,7 +277,7 @@ const upload = async () => {
   transition: background-color var(--dur-base) ease;
 }
 .sub-upload__btn:hover:not(:disabled) {
-  background: var(--color-accent-strong, #4f59c4);
+  background: var(--color-accent-strong, #575cc7);
 }
 .sub-upload__btn:disabled {
   opacity: 0.5;
@@ -301,10 +301,10 @@ const upload = async () => {
 .sub-upload__error {
   margin: 8px 0 0;
   font-size: 11.5px;
-  color: #b91c1c;
+  color: var(--status-danger);
 }
 html.dark .sub-upload__error {
-  color: #fca5a5;
+  color: var(--status-danger);
 }
 
 .sub-upload__spin {

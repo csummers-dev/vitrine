@@ -422,9 +422,9 @@ const onCancel = () => emit("cancel");
 }
 
 .tag-picker__search-input:focus {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 1px;
-  border-color: var(--color-accent, #5e6ad2);
+  border-color: var(--color-accent, #6e72d9);
 }
 
 .tag-picker__loading,
@@ -454,7 +454,7 @@ const onCancel = () => emit("cancel");
 }
 
 .tag-picker__row--selected {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.08));
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.08));
 }
 
 .tag-picker__row-label {
@@ -549,7 +549,7 @@ const onCancel = () => emit("cancel");
   background: transparent;
   border: 1px dashed var(--color-line-strong, #d4d4d8);
   border-radius: 6px;
-  color: var(--color-accent, #5e6ad2);
+  color: var(--color-accent, #6e72d9);
   font: inherit;
   font-size: 13px;
   font-weight: 500;
@@ -561,8 +561,8 @@ const onCancel = () => emit("cancel");
 }
 
 .tag-picker__create-btn:hover:not(:disabled) {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.08));
-  border-color: var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.08));
+  border-color: var(--color-accent, #6e72d9);
 }
 
 .tag-picker__create-btn:disabled {
@@ -596,13 +596,13 @@ const onCancel = () => emit("cancel");
 
 .tag-picker__save {
   background: var(--accent-gradient);
-  border: 1px solid var(--color-accent, #5e6ad2);
+  border: 1px solid var(--color-accent, #6e72d9);
   color: white;
 }
 
 .tag-picker__save:hover:not(:disabled) {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #4f5ac4);
+  border-color: var(--color-accent-strong, #575cc7);
 }
 
 .tag-picker__save:disabled {

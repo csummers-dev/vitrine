@@ -224,3 +224,18 @@ func TestComicEncryptedArchiveUnsupported(t *testing.T) {
 		t.Errorf("status = %d, want 400", status)
 	}
 }
+
+func TestIsComicPreviewExt(t *testing.T) {
+	// v2.7: BOTH real-world comic formats get covers (.cbz joined .cbr — the
+	// V2 #6 exclusion was reversed on request). Plain archives must never
+	// match: an ordinary zip of images is not a comic, and sweeping every
+	// archive for a cover would turn folder listings into archive scans.
+	for ext, want := range map[string]bool{
+		".cbz": true, ".CBZ": true, ".cbr": true, ".CbR": true,
+		".zip": false, ".rar": false, ".cb7": false, ".epub": false, "": false,
+	} {
+		if got := isComicPreviewExt(ext); got != want {
+			t.Errorf("isComicPreviewExt(%q) = %v, want %v", ext, got, want)
+		}
+	}
+}
