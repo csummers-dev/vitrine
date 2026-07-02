@@ -487,19 +487,19 @@ const toogleCheckAll = (e: Event) => {
 
 .rc-chip.is-override {
   background: rgba(4, 120, 87, 0.12);
-  color: #047857;
+  color: var(--status-success);
 }
 .rc-chip.is-skip {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.1));
-  color: var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
+  color: var(--color-accent, #6e72d9);
 }
 .rc-chip.is-warn {
-  background: rgba(217, 119, 6, 0.12);
-  color: #d97706;
+  background: var(--status-warning-soft);
+  color: var(--status-warning);
 }
 .rc-chip.is-error {
-  background: rgba(220, 38, 38, 0.12);
-  color: #dc2626;
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
 }
 
 /* J (2.4.0): "will be kept as" preview under the filename when the row
@@ -508,7 +508,7 @@ const toogleCheckAll = (e: Event) => {
   margin: -4px 0 8px;
   font-size: 11.5px;
   line-height: 1.4;
-  color: #d97706;
+  color: var(--status-warning);
   word-break: break-all;
 }
 
@@ -533,8 +533,8 @@ const toogleCheckAll = (e: Event) => {
 }
 
 .rc-item__col:has(input:checked) {
-  border-color: var(--color-accent, #5e6ad2);
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.06));
+  border-color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.06));
 }
 
 .rc-item__col-meta {
@@ -681,7 +681,7 @@ html.dark .rc-quick__btn--accent :deep(svg) {
 }
 
 .rc-btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 1px;
 }
 
@@ -698,12 +698,12 @@ html.dark .rc-quick__btn--accent :deep(svg) {
 
 .rc-btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #5e6ad2);
+  border-color: var(--color-accent, #6e72d9);
   color: white;
 }
 
 .rc-btn--primary:hover {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #4f5ac4);
+  border-color: var(--color-accent-strong, #575cc7);
 }
 </style>

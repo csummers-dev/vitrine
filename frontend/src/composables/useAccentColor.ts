@@ -6,7 +6,7 @@ import { usePreferences } from "@/composables/usePreferences";
  * useAccentColor — per-user accent hue (Calm Minimal redesign, Stage 0).
  *
  * The accent is the ONE color the UI leans on (active nav, primary actions,
- * focus, selection, progress, the ambient wash). Six presets; the choice is
+ * focus, selection, progress, the ambient wash). Seven presets; the choice is
  * persisted to the prefs bag (cross-device + optimistic) exactly like
  * useBackgroundGradient / useThemePreference.
  *
@@ -14,10 +14,11 @@ import { usePreferences } from "@/composables/usePreferences";
  * (`--accent`, `--accent-grad`, `--accent-strong`, `--accent-ink-dark`,
  * `--accent-rgb`) plus `--color-on-accent`; tokens.css DERIVES every
  * `--color-accent*` (and the theme-dependent tints) from those, so a single
- * picker recolors the whole app. The CSS defaults (= Violet) match
+ * picker recolors the whole app. The CSS defaults (= Iris) match
  * DEFAULT_ACCENT, so the common case paints correctly before init() runs.
  */
 export type AccentName =
+  | "iris"
   | "indigo"
   | "violet"
   | "blue"
@@ -44,6 +45,7 @@ export interface AccentPreset {
 }
 
 export const ACCENT_PRESETS: AccentPreset[] = [
+  { name: "iris", label: "Iris", value: "#6e72d9", grad: "#9095e6", strong: "#575cc7", inkDark: "#c3c7f4", rgb: "110 114 217", on: "#ffffff" }, // prettier-ignore
   { name: "indigo", label: "Indigo", value: "#6366f1", grad: "#818cf8", strong: "#4f46e5", inkDark: "#c7ccfb", rgb: "99 102 241", on: "#ffffff" }, // prettier-ignore
   { name: "violet", label: "Violet", value: "#8b5cf6", grad: "#a78bfa", strong: "#7c3aed", inkDark: "#d6c8fb", rgb: "139 92 246", on: "#ffffff" }, // prettier-ignore
   { name: "blue", label: "Blue", value: "#3b82f6", grad: "#60a5fa", strong: "#2563eb", inkDark: "#bfdbfe", rgb: "59 130 246", on: "#ffffff" }, // prettier-ignore
@@ -52,12 +54,14 @@ export const ACCENT_PRESETS: AccentPreset[] = [
   { name: "amber", label: "Amber", value: "#f59e0b", grad: "#fbbf24", strong: "#d97706", inkDark: "#f3cf92", rgb: "245 158 11", on: "#3d2a04" }, // prettier-ignore
 ];
 
-/** Calm Minimal default. Matches the CSS source-var defaults in tokens.css. */
-const DEFAULT_ACCENT: AccentName = "violet";
+/** Dusty Minimal (v2.7) default. Matches the CSS source-var defaults in
+ *  tokens.css — a muted iris: the violet family pulled back from the
+ *  saturation ceiling so the whole UI reads calmer. */
+const DEFAULT_ACCENT: AccentName = "iris";
 const PREF_ACCENT = "accent.color";
 
 const presetFor = (name: AccentName): AccentPreset =>
-  ACCENT_PRESETS.find((p) => p.name === name) ?? ACCENT_PRESETS[1];
+  ACCENT_PRESETS.find((p) => p.name === name) ?? ACCENT_PRESETS[0];
 
 const apply = (name: AccentName) => {
   if (typeof document === "undefined") return;

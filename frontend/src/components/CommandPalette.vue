@@ -683,7 +683,7 @@ const run = async (cmd: Command) => {
 }
 
 .cmd-palette__row--selected .cmd-palette__row-icon {
-  color: var(--color-accent, #5e6ad2);
+  color: var(--color-accent, #6e72d9);
 }
 
 .cmd-palette__row-label {
@@ -734,7 +734,7 @@ const run = async (cmd: Command) => {
 }
 .cmd-palette__searching-spinner {
   animation: cmd-palette-spin 0.9s linear infinite;
-  color: var(--color-accent, #5e6ad2);
+  color: var(--color-accent, #6e72d9);
 }
 @keyframes cmd-palette-spin {
   to {

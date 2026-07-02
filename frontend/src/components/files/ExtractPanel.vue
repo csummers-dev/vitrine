@@ -338,8 +338,8 @@ watch(
   width: 32px;
   height: 32px;
   border-radius: 7px;
-  background: var(--color-orange-soft, rgba(251, 146, 60, 0.16));
-  color: var(--color-orange-strong, #c2410c);
+  background: var(--tint-archive-bg);
+  color: var(--tint-archive-fg);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -347,8 +347,8 @@ watch(
 }
 
 html.dark .extract-source__icon {
-  background: rgba(251, 146, 60, 0.22);
-  color: #fdba74;
+  background: var(--tint-archive-bg);
+  color: var(--tint-archive-fg);
 }
 
 .extract-source__text {
@@ -388,8 +388,8 @@ html.dark .extract-source__icon {
   margin: 12px 0 0;
   padding: 8px 10px;
   border-radius: 6px;
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.08));
-  color: var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.08));
+  color: var(--color-accent, #6e72d9);
   font-size: 11.5px;
   line-height: 1.4;
 }
@@ -437,8 +437,8 @@ html.dark .extract-source__icon {
 }
 .extract-folder-name__input:focus {
   outline: none;
-  border-color: var(--color-accent, #5e6ad2);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(94, 106, 210, 0.25));
+  border-color: var(--color-accent, #6e72d9);
+  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.25));
 }
 
 .extract-option {
@@ -517,7 +517,7 @@ html.dark .extract-source__icon {
 }
 
 .extract-btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 1px;
 }
 
@@ -535,13 +535,13 @@ html.dark .extract-source__icon {
 
 .extract-btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #5e6ad2);
+  border-color: var(--color-accent, #6e72d9);
   color: white;
 }
 
 .extract-btn--primary:hover:not(:disabled) {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #4f5ac4);
+  border-color: var(--color-accent-strong, #575cc7);
 }
 
 .extract-btn:disabled {

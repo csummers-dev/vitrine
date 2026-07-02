@@ -319,8 +319,8 @@ watch(createUserDirData, () => {
 }
 
 .settings-input:focus {
-  border-color: var(--color-accent, #5e6ad2);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  border-color: var(--color-accent, #6e72d9);
+  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
 }
 
 .settings-input:disabled {
@@ -330,13 +330,13 @@ watch(createUserDirData, () => {
 }
 
 .settings-input.is-error {
-  border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+  border-color: var(--status-danger-fill);
+  box-shadow: 0 0 0 3px var(--status-danger-soft);
 }
 
 .settings-input.is-error:focus {
-  border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25);
+  border-color: var(--status-danger-fill);
+  box-shadow: 0 0 0 3px rgba(176, 96, 96, 0.25);
 }
 
 .settings-helper {
@@ -345,7 +345,7 @@ watch(createUserDirData, () => {
 }
 
 .settings-helper--error {
-  color: #dc2626;
+  color: var(--status-danger);
 }
 
 /* Legacy slot for Commands/Rules until those components are rebuilt. Keep

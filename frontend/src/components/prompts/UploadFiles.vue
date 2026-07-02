@@ -411,8 +411,8 @@ html.dark .upload-dock {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.12));
-  color: var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.12));
+  color: var(--color-accent, #6e72d9);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -423,11 +423,11 @@ html.dark .upload-dock {
 }
 .upload-dock__icon.is-done {
   background: rgba(16, 185, 129, 0.16);
-  color: #047857;
+  color: var(--status-success);
 }
 html.dark .upload-dock__icon.is-done {
   background: rgba(16, 185, 129, 0.2);
-  color: #34d399;
+  color: var(--status-success);
 }
 
 .upload-dock__summary {
@@ -485,15 +485,15 @@ html.dark .upload-dock__icon.is-done {
   color: var(--color-ink-1, #18181b);
 }
 .upload-dock__btn--danger:hover {
-  background: #fef2f2;
-  color: #b91c1c;
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
 }
 html.dark .upload-dock__btn--danger:hover {
   background: rgba(127, 29, 29, 0.25);
-  color: #fca5a5;
+  color: var(--status-danger);
 }
 .upload-dock__btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 1px;
 }
 
@@ -514,7 +514,7 @@ html.dark .upload-dock__btn--danger:hover {
   border-radius: 0 999px 999px 0;
 }
 .upload-dock__bar-fill.is-done {
-  background: #10b981;
+  background: var(--status-success-fill);
 }
 
 /* Don't-close-this-tab hint (H8). Sits between the head and the
@@ -527,8 +527,8 @@ html.dark .upload-dock__btn--danger:hover {
   gap: 6px;
   padding: 6px 14px 8px;
   font-size: 11px;
-  color: var(--tag-color-amber-fg, #b45309);
-  background: var(--tag-color-amber-bg, rgba(217, 119, 6, 0.08));
+  color: var(--tag-color-amber-fg, #8a6a32);
+  background: var(--tag-color-amber-bg, rgba(160, 125, 63, 0.08));
   border-top: 1px solid var(--color-line, #ececec);
   border-bottom: 1px solid var(--color-line, #ececec);
 }
@@ -596,7 +596,7 @@ html.dark .upload-dock__btn--danger:hover {
   flex-shrink: 0;
 }
 .upload-dock__file[data-type="dir"] .upload-dock__file-icon {
-  color: var(--color-accent, #5e6ad2);
+  color: var(--color-accent, #6e72d9);
 }
 .upload-dock__file-name {
   flex: 1;
@@ -642,15 +642,15 @@ html.dark .upload-dock__btn--danger:hover {
   opacity: 1;
 }
 .upload-dock__file-remove:hover {
-  background: #fef2f2;
-  color: #b91c1c;
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
 }
 html.dark .upload-dock__file-remove:hover {
   background: rgba(127, 29, 29, 0.25);
-  color: #fca5a5;
+  color: var(--status-danger);
 }
 .upload-dock__file-remove:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 1px;
 }
 

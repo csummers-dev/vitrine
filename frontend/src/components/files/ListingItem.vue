@@ -174,12 +174,35 @@
           :fill="isFavorited ? 'currentColor' : 'none'"
         />
       </button>
+      <!-- v2.7 quick actions: Share + Download on FILE tiles, hover-revealed
+           in grid + gallery only (the list view keeps calm rows — its context
+           menu already covers both). Same corner-chip styling as the star. -->
+      <button
+        v-if="!isDir && canShare"
+        class="item__actions-btn item__quick-btn"
+        title="Share"
+        :aria-label="`Share ${name}`"
+        @click.stop="onQuickShare"
+      >
+        <Icon name="share-2" :size="13" :stroke-width="1.8" />
+      </button>
+      <button
+        v-if="!isDir && canDownload"
+        class="item__actions-btn item__quick-btn"
+        title="Download"
+        :aria-label="`Download ${name}`"
+        @click.stop="onQuickDownload"
+      >
+        <Icon name="download" :size="13" :stroke-width="1.8" />
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import Icon from "@/components/Icon.vue";
+import UndoToast from "@/components/UndoToast.vue";
+import { useToast } from "vue-toastification";
 import { useAuthStore } from "@/stores/auth";
 import { useClipboardStore } from "@/stores/clipboard";
 import { useFileStore } from "@/stores/file";
@@ -216,6 +239,27 @@ import { computed, inject, nextTick, onBeforeUnmount, ref, watch } from "vue";
 const touches = ref<number>(0);
 
 const $showError = inject<IToastError>("$showError")!;
+const $toast = useToast();
+
+// ── Quick actions on file tiles (v2.7) ───────────────────────────────
+// Share opens the existing SharePanel with a row-scoped `override` (the same
+// mechanism pane B uses), so it never reads the pane's selection. Download
+// navigates to the raw URL directly — no dialog needed for a single file.
+const canShare = computed(() => authStore.user?.perm.share === true);
+const canDownload = computed(() => authStore.user?.perm.download === true);
+
+const onQuickShare = () => {
+  layoutStore.showHover({
+    prompt: "share",
+    props: {
+      override: { url: props.url, name: props.name, path: props.path },
+    },
+  });
+};
+
+const onQuickDownload = () => {
+  api.download(null, props.url);
+};
 
 const props = defineProps<{
   name: string;
@@ -477,9 +521,9 @@ const showThumbnail = computed(() => {
   if (props.type === "audio") return enableThumbs;
   if (props.type === "pdf") return enableThumbs && enablePdfThumbs;
   if (ext === ".epub") return enableThumbs;
-  // V2 #6: .cbr (RAR) comics get a server-extracted cover (first page).
-  // .cbz is intentionally excluded.
-  if (ext === ".cbr") return enableThumbs;
+  // Comics get a server-extracted cover (first page). V2 #6 shipped .cbr
+  // only; .cbz joined in v2.7 (exclusion reversed on request).
+  if (ext === ".cbr" || ext === ".cbz") return enableThumbs;
   return false;
 });
 
@@ -670,6 +714,73 @@ const onRenameBlur = () => {
   }, 120);
 };
 
+// Reload the pane this row lives in, and — when the split shows the SAME
+// folder in both panes — the other pane too, so a rename refreshes both at
+// once (#5). Pane-aware so it stays correct once pane B renames inline.
+// Shared by submitRename and its undo (which can run after this row has been
+// recycled — it only touches store singletons, never props).
+const refreshPanesAfterRename = () => {
+  const norm = (p?: string | null) => (p ? p.replace(/\/+$/, "") : "");
+  const sameFolderBothPanes =
+    panes.split && norm(fileStore.req?.url) === norm(panes.secondaryPath);
+  if (paneId === "b") {
+    panes.refreshB();
+    if (sameFolderBothPanes) fileStore.reload = true;
+  } else {
+    fileStore.reload = true;
+    if (sameFolderBothPanes) panes.refreshB();
+  }
+};
+
+// Undo = rename back. A real API round-trip like the delete-undo, so it works
+// even after navigating away or after this row instance is gone. Everything it
+// needs is passed as primitives captured at rename time — `props` must NOT be
+// read here (the virtual scroller recycles row instances, so by the time the
+// toast is clicked `props` may describe a different file).
+const undoRename = async (
+  fromLink: string,
+  toLink: string,
+  wasDir: boolean
+) => {
+  try {
+    await api.move([{ from: fromLink, to: toLink }]);
+    if (wasDir) favorites.renamePath(fromLink, toLink);
+    listing.setPreselect(decodeURIComponent(removePrefix(toLink)));
+  } catch (e) {
+    if (e instanceof Error) $showError(e);
+  } finally {
+    refreshPanesAfterRename();
+  }
+};
+
+const RENAME_UNDO_WINDOW_MS = 5000;
+const offerRenameUndo = (
+  oldLink: string,
+  newLink: string,
+  oldName: string,
+  wasDir: boolean
+) => {
+  const toastId = $toast(
+    {
+      component: UndoToast,
+      props: {
+        message: `Renamed “${oldName}”`,
+        icon: "pencil",
+        onClick: () => {
+          $toast.dismiss(toastId);
+          void undoRename(newLink, oldLink, wasDir);
+        },
+      },
+    },
+    {
+      timeout: RENAME_UNDO_WINDOW_MS,
+      closeOnClick: false,
+      icon: false,
+      toastClassName: "toast--undo",
+    }
+  );
+};
+
 const submitRename = async () => {
   if (renameSubmitting) return;
   const typed = renameValue.value.trim();
@@ -686,13 +797,15 @@ const submitRename = async () => {
   }
   renameSubmitting = true;
   const oldLink = props.url;
+  const oldName = props.name;
+  const wasDir = props.isDir;
   const newLink =
     urlUtil.removeLastDir(oldLink) + "/" + encodeURIComponent(next);
   try {
     await api.move([{ from: oldLink, to: newLink }]);
     // Keep any Favorites pointing at this folder (or its descendants)
     // pinned — follow the rename instead of letting the link break.
-    if (props.isDir) favorites.renamePath(oldLink, newLink);
+    if (wasDir) favorites.renamePath(oldLink, newLink);
     // Decode the path before queueing it — removePrefix(newLink) is
     // URL-encoded (we built newLink with encodeURIComponent), but
     // item.path in the next listing is decoded. Without this decode
@@ -700,19 +813,8 @@ const submitRename = async () => {
     // and the row would lose its selection — the exact "feels broken"
     // UX the user reported.
     listing.setPreselect(decodeURIComponent(removePrefix(newLink)));
-    // Reload the pane this row lives in, and — when the split shows the SAME
-    // folder in both panes — the other pane too, so a rename refreshes both at
-    // once (#5). Pane-aware so it stays correct once pane B renames inline.
-    const norm = (p?: string | null) => (p ? p.replace(/\/+$/, "") : "");
-    const sameFolderBothPanes =
-      panes.split && norm(fileStore.req?.url) === norm(panes.secondaryPath);
-    if (paneId === "b") {
-      panes.refreshB();
-      if (sameFolderBothPanes) fileStore.reload = true;
-    } else {
-      fileStore.reload = true;
-      if (sameFolderBothPanes) panes.refreshB();
-    }
+    refreshPanesAfterRename();
+    offerRenameUndo(oldLink, newLink, oldName, wasDir);
   } catch (e) {
     if (e instanceof Error) $showError(e);
     renameSubmitting = false;

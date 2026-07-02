@@ -57,7 +57,7 @@ export function setDragGhost(
   const surface = rootVar("--color-surface", "#ffffff");
   const line = rootVar("--color-line", "#ececec");
   const ink1 = rootVar("--color-ink-1", "#18181b");
-  const accent = rootVar("--color-accent", "#5e6ad2");
+  const accent = rootVar("--color-accent", "#6e72d9");
 
   // ── Container pill ────────────────────────────────────────────────
   const ghost = document.createElement("div");

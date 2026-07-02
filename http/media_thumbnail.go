@@ -477,14 +477,16 @@ func findEpubCoverHref(pkg *epubPackage) string {
 	return ""
 }
 
-// ── Comic (CBR only) ──────────────────────────────────────────────────────
+// ── Comic (CBZ + CBR) ─────────────────────────────────────────────────────
 
-// handleComicPreview serves a `.cbr` (RAR) comic's cover — its first image, in
-// natural-sort order — resized + cached like the other media covers. It reuses
-// the comic reader's page cache (comicPages / comicPageBytes keyed by realPath +
-// mtime), so the thumbnail and the in-app reader share the same extracted bytes.
-// Any failure (no images, encrypted, oversize, decode error) returns 501 → the
-// generic icon, never a 500. `.cbz` is intentionally NOT routed here (V2 #6).
+// handleComicPreview serves a comic's cover — its first image, in natural-sort
+// order — resized + cached like the other media covers. It reuses the comic
+// reader's page cache (comicPages / comicPageBytes keyed by realPath + mtime),
+// so the thumbnail and the in-app reader share the same extracted bytes. Any
+// failure (no images, encrypted, oversize, decode error) returns 501 → the
+// generic icon, never a 500. Routed for the comic extensions only
+// (isComicPreviewExt): V2 #6 shipped `.cbr`; `.cbz` joined in v2.7 (the
+// original exclusion was reversed on request).
 func handleComicPreview(w http.ResponseWriter, r *http.Request, imgSvc ImgService,
 	fileCache FileCache, file *files.FileInfo, previewSize PreviewSize, enableThumbnails bool, maxEntries int) (int, error) {
 	if previewSize != PreviewSizeThumb || !enableThumbnails {

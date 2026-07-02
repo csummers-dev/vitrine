@@ -14,8 +14,9 @@ const cssVar = (n: string) =>
   document.documentElement.style.getPropertyValue(n);
 
 describe("ACCENT_PRESETS", () => {
-  it("has the six named hues in order", () => {
+  it("has the seven named hues in order (iris first = default)", () => {
     expect(ACCENT_PRESETS.map((p) => p.name)).toEqual([
+      "iris",
       "indigo",
       "violet",
       "blue",
@@ -30,6 +31,7 @@ describe("ACCENT_PRESETS", () => {
       ACCENT_PRESETS.find((p) => p.name === name)!.on;
     expect(on("cyan")).not.toBe("#ffffff");
     expect(on("amber")).not.toBe("#ffffff");
+    expect(on("iris")).toBe("#ffffff");
     expect(on("violet")).toBe("#ffffff");
     expect(on("emerald")).toBe("#ffffff");
   });
@@ -53,7 +55,7 @@ describe("useAccentColor.setAccent", () => {
 
   it("persists the choice to the prefs bag", () => {
     useAccentColor().setAccent("blue");
-    expect(usePreferences().get("accent.color", "violet")).toBe("blue");
+    expect(usePreferences().get("accent.color", "iris")).toBe("blue");
   });
 
   it("exposes the presets list", () => {

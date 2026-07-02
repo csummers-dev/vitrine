@@ -40,7 +40,7 @@
   border-radius: var(--radius-md);
 }
 .video-js .vjs-button:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.45));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.45));
   outline-offset: 1px;
   border-radius: var(--radius-md);
 }
@@ -90,7 +90,7 @@
   height: 12px;
   border-radius: var(--radius-full);
   background: var(--accent-gradient);
-  box-shadow: 0 0 0 4px rgba(94, 106, 210, 0.32);
+  box-shadow: 0 0 0 4px rgba(110, 114, 217, 0.32);
   position: absolute;
   right: -6px;
   top: 50%;
@@ -155,7 +155,7 @@
 
 /* ── Loading spinner: replace the spinning ring with our motion ── */
 .video-js .vjs-loading-spinner {
-  border-top-color: var(--color-accent, #5e6ad2);
+  border-top-color: var(--color-accent, #6e72d9);
 }
 
 /* ── Captions text background — softened so subs don't fight chrome */

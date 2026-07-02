@@ -342,8 +342,8 @@ watch(selectedEncoding, () => {
   gap: 6px;
   padding: 6px 12px;
   border-radius: 999px;
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.1));
-  color: var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
+  color: var(--color-accent, #6e72d9);
   font-size: 11.5px;
   font-weight: 500;
 }

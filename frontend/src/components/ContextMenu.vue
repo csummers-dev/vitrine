@@ -401,12 +401,12 @@ html.dark .context-menu {
 }
 
 .context-menu__item--destructive.context-menu__item--focused {
-  background: #fef2f2;
-  color: #b91c1c;
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
 }
 html.dark .context-menu__item--destructive.context-menu__item--focused {
   background: rgba(127, 29, 29, 0.25);
-  color: #fca5a5;
+  color: var(--status-danger);
 }
 
 .context-menu__item-icon {

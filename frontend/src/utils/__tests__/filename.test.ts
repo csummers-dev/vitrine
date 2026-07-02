@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { splitExtension, displayName } from "@/utils/filename";
+import { splitExtension, displayName, pastedFileName } from "@/utils/filename";
 
 describe("splitExtension", () => {
   it("splits a normal filename at the last dot", () => {
@@ -63,5 +63,31 @@ describe("rename re-append (WS8 spec example)", () => {
     const typed = "filename.jpg";
     const saved = typed + splitExtension(original).ext;
     expect(saved).toBe("filename.jpg.txt");
+  });
+});
+
+describe("pastedFileName (v2.7 paste-to-upload)", () => {
+  const when = new Date(2026, 6, 1, 22, 41, 3); // 2026-07-01 22:41:03 local
+
+  it("timestamps the generic clipboard image names", () => {
+    expect(pastedFileName("image.png", when)).toBe(
+      "Pasted 2026-07-01 at 22.41.03.png"
+    );
+    expect(pastedFileName("IMAGE.JPEG", when)).toBe(
+      "Pasted 2026-07-01 at 22.41.03.JPEG"
+    );
+  });
+
+  it("keeps real file names untouched", () => {
+    expect(pastedFileName("vacation.png", when)).toBe("vacation.png");
+    expect(pastedFileName("report.pdf", when)).toBe("report.pdf");
+    expect(pastedFileName("image.png.bak", when)).toBe("image.png.bak");
+  });
+
+  it("zero-pads single-digit date/time parts", () => {
+    const early = new Date(2026, 0, 5, 7, 4, 9);
+    expect(pastedFileName("image.gif", early)).toBe(
+      "Pasted 2026-01-05 at 07.04.09.gif"
+    );
   });
 });

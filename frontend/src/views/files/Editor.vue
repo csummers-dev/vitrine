@@ -324,7 +324,7 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
 }
 .editor-topbar__dirty {
-  color: var(--color-accent, #5e6ad2);
+  color: var(--color-accent, #6e72d9);
   font-size: 20px;
   line-height: 0;
   flex-shrink: 0;
@@ -350,11 +350,11 @@ onBeforeUnmount(() => {
   color: var(--color-ink-1, #18181b);
 }
 .editor-iconbtn--active {
-  background: var(--color-selected, rgba(94, 106, 210, 0.12));
-  color: var(--color-accent, #5e6ad2);
+  background: var(--color-selected, rgba(110, 114, 217, 0.12));
+  color: var(--color-accent, #6e72d9);
 }
 .editor-iconbtn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 1px;
 }
 
@@ -383,7 +383,7 @@ onBeforeUnmount(() => {
   cursor: default;
 }
 .editor-savebtn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 1px;
 }
 

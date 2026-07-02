@@ -149,13 +149,13 @@ const onCancel = () => emit("cancel");
 }
 
 .confirm-dialog__icon.is-danger {
-  background: #fef2f2;
-  color: #dc2626;
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
 }
 
 .confirm-dialog__icon.is-info {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.1));
-  color: var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
+  color: var(--color-accent, #6e72d9);
 }
 
 .confirm-dialog__text {
@@ -203,7 +203,7 @@ const onCancel = () => emit("cancel");
 }
 
 .confirm-dialog__btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 1px;
 }
 
@@ -220,24 +220,24 @@ const onCancel = () => emit("cancel");
 
 .confirm-dialog__btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #5e6ad2);
+  border-color: var(--color-accent, #6e72d9);
   color: white;
 }
 
 .confirm-dialog__btn--primary:hover {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #4f5ac4);
+  border-color: var(--color-accent-strong, #575cc7);
 }
 
 .confirm-dialog__btn--danger {
-  background: #dc2626;
-  border-color: #dc2626;
+  background: var(--status-danger-fill);
+  border-color: var(--status-danger-fill);
   color: white;
 }
 
 .confirm-dialog__btn--danger:hover {
-  background: #b91c1c;
-  border-color: #b91c1c;
+  background: var(--status-danger-fill-strong);
+  border-color: var(--status-danger-fill-strong);
 }
 
 /* Transitions */

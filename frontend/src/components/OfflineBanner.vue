@@ -50,7 +50,7 @@ const online = useOnline();
 }
 
 .offline-banner svg {
-  color: #fbbf24;
+  color: var(--status-warning);
   flex-shrink: 0;
 }
 

@@ -666,9 +666,9 @@ onBeforeUnmount(() => {
   color: var(--color-ink-1, #18181b);
 }
 .img-editor__tool.is-active {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.12));
-  color: var(--color-accent, #5e6ad2);
-  border-color: var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.12));
+  color: var(--color-accent, #6e72d9);
+  border-color: var(--color-accent, #6e72d9);
 }
 .img-editor__tool:disabled {
   opacity: 0.4;
@@ -724,7 +724,7 @@ html.dark .img-editor__stage {
 /* ── Crop marquee ──────────────────────────────────────────────────── */
 .img-editor__crop {
   position: absolute;
-  border: 1px solid var(--color-accent, #5e6ad2);
+  border: 1px solid var(--color-accent, #6e72d9);
   box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.45);
   cursor: move;
   touch-action: none;
@@ -763,7 +763,7 @@ html.dark .img-editor__stage {
   width: 12px;
   height: 12px;
   background: var(--color-surface, #fff);
-  border: 1.5px solid var(--color-accent, #5e6ad2);
+  border: 1.5px solid var(--color-accent, #6e72d9);
   border-radius: 2px;
   touch-action: none;
 }
@@ -819,7 +819,7 @@ html.dark .img-editor__stage {
 }
 .img-editor__spin {
   animation: img-editor-spin 0.9s linear infinite;
-  color: var(--color-accent, #5e6ad2);
+  color: var(--color-accent, #6e72d9);
 }
 @keyframes img-editor-spin {
   to {
@@ -870,15 +870,15 @@ html.dark .img-editor__stage {
     box-shadow var(--dur-base) ease;
 }
 .img-editor__name-input:focus {
-  border-color: var(--color-accent, #5e6ad2);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  border-color: var(--color-accent, #6e72d9);
+  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
 }
 .img-editor__save-error {
   font-size: 12px;
-  color: #b91c1c;
+  color: var(--status-danger);
 }
 html.dark .img-editor__save-error {
-  color: #fca5a5;
+  color: var(--status-danger);
 }
 .img-editor__foot-actions {
   display: inline-flex;
@@ -915,14 +915,14 @@ html.dark .img-editor__save-error {
   color: white;
 }
 .img-editor__btn--primary:hover:not(:disabled) {
-  background: var(--color-accent-strong, #4f59c4);
+  background: var(--color-accent-strong, #575cc7);
 }
 .img-editor__btn--danger {
-  background: #dc2626;
+  background: var(--status-danger-fill);
   color: white;
 }
 .img-editor__btn--danger:hover:not(:disabled) {
-  background: #b91c1c;
+  background: var(--status-danger-fill-strong);
 }
 .img-editor__btn:disabled {
   opacity: 0.5;
@@ -938,8 +938,8 @@ html.dark .img-editor__save-error {
   gap: 12px;
   padding: 8px 10px 8px 12px;
   border-radius: 8px;
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: var(--status-warning-soft);
+  border: 1px solid var(--status-warning-ring);
 }
 .img-editor__confirm-msg {
   font-size: 12.5px;

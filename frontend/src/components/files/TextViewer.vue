@@ -235,7 +235,7 @@ html.dark .text-viewer__pre {
 }
 
 .markdown-body :deep(a) {
-  color: var(--color-accent, #5e6ad2);
+  color: var(--color-accent, #6e72d9);
   text-decoration: none;
 }
 .markdown-body :deep(a:hover) {

@@ -233,7 +233,7 @@ const buildLink = (share: Share) => api.getShareURL(share);
 }
 
 .shares-card__path:hover {
-  color: var(--color-accent, #5e6ad2);
+  color: var(--color-accent, #6e72d9);
   text-decoration: underline;
 }
 
@@ -271,9 +271,9 @@ const buildLink = (share: Share) => api.getShareURL(share);
 }
 
 .shares-icon-btn--danger:hover:not(:disabled) {
-  background: #fef2f2;
-  color: #dc2626;
-  border-color: #fecaca;
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
+  border-color: var(--status-danger-ring);
 }
 
 .shares-card__url {
@@ -290,8 +290,8 @@ const buildLink = (share: Share) => api.getShareURL(share);
 }
 
 .shares-card__url:focus {
-  border-color: var(--color-accent, #5e6ad2);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  border-color: var(--color-accent, #6e72d9);
+  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
 }
 
 .shares-card__meta {

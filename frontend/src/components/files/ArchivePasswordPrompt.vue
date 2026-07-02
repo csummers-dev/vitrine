@@ -127,12 +127,12 @@ const submit = () => {
     box-shadow 0.15s ease;
 }
 .archive-pw__input:focus {
-  border-color: var(--c-lilac, #5e6ad2);
+  border-color: var(--c-lilac, #6e72d9);
   box-shadow: 0 0 0 3px
-    color-mix(in srgb, var(--c-lilac, #5e6ad2) 22%, transparent);
+    color-mix(in srgb, var(--c-lilac, #6e72d9) 22%, transparent);
 }
 .archive-pw__input.is-invalid {
-  border-color: #e11d48;
+  border-color: var(--status-danger);
 }
 .archive-pw__input.is-invalid:focus {
   box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.18);
@@ -159,7 +159,7 @@ const submit = () => {
 
 .archive-pw__error {
   margin: 8px 0 0;
-  color: #e11d48;
+  color: var(--status-danger);
   font-size: 0.8rem;
 }
 </style>

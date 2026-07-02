@@ -508,7 +508,7 @@ onMounted(load);
   cursor: pointer;
 }
 .audit-retry:hover {
-  border-color: var(--color-accent, #5e6ad2);
-  color: var(--color-accent, #5e6ad2);
+  border-color: var(--color-accent, #6e72d9);
+  color: var(--color-accent, #6e72d9);
 }
 </style>

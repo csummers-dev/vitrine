@@ -45,7 +45,26 @@
          the scroll pinned to the current folder. Mobile keeps the compact "…"
          above and hides the intermediate crumbs (`max-md:hidden`). -->
     <template v-for="(entry, index) in items" :key="index">
+      <!-- The separator chevron doubles as a SIBLING-FOLDER menu trigger
+           (v2.7): clicking the chevron before a crumb lists that level's
+           folders, so lateral moves (/Media/Comics → /Media/Music) are one
+           click instead of two navigations. Only in the real files tree —
+           share views + noLink renders keep the plain separator. -->
+      <button
+        v-if="siblingMenusEnabled"
+        type="button"
+        :class="[
+          'breadcrumb-sep text-ink-3 px-0.5 flex items-center',
+          index !== items.length - 1 && 'max-md:hidden',
+        ]"
+        :aria-label="`Show folders in ${index === 0 ? t('files.home') : items[index - 1].name}`"
+        aria-haspopup="menu"
+        @click.stop.prevent="openSiblingMenu(index, $event)"
+      >
+        <Icon name="chevron-right" :size="12" />
+      </button>
       <span
+        v-else
         :class="[
           'text-ink-3 px-0.5 flex items-center',
           // Hide the chevron preceding non-final items on mobile —
@@ -82,15 +101,25 @@
       </component>
     </template>
   </nav>
+
+  <!-- Sibling-folder popover (teleports to <body> itself). -->
+  <ContextMenu
+    :show="siblingMenu.show"
+    :pos="siblingMenu.pos"
+    :items="siblingMenu.items"
+    @hide="siblingMenu.show = false"
+  />
 </template>
 
 <script setup lang="ts">
 import Icon from "@/components/Icon.vue";
+import ContextMenu, { type MenuItem } from "@/components/ContextMenu.vue";
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { useFileStore } from "@/stores/file";
 import { useDropTarget } from "@/composables/useDropTarget";
+import { files as filesApi } from "@/api";
 
 const { t } = useI18n();
 
@@ -157,6 +186,68 @@ const element = computed(() => {
 });
 
 const rootUrl = computed(() => `${props.base}/`);
+
+// ── Sibling-folder dropdowns (v2.7) ─────────────────────────────────
+// The chevron before crumb N opens a menu of the folders at N's level
+// (its parent's child dirs), so you can move laterally without going up
+// first. Files-tree only: `api.fetch` hits /api/resources, which the
+// share view's paths don't map onto (and a noLink render is read-only
+// chrome anyway).
+const siblingMenusEnabled = computed(
+  () => !props.noLink && props.base === "/files"
+);
+
+const SIBLING_MENU_MAX = 40;
+const siblingMenu = ref<{
+  show: boolean;
+  pos: { x: number; y: number };
+  items: MenuItem[];
+}>({ show: false, pos: { x: 0, y: 0 }, items: [] });
+// Guards a slow fetch against a newer click (last click wins).
+let siblingFetchSeq = 0;
+
+const openSiblingMenu = async (index: number, event: MouseEvent) => {
+  const btn = event.currentTarget as HTMLElement | null;
+  const rect = btn?.getBoundingClientRect();
+  const pos = rect
+    ? { x: rect.left, y: rect.bottom + 6 }
+    : { x: event.clientX, y: event.clientY };
+  const parentUrl = index === 0 ? rootUrl.value : items.value[index - 1].url;
+  const currentName = items.value[index]?.name;
+  const seq = ++siblingFetchSeq;
+  let dirs: ResourceItem[];
+  try {
+    const res = await filesApi.fetch(parentUrl);
+    if (seq !== siblingFetchSeq) return;
+    dirs = (res.items ?? []).filter((i) => i.isDir);
+  } catch {
+    // Permission / network failure — no menu is better than a broken one.
+    return;
+  }
+  dirs.sort((a, b) => a.name.localeCompare(b.name));
+
+  const menuItems: MenuItem[] = dirs.slice(0, SIBLING_MENU_MAX).map((d) => ({
+    label: d.name,
+    // A check marks the level's CURRENT folder (the crumb the chevron
+    // precedes) so the menu doubles as "where am I".
+    icon: d.name === currentName ? "check" : "folder",
+    action: () => {
+      siblingMenu.value.show = false;
+      const url = d.url.endsWith("/") ? d.url : d.url + "/";
+      void router.push({ path: url });
+    },
+  }));
+  if (dirs.length > SIBLING_MENU_MAX) {
+    menuItems.push({
+      label: `…and ${dirs.length - SIBLING_MENU_MAX} more`,
+      disabled: true,
+    });
+  }
+  if (menuItems.length === 0) {
+    menuItems.push({ label: "No subfolders", disabled: true });
+  }
+  siblingMenu.value = { show: true, pos, items: menuItems };
+};
 
 // ── Drag-to-parent (F5) ──────────────────────────────────────────────
 // Each breadcrumb segment is a drop target during a file drag so the
@@ -280,6 +371,31 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
+/* The separator chevron is a real button when sibling menus are enabled —
+   give it a quiet hover affordance so it reads as clickable without adding
+   noise at rest. */
+.breadcrumb-sep {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 4px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  transition:
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease;
+}
+.breadcrumb-sep:hover {
+  background: var(--color-hover, rgba(24, 24, 27, 0.045));
+  color: var(--color-ink-1);
+}
+.breadcrumb-sep:focus-visible {
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline-offset: 1px;
+  color: var(--color-ink-1);
+}
+
 .breadcrumb-link {
   padding: 4px 6px;
   border-radius: 4px;
@@ -320,9 +436,9 @@ onBeforeUnmount(() => {
 }
 
 .breadcrumb-link.is-drop-target {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.1));
-  box-shadow: 0 0 0 2px var(--color-accent, #5e6ad2);
-  color: var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
+  box-shadow: 0 0 0 2px var(--color-accent, #6e72d9);
+  color: var(--color-accent, #6e72d9);
 }
 
 /* While a file is being dragged in-app, every droppable crumb becomes a much

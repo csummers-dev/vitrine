@@ -9,6 +9,7 @@ import {
   formatRate,
   formatEta,
   buildMoveCopyItems,
+  buildUndoMoveItems,
   TRANSFER_REVEAL_MS,
   type RateSample,
   type MoveCopySource,
@@ -402,5 +403,32 @@ describe("buildMoveCopyItems (move/copy destination math)", () => {
 
   it("returns [] for an empty selection", () => {
     expect(buildMoveCopyItems([], "/files/B/")).toEqual([]);
+  });
+});
+
+// v2.7 move-undo toast: the reversal math for "Moved N items — Undo".
+describe("buildUndoMoveItems", () => {
+  it("flips every from/to pair, preserving index alignment", () => {
+    expect(
+      buildUndoMoveItems({
+        fromPaths: ["/A/one.txt", "/A/two.txt"],
+        toPaths: ["/B/one.txt", "/B/two (1).txt"],
+      })
+    ).toEqual([
+      // Destinations move BACK to their sources — including a "(1)"-suffixed
+      // conflict rename, which must return to the ORIGINAL name.
+      { from: "/B/one.txt", to: "/A/one.txt" },
+      { from: "/B/two (1).txt", to: "/A/two.txt" },
+    ]);
+  });
+
+  it("refuses mismatched or missing path arrays (not undoable)", () => {
+    expect(
+      buildUndoMoveItems({ fromPaths: ["/A/a"], toPaths: ["/B/a", "/B/b"] })
+    ).toEqual([]);
+    expect(buildUndoMoveItems({ fromPaths: ["/A/a"], toPaths: [] })).toEqual(
+      []
+    );
+    expect(buildUndoMoveItems({})).toEqual([]);
   });
 });

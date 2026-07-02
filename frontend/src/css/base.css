@@ -76,10 +76,10 @@ i.spin,
 
 .progress div {
   height: 100%;
-  background-color: var(--color-accent, var(--accent, #5e6ad2));
+  background-color: var(--color-accent, var(--accent, #6e72d9));
   width: 0;
   transition: width 0.2s ease;
-  box-shadow: 0 0 8px var(--color-accent, var(--accent, #5e6ad2));
+  box-shadow: 0 0 8px var(--color-accent, var(--accent, #6e72d9));
   border-radius: 0 999px 999px 0;
 }
 

@@ -366,8 +366,8 @@ html.dark .preview-shell__stage {
   color: var(--color-ink-1, #18181b);
 }
 .preview-float__btn.is-active {
-  background: var(--color-selected, rgba(94, 106, 210, 0.08));
-  color: var(--color-accent-ink, #5e6ad2);
+  background: var(--color-selected, rgba(110, 114, 217, 0.08));
+  color: var(--color-accent-ink, #6e72d9);
 }
 .preview-float__btn--close:hover {
   color: var(--c-rose, #fb7185);

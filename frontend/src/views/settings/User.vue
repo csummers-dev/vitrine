@@ -295,7 +295,7 @@ const send = async (currentPassword: string) => {
 }
 
 .user-edit__btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 1px;
 }
 
@@ -312,13 +312,13 @@ const send = async (currentPassword: string) => {
 
 .user-edit__btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #5e6ad2);
+  border-color: var(--color-accent, #6e72d9);
   color: white;
 }
 
 .user-edit__btn--primary:hover:not(:disabled) {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #4f5ac4);
+  border-color: var(--color-accent-strong, #575cc7);
 }
 
 /* Disabled state — applies to any variant so the user gets a visual cue
@@ -330,12 +330,12 @@ const send = async (currentPassword: string) => {
 
 .user-edit__btn--danger {
   background: var(--color-surface, #fff);
-  border-color: #fecaca;
-  color: #dc2626;
+  border-color: var(--status-danger-ring);
+  color: var(--status-danger);
 }
 
 .user-edit__btn--danger:hover {
-  background: #fef2f2;
+  background: var(--status-danger-soft);
 }
 
 @media (max-width: 540px) {

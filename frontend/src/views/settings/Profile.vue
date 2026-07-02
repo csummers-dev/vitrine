@@ -480,16 +480,16 @@ const updatePassword = async () => {
 }
 
 .settings-input:focus {
-  border-color: var(--color-accent, #5e6ad2);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  border-color: var(--color-accent, #6e72d9);
+  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
 }
 
 .settings-input.is-ok {
-  border-color: #10b981;
+  border-color: var(--status-success);
 }
 
 .settings-input.is-error {
-  border-color: #dc2626;
+  border-color: var(--status-danger-fill);
 }
 
 .settings-helper {
@@ -498,7 +498,7 @@ const updatePassword = async () => {
 }
 
 .settings-helper--error {
-  color: #dc2626;
+  color: var(--status-danger);
 }
 
 .settings-btn {
@@ -517,19 +517,19 @@ const updatePassword = async () => {
 }
 
 .settings-btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 1px;
 }
 
 .settings-btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #5e6ad2);
+  border-color: var(--color-accent, #6e72d9);
   color: white;
 }
 
 .settings-btn--primary:hover:not(:disabled) {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #4f5ac4);
+  border-color: var(--color-accent-strong, #575cc7);
 }
 
 .settings-btn:disabled {
@@ -554,16 +554,16 @@ const updatePassword = async () => {
      green; error keeps red — both still readable on the same chrome. */
   background: var(--accent-gradient);
   color: #fff;
-  box-shadow: 0 8px 24px -8px rgba(94, 106, 210, 0.45);
+  box-shadow: 0 8px 24px -8px rgba(110, 114, 217, 0.45);
 }
 
 .save-state.saved {
-  background: #047857;
+  background: var(--status-success-fill);
   box-shadow: 0 8px 24px -8px rgba(4, 120, 87, 0.45);
 }
 
 .save-state.error {
-  background: #b91c1c;
+  background: var(--status-danger-fill-strong);
   box-shadow: 0 8px 24px -8px rgba(185, 28, 28, 0.45);
 }
 

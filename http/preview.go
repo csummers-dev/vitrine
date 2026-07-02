@@ -83,9 +83,11 @@ func previewHandler(imgSvc ImgService, fileCache FileCache, enableThumbnails, re
 			if strings.EqualFold(file.Extension, ".epub") {
 				return handleEpubPreview(w, r, imgSvc, fileCache, file, previewSize, enableThumbnails)
 			}
-			// V2 #6: .cbr (RAR) comic cover = its first image. .cbz is
-			// intentionally excluded (per the locked decision).
-			if strings.EqualFold(file.Extension, ".cbr") {
+			// Comic cover = the archive's first image (natural-sort order).
+			// V2 #6 originally shipped this for .cbr only, excluding .cbz;
+			// that exclusion was reversed on request (v2.7, 2026-07-01) so
+			// both real-world comic formats get covers.
+			if isComicPreviewExt(file.Extension) {
 				return handleComicPreview(w, r, imgSvc, fileCache, file, previewSize, enableThumbnails, d.server.MaxZipFileEntries)
 			}
 			return http.StatusNotImplemented, fmt.Errorf("can't create preview for %s type", file.Type)
@@ -178,4 +180,14 @@ func createPreview(imgSvc ImgService, fileCache FileCache,
 
 func previewCacheKey(f *files.FileInfo, previewSize PreviewSize) string {
 	return fmt.Sprintf("%x%x%x", f.RealPath(), f.ModTime.Unix(), previewSize)
+}
+
+// isComicPreviewExt reports whether a file extension is a comic archive whose
+// cover the preview endpoint serves. Matches the frontend's comic set
+// (utils/archive.ts COMIC_SUFFIXES): .cbz (zip) + .cbr (rar) — the formats the
+// in-app comic reader opens. Deliberately NOT plain .zip/.rar: an ordinary
+// archive containing images is not a comic, and sweeping every zip's contents
+// for a cover would turn folder listings into archive scans.
+func isComicPreviewExt(ext string) bool {
+	return strings.EqualFold(ext, ".cbz") || strings.EqualFold(ext, ".cbr")
 }

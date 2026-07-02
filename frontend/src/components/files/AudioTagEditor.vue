@@ -749,8 +749,8 @@ const onSave = async () => {
 }
 .atag-input:focus {
   outline: none;
-  border-color: var(--color-accent, #5e6ad2);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(94, 106, 210, 0.25));
+  border-color: var(--color-accent, #6e72d9);
+  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.25));
 }
 .atag-textarea {
   height: auto;
@@ -798,7 +798,7 @@ const onSave = async () => {
 }
 .atag-btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #5e6ad2);
+  border-color: var(--color-accent, #6e72d9);
   color: white;
 }
 .atag-btn--primary:hover:not(:disabled) {

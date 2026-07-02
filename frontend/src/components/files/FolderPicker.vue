@@ -337,7 +337,7 @@ defineExpose({
   gap: 10px;
   padding: 6px 8px;
   border-radius: 8px;
-  border: 1px solid var(--color-accent, #5e6ad2);
+  border: 1px solid var(--color-accent, #6e72d9);
   background: var(--color-surface, #fff);
 }
 

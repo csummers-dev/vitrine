@@ -130,9 +130,9 @@
     100deg,
     var(--color-ink-1, var(--textSecondary)) 0%,
     var(--color-ink-1, var(--textSecondary)) 30%,
-    #5e6ad2 42%,
-    #7c3aed 50%,
-    #2563eb 58%,
+    var(--color-accent-strong) 42%,
+    var(--color-accent) 50%,
+    var(--color-accent-grad) 58%,
     var(--color-ink-1, var(--textSecondary)) 70%,
     var(--color-ink-1, var(--textSecondary)) 100%
   );
@@ -151,9 +151,9 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
     100deg,
     var(--color-ink-1, var(--textSecondary)) 0%,
     var(--color-ink-1, var(--textSecondary)) 30%,
-    #a5b0ff 42%,
-    #c4b5fd 50%,
-    #93c5fd 58%,
+    var(--color-accent-grad) 42%,
+    var(--color-accent-ink) 50%,
+    var(--color-accent-grad) 58%,
     var(--color-ink-1, var(--textSecondary)) 70%,
     var(--color-ink-1, var(--textSecondary)) 100%
   );
@@ -176,7 +176,7 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
     animation: none;
     background-image: none;
     -webkit-text-fill-color: currentColor;
-    color: var(--color-accent, #5e6ad2);
+    color: var(--color-accent, #6e72d9);
   }
   html.dark :is(#listing, .fb-listing) .item .item__name-text.is-moving,
   html.dark :is(#listing, .fb-listing) .item .name.is-moving {
@@ -227,7 +227,7 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   letter-spacing: -0.005em;
   color: var(--color-ink-1, var(--textSecondary));
   /* Subtle visual hint that the field is editable without adding chrome */
-  box-shadow: inset 0 -1px 0 var(--color-accent, #5e6ad2);
+  box-shadow: inset 0 -1px 0 var(--color-accent, #6e72d9);
   border-radius: 0;
 }
 
@@ -276,6 +276,21 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
 
 :is(#listing, .fb-listing).list .item__select {
   justify-content: center;
+}
+
+/* v2.7: list-view checkboxes reveal on hover / selection instead of sitting
+   on every row at rest — the same "monochrome until you need it" rule the
+   grid + gallery corners already follow. Touch keeps them always visible
+   (no hover there, and the checkbox is the only multi-select entry point);
+   the header's select-all stays put as the one persistent control. */
+:is(#listing, .fb-listing).list .item:not(.header) .item__select {
+  opacity: 0;
+  transition: opacity var(--dur-base) ease;
+}
+:is(#listing, .fb-listing).list .item:not(.header):hover .item__select,
+:is(#listing, .fb-listing).list .item[aria-selected="true"] .item__select,
+:is(#listing, .fb-listing).list.is-touch .item:not(.header) .item__select {
+  opacity: 1;
 }
 
 :is(#listing, .fb-listing).list .item__actions {
@@ -392,7 +407,7 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
 }
 /* Subtle ring around the row itself so users see *which* row is loading. */
 .item.item--spring-loaded {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.08));
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.08));
 }
 /* 2.4.0 Stage 1: rows sitting on the clipboard as a CUT render dimmed (the
    Finder-style "armed for move" affordance) until pasted or disarmed (Esc).
@@ -495,20 +510,36 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   color: var(--color-ink-1, var(--textSecondary));
 }
 
+/* v2.7 a11y: the row/tile action buttons are hover-revealed (opacity 0 at
+   rest) but still in the tab order — keyboard focus must both SHOW the
+   button and ring it, or focus lands on an invisible control. Ring matches
+   the app convention (confirm-prompt buttons). */
+.item__actions-btn:focus-visible,
+.item__fav-btn:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline-offset: 1px;
+}
+
 /* Active (favorited) state: persistent visibility + amber tint so
    pinned folders stand out at a glance, even without hover.
    v1.3 S3-2 — folders only. */
 .item__fav-btn--active {
   opacity: 1 !important;
-  /* Warm favorite gold — matches the sidebar/drawer favorite stars and reads
-     on both themes. (Was the amber tag token, which is a dark brown in light
-     mode.) */
-  color: #f59e0b;
+  /* Dusty favorite gold (v2.7) — --c-amber tracks the sidebar/drawer stars
+     in both themes. */
+  color: var(--c-amber, #b08434);
 }
 
 .item__fav-btn--active:hover {
-  color: #f59e0b;
-  background: rgba(245, 158, 11, 0.12);
+  color: var(--c-amber, #b08434);
+  background: color-mix(in srgb, var(--c-amber, #b08434) 14%, transparent);
+}
+
+/* v2.7 quick actions (Share / Download on file tiles): grid + gallery only —
+   the list view keeps its calm rows (the context menu covers both there). */
+:is(#listing, .fb-listing).list .item__quick-btn {
+  display: none;
 }
 
 /* Touch-target sweep (Stage 11f): bump the row action button to 32px
@@ -967,13 +998,16 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
   svg {
   width: 44px;
   height: 44px;
-  /* Calm Minimal: folder glyph uses the on-accent color on the SOLID accent
-     tile below, so the gallery folder matches the list / grid squircle exactly
-     (was a soft amber tint that read as a different, paler yellow). */
-  color: var(--color-on-accent);
+  /* Dusty pass (v2.7): accent-ink glyph on the SOFT accent wash below. The
+     old solid-accent tile + on-accent glyph was the loudest surface in the
+     app once everything else went dusty; the wash keeps folders clearly
+     accent-branded at gallery scale without shouting. The small LIST/grid-row
+     squircle keeps the solid fill (fileIcon FOLDER_COLOR) — at 26px it's an
+     accent marker, not a wall. */
+  color: var(--color-accent-ink);
 }
 :is(#listing, .fb-listing).mosaic.gallery .item[data-dir="true"] .item__icon {
-  background-color: var(--color-accent);
+  background-color: rgb(var(--accent-rgb) / 0.16);
   background-image: none;
   box-shadow: none;
 }
@@ -1039,6 +1073,13 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
   right: 12px;
   bottom: 6px;
   margin: 0;
+  /* Flex, not inline flow (v2.7 fix): the children's `order` props (size
+     FIRST, then modified — matching the grid) only apply in a flex/grid
+     container. As inline children they rendered in DOM order with the "·"
+     separator orphaned at the front: "· 1h ago0 B". */
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
   font-size: 10px;
   color: rgba(255, 255, 255, 0.7);
   font-variant-numeric: tabular-nums;
@@ -1146,9 +1187,10 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
   height: auto;
   margin: 0;
 }
-/* Media block: full width, 16:10, accent tile with the on-accent folder glyph —
-   follows the user's accent pick, matching the list / grid folder card (was a
-   hardcoded amber-500 token + white glyph). */
+/* Media block: full width, 16:10, SOFT accent wash with an accent-ink folder
+   glyph (v2.7 dusty pass — was a solid accent tile + white-sheen gradient,
+   which read as the loudest block on screen once the palette went dusty).
+   Still follows the user's accent pick. */
 :is(#listing, .fb-listing).mosaic.gallery
   .listing-section--dirs
   .item[data-dir="true"]
@@ -1157,12 +1199,8 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
   height: auto;
   aspect-ratio: 16 / 10;
   border-radius: 0;
-  background-color: var(--color-accent);
-  background-image: linear-gradient(
-    140deg,
-    rgba(255, 255, 255, 0.3),
-    rgba(255, 255, 255, 0) 60%
-  );
+  background-color: rgb(var(--accent-rgb) / 0.16);
+  background-image: none;
   box-shadow: none;
 }
 :is(#listing, .fb-listing).mosaic.gallery
@@ -1172,7 +1210,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
   svg {
   width: 40px;
   height: 40px;
-  color: var(--color-on-accent);
+  color: var(--color-accent-ink);
 }
 /* Footer: filename in dark text under the media (not the white overlay). */
 :is(#listing, .fb-listing).mosaic.gallery
@@ -1217,6 +1255,23 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
   .item__modified::before {
   content: "";
   margin: 0;
+}
+
+/* GRID folder cards get the same soft-wash treatment as the gallery ones
+   (v2.7 dusty pass) — overrides the FOLDER_COLOR utility classes
+   (bg-[var(--color-accent)] text-[var(--color-on-accent)]) that the small
+   list-row squircle keeps. The wash is a step stronger than the file tiles'
+   /15 tints so folders still read as "places". */
+:is(#listing, .fb-listing).mosaic:not(.gallery)
+  .item[data-dir="true"]
+  .item__icon {
+  background-color: rgb(var(--accent-rgb) / 0.16);
+  color: var(--color-accent-ink);
+}
+
+/* Dark canvas needs a denser wash to keep the same perceived presence. */
+html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
+  background-color: rgb(var(--accent-rgb) / 0.24);
 }
 
 /* * * * * * * * * * * * * *
@@ -1318,8 +1373,8 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
 }
 
 #multiple-selection button.multiple-selection__danger:hover {
-  background: rgba(239, 68, 68, 0.2);
-  color: rgb(252, 165, 165);
+  background: rgba(176, 96, 96, 0.2);
+  color: var(--status-danger);
 }
 
 #multiple-selection .multiple-selection__close {
@@ -1562,16 +1617,16 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
   /* V2 #22: drive the highlight off --color-accent-ink (the base accent in
      light mode, a LIGHT lilac in dark) so the fill + ring pop on the dark
      canvas instead of reading as a muddy dark tint. */
-  outline: 2px solid var(--color-accent-ink, #5e6ad2);
+  outline: 2px solid var(--color-accent-ink, #6e72d9);
   outline-offset: -2px;
   border-radius: var(--radius-md);
   background: color-mix(
     in srgb,
-    var(--color-accent-ink, #5e6ad2) 28%,
+    var(--color-accent-ink, #6e72d9) 28%,
     transparent
   );
   box-shadow: 0 0 0 4px
-    color-mix(in srgb, var(--color-accent-ink, #5e6ad2) 20%, transparent);
+    color-mix(in srgb, var(--color-accent-ink, #6e72d9) 20%, transparent);
 }
 /* V2 #22: the target folder's icon lifts/brightens so it's obvious you're
    dropping INTO it (not just near it). */

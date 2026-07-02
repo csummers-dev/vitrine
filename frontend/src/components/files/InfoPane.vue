@@ -616,11 +616,12 @@ const hasThumbnail = computed(() => {
   if (t === "image") return true;
   if (t === "video") return enableVideoThumbs;
   if (t === "pdf") return enablePdfThumbs;
-  // V3-E #20: .cbr comics get a server-extracted cover (first page) — the same
+  // V3-E #20: comics get a server-extracted cover (first page) — the same
   // thumbnail the row icon shows. Mirror the listing's showThumbnail gate so
   // the details frame shows the cover instead of the generic color tile.
-  // (.cbz is intentionally excluded here too.)
-  if ((item.value.name || "").toLowerCase().endsWith(".cbr")) return true;
+  // (.cbz joined .cbr in v2.7 — the original exclusion was reversed.)
+  const n = (item.value.name || "").toLowerCase();
+  if (n.endsWith(".cbr") || n.endsWith(".cbz")) return true;
   return false;
 });
 
@@ -988,8 +989,8 @@ onUnmounted(() => {
   color: var(--color-on-accent);
 }
 .ip-summary__icon--accent {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.12));
-  color: var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.12));
+  color: var(--color-accent, #6e72d9);
 }
 .ip-summary__title {
   font-size: 14.5px;
@@ -1213,7 +1214,7 @@ html.dark .preview-mesh {
   border-color: var(--color-line, #ececec);
 }
 .info-pane__copy-path:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 1px;
 }
 
@@ -1241,11 +1242,11 @@ html.dark .preview-mesh {
 }
 .info-pane__manage-tags:hover {
   background: var(--color-elevated, #f4f4f5);
-  color: var(--color-accent, #5e6ad2);
+  color: var(--color-accent, #6e72d9);
   border-color: var(--color-line-strong, #d4d4d8);
 }
 .info-pane__manage-tags:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
   outline-offset: 1px;
 }
 
@@ -1264,8 +1265,8 @@ html.dark .preview-mesh {
    wash + matching ink so the flash reads as "yes, it happened". */
 .info-pane__copy-path:has(svg[data-name="check"]),
 .info-pane__copy-path:hover:has(svg[data-name="check"]) {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.12));
-  color: var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.12));
+  color: var(--color-accent, #6e72d9);
   border-color: transparent;
 }
 </style>

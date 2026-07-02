@@ -1090,7 +1090,7 @@ export default {
    "picked up to re-order", distinct from the solid move-into highlight. */
 .fav-dragging {
   opacity: 0.5;
-  outline: 1px dashed var(--color-accent, #5e6ad2);
+  outline: 1px dashed var(--color-accent, #6e72d9);
   outline-offset: -1px;
 }
 

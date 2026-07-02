@@ -59,6 +59,24 @@ export function buildMoveCopyItems(
   }));
 }
 
+/**
+ * The reversed `{ from, to }` list that UNDOES a completed move job (v2.7
+ * undo toast): every produced destination moves back to its source. The
+ * job's `fromPaths`/`toPaths` are index-aligned (jobs.Snapshot builds both
+ * from the same items slice); a job whose arrays are missing, empty, or
+ * mismatched (malformed snapshot) yields [] — callers treat that as
+ * "not undoable" rather than guessing at pairings. Paths are already
+ * scope-relative + decoded, ready for `useTransfers().start`.
+ */
+export function buildUndoMoveItems(
+  job: Pick<TransferJob, "fromPaths" | "toPaths">
+): TransferItem[] {
+  const from = job.fromPaths ?? [];
+  const to = job.toPaths ?? [];
+  if (to.length === 0 || from.length !== to.length) return [];
+  return to.map((t, i) => ({ from: t, to: from[i] }));
+}
+
 const norm = (p: string): string => {
   const stripped = removePrefix(p);
   try {

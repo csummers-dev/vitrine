@@ -505,8 +505,8 @@ const onCancel = () => {
     box-shadow var(--dur-base) ease;
 }
 .brp-input:focus {
-  border-color: var(--color-accent, #5e6ad2);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(94, 106, 210, 0.3));
+  border-color: var(--color-accent, #6e72d9);
+  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
 }
 .brp-input:disabled {
   background: var(--color-elevated, #f4f4f5);
@@ -564,16 +564,16 @@ const onCancel = () => {
   font-size: 11px;
 }
 .brp-count--ok {
-  background: var(--color-accent-soft, rgba(94, 106, 210, 0.1));
-  color: var(--color-accent, #5e6ad2);
+  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
+  color: var(--color-accent, #6e72d9);
 }
 .brp-count--skip {
-  background: rgba(239, 68, 68, 0.1);
-  color: #b91c1c;
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
 }
 html.dark .brp-count--skip {
   background: rgba(127, 29, 29, 0.3);
-  color: #fca5a5;
+  color: var(--status-danger);
 }
 .brp-preview-list {
   list-style: none;
@@ -613,10 +613,10 @@ html.dark .brp-count--skip {
   flex-shrink: 0;
 }
 .brp-preview-row--conflict {
-  background: rgba(239, 68, 68, 0.05);
+  background: rgba(176, 96, 96, 0.06);
 }
 .brp-preview-row--conflict .brp-to {
-  color: #b91c1c;
+  color: var(--status-danger);
   text-decoration: line-through;
   text-decoration-color: rgba(185, 28, 28, 0.5);
 }
@@ -624,7 +624,7 @@ html.dark .brp-preview-row--conflict {
   background: rgba(127, 29, 29, 0.15);
 }
 html.dark .brp-preview-row--conflict .brp-to {
-  color: #fca5a5;
+  color: var(--status-danger);
 }
 .brp-preview-row--unchanged .brp-to {
   color: var(--color-ink-3, #a1a1aa);
@@ -639,10 +639,10 @@ html.dark .brp-preview-row--conflict .brp-to {
   font-style: italic;
 }
 .brp-preview-row--conflict .brp-reason {
-  color: #b91c1c;
+  color: var(--status-danger);
 }
 html.dark .brp-preview-row--conflict .brp-reason {
-  color: #fca5a5;
+  color: var(--status-danger);
 }
 
 /* ── Footer ────────────────────────────────────────────────────── */
@@ -654,7 +654,7 @@ html.dark .brp-preview-row--conflict .brp-reason {
   color: var(--color-ink-2, #52525b);
 }
 .brp-progress-spin {
-  color: var(--color-accent, #5e6ad2);
+  color: var(--color-accent, #6e72d9);
   animation: brp-spin 0.9s linear infinite;
 }
 @keyframes brp-spin {
@@ -696,7 +696,7 @@ html.dark .brp-preview-row--conflict .brp-reason {
   color: white;
 }
 .brp-btn--primary:hover:not(:disabled) {
-  background: var(--color-accent-strong, #4f59c4);
+  background: var(--color-accent-strong, #575cc7);
 }
 .brp-btn:disabled {
   opacity: 0.5;
