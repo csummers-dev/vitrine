@@ -205,7 +205,11 @@
   --c-blue: #6f6d7a;
   --c-teal: #6f6d7a;
   --c-green: #6f6d7a;
-  --c-amber: #b08434;
+  /* Favorites gold. Deliberately BRIGHTER than the dusty amber text tones
+     (#b08434 read as muddy brown at star size on the light canvas — the same
+     trap the drawer star hit once before with #b45309). Gold needs luminance
+     to read as gold; keep it luminous-but-soft, never the old neon #f59e0b. */
+  --c-amber: #cf9b3f;
   --c-rose: #b5525e;
 
   /* ── Status palette (v2.7) ────────────────────────────────────────────

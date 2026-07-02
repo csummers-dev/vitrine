@@ -8,8 +8,8 @@
       <header class="login-card__header">
         <div class="login-card__logo">
           <img
-            v-if="logoPngURL"
-            :src="logoPngURL"
+            v-if="logoURL"
+            :src="logoURL"
             :alt="name || 'filebrowser pretty'"
             class="login-card__logo-img"
           />
@@ -205,13 +205,13 @@ import { useAuthStore } from "@/stores/auth";
 import { lastFilesPathKey } from "@/router";
 import {
   name,
-  logoPngURL,
   recaptcha,
   recaptchaKey,
   signup,
   version,
   repoUrl,
 } from "@/utils/constants";
+import { useBrandLogo } from "@/composables/useBrandLogo";
 import { computed, inject, nextTick, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
@@ -219,6 +219,7 @@ import Icon from "@/components/Icon.vue";
 import BrandName from "@/components/BrandName.vue";
 
 const { t } = useI18n({});
+const { logoURL } = useBrandLogo();
 
 // ── Refs ─────────────────────────────────────────────────────────────
 const createMode = ref<boolean>(false);

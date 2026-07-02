@@ -1146,7 +1146,9 @@ html.dark .preview-mesh {
   --action-hue: var(--c-blue);
 }
 .info-action--rename {
-  --action-hue: var(--c-amber);
+  /* Muted like its siblings (was --c-amber, a pre-collapse leftover —
+     gold is the FAVORITES color, v2.7.x). */
+  --action-hue: var(--c-lilac);
 }
 .info-action--move {
   --action-hue: var(--c-blue);

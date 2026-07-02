@@ -1,6 +1,6 @@
 <template>
   <aside
-    class="sidebar-root shrink-0 border-r border-line bg-canvas flex flex-col transition-[width] duration-150"
+    class="sidebar-root shrink-0 bg-canvas flex flex-col transition-[width] duration-150"
     :class="
       collapsed && isLoggedIn
         ? 'w-[56px] items-center sidebar-collapsed'
@@ -12,7 +12,7 @@
       class="h-12 px-3 max-md:px-0 max-md:justify-center flex items-center gap-2.5 shrink-0 s-rail-head"
     >
       <img
-        :src="logoPngURL"
+        :src="logoURL"
         alt="logo"
         class="w-7 h-7 max-md:w-9 max-md:h-9 rounded-md object-contain shrink-0"
       />
@@ -189,7 +189,7 @@
               :size="16"
               :stroke-width="0"
               fill="currentColor"
-              class="text-amber-500"
+              class="text-[var(--c-amber)]"
             />
           </button>
         </nav>
@@ -279,7 +279,7 @@
                   :size="12"
                   :stroke-width="0"
                   fill="currentColor"
-                  class="text-amber-500 shrink-0"
+                  class="text-[var(--c-amber)] shrink-0"
                 />
                 <span class="truncate flex-1">{{ favoriteName(path) }}</span>
               </div>
@@ -494,8 +494,8 @@ import {
   noAuth,
   logoutPage,
   loginPage,
-  logoPngURL,
 } from "@/utils/constants";
+import { useBrandLogo } from "@/composables/useBrandLogo";
 import { files as api } from "@/api";
 import Icon from "@/components/Icon.vue";
 import BrandName from "@/components/BrandName.vue";
@@ -516,6 +516,9 @@ import { useActivePane } from "@/composables/useActivePane";
 const RECENTS_INITIAL = 5;
 
 const USAGE_DEFAULT = { used: "0 B", total: "0 B", usedPercentage: 0 };
+
+// Theme-correct brand mark (module singleton — safe outside setup()).
+const { logoURL: brandLogoURL } = useBrandLogo();
 
 export default {
   name: "sidebar",
@@ -928,7 +931,7 @@ export default {
     hideLoginButton: () => hideLoginButton,
     version: () => version,
     repoUrl: () => repoUrl,
-    logoPngURL: () => logoPngURL,
+    logoURL: () => brandLogoURL.value,
     disableExternal: () => disableExternal,
     disableUsedPercentage: () => disableUsedPercentage,
     canLogout: () => !noAuth && (loginPage || logoutPage !== "/login"),

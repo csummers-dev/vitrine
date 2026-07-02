@@ -528,12 +528,12 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   opacity: 1 !important;
   /* Dusty favorite gold (v2.7) — --c-amber tracks the sidebar/drawer stars
      in both themes. */
-  color: var(--c-amber, #b08434);
+  color: var(--c-amber, #cf9b3f);
 }
 
 .item__fav-btn--active:hover {
-  color: var(--c-amber, #b08434);
-  background: color-mix(in srgb, var(--c-amber, #b08434) 14%, transparent);
+  color: var(--c-amber, #cf9b3f);
+  background: color-mix(in srgb, var(--c-amber, #cf9b3f) 14%, transparent);
 }
 
 /* v2.7 quick actions (Share / Download on file tiles): grid + gallery only —
@@ -1632,4 +1632,69 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
    dropping INTO it (not just near it). */
 .item.item--drop-into .item__icon {
   filter: brightness(1.18) saturate(1.1);
+}
+
+/* ── v2.7 panel shell — the mock's structure, made real ─────────────────
+   The content columns (primary listing, pane B, details rail) float as
+   SURFACE panels on the deeper canvas: gutter, hairline border, rounded
+   corners, and a whisper of shadow. Without this the main column was
+   transparent over the shell canvas and the sidebar was canvas-frosted
+   too, so the whole app rendered as ONE flat color — the exact thing the
+   canvas↔surface token split exists to prevent. The sidebar deliberately
+   stays chromeless on the canvas (that contrast is what sells the depth).
+
+   Unlayered on purpose: these must out-cascade the Tailwind utility layer
+   (e.g. the info-pane's `bg-canvas` / `border-l`). */
+.fb-columns {
+  padding: 10px;
+  gap: 10px;
+}
+.fb-columns > .fb-primary,
+.fb-columns > .compare-pane,
+.fb-columns > .info-pane,
+.fb-columns > .info-pane-rail {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg, 12px);
+  overflow: hidden;
+  box-shadow:
+    0 1px 2px rgba(20, 18, 28, 0.04),
+    0 4px 14px rgba(20, 18, 28, 0.05);
+}
+html.dark .fb-columns > .fb-primary,
+html.dark .fb-columns > .compare-pane,
+html.dark .fb-columns > .info-pane,
+html.dark .fb-columns > .info-pane-rail {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 6px 18px rgba(0, 0, 0, 0.3);
+}
+
+/* Pane B is its own card now — the gap is the divider, so drop the old
+   center border-left (it read as a stray line beside the gutter). */
+.fb-columns > .compare-pane {
+  border-left: 1px solid var(--color-line);
+}
+
+/* Mobile: the page IS the panel — no gutter, no rounding, and the details
+   rail (a fixed overlay <1024px) keeps only its left hairline. */
+@media (max-width: 767px) {
+  .fb-columns {
+    padding: 0;
+    gap: 0;
+  }
+  .fb-columns > .fb-primary,
+  .fb-columns > .compare-pane {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+@media (max-width: 1023px) {
+  .fb-columns > .info-pane {
+    border-radius: 0;
+    border: 0;
+    border-left: 1px solid var(--color-line);
+    box-shadow: none;
+  }
 }

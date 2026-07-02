@@ -756,21 +756,39 @@ html[data-bg-intensity="bold"] .app-mesh {
    utilities, so they win the cascade. Backed by data-attributes that
    useBackgroundGradient writes on <html>. */
 
-/* Chrome bars + the details rail (sidebar / files toolbar / preview toolbar /
-   info-pane) — airier canvas frost so they all read as the SAME surface. The
-   info-pane belongs here (not with the content panels below): it's a rail like
-   the sidebar, so it uses the same --color-canvas base and blur, otherwise it
-   looked whiter than the sidebar (it was using the more-opaque --color-surface
-   fill). */
+/* Chrome bars (sidebar / files toolbar / preview toolbar) — airier canvas
+   frost so they all read as the SAME rail surface. The info-pane moved OUT
+   of this group in v2.7: it's a content PANEL now (fb-columns card, below),
+   not a rail — frosting it to canvas made it melt into the sidebar and the
+   whole app read as one flat sheet. */
 html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
   .sidebar-root,
 html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .header-bar,
-html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"]) .info-pane,
 html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
   .preview-toolbar {
   background-color: color-mix(in srgb, var(--color-canvas) 64%, transparent);
   backdrop-filter: blur(7px);
   -webkit-backdrop-filter: blur(7px);
+}
+
+/* fb-columns content panels (v2.7 panel shell): stay clearly SURFACE even in
+   glass mode — a light thinning lets the mesh glow through without erasing
+   the canvas↔panel contrast. No backdrop blur: this is the main scrolling
+   column (perf), and the mesh is soft enough to read unblurred (same call as
+   the grid tiles). */
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
+  .fb-columns
+  > .fb-primary,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
+  .fb-columns
+  > .compare-pane,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
+  .fb-columns
+  > .info-pane,
+html:not([data-bg-intensity="off"]):not([data-bg-surfaces="solid"])
+  .fb-columns
+  > .info-pane-rail {
+  background-color: color-mix(in srgb, var(--color-surface) 90%, transparent);
 }
 
 /* Content panels (settings / slide-overs) — more opaque so text and form

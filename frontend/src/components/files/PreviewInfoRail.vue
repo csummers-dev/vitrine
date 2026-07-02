@@ -328,7 +328,9 @@ defineEmits<{
   --action-hue: var(--c-blue);
 }
 .preview-info .info-action--rename {
-  --action-hue: var(--c-amber);
+  /* Muted like its siblings (was --c-amber, a pre-collapse leftover that made
+     Rename read as gold — gold is the FAVORITES color, v2.7.x). */
+  --action-hue: var(--c-lilac);
 }
 .preview-info .info-action--move {
   --action-hue: var(--c-blue);

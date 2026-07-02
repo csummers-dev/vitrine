@@ -1,128 +1,132 @@
 <template>
   <!-- Mirrors the FileListing shell: full-height column with a hero header
        (title left, actions right) over a scrolling content region — so Trash
-       reads like every other page in the app rather than a bespoke screen. -->
-  <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
-    <!-- ── Hero (matches .fb-hero metrics) ───────────────────────── -->
-    <div class="trash-hero">
-      <div class="min-w-0 flex-1">
-        <div
-          class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] mb-1"
-        >
-          Recycle bin
-        </div>
-        <h1
-          class="text-[22px] font-semibold leading-tight text-ink-1 max-md:text-[18px]"
-        >
-          Trash
-        </h1>
-        <div class="mt-1 text-[13px] text-ink-3 tabular max-md:text-[12px]">
-          <template v-if="loading">Loading…</template>
-          <template v-else-if="entries.length === 0"
-            >Nothing here right now</template
+       reads like every other page in the app rather than a bespoke screen.
+       fb-columns / fb-primary give it the same floating surface-panel shell
+       as the files view (v2.7 panel shell). -->
+  <div class="fb-columns flex-1 flex min-h-0 overflow-hidden">
+    <div class="fb-primary flex-1 flex flex-col min-w-0 min-h-0">
+      <!-- ── Hero (matches .fb-hero metrics) ───────────────────────── -->
+      <div class="trash-hero">
+        <div class="min-w-0 flex-1">
+          <div
+            class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] mb-1"
           >
-          <template v-else>
-            {{ entries.length }} item{{ entries.length === 1 ? "" : "s" }}
-            <span class="trash-dot">·</span>
-            {{ humanSize(totalSize) }}
-          </template>
+            Recycle bin
+          </div>
+          <h1
+            class="text-[22px] font-semibold leading-tight text-ink-1 max-md:text-[18px]"
+          >
+            Trash
+          </h1>
+          <div class="mt-1 text-[13px] text-ink-3 tabular max-md:text-[12px]">
+            <template v-if="loading">Loading…</template>
+            <template v-else-if="entries.length === 0"
+              >Nothing here right now</template
+            >
+            <template v-else>
+              {{ entries.length }} item{{ entries.length === 1 ? "" : "s" }}
+              <span class="trash-dot">·</span>
+              {{ humanSize(totalSize) }}
+            </template>
+          </div>
         </div>
+
+        <button
+          v-if="entries.length > 0 && canDelete"
+          type="button"
+          class="trash-empty-btn"
+          @click="confirmEmpty"
+        >
+          <Icon name="trash-2" :size="14" :stroke-width="1.9" />
+          <span class="max-md:hidden">Empty trash</span>
+        </button>
       </div>
 
-      <button
-        v-if="entries.length > 0 && canDelete"
-        type="button"
-        class="trash-empty-btn"
-        @click="confirmEmpty"
-      >
-        <Icon name="trash-2" :size="14" :stroke-width="1.9" />
-        <span class="max-md:hidden">Empty trash</span>
-      </button>
-    </div>
-
-    <!-- ── Scrolling content ─────────────────────────────────────── -->
-    <div class="flex-1 min-h-0 overflow-y-auto px-5 pb-8 max-md:px-3">
-      <!-- Loading skeleton (mirrors a real row). -->
-      <ul v-if="loading" class="trash-list" role="list" aria-hidden="true">
-        <li v-for="i in 4" :key="i" class="trash-row">
-          <Skeleton class="trash-tile" />
-          <div class="min-w-0 flex-1 flex flex-col gap-1.5">
-            <Skeleton class="h-3 rounded w-[34%]" />
-            <Skeleton class="h-2.5 rounded w-[58%]" />
-          </div>
-        </li>
-      </ul>
-
-      <!-- Empty. -->
-      <EmptyState
-        v-else-if="entries.length === 0"
-        icon="trash-2"
-        title="Trash is empty"
-        message="Deleted files and folders land here. You can put them back where they came from, or remove them for good."
-      />
-
-      <!-- List. -->
-      <ul v-else class="trash-list" role="list">
-        <li v-for="e in entries" :key="e.id" class="trash-row">
-          <span class="trash-tile" :class="tileColor(e)" aria-hidden="true">
-            <Icon
-              :name="iconName(e)"
-              :size="17"
-              :stroke-width="1.7"
-              :fill="e.isDir ? 'currentColor' : 'none'"
-            />
-          </span>
-
-          <div class="min-w-0 flex-1">
-            <div class="trash-name" :title="e.name">{{ e.name }}</div>
-            <div class="trash-meta">
-              <span class="trash-from">{{ friendlyDir(e.originalDir) }}</span>
-              <span class="trash-dot">·</span>
-              {{ since(e.trashedAt) }}
-              <template v-if="!e.isDir">
-                <span class="trash-dot">·</span> {{ humanSize(e.size) }}
-              </template>
+      <!-- ── Scrolling content ─────────────────────────────────────── -->
+      <div class="flex-1 min-h-0 overflow-y-auto px-5 pb-8 max-md:px-3">
+        <!-- Loading skeleton (mirrors a real row). -->
+        <ul v-if="loading" class="trash-list" role="list" aria-hidden="true">
+          <li v-for="i in 4" :key="i" class="trash-row">
+            <Skeleton class="trash-tile" />
+            <div class="min-w-0 flex-1 flex flex-col gap-1.5">
+              <Skeleton class="h-3 rounded w-[34%]" />
+              <Skeleton class="h-2.5 rounded w-[58%]" />
             </div>
-          </div>
+          </li>
+        </ul>
 
-          <div class="trash-actions">
-            <button
-              v-if="canCreate"
-              type="button"
-              class="trash-act trash-act--restore"
-              title="Restore to original location"
-              aria-label="Restore to original location"
-              @click="restore(e)"
-            >
-              <Icon name="undo-2" :size="14" :stroke-width="1.9" />
-              <span class="trash-act__label">Restore</span>
-            </button>
-            <button
-              v-if="canDelete"
-              type="button"
-              class="trash-act trash-act--forever"
-              title="Delete forever"
-              aria-label="Delete forever"
-              @click="confirmForever(e)"
-            >
-              <Icon name="trash-2" :size="14" :stroke-width="1.9" />
-              <span class="trash-act__label">Delete</span>
-            </button>
-          </div>
-        </li>
-      </ul>
+        <!-- Empty. -->
+        <EmptyState
+          v-else-if="entries.length === 0"
+          icon="trash-2"
+          title="Trash is empty"
+          message="Deleted files and folders land here. You can put them back where they came from, or remove them for good."
+        />
+
+        <!-- List. -->
+        <ul v-else class="trash-list" role="list">
+          <li v-for="e in entries" :key="e.id" class="trash-row">
+            <span class="trash-tile" :class="tileColor(e)" aria-hidden="true">
+              <Icon
+                :name="iconName(e)"
+                :size="17"
+                :stroke-width="1.7"
+                :fill="e.isDir ? 'currentColor' : 'none'"
+              />
+            </span>
+
+            <div class="min-w-0 flex-1">
+              <div class="trash-name" :title="e.name">{{ e.name }}</div>
+              <div class="trash-meta">
+                <span class="trash-from">{{ friendlyDir(e.originalDir) }}</span>
+                <span class="trash-dot">·</span>
+                {{ since(e.trashedAt) }}
+                <template v-if="!e.isDir">
+                  <span class="trash-dot">·</span> {{ humanSize(e.size) }}
+                </template>
+              </div>
+            </div>
+
+            <div class="trash-actions">
+              <button
+                v-if="canCreate"
+                type="button"
+                class="trash-act trash-act--restore"
+                title="Restore to original location"
+                aria-label="Restore to original location"
+                @click="restore(e)"
+              >
+                <Icon name="undo-2" :size="14" :stroke-width="1.9" />
+                <span class="trash-act__label">Restore</span>
+              </button>
+              <button
+                v-if="canDelete"
+                type="button"
+                class="trash-act trash-act--forever"
+                title="Delete forever"
+                aria-label="Delete forever"
+                @click="confirmForever(e)"
+              >
+                <Icon name="trash-2" :size="14" :stroke-width="1.9" />
+                <span class="trash-act__label">Delete</span>
+              </button>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <ConfirmDialog
+        :open="confirm.open"
+        :title="confirm.title"
+        :message="confirm.message"
+        confirm-label="Delete forever"
+        cancel-label="Cancel"
+        destructive
+        @confirm="onConfirm"
+        @cancel="confirm.open = false"
+      />
     </div>
-
-    <ConfirmDialog
-      :open="confirm.open"
-      :title="confirm.title"
-      :message="confirm.message"
-      confirm-label="Delete forever"
-      cancel-label="Cancel"
-      destructive
-      @confirm="onConfirm"
-      @cancel="confirm.open = false"
-    />
   </div>
 </template>
 

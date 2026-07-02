@@ -38,6 +38,36 @@
     />
     <meta name="apple-mobile-web-app-title" content="filebrowser pretty" />
 
+    <!-- Theme-aware favicon (v2.7.x). The favicon lives on the BROWSER's tab
+         strip, so it follows the OS/browser color scheme (prefers-color-scheme,
+         with a live listener), not the in-app theme — a dark app theme on a
+         light OS still has a light tab bar. The static links above stay the
+         LIGHT set as the no-JS / crawler fallback; `media` attributes on icon
+         links are ignored by Chromium, hence the script. The manifest +
+         apple-touch icons can't switch (installed-app icons) and keep light. -->
+    <script>
+      (function () {
+        var mq = window.matchMedia("(prefers-color-scheme: dark)");
+        function applyFavicons(dark) {
+          var links = document.querySelectorAll(
+            'link[rel="icon"], link[rel="shortcut icon"]'
+          );
+          for (var i = 0; i < links.length; i++) {
+            links[i].href = links[i].href.replace(
+              /img\/icons(-dark)?\//,
+              dark ? "img/icons-dark/" : "img/icons/"
+            );
+          }
+        }
+        applyFavicons(mq.matches);
+        if (mq.addEventListener) {
+          mq.addEventListener("change", function (e) {
+            applyFavicons(e.matches);
+          });
+        }
+      })();
+    </script>
+
     <!-- Add to home screen for Android and modern mobile browsers -->
     <link
       rel="manifest"
@@ -46,7 +76,7 @@
     />
     <meta
       name="theme-color"
-      content="[{[ if .Color -]}][{[ .Color ]}][{[ else ]}]#5e6ad2[{[ end ]}]"
+      content="[{[ if .Color -]}][{[ .Color ]}][{[ else ]}]#6e72d9[{[ end ]}]"
     />
 
     <!-- Inject Some Variables and generate the manifest json -->

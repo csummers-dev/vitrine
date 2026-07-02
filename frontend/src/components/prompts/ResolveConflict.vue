@@ -366,9 +366,11 @@ const toogleCheckAll = (e: Event) => {
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  /* V2 #26: a conflict needs attention → amber, not the neutral lilac accent. */
-  background: color-mix(in srgb, var(--c-amber) 16%, transparent);
-  color: var(--c-amber);
+  /* V2 #26: a conflict needs attention → amber, not the neutral lilac accent.
+     v2.7.x: the STATUS warning tokens (attention semantics, not the favorites
+     gold — --c-amber is stars only now). */
+  background: var(--status-warning-soft);
+  color: var(--status-warning);
   display: flex;
   align-items: center;
   justify-content: center;

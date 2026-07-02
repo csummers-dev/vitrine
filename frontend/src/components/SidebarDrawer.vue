@@ -2,7 +2,7 @@
   <aside class="sd" @click="onItemClick">
     <!-- ── Workspace header ─────────────────────────────────────────── -->
     <header class="sd__header">
-      <img class="sd__brand-mark" :src="logoPngURL" alt="logo" />
+      <img class="sd__brand-mark" :src="logoURL" alt="logo" />
       <div class="sd__brand-text">
         <div class="sd__brand-name">
           <BrandName name="filebrowser pretty" />
@@ -287,9 +287,9 @@ import {
   noAuth,
   logoutPage,
   loginPage,
-  logoPngURL,
   repoUrl,
 } from "@/utils/constants";
+import { useBrandLogo } from "@/composables/useBrandLogo";
 import { files as api } from "@/api";
 import prettyBytes from "pretty-bytes";
 import Icon from "@/components/Icon.vue";
@@ -301,6 +301,7 @@ const route = useRoute();
 const authStore = useAuthStore();
 const fileStore = useFileStore();
 const layoutStore = useLayoutStore();
+const { logoURL } = useBrandLogo();
 
 const user = computed(() => authStore.user);
 const isLoggedIn = computed(() => authStore.isLoggedIn);
