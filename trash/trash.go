@@ -246,10 +246,45 @@ func (s *Store) DeleteForever(fs afero.Fs, id string) (Entry, error) {
 	if err != nil {
 		return Entry{}, err
 	}
-	if err := fs.RemoveAll(e.TrashPath); err != nil && !os.IsNotExist(err) {
+	if err := forceRemoveAll(fs, e.TrashPath); err != nil && !os.IsNotExist(err) {
 		return e, err
 	}
 	return e, s.del(id)
+}
+
+// forceRemoveAll removes the tree at root, retrying once after a permission
+// failure by lifting the owner write+search bits on every directory inside.
+//
+// RemoveAll needs WRITE+SEARCH on each directory to unlink its children, so a
+// trashed folder containing a read-only subdirectory (or one owned with
+// restrictive modes by another service — common on NAS setups where several
+// containers write the same volume) fails with EACCES, which the HTTP layer
+// surfaces as a baffling 403 on the Trash page. The tree lives inside the
+// app-managed `.trash` and the caller has already committed to deletion, so
+// making it deletable is the correct reading of intent. Files are left
+// untouched — unlinking needs only the parent directory's bits.
+func forceRemoveAll(fs afero.Fs, root string) error {
+	err := fs.RemoveAll(root)
+	if err == nil || os.IsNotExist(err) {
+		return nil
+	}
+	if !os.IsPermission(err) {
+		return err
+	}
+	// Walk visits a directory BEFORE reading its children (filepath.Walk
+	// semantics), so chmod-ing each dir as we reach it also unlocks descent
+	// into it. Chmod/walk errors are deliberately ignored — the retried
+	// RemoveAll below is the arbiter of success.
+	_ = afero.Walk(fs, root, func(p string, info os.FileInfo, werr error) error {
+		if werr != nil || info == nil {
+			return nil
+		}
+		if info.IsDir() {
+			_ = fs.Chmod(p, info.Mode().Perm()|0o700)
+		}
+		return nil
+	})
+	return fs.RemoveAll(root)
 }
 
 // List returns every entry whose OriginalPath is inside scopeAbs (use the

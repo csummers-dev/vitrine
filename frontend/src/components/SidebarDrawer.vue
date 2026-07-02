@@ -266,7 +266,6 @@ import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
-import { useLayoutStore } from "@/stores/layout";
 import { useFavorites } from "@/composables/useFavorites";
 import { useRecents } from "@/composables/useRecents";
 import { usePreferences } from "@/composables/usePreferences";
@@ -294,7 +293,6 @@ const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
 const fileStore = useFileStore();
-const layoutStore = useLayoutStore();
 const { logoURL } = useBrandLogo();
 
 const user = computed(() => authStore.user);

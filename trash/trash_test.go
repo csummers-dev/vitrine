@@ -244,3 +244,36 @@ func TestStaleEntryRestoreReportsAndDrops(t *testing.T) {
 		t.Fatal("stale entry should have been dropped")
 	}
 }
+
+// The reported "403 on Delete forever": a trashed folder containing a
+// read-only subdirectory (or one owned with restrictive modes by another
+// service) makes RemoveAll fail with EACCES — DeleteForever must lift the
+// directory bits inside the trash and push through.
+func TestDeleteForeverReadOnlySubdir(t *testing.T) {
+	if os.Getuid() == 0 {
+		t.Skip("running as root — EACCES cannot be provoked")
+	}
+	s, fs, root := newStore(t)
+
+	locked := filepath.Join(root, "Movies", "locked")
+	if err := os.MkdirAll(locked, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(locked, "x.txt"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(locked, 0o555); err != nil {
+		t.Fatal(err)
+	}
+	// Restore the mode on cleanup so TempDir teardown can't trip either.
+	t.Cleanup(func() { _ = os.Chmod(locked, 0o755) })
+
+	e, err := s.MoveToTrash(fs, filepath.Join(root, "Movies"), root, "cory")
+	if err != nil {
+		t.Fatalf("MoveToTrash: %v", err)
+	}
+	if _, err := s.DeleteForever(fs, e.ID); err != nil {
+		t.Fatalf("DeleteForever with read-only subdir: %v", err)
+	}
+	mustNotExist(t, e.TrashPath)
+}
