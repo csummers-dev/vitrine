@@ -2,6 +2,36 @@
 
 All notable changes to **filebrowser pretty**.
 
+## v2.8.0 — Profile avatars, sortable move/copy, mobile polish
+
+- **Upload your own profile photo.** Settings → Profile has a new Photo
+  section: pick an image, reposition and zoom it under a circular crop, and
+  save. Your avatar then shows everywhere your initials used to — the sidebar,
+  the mobile drawer, and the settings rail. Removing it asks for confirmation,
+  and reverts to your initials. The photo is cropped to a small square in your
+  browser and stored on your account (it syncs like your theme and accent, and
+  needs no server configuration).
+- **Sort the destination list when moving or copying.** The folder picker in
+  the Move / Copy panels was locked to one order — it now has a Sort control
+  (Name or Modified, either direction), and remembers your choice.
+- **Mobile drawer polish.** The dividers in the slide-out menu now match the
+  desktop sidebar: no line under the logo, and the divider above your account
+  is inset from the edges instead of running full-width.
+- **Trash "Empty trash" button moved.** It now sits next to the title instead
+  of the far-right edge, where a notification toast could cover it and block
+  the click.
+
+## v2.7.4 — A clearer trash error
+
+- **"403 Forbidden" in the Trash now explains itself.** When the server can't
+  delete a trashed item because something inside is owned by another system
+  user (e.g. artwork or trickplay folders written by a different container),
+  the Trash page now says exactly that — and that fixing the volume's
+  ownership is the way out — instead of a bare status code. (The 2.7.3
+  permission-lifting fix covers read-only modes the server's user owns;
+  files owned by a *different* user are beyond what any unprivileged
+  process can chmod.)
+
 ## v2.7.3 — Trash fix & housekeeping
 
 - **Fixed: "Delete forever" failing with 403 Forbidden.** Emptying a trashed

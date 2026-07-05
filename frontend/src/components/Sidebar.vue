@@ -415,7 +415,14 @@
         class="flex-1 flex items-center gap-2 px-1.5 py-1.5 rounded-md hover:bg-hover transition min-w-0 max-md:flex-none max-md:p-0 s-rail-btn"
         :title="user.username"
       >
+        <img
+          v-if="avatarUrl"
+          :src="avatarUrl"
+          alt="avatar"
+          class="w-7 h-7 max-md:w-9 max-md:h-9 rounded-full object-cover shadow-sm shrink-0"
+        />
         <div
+          v-else
           class="w-7 h-7 max-md:w-9 max-md:h-9 rounded-full avatar-accent flex items-center justify-center text-white text-[11px] font-semibold shadow-sm shrink-0"
         >
           {{ userInitials }}
@@ -492,6 +499,7 @@ import {
   loginPage,
 } from "@/utils/constants";
 import { useBrandLogo } from "@/composables/useBrandLogo";
+import { profileAvatarUrl } from "@/composables/useProfileAvatar";
 import { files as api } from "@/api";
 import Icon from "@/components/Icon.vue";
 import BrandName from "@/components/BrandName.vue";
@@ -515,6 +523,7 @@ const USAGE_DEFAULT = { used: "0 B", total: "0 B", usedPercentage: 0 };
 
 // Theme-correct brand mark (module singleton — safe outside setup()).
 const { logoURL: brandLogoURL } = useBrandLogo();
+// avatarUrl read via the Pinia-free module accessor (module-eval safe).
 
 export default {
   name: "sidebar",
@@ -928,6 +937,7 @@ export default {
     version: () => version,
     repoUrl: () => repoUrl,
     logoURL: () => brandLogoURL.value,
+    avatarUrl: () => profileAvatarUrl.value,
     disableExternal: () => disableExternal,
     disableUsedPercentage: () => disableUsedPercentage,
     canLogout: () => !noAuth && (loginPage || logoutPage !== "/login"),

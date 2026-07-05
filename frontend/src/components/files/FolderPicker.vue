@@ -1,32 +1,53 @@
 <template>
   <div class="folder-picker">
-    <!-- Breadcrumb path showing where you currently are -->
-    <div class="folder-picker__breadcrumb">
-      <button
-        type="button"
-        class="folder-picker__crumb"
-        :class="{ 'is-current': segments.length === 0 }"
-        @click="navigate('/files/')"
-      >
-        <Icon name="house" :size="13" class="text-[var(--color-accent)]" />
-        <span>Home</span>
-      </button>
-      <template v-for="(seg, i) in segments" :key="i">
-        <Icon
-          name="chevron-right"
-          :size="11"
-          class="folder-picker__crumb-sep"
-        />
+    <!-- Path + sort. Breadcrumb takes the row; a compact Sort control on the
+         right lets the user order the destination list (v2.8) — it used to be
+         locked to whatever order the server returned. -->
+    <div class="folder-picker__head">
+      <div class="folder-picker__breadcrumb">
         <button
           type="button"
           class="folder-picker__crumb"
-          :class="{ 'is-current': i === segments.length - 1 }"
-          @click="navigate(seg.url)"
+          :class="{ 'is-current': segments.length === 0 }"
+          @click="navigate('/files/')"
         >
-          {{ seg.name }}
+          <Icon name="house" :size="13" class="text-[var(--color-accent)]" />
+          <span>Home</span>
         </button>
-      </template>
+        <template v-for="(seg, i) in segments" :key="i">
+          <Icon
+            name="chevron-right"
+            :size="11"
+            class="folder-picker__crumb-sep"
+          />
+          <button
+            type="button"
+            class="folder-picker__crumb"
+            :class="{ 'is-current': i === segments.length - 1 }"
+            @click="navigate(seg.url)"
+          >
+            {{ seg.name }}
+          </button>
+        </template>
+      </div>
+      <button
+        type="button"
+        class="folder-picker__sort"
+        :title="`Sort: ${sortLabel}`"
+        :aria-label="`Sort folders — ${sortLabel}`"
+        aria-haspopup="menu"
+        @click.stop="openSortMenu"
+      >
+        <Icon name="arrow-up-down" :size="13" />
+      </button>
     </div>
+
+    <ContextMenu
+      :show="sortMenu.show"
+      :pos="sortMenu.pos"
+      :items="sortMenuItems"
+      @hide="sortMenu.show = false"
+    />
 
     <!-- Inline "new folder" input. Creates the folder in the CURRENT picker
          path, then drops into it so it becomes the chosen destination. Shown
@@ -75,7 +96,7 @@
     </div>
 
     <ul v-else class="folder-picker__list">
-      <li v-for="folder in folders" :key="folder.url">
+      <li v-for="folder in sortedFolders" :key="folder.url">
         <button
           type="button"
           class="folder-picker__row"
@@ -109,13 +130,97 @@ import { files as api } from "@/api";
 import { StatusError } from "@/api/utils";
 import url from "@/utils/url";
 import Icon from "@/components/Icon.vue";
+import ContextMenu, { type MenuItem } from "@/components/ContextMenu.vue";
+import { usePreferences } from "@/composables/usePreferences";
+import {
+  sortFolders,
+  pickerSortLabel,
+  readPickerSort,
+  type PickerSortBy,
+} from "@/utils/pickerSort";
 
 const $showError = inject<IToastError>("$showError");
 
 interface Folder {
   name: string;
   url: string;
+  modified: string;
 }
+
+// ── Sort (v2.8) ─────────────────────────────────────────────────────
+// The destination list used to render in raw server order with no control.
+// Folders sort by name or modified date; the choice is remembered in the
+// prefs bag so it carries across move/copy panels and sessions. (Size is
+// omitted — the listing reports 0 for directories, so it can't order them.)
+const prefs = usePreferences();
+const PREF_SORT = "picker.sort";
+
+const initialSort = readPickerSort(
+  prefs.get<{ by?: string; asc?: boolean }>(PREF_SORT, {})
+);
+const sortBy = ref<PickerSortBy>(initialSort.by);
+const sortAsc = ref<boolean>(initialSort.asc);
+
+const persistSort = () =>
+  void prefs.set(PREF_SORT, { by: sortBy.value, asc: sortAsc.value });
+
+const sortLabel = computed(() => pickerSortLabel(sortBy.value, sortAsc.value));
+
+const sortedFolders = computed<Folder[]>(() =>
+  sortFolders(folders.value, sortBy.value, sortAsc.value)
+);
+
+const sortMenu = ref<{ show: boolean; pos: { x: number; y: number } }>({
+  show: false,
+  pos: { x: 0, y: 0 },
+});
+
+const openSortMenu = (event: MouseEvent) => {
+  if (sortMenu.value.show) {
+    sortMenu.value.show = false;
+    return;
+  }
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  sortMenu.value = {
+    show: true,
+    pos: { x: rect.right - 180, y: rect.bottom + 4 },
+  };
+};
+
+const setSortBy = (by: PickerSortBy) => {
+  sortBy.value = by;
+  persistSort();
+};
+const setSortAsc = (asc: boolean) => {
+  sortAsc.value = asc;
+  persistSort();
+};
+
+const sortMenuItems = computed<MenuItem[]>(() => [
+  { type: "header", label: "Sort by" },
+  {
+    label: "Name",
+    icon: sortBy.value === "name" ? "check" : undefined,
+    action: () => setSortBy("name"),
+  },
+  {
+    label: "Modified",
+    icon: sortBy.value === "modified" ? "check" : undefined,
+    action: () => setSortBy("modified"),
+  },
+  { type: "separator" },
+  { type: "header", label: "Order" },
+  {
+    label: sortBy.value === "modified" ? "Oldest first" : "A → Z",
+    icon: sortAsc.value ? "check" : undefined,
+    action: () => setSortAsc(true),
+  },
+  {
+    label: sortBy.value === "modified" ? "Newest first" : "Z → A",
+    icon: !sortAsc.value ? "check" : undefined,
+    action: () => setSortAsc(false),
+  },
+]);
 
 const props = defineProps<{
   /** Initial path to open the picker at (a /files/... URL). */
@@ -142,7 +247,7 @@ const newName = ref<string>("");
 const createInputEl = ref<HTMLInputElement | null>(null);
 let createSubmitting = false;
 
-const segments = computed<Folder[]>(() => {
+const segments = computed<{ name: string; url: string }[]>(() => {
   const stripped = currentPath.value.replace(/^\/files\/?/, "");
   if (stripped === "") return [];
   const parts = stripped.split("/").filter(Boolean);
@@ -163,7 +268,11 @@ const navigate = async (path: string) => {
     folders.value = (req.items ?? [])
       .filter((i: any) => i.isDir)
       .filter((i: any) => !props.exclude?.includes(i.url))
-      .map((i: any) => ({ name: i.name, url: i.url }));
+      .map((i: any) => ({
+        name: i.name,
+        url: i.url,
+        modified: i.modified ?? "",
+      }));
     emit("update:path", currentPath.value);
   } catch (e) {
     if (e instanceof StatusError && e.is_canceled) return;
@@ -259,7 +368,15 @@ defineExpose({
   gap: 10px;
 }
 
+.folder-picker__head {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+
 .folder-picker__breadcrumb {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -270,6 +387,30 @@ defineExpose({
   background: var(--color-canvas, #fafaf9);
   border: 1px solid var(--color-line, #ececec);
   border-radius: 8px;
+}
+
+.folder-picker__sort {
+  flex-shrink: 0;
+  width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-line, #ececec);
+  border-radius: 8px;
+  background: var(--color-surface, #fff);
+  color: var(--color-ink-2, #52525b);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-base) ease,
+    color var(--dur-base) ease;
+}
+.folder-picker__sort:hover {
+  background: var(--color-elevated, #f4f4f5);
+  color: var(--color-ink-1, #18181b);
+}
+.folder-picker__sort:focus-visible {
+  outline: 2px solid var(--color-accent-ring);
+  outline-offset: 1px;
 }
 
 .folder-picker__crumb {
