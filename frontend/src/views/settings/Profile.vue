@@ -5,6 +5,70 @@
     accent="var(--color-accent)"
     description="Personal preferences for your account. Toggles save automatically; password requires confirmation."
   >
+    <!-- ── Avatar ─────────────────────────────────────────────────────── -->
+    <SettingsSection
+      title="Photo"
+      description="Your avatar in the sidebar and menus. Stored on your account."
+    >
+      <div class="avatar-row">
+        <div class="avatar-preview">
+          <img
+            v-if="hasAvatar"
+            :src="avatarUrl"
+            class="avatar-preview__img"
+            alt="Your avatar"
+          />
+          <span v-else class="avatar-preview__initials avatar-accent">{{
+            userInitials
+          }}</span>
+        </div>
+        <div class="avatar-actions">
+          <button
+            type="button"
+            class="avatar-btn avatar-btn--primary"
+            @click="pickAvatar"
+          >
+            <Icon name="upload" :size="14" />
+            <span>{{ hasAvatar ? "Change photo" : "Upload photo" }}</span>
+          </button>
+          <button
+            v-if="hasAvatar"
+            type="button"
+            class="avatar-btn avatar-btn--ghost"
+            @click="removeAvatar"
+          >
+            Remove
+          </button>
+          <p class="avatar-hint">JPG, PNG, GIF, or WebP.</p>
+        </div>
+      </div>
+      <input
+        ref="avatarInput"
+        type="file"
+        accept="image/*"
+        class="hidden"
+        @change="onAvatarPicked"
+      />
+    </SettingsSection>
+
+    <AvatarCropper
+      :open="cropperOpen"
+      :src="cropSrc"
+      @cancel="closeCropper"
+      @save="onCropSaved"
+    />
+
+    <ConfirmDialog
+      :open="removeConfirmOpen"
+      title="Remove your photo?"
+      message="Your avatar goes back to your initials. You can upload a new one any time."
+      confirm-label="Remove"
+      cancel-label="Cancel"
+      destructive
+      @confirm="onRemoveConfirmed"
+      @cancel="removeConfirmOpen = false"
+    />
+
     <!-- ── Preferences (auto-save toggles) ───────────────────────────── -->
     <SettingsSection
       title="Preferences"
@@ -263,10 +327,67 @@ import {
   type BgIntensity,
 } from "@/composables/useBackgroundGradient";
 import { useAccentColor } from "@/composables/useAccentColor";
+import { useProfileAvatar } from "@/composables/useProfileAvatar";
+import AvatarCropper from "@/components/settings/AvatarCropper.vue";
+import ConfirmDialog from "@/components/ConfirmDialog.vue";
 
 const { t } = useI18n();
 const authStore = useAuthStore();
 const layoutStore = useLayoutStore();
+
+// ── Profile avatar (upload → crop → prefs bag) ──────────────────────
+// ($showError / $showSuccess are injected just below, next to the password
+//  form that already used them.)
+const { avatarUrl, hasAvatar, setAvatar, clearAvatar } = useProfileAvatar();
+
+const userInitials = computed(() => {
+  const name = authStore.user?.username ?? "";
+  const parts = name.split(/[\s._-]/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+});
+
+const avatarInput = ref<HTMLInputElement | null>(null);
+const cropperOpen = ref(false);
+const cropSrc = ref("");
+
+const pickAvatar = () => avatarInput.value?.click();
+
+const onAvatarPicked = (e: Event) => {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = ""; // reset so re-picking the same file fires change again
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    $showError(new Error("That file isn't an image."));
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    cropSrc.value = String(reader.result ?? "");
+    cropperOpen.value = true;
+  };
+  reader.onerror = () => $showError(new Error("Couldn't read that image."));
+  reader.readAsDataURL(file);
+};
+
+const closeCropper = () => {
+  cropperOpen.value = false;
+  cropSrc.value = "";
+};
+const onCropSaved = (dataUri: string) => {
+  setAvatar(dataUri);
+  closeCropper();
+};
+
+const removeConfirmOpen = ref(false);
+const removeAvatar = () => {
+  removeConfirmOpen.value = true;
+};
+const onRemoveConfirmed = () => {
+  clearAvatar();
+  removeConfirmOpen.value = false;
+};
 
 const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
 const $showError = inject<IToastError>("$showError")!;
@@ -463,6 +584,89 @@ const updatePassword = async () => {
 </script>
 
 <style scoped>
+/* ── Avatar section ──────────────────────────────────────────────── */
+.avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  /* The avatar block isn't a .settings-row, so it gets no padding from the
+     section — give it its own so it isn't jammed against the card edges
+     (matches the row rhythm: 16px 18px). */
+  padding: 16px 18px;
+}
+.avatar-preview {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(20, 18, 28, 0.14);
+}
+.avatar-preview__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.avatar-preview__initials {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-on-accent);
+  font-size: 22px;
+  font-weight: 600;
+}
+.avatar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.avatar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-base) ease,
+    border-color var(--dur-base) ease,
+    color var(--dur-base) ease;
+}
+.avatar-btn--primary {
+  background: var(--accent-gradient);
+  border: 1px solid var(--color-accent);
+  color: var(--color-on-accent);
+}
+.avatar-btn--primary:hover {
+  background: var(--accent-gradient-strong);
+}
+.avatar-btn--ghost {
+  background: transparent;
+  border: 1px solid var(--color-line-strong);
+  color: var(--color-ink-2);
+}
+.avatar-btn--ghost:hover {
+  background: var(--color-hover);
+  color: var(--color-ink-1);
+}
+.avatar-hint {
+  width: 100%;
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--color-ink-3);
+}
+.hidden {
+  display: none;
+}
+
 .settings-input {
   width: 100%;
   height: 34px;

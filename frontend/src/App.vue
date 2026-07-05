@@ -29,6 +29,7 @@ import { installShortcuts } from "@/composables/useShortcuts";
 import { useThemeBootstrap } from "@/composables/useThemePreference";
 import { useBackgroundGradientBootstrap } from "@/composables/useBackgroundGradient";
 import { useAccentColorBootstrap } from "@/composables/useAccentColor";
+import { useProfileAvatarBootstrap } from "@/composables/useProfileAvatar";
 import CommandPalette from "@/components/CommandPalette.vue";
 import ShortcutsOverlay from "@/components/ShortcutsOverlay.vue";
 import OfflineBanner from "@/components/OfflineBanner.vue";
@@ -54,6 +55,10 @@ useBackgroundGradientBootstrap();
 // Apply the user's saved accent hue (Calm Minimal). Writes the accent source
 // vars on <html>; tokens.css derives the rest. Default Violet matches the CSS.
 useAccentColorBootstrap();
+
+// Load the user's uploaded profile avatar (data URI in the prefs bag) so the
+// sidebar / drawer / settings-rail avatars paint it instead of initials.
+useProfileAvatarBootstrap();
 
 // Install the global shortcut dispatcher (window-level listener). Idempotent.
 installShortcuts();

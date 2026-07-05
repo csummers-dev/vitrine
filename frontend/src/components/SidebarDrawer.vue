@@ -227,7 +227,13 @@
         @click="goProfile"
         :title="user?.username"
       >
-        <span class="sd__avatar">{{ userInitials }}</span>
+        <img
+          v-if="avatarUrl"
+          :src="avatarUrl"
+          alt="avatar"
+          class="sd__avatar sd__avatar--img"
+        />
+        <span v-else class="sd__avatar">{{ userInitials }}</span>
         <span class="sd__user-text">
           <span class="sd__user-name">{{ user?.username }}</span>
           <span class="sd__user-role">
@@ -283,6 +289,7 @@ import {
   repoUrl,
 } from "@/utils/constants";
 import { useBrandLogo } from "@/composables/useBrandLogo";
+import { profileAvatarUrl } from "@/composables/useProfileAvatar";
 import { files as api } from "@/api";
 import prettyBytes from "pretty-bytes";
 import Icon from "@/components/Icon.vue";
@@ -294,6 +301,7 @@ const route = useRoute();
 const authStore = useAuthStore();
 const fileStore = useFileStore();
 const { logoURL } = useBrandLogo();
+const avatarUrl = profileAvatarUrl;
 
 const user = computed(() => authStore.user);
 const isLoggedIn = computed(() => authStore.isLoggedIn);
@@ -503,7 +511,8 @@ const onItemClick = (_event: MouseEvent) => {
   align-items: center;
   gap: 10px;
   padding: 14px 16px;
-  border-bottom: 1px solid var(--color-line, #ececec);
+  /* No top divider — matches the desktop sidebar, which has none under the
+     logo (v2.8: was a full-width border-bottom that didn't exist on desktop). */
   flex-shrink: 0;
 }
 
@@ -888,8 +897,19 @@ const onItemClick = (_event: MouseEvent) => {
   padding: 10px 12px;
   /* Keep the row clear of the iOS home indicator / gesture bar. */
   padding-bottom: max(10px, env(safe-area-inset-bottom));
-  border-top: 1px solid var(--color-line, #ececec);
   flex-shrink: 0;
+  position: relative;
+}
+/* Inset top divider (16px from each edge) — matches the desktop sidebar's
+   account-row divider (v2.8: was a full-width border-top). */
+.sd__user::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 16px;
+  height: 1px;
+  background: var(--color-line, #ececec);
 }
 
 .sd__user-btn {
@@ -926,6 +946,10 @@ const onItemClick = (_event: MouseEvent) => {
   font-weight: 600;
   flex-shrink: 0;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.sd__avatar--img {
+  object-fit: cover;
+  background: none;
 }
 
 .sd__user-text {

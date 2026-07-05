@@ -108,7 +108,14 @@
         :title="user.username"
         @click="goProfile"
       >
+        <img
+          v-if="avatarUrl"
+          :src="avatarUrl"
+          alt="avatar"
+          class="w-7 h-7 rounded-full object-cover shadow-sm shrink-0"
+        />
         <div
+          v-else
           class="w-7 h-7 rounded-full avatar-accent flex items-center justify-center text-white text-[11px] font-semibold shadow-sm shrink-0"
         >
           {{ userInitials }}
@@ -144,12 +151,14 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useRootLabel } from "@/composables/useRootLabel";
+import { profileAvatarUrl } from "@/composables/useProfileAvatar";
 import * as auth from "@/utils/auth";
 import { noAuth, loginPage, logoutPage } from "@/utils/constants";
 import Icon from "@/components/Icon.vue";
 
 const { t } = useI18n();
 const authStore = useAuthStore();
+const avatarUrl = profileAvatarUrl;
 
 const props = withDefaults(
   defineProps<{

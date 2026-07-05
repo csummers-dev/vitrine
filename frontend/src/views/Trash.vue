@@ -8,7 +8,7 @@
     <div class="fb-primary flex-1 flex flex-col min-w-0 min-h-0">
       <!-- ── Hero (matches .fb-hero metrics) ───────────────────────── -->
       <div class="trash-hero">
-        <div class="min-w-0 flex-1">
+        <div class="min-w-0">
           <div
             class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] mb-1"
           >
@@ -137,6 +137,7 @@ import EmptyState from "@/components/EmptyState.vue";
 import Skeleton from "@/components/Skeleton.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import { trash as trashApi } from "@/api";
+import { StatusError } from "@/api/utils";
 import type { TrashEntry } from "@/api/trash";
 import { useAuthStore } from "@/stores/auth";
 import { useRootLabel } from "@/composables/useRootLabel";
@@ -229,7 +230,23 @@ const onConfirm = async () => {
       $showSuccess("Trash emptied");
     }
   } catch (err) {
-    if (err instanceof Error) $showError(err);
+    // A 403 here is almost never the user's own permission (the Delete
+    // button only renders with perm.delete) — it's the SERVER hitting
+    // EACCES/EPERM on the files: something inside is owned by another
+    // system user (e.g. media written by a different container's uid),
+    // which even the v2.7.3 chmod-and-retry can't cross. Say that,
+    // instead of a bare "403 Forbidden".
+    if (err instanceof StatusError && err.status === 403) {
+      $showError(
+        new Error(
+          "The server can't delete some items inside — they're owned by " +
+            "another system user. Fix the ownership on the volume (chown " +
+            "to the server's user), then try again."
+        )
+      );
+    } else if (err instanceof Error) {
+      $showError(err);
+    }
   } finally {
     confirm.target = null;
     void load();
@@ -242,7 +259,10 @@ const onConfirm = async () => {
    actions right) so the page header lines up with the rest of the app. */
 .trash-hero {
   display: flex;
-  align-items: flex-start;
+  /* Center the "Empty trash" button beside the title (it used to be pushed to
+     the far right by a flex-1 on the title block, where top-right toasts
+     covered it and blocked the click). */
+  align-items: center;
   gap: 12px;
   padding: 16px 20px 12px;
   flex-shrink: 0;
