@@ -2,6 +2,12 @@
 
 All notable changes to **filebrowser pretty**.
 
+## v2.8.2 — Security patch
+
+- **Moved to the Go 1.25.12 toolchain**, closing an Encrypted Client Hello
+  privacy leak in the standard library's `crypto/tls` (GO-2026-5856). No
+  functional or visual changes.
+
 ## v2.8.1 — Rename selection fix
 
 - **Fixed: renaming lost your text selection on release.** While renaming, if
@@ -27,6 +33,7 @@ All notable changes to **filebrowser pretty**.
 - **Trash "Empty trash" button moved.** It now sits next to the title instead
   of the far-right edge, where a notification toast could cover it and block
   the click.
+
 ## v2.7.4 — A clearer trash error
 
 - **"403 Forbidden" in the Trash now explains itself.** When the server can't
