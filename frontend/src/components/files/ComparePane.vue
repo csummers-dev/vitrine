@@ -119,6 +119,7 @@
       class="compare-body"
       :class="{ 'compare-body--drop': dragOver }"
       @click="onBodyClick"
+      @mousedown.capture="recordBodyPressOrigin"
       @dragenter="onBodyDragEnter"
       @dragover="onBodyDragOver"
       @dragleave="onBodyDragLeave"
@@ -439,6 +440,7 @@ import { useListingNavigation } from "@/composables/useListingNavigation";
 import { TypeaheadSession } from "@/utils/typeahead";
 import { useQuickPeek } from "@/composables/useQuickPeek";
 import { sortListing } from "@/utils/secondarySort";
+import { pressStartedOnEmptyListing } from "@/utils/listingPress";
 import { copy as copyToClipboard } from "@/utils/clipboard";
 import * as upload from "@/utils/upload";
 import { files as api } from "@/api";
@@ -772,8 +774,21 @@ const onBodyDrop = (e: DragEvent) => {
 // Empty-area click clears pane B's selection — mirrors pane A's `#listing`
 // `data-clear-on-click` behaviour. Clicks that land on a row (the row itself or
 // the column header, both `.item`) are left to the row's own handler.
+// Whether the press producing the pending click STARTED on empty pane space
+// (vs inside a row or the inline rename input). Recorded in the capture phase.
+let bodyPressStartedOnEmpty = false;
+const recordBodyPressOrigin = (e: MouseEvent) => {
+  bodyPressStartedOnEmpty = pressStartedOnEmptyListing(e.target);
+};
+
 const onBodyClick = (e: MouseEvent) => {
   if ((e.target as HTMLElement | null)?.closest(".item")) return;
+  // Only clear on a genuine empty-space click. A drag that begins in a row or
+  // the inline rename input and releases on empty space fires a click on the
+  // common ancestor (this body) — without this guard it wiped the selection,
+  // unmounting an in-progress rename input and losing the text being selected
+  // (mirrors the pane-A fix in FileListing.handleEmptyAreaClick).
+  if (!bodyPressStartedOnEmpty) return;
   if (panes.selectedCount === 0) return;
   panes.selected = [];
   panes.multiple = false;

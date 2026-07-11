@@ -511,6 +511,7 @@
               ]"
               @click="handleEmptyAreaClick"
               @contextmenu="onListingContextMenu"
+              @mousedown.capture="recordListingPressOrigin"
               @mousedown="dragSelect.onMouseDown"
             >
               <div>
@@ -1006,6 +1007,7 @@ import {
   type TypeFilterKey,
 } from "@/utils/typeFilter";
 import { pastedFileName } from "@/utils/filename";
+import { pressStartedOnEmptyListing } from "@/utils/listingPress";
 import ImageHoverPreview from "@/components/files/ImageHoverPreview.vue";
 import InlineNewItem from "@/components/files/InlineNewItem.vue";
 import ListingSkeleton from "@/components/files/ListingSkeleton.vue";
@@ -4380,9 +4382,25 @@ const copyItemPath = async (item: ResourceItem) => {
   }
 };
 
+// Whether the press that produced the pending click STARTED on empty listing
+// space (vs inside a row or the inline rename input). Recorded in the capture
+// phase so it's set before dragSelect's bubble-phase handler runs.
+let listingPressStartedOnEmpty = false;
+const recordListingPressOrigin = (e: MouseEvent) => {
+  listingPressStartedOnEmpty = pressStartedOnEmptyListing(e.target);
+};
+
 const handleEmptyAreaClick = (e: MouseEvent) => {
   const target = e.target;
   if (!(target instanceof HTMLElement)) return;
+
+  // Only clear the selection on a GENUINE in-place click on empty space — one
+  // whose press also STARTED on empty space. A drag that begins inside a row
+  // or the rename input and releases on empty space fires a `click` on the
+  // nearest common ancestor (this clear-on-click container); without this
+  // guard that wiped the selection, which unmounted an in-progress rename
+  // input (v-if="isRenaming") and destroyed the text the user was selecting.
+  if (!listingPressStartedOnEmpty) return;
 
   if (target.dataset.clearOnClick === "true") {
     fileStore.selected = [];

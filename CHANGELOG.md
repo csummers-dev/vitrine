@@ -2,6 +2,13 @@
 
 All notable changes to **filebrowser pretty**.
 
+## v2.8.1 — Rename selection fix
+
+- **Fixed: renaming lost your text selection on release.** While renaming, if
+  you dragged to select part of the name and let go with the cursor off the
+  row, the selection (and the edit) were dropped. You can now click, drag to
+  select, and release anywhere without losing your selection.
+
 ## v2.8.0 — Profile avatars, sortable move/copy, mobile polish
 
 - **Upload your own profile photo.** Settings → Profile has a new Photo
@@ -20,7 +27,6 @@ All notable changes to **filebrowser pretty**.
 - **Trash "Empty trash" button moved.** It now sits next to the title instead
   of the far-right edge, where a notification toast could cover it and block
   the click.
-
 ## v2.7.4 — A clearer trash error
 
 - **"403 Forbidden" in the Trash now explains itself.** When the server can't
