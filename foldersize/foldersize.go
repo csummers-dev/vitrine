@@ -33,8 +33,8 @@ import (
 	"github.com/spf13/afero"
 	"golang.org/x/sync/singleflight"
 
-	"github.com/filebrowser/filebrowser/v2/events"
-	"github.com/filebrowser/filebrowser/v2/trash"
+	"github.com/csummers-dev/vitrine/v3/events"
+	"github.com/csummers-dev/vitrine/v3/trash"
 )
 
 // ErrNotDir is returned by Size when the path exists but isn't a directory.

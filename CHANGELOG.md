@@ -1,6 +1,37 @@
 # Changelog
 
-All notable changes to **filebrowser pretty**.
+All notable changes to **vitrine**.
+
+## v3.0.0 — Renamed to vitrine
+
+**The project is now called vitrine.** Same app, new name — a cleaner identity
+for the polished File Browser fork formerly known as "filebrowser pretty." This
+is a name-only release: no features were added or removed, and your data,
+settings, users, shares, and tags are all preserved.
+
+- **New name and wordmark.** The app is "vitrine" everywhere — the login page,
+  sidebar, browser tab, and PWA manifest. The per-letter rainbow accent now
+  colors the whole wordmark.
+- **New home and image.** The project lives at
+  `github.com/csummers-dev/vitrine`, and the container image is now
+  `ghcr.io/csummers-dev/vitrine`. The old `filebrowser-pretty` image stops at
+  2.8.2 and won't receive further updates.
+- **Environment variables are now prefixed `VITRINE_`** (was `FB_`) — for
+  example, `FB_REDIS_CACHE_URL` becomes `VITRINE_REDIS_CACHE_URL`. `PUID`,
+  `PGID`, and `TZ` are unchanged; they were never `FB_` variables.
+- **Default on-disk names** follow the new brand: the database defaults to
+  `vitrine.db` (audit log `vitrine-audit.db`), and the auto-discovered config
+  file is `.vitrine.{json,toml,yaml,yml}` in `/etc/vitrine/`, `$HOME`, or the
+  working directory.
+
+> **Upgrading:** point your Compose file at
+> `ghcr.io/csummers-dev/vitrine:latest` and pull. Your existing
+> `/config/settings.json` keeps its `database` path, so the app keeps reading
+> your current `filebrowser.db` with no data loss — renaming the file to
+> `vitrine.db` is optional cleanup (stop the container, rename the file in your
+> `/database` volume, then update the `database` value in `settings.json` to
+> match). If you set any `FB_*` environment variables, rename them to
+> `VITRINE_*`. `PUID` / `PGID` / `TZ` / `group_add` are unaffected.
 
 ## v2.8.2 — Security patch
 

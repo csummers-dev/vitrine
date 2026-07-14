@@ -3,7 +3,7 @@ dist
 .idea
 frontend/node_modules
 frontend/dist
-filebrowser.db
+vitrine.db
 docs/index.md
 
 # Build context hygiene for the self-contained (multi-arch) image build: the
@@ -11,6 +11,7 @@ docs/index.md
 # be sent to the build context.
 .git
 .github
+vitrine
 filebrowser
 docs
 *.test

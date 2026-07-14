@@ -6,7 +6,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	fberrors "github.com/filebrowser/filebrowser/v2/errors"
+	fberrors "github.com/csummers-dev/vitrine/v3/errors"
 )
 
 // ValidateAndHashPwd validates and hashes a password.

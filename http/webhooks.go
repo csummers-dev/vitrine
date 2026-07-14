@@ -8,7 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/filebrowser/filebrowser/v2/webhooks"
+	"github.com/csummers-dev/vitrine/v3/webhooks"
 )
 
 // webhookBody is the editable shape of an endpoint (PUT/POST). Status

@@ -11,7 +11,7 @@ tasks:
   build:backend:
     desc: Build backend binary
     cmds:
-      - go build -ldflags='-s -w -X "github.com/filebrowser/filebrowser/v2/version.Version={{.VERSION}}" -X "github.com/filebrowser/filebrowser/v2/version.CommitSHA={{.GIT_COMMIT}}"' -o filebrowser .
+      - go build -ldflags='-s -w -X "github.com/csummers-dev/vitrine/v3/version.Version={{.VERSION}}" -X "github.com/csummers-dev/vitrine/v3/version.CommitSHA={{.GIT_COMMIT}}"' -o vitrine .
     vars:
       GIT_COMMIT:
         sh: git log -n 1 --format=%h
@@ -45,7 +45,7 @@ tasks:
         task build:image                   # version from `git describe`
         task build:image VERSION=2.2.0 PLATFORMS=linux/arm64   # single arch
     vars:
-      IMAGE: '{{.IMAGE | default "ghcr.io/csummers-dev/filebrowser-pretty"}}'
+      IMAGE: '{{.IMAGE | default "ghcr.io/csummers-dev/vitrine"}}'
       PLATFORMS: '{{.PLATFORMS | default "linux/amd64,linux/arm64"}}'
       GIT_COMMIT:
         sh: git rev-parse --short HEAD

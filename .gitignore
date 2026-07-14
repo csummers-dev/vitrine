@@ -3,6 +3,9 @@
 _old
 rice-box.go
 .idea/
+/vitrine
+/vitrine.exe
+# legacy build-output names (pre-rename); keep ignored so stale local artifacts don't get committed
 /filebrowser
 /filebrowser.exe
 /dist

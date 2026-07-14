@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	fberrors "github.com/filebrowser/filebrowser/v2/errors"
+	fberrors "github.com/csummers-dev/vitrine/v3/errors"
 )
 
 func TestValidateAndHashPwd_RejectsShort(t *testing.T) {

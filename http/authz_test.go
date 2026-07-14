@@ -13,10 +13,10 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/spf13/afero"
 
-	"github.com/filebrowser/filebrowser/v2/settings"
-	"github.com/filebrowser/filebrowser/v2/storage"
-	"github.com/filebrowser/filebrowser/v2/storage/bolt"
-	"github.com/filebrowser/filebrowser/v2/users"
+	"github.com/csummers-dev/vitrine/v3/settings"
+	"github.com/csummers-dev/vitrine/v3/storage"
+	"github.com/csummers-dev/vitrine/v3/storage/bolt"
+	"github.com/csummers-dev/vitrine/v3/users"
 )
 
 // Reusable authenticated-handler harness: mints a real HS256 token (signed with

@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/filebrowser/filebrowser/v2/search"
-	"github.com/filebrowser/filebrowser/v2/searchindex"
+	"github.com/csummers-dev/vitrine/v3/search"
+	"github.com/csummers-dev/vitrine/v3/searchindex"
 )
 
 const searchPingInterval = 5

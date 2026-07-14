@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/filebrowser/filebrowser/v2/jobs"
+	"github.com/csummers-dev/vitrine/v3/jobs"
 )
 
 func noopExec(_ context.Context, _ *jobs.Job) error { return nil }

@@ -16,7 +16,7 @@ import (
 
 	yzip "github.com/yeka/zip"
 
-	fberrors "github.com/filebrowser/filebrowser/v2/errors"
+	fberrors "github.com/csummers-dev/vitrine/v3/errors"
 )
 
 // mapCache is an in-memory FileCache for tests.

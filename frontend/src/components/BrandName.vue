@@ -1,7 +1,7 @@
 <template>
   <span class="brand-name">
     <template v-for="(part, i) in parts" :key="i">
-      <!-- The wordmark's trailing "pretty" renders one letter per accent
+      <!-- The wordmark "vitrine" renders one letter per accent
            color (lilac → blue → teal → green → orange → red). -->
       <template v-if="part.accent">
         <span
@@ -23,19 +23,18 @@ import { computed } from "vue";
 const props = defineProps<{ name: string }>();
 
 /**
- * Brand accent: when a string matches the app's wordmark
- * "filebrowser pretty" (case-insensitive, surrounding whitespace ignored),
- * the trailing word "pretty" is rendered with a different accent color per
- * letter — lilac, blue, teal, green, orange, red, in order — cycling if the
- * matched slice runs longer than six characters. The user's actual casing is
- * preserved; we only colorize the matching slice.
+ * Brand accent: when a string matches the app's wordmark "vitrine"
+ * (case-insensitive, surrounding whitespace ignored), every letter is
+ * rendered with a different accent color — lilac, blue, teal, green,
+ * orange, red, in order — cycling if the word runs longer than six
+ * characters. The user's actual casing is preserved; we only colorize
+ * the matching slice.
  *
  * This is THE branding of the app, not a hidden easter egg: the sidebar
  * uses it for the workspace title and new installs default the instance
  * name to this wordmark. Theme-adaptive so the colors read on light + dark.
  */
-const TRIGGER = "filebrowser pretty";
-const ACCENT_WORD = "pretty";
+const TRIGGER = "vitrine";
 
 const parts = computed<{ text: string; accent: boolean; chars: string[] }[]>(
   () => {
@@ -43,14 +42,13 @@ const parts = computed<{ text: string; accent: boolean; chars: string[] }[]>(
     if (raw.trim().toLowerCase() !== TRIGGER) {
       return [{ text: raw, accent: false, chars: [] }];
     }
-    const lower = raw.toLowerCase();
-    const idx = lower.indexOf(ACCENT_WORD);
-    if (idx === -1) return [{ text: raw, accent: false, chars: [] }];
-    const accentSlice = raw.slice(idx, idx + ACCENT_WORD.length);
+    // Colorize the non-whitespace core, preserving any surrounding space.
+    const idx = raw.indexOf(raw.trim());
+    const core = raw.trim();
     return [
       { text: raw.slice(0, idx), accent: false, chars: [] },
-      { text: accentSlice, accent: true, chars: [...accentSlice] },
-      { text: raw.slice(idx + ACCENT_WORD.length), accent: false, chars: [] },
+      { text: core, accent: true, chars: [...core] },
+      { text: raw.slice(idx + core.length), accent: false, chars: [] },
     ];
   }
 );
@@ -59,7 +57,7 @@ const parts = computed<{ text: string; accent: boolean; chars: string[] }[]>(
 <style scoped>
 .brand-name {
   /* The wordmark is always bold wherever it's printed — sidebar, drawer, login
-     title, and inline within sentences ("Sign in to filebrowser pretty"). It
+     title, and inline within sentences ("Sign in to vitrine"). It
      still inherits size / color / family from the surrounding text. */
   display: inline;
   font-weight: 700;

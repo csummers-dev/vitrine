@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/filebrowser/filebrowser/v2/jobs"
+	"github.com/csummers-dev/vitrine/v3/jobs"
 )
 
 func TestSaveLoadDelete(t *testing.T) {

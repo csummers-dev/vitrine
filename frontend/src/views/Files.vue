@@ -303,7 +303,7 @@ const fetchData = async (opts: { silent?: boolean } = {}) => {
       fileStore.multiple = false;
     }
     fileStore.updateRequest(res);
-    // Title format: "<folder | root label | My files> - filebrowser pretty".
+    // Title format: "<folder | root label | My files> - vitrine".
     // At the storage root the listing has no folder name, so fall back to the
     // user's custom root label (nav.rootLabel pref) and finally "My files" —
     // mirroring the sidebar quick-link and the listing header.

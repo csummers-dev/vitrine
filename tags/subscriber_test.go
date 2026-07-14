@@ -3,7 +3,7 @@ package tags
 import (
 	"testing"
 
-	"github.com/filebrowser/filebrowser/v2/events"
+	"github.com/csummers-dev/vitrine/v3/events"
 )
 
 // Each subscriber test attaches to a fresh in-memory events bus

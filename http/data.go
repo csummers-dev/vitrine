@@ -7,13 +7,13 @@ import (
 
 	"github.com/tomasen/realip"
 
-	"github.com/filebrowser/filebrowser/v2/rules"
-	"github.com/filebrowser/filebrowser/v2/runner"
-	"github.com/filebrowser/filebrowser/v2/settings"
-	"github.com/filebrowser/filebrowser/v2/storage"
-	"github.com/filebrowser/filebrowser/v2/tags"
-	"github.com/filebrowser/filebrowser/v2/trash"
-	"github.com/filebrowser/filebrowser/v2/users"
+	"github.com/csummers-dev/vitrine/v3/rules"
+	"github.com/csummers-dev/vitrine/v3/runner"
+	"github.com/csummers-dev/vitrine/v3/settings"
+	"github.com/csummers-dev/vitrine/v3/storage"
+	"github.com/csummers-dev/vitrine/v3/tags"
+	"github.com/csummers-dev/vitrine/v3/trash"
+	"github.com/csummers-dev/vitrine/v3/users"
 )
 
 type handleFunc func(w http.ResponseWriter, r *http.Request, d *data) (int, error)

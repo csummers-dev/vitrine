@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/filebrowser/filebrowser/v2/events"
+	"github.com/csummers-dev/vitrine/v3/events"
 )
 
 // newTestLog returns a freshly-initialized Log rooted in t.TempDir.

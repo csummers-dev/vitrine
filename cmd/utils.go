@@ -18,9 +18,9 @@ import (
 	"github.com/spf13/viper"
 	yaml "gopkg.in/yaml.v3"
 
-	"github.com/filebrowser/filebrowser/v2/settings"
-	"github.com/filebrowser/filebrowser/v2/storage"
-	"github.com/filebrowser/filebrowser/v2/storage/bolt"
+	"github.com/csummers-dev/vitrine/v3/settings"
+	"github.com/csummers-dev/vitrine/v3/storage"
+	"github.com/csummers-dev/vitrine/v3/storage/bolt"
 )
 
 const databasePermissions = 0640
@@ -68,7 +68,7 @@ func dbExists(path string) (bool, error) {
 }
 
 // Generate the replacements for all environment variables. This allows to
-// use FB_BRANDING_DISABLE_EXTERNAL environment variables, even when the
+// use VITRINE_BRANDING_DISABLE_EXTERNAL environment variables, even when the
 // option name is branding.disableExternal.
 func generateEnvKeyReplacements(cmd *cobra.Command) []string {
 	replacements := []string{}
@@ -99,14 +99,14 @@ func initViper(cmd *cobra.Command) (*viper.Viper, error) {
 		}
 		v.AddConfigPath(".")
 		v.AddConfigPath(home)
-		v.AddConfigPath("/etc/filebrowser/")
-		v.SetConfigName(".filebrowser")
+		v.AddConfigPath("/etc/vitrine/")
+		v.SetConfigName(".vitrine")
 	} else {
 		v.SetConfigFile(cfgFile)
 	}
 
 	// Environment variables
-	v.SetEnvPrefix("FB")
+	v.SetEnvPrefix("VITRINE")
 	v.AutomaticEnv()
 	v.SetEnvKeyReplacer(strings.NewReplacer(generateEnvKeyReplacements(cmd)...))
 
@@ -170,9 +170,9 @@ func withViperAndStore(fn func(cmd *cobra.Command, args []string, v *viper.Viper
 		case exists && options.expectsNoDatabase:
 			log.Fatal(path + " already exists")
 		case !exists && !options.expectsNoDatabase && !options.allowsNoDatabase:
-			log.Fatal(path + " does not exist. Please run 'filebrowser config init' first.")
+			log.Fatal(path + " does not exist. Please run 'vitrine config init' first.")
 		case !exists && !options.expectsNoDatabase:
-			log.Println("WARNING: filebrowser.db can't be found. Initialing in " + strings.TrimSuffix(path, "filebrowser.db"))
+			log.Println("WARNING: vitrine.db can't be found. Initialing in " + strings.TrimSuffix(path, "vitrine.db"))
 		}
 
 		log.Println("Using database: " + path)

@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"strings"
 
-	libErrors "github.com/filebrowser/filebrowser/v2/errors"
-	imgErrors "github.com/filebrowser/filebrowser/v2/img"
+	libErrors "github.com/csummers-dev/vitrine/v3/errors"
+	imgErrors "github.com/csummers-dev/vitrine/v3/img"
 )
 
 func renderJSON(w http.ResponseWriter, _ *http.Request, data interface{}) (int, error) {

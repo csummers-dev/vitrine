@@ -1,4 +1,4 @@
-# filebrowser pretty — a modern, polished File Browser fork.
+# vitrine — a modern, polished File Browser fork.
 #
 # A "just works" single-instance setup using named volumes, so you can
 #   docker compose up -d
@@ -10,9 +10,9 @@
 # README.
 
 services:
-  filebrowser-pretty:
-    image: ghcr.io/csummers-dev/filebrowser-pretty:latest
-    container_name: filebrowser-pretty
+  vitrine:
+    image: ghcr.io/csummers-dev/vitrine:latest
+    container_name: vitrine
     restart: unless-stopped
 
     ports:
@@ -48,7 +48,7 @@ services:
 
 # Multi-instance / HA only: point every instance at a shared Redis so upload
 # state is consistent across them, via the `redisCacheUrl` setting (env
-# FB_REDIS_CACHE_URL=redis://user:pass@host:port). Single-instance deployments
+# VITRINE_REDIS_CACHE_URL=redis://user:pass@host:port). Single-instance deployments
 # use the built-in in-memory cache and need no Redis.
 
 volumes:

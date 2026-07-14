@@ -10,7 +10,7 @@
           <img
             v-if="logoURL"
             :src="logoURL"
-            :alt="name || 'filebrowser pretty'"
+            :alt="name || 'vitrine'"
             class="login-card__logo-img"
           />
           <Icon
