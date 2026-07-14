@@ -2,6 +2,16 @@
 
 All notable changes to **vitrine**.
 
+## v3.0.1 — Login wordmark fix
+
+- **The login page, browser tab, and PWA name now always show the "vitrine"
+  wordmark.** On instances carried over from before the rename, these rendered
+  the stored instance branding name — which still read "filebrowser pretty" and
+  appeared without its accent coloring. The wordmark is now fixed and no longer
+  reads the stored branding name, so it stays correct and consistently colored
+  everywhere, matching the sidebar. (The sidebar already used the fixed
+  wordmark, which is why only the login screen and tab title were affected.)
+
 ## v3.0.0 — Renamed to vitrine
 
 **The project is now called vitrine.** Same app, new name — a cleaner identity

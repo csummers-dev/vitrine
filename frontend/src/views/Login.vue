@@ -10,7 +10,7 @@
           <img
             v-if="logoURL"
             :src="logoURL"
-            :alt="name || 'vitrine'"
+            :alt="brand"
             class="login-card__logo-img"
           />
           <Icon
@@ -22,23 +22,18 @@
           />
         </div>
         <div class="login-card__brand">
-          <BrandName :name="name" />
+          <BrandName :name="brand" />
         </div>
       </header>
 
-      <!-- Title -->
+      <!-- Title. The wordmark is fixed (never the stored Branding.Name), so
+           the brand is always present — no empty-name fallback needed. -->
       <h1 class="login-card__title">
         <template v-if="createMode">
-          <template v-if="name">
-            Create your <BrandName :name="name" /> account
-          </template>
-          <template v-else>Create your account</template>
+          Create your <BrandName :name="brand" /> account
         </template>
         <template v-else>
-          <template v-if="name">
-            Sign in to <BrandName :name="name" />
-          </template>
-          <template v-else>Sign in</template>
+          Sign in to <BrandName :name="brand" />
         </template>
       </h1>
       <p class="login-card__subtitle">
@@ -204,7 +199,7 @@ import { settings as settingsApi } from "@/api";
 import { useAuthStore } from "@/stores/auth";
 import { lastFilesPathKey } from "@/router";
 import {
-  name,
+  brand,
   recaptcha,
   recaptchaKey,
   signup,

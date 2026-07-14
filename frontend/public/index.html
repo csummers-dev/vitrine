@@ -12,9 +12,7 @@
     <script src="[{[ .ReCaptchaHost ]}]/recaptcha/api.js?render=explicit"></script>
     [{[ end ]}]
 
-    <title>
-      [{[ if .Name -]}][{[ .Name ]}][{[ else ]}]vitrine[{[ end ]}]
-    </title>
+    <title>vitrine</title>
 
     <meta name="robots" content="noindex,nofollow" />
 
@@ -88,8 +86,8 @@
         return `${window.FileBrowser.StaticURL}/${url.replace(/^\/+/, "")}`;
       };
       var dynamicManifest = {
-        name: window.FileBrowser.Name || "vitrine",
-        short_name: window.FileBrowser.Name || "vitrine",
+        name: "vitrine",
+        short_name: "vitrine",
         icons: [
           {
             src: window.__prependStaticUrl("/img/icons/android-chrome-192x192.png"),

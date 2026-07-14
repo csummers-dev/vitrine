@@ -45,102 +45,13 @@ Self-hosted file management.
 - **Mobile** — Mobile design prioritized.
 - **Mobile upload / pull-to-refresh** — Upload from your camera roll; pull to refresh.
 
-[![Version](https://img.shields.io/badge/version-3.0.0-6e72d9?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-3.0.1-6e72d9?style=flat-square)](#)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
 [![Vue](https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js&logoColor=white)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square)](LICENSE)
 
 </div>
-
-<p align="center">
-  <img src="docs/screenshots/hero.png" width="100%" alt="vitrine" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/listing-list-light.png" width="49%" alt="List view (light)" />
-  <img src="docs/screenshots/listing-list-dark.png" width="49%" alt="List view (dark)" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/listing-grid-light.png" width="49%" alt="Grid view (light)" />
-  <img src="docs/screenshots/listing-grid-dark.png" width="49%" alt="Grid view (dark)" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/listing-gallery-light.png" width="49%" alt="Gallery view (light)" />
-  <img src="docs/screenshots/listing-gallery-dark.png" width="49%" alt="Gallery view (dark)" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/command-palette.png" width="80%" alt="Command palette" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/lasso-grab.png" width="80%" alt="Lasso multi-select" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/preview-image.png" width="80%" alt="Image preview" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/preview-video.png" width="80%" alt="Video preview" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/preview-audio.png" width="80%" alt="Audio preview" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/preview-pdf.png" width="80%" alt="PDF preview" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/preview-epub.png" width="80%" alt="EPUB preview" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/preview-comic.png" width="80%" alt="Comic preview" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/preview-text.png" width="80%" alt="Text preview" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/preview-markdown.png" width="80%" alt="Markdown preview" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/edit-image.png" width="80%" alt="Image editor" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/edit-markdown.png" width="80%" alt="Markdown editor" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/edit-tags.png" width="80%" alt="Tag editor" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/mobile-list-view.png" width="32%" alt="Mobile list view" />
-  <img src="docs/screenshots/mobile-grid-view.png" width="32%" alt="Mobile grid view" />
-  <img src="docs/screenshots/mobile-gallery-view.png" width="32%" alt="Mobile gallery view" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/user-settings.png" width="80%" alt="User settings" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/global-settings.png" width="80%" alt="Global settings" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/login.png" width="80%" alt="Login" />
-</p>
 
 ---
 
