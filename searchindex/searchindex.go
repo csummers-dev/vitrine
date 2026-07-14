@@ -34,10 +34,10 @@ import (
 
 	"github.com/spf13/afero"
 
-	"github.com/filebrowser/filebrowser/v2/events"
-	"github.com/filebrowser/filebrowser/v2/rules"
-	"github.com/filebrowser/filebrowser/v2/search"
-	"github.com/filebrowser/filebrowser/v2/trash"
+	"github.com/csummers-dev/vitrine/v3/events"
+	"github.com/csummers-dev/vitrine/v3/rules"
+	"github.com/csummers-dev/vitrine/v3/search"
+	"github.com/csummers-dev/vitrine/v3/trash"
 )
 
 const (

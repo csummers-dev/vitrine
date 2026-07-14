@@ -8,7 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/filebrowser/filebrowser/v2/tags"
+	"github.com/csummers-dev/vitrine/v3/tags"
 )
 
 // Tag HTTP API. Routes (all scoped to the authenticated user — tags

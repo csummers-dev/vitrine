@@ -23,7 +23,7 @@
           <!-- App wordmark: BrandName tints "pretty" in the theme accent.
                Hardcoded brand string (not the instance name) — this is the
                application's identity, not the configured workspace label. -->
-          <BrandName name="filebrowser pretty" />
+          <BrandName name="vitrine" />
         </div>
         <a
           :href="repoUrl"

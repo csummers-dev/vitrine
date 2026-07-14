@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/filebrowser/filebrowser/v2/events"
+	"github.com/csummers-dev/vitrine/v3/events"
 )
 
 // fileEventTypes are the only events that trigger webhooks (locked: the

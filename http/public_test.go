@@ -10,10 +10,10 @@ import (
 	"github.com/asdine/storm/v3"
 	"github.com/spf13/afero"
 
-	"github.com/filebrowser/filebrowser/v2/settings"
-	"github.com/filebrowser/filebrowser/v2/share"
-	"github.com/filebrowser/filebrowser/v2/storage/bolt"
-	"github.com/filebrowser/filebrowser/v2/users"
+	"github.com/csummers-dev/vitrine/v3/settings"
+	"github.com/csummers-dev/vitrine/v3/share"
+	"github.com/csummers-dev/vitrine/v3/storage/bolt"
+	"github.com/csummers-dev/vitrine/v3/users"
 )
 
 func TestPublicShareHandlerAuthentication(t *testing.T) {

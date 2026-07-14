@@ -13,8 +13,8 @@ import (
 
 	"github.com/spf13/afero"
 
-	"github.com/filebrowser/filebrowser/v2/events"
-	"github.com/filebrowser/filebrowser/v2/files"
+	"github.com/csummers-dev/vitrine/v3/events"
+	"github.com/csummers-dev/vitrine/v3/files"
 )
 
 // keepUploadActive periodically touches the cache entry to prevent eviction during transfer

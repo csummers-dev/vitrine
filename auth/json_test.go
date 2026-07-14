@@ -11,10 +11,10 @@ import (
 
 	"github.com/asdine/storm/v3"
 
-	"github.com/filebrowser/filebrowser/v2/auth"
-	"github.com/filebrowser/filebrowser/v2/settings"
-	"github.com/filebrowser/filebrowser/v2/storage/bolt"
-	"github.com/filebrowser/filebrowser/v2/users"
+	"github.com/csummers-dev/vitrine/v3/auth"
+	"github.com/csummers-dev/vitrine/v3/settings"
+	"github.com/csummers-dev/vitrine/v3/storage/bolt"
+	"github.com/csummers-dev/vitrine/v3/users"
 )
 
 // newUserStore returns a bolt-backed users.Store seeded with one user

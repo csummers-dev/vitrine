@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="branding/banner.svg" width="900" alt="filebrowser pretty" />
+<img src="branding/banner.svg" width="900" alt="vitrine" />
 
-# filebrowser pretty
+# vitrine
 
 Self-hosted file management.
 
@@ -45,7 +45,7 @@ Self-hosted file management.
 - **Mobile** — Mobile design prioritized.
 - **Mobile upload / pull-to-refresh** — Upload from your camera roll; pull to refresh.
 
-[![Version](https://img.shields.io/badge/version-2.8.2-6e72d9?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-3.0.0-6e72d9?style=flat-square)](#)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
 [![Vue](https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js&logoColor=white)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
@@ -54,7 +54,7 @@ Self-hosted file management.
 </div>
 
 <p align="center">
-  <img src="docs/screenshots/hero.png" width="100%" alt="filebrowser pretty" />
+  <img src="docs/screenshots/hero.png" width="100%" alt="vitrine" />
 </p>
 
 <p align="center">
@@ -144,15 +144,15 @@ Self-hosted file management.
 
 ---
 
-The published image lives at **`ghcr.io/csummers-dev/filebrowser-pretty:latest`** and works on any Linux x86_64 host (NAS, mini-PC, VPS, homelab).
+The published image lives at **`ghcr.io/csummers-dev/vitrine:latest`** and works on any Linux x86_64 host (NAS, mini-PC, VPS, homelab).
 
 ### Docker Compose
 
 ```yaml
 services:
   filebrowser:
-    image: ghcr.io/csummers-dev/filebrowser-pretty:latest
-    container_name: filebrowser-pretty
+    image: ghcr.io/csummers-dev/vitrine:latest
+    container_name: vitrine
     restart: unless-stopped
     ports:
       - "8080:80"
@@ -199,10 +199,10 @@ Behind a reverse proxy (Traefik shown here — adapt for Caddy / nginx / your st
     labels:
       - traefik.enable=true
       - traefik.docker.network=web
-      - traefik.http.routers.filebrowser-pretty.rule=Host(`files.yourdomain.com`)
-      - traefik.http.routers.filebrowser-pretty.entrypoints=websecure
-      - traefik.http.routers.filebrowser-pretty.tls.certresolver=letsencrypt
-      - traefik.http.services.filebrowser-pretty.loadbalancer.server.port=80
+      - traefik.http.routers.vitrine.rule=Host(`files.yourdomain.com`)
+      - traefik.http.routers.vitrine.entrypoints=websecure
+      - traefik.http.routers.vitrine.tls.certresolver=letsencrypt
+      - traefik.http.services.vitrine.loadbalancer.server.port=80
 ```
 
 Then:

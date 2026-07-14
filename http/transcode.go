@@ -16,8 +16,8 @@ import (
 	"sync"
 	"time"
 
-	fberrors "github.com/filebrowser/filebrowser/v2/errors"
-	"github.com/filebrowser/filebrowser/v2/files"
+	fberrors "github.com/csummers-dev/vitrine/v3/errors"
+	"github.com/csummers-dev/vitrine/v3/files"
 	"github.com/spf13/afero"
 )
 

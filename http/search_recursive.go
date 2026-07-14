@@ -10,7 +10,7 @@ import (
 
 	"github.com/spf13/afero"
 
-	"github.com/filebrowser/filebrowser/v2/tags"
+	"github.com/csummers-dev/vitrine/v3/tags"
 )
 
 // searchRecursiveHandler implements `GET /api/search/recursive{path}`

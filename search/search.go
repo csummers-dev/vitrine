@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/afero"
 
-	"github.com/filebrowser/filebrowser/v2/rules"
+	"github.com/csummers-dev/vitrine/v3/rules"
 )
 
 type searchOptions struct {

@@ -23,20 +23,20 @@ import (
 	"github.com/spf13/viper"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
-	"github.com/filebrowser/filebrowser/v2/audit"
-	"github.com/filebrowser/filebrowser/v2/auth"
-	"github.com/filebrowser/filebrowser/v2/diskcache"
-	"github.com/filebrowser/filebrowser/v2/events"
-	"github.com/filebrowser/filebrowser/v2/frontend"
-	fbhttp "github.com/filebrowser/filebrowser/v2/http"
-	"github.com/filebrowser/filebrowser/v2/img"
-	"github.com/filebrowser/filebrowser/v2/jobstore"
-	"github.com/filebrowser/filebrowser/v2/settings"
-	"github.com/filebrowser/filebrowser/v2/storage"
-	"github.com/filebrowser/filebrowser/v2/tags"
-	"github.com/filebrowser/filebrowser/v2/trash"
-	"github.com/filebrowser/filebrowser/v2/users"
-	"github.com/filebrowser/filebrowser/v2/webhooks"
+	"github.com/csummers-dev/vitrine/v3/audit"
+	"github.com/csummers-dev/vitrine/v3/auth"
+	"github.com/csummers-dev/vitrine/v3/diskcache"
+	"github.com/csummers-dev/vitrine/v3/events"
+	"github.com/csummers-dev/vitrine/v3/frontend"
+	fbhttp "github.com/csummers-dev/vitrine/v3/http"
+	"github.com/csummers-dev/vitrine/v3/img"
+	"github.com/csummers-dev/vitrine/v3/jobstore"
+	"github.com/csummers-dev/vitrine/v3/settings"
+	"github.com/csummers-dev/vitrine/v3/storage"
+	"github.com/csummers-dev/vitrine/v3/tags"
+	"github.com/csummers-dev/vitrine/v3/trash"
+	"github.com/csummers-dev/vitrine/v3/users"
+	"github.com/csummers-dev/vitrine/v3/webhooks"
 )
 
 var (
@@ -82,12 +82,12 @@ func init() {
 
 	cobra.MousetrapHelpText = ""
 
-	rootCmd.SetVersionTemplate("File Browser version {{printf \"%s\" .Version}}\n")
+	rootCmd.SetVersionTemplate("vitrine version {{printf \"%s\" .Version}}\n")
 
 	// Flags available across the whole program
 	persistent := rootCmd.PersistentFlags()
 	persistent.StringP("config", "c", "", "config file path")
-	persistent.StringP("database", "d", "./filebrowser.db", "database path")
+	persistent.StringP("database", "d", "./vitrine.db", "database path")
 
 	// Runtime flags for the root command
 	flags := rootCmd.Flags()
@@ -126,29 +126,29 @@ func addServerFlags(flags *pflag.FlagSet) {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "filebrowser",
+	Use:   "vitrine",
 	Short: "A stylish web-based file browser",
-	Long: `File Browser CLI lets you create the database to use with File Browser,
+	Long: `vitrine CLI lets you create the database to use with vitrine,
 manage your users and all the configurations without accessing the
 web interface.
 
-If you've never run File Browser, you'll need to have a database for
+If you've never run vitrine, you'll need to have a database for
 it. Don't worry: you don't need to setup a separate database server.
 We're using Bolt DB which is a single file database and all managed
 by ourselves.
 
 For this command, all flags are available as environmental variables,
 except for "--config", which specifies the configuration file to use.
-The environment variables are prefixed by "FB_" followed by the flag name in
+The environment variables are prefixed by "VITRINE_" followed by the flag name in
 UPPER_SNAKE_CASE. For example, the flag "--disablePreviewResize" is available
-as FB_DISABLE_PREVIEW_RESIZE.
+as VITRINE_DISABLE_PREVIEW_RESIZE.
 
-If "--config" is not specified, File Browser will look for a configuration
-file named .filebrowser.{json, toml, yaml, yml} in the following directories:
+If "--config" is not specified, vitrine will look for a configuration
+file named .vitrine.{json, toml, yaml, yml} in the following directories:
 
 - ./
 - $HOME/
-- /etc/filebrowser/
+- /etc/vitrine/
 
 **Note:** Only the options listed below can be set via the config file or
 environment variables. Other configuration options live exclusively in the
@@ -163,7 +163,7 @@ The precedence of the configuration values are as follows:
 - Database values
 - Defaults
 
-Also, if the database path doesn't exist, File Browser will enter into
+Also, if the database path doesn't exist, vitrine will enter into
 the quick setup mode and a new database will be bootstrapped and a new
 user created with the credentials from options "username" and "password".`,
 	RunE: withViperAndStore(func(_ *cobra.Command, _ []string, v *viper.Viper, st *store) error {
@@ -201,7 +201,7 @@ user created with the credentials from options "username" and "password".`,
 
 		// Audit log: persisted alongside the main DB so operators only
 		// have one location to back up. Path derives from the main DB
-		// path (filebrowser.db → filebrowser-audit.db); using a sibling
+		// path (vitrine.db → vitrine-audit.db); using a sibling
 		// file rather than the main DB keeps audit growth or corruption
 		// from touching authoritative user data.
 		dbBase := strings.TrimSuffix(st.path, filepath.Ext(st.path))
@@ -440,8 +440,8 @@ func getServerSettings(v *viper.Viper, st *storage.Storage) (*settings.Server, e
 	if v.IsSet("baseURL") {
 		server.BaseURL = v.GetString("baseURL")
 		// TODO(remove): remove after July 2026.
-	} else if v := os.Getenv("FB_BASEURL"); v != "" {
-		log.Println("DEPRECATION NOTICE: Environment variable FB_BASEURL has been deprecated, use FB_BASE_URL instead")
+	} else if v := os.Getenv("VITRINE_BASEURL"); v != "" {
+		log.Println("DEPRECATION NOTICE: Environment variable VITRINE_BASEURL has been deprecated, use VITRINE_BASE_URL instead")
 		server.BaseURL = v
 	}
 
@@ -577,9 +577,9 @@ func quickSetup(v *viper.Viper, s *storage.Storage) error {
 		},
 		AuthMethod: "",
 		// Default app wordmark — the frontend's <BrandName> component tints
-		// the word "pretty" with the theme accent everywhere this string is
-		// rendered (login header chip + heading, etc.).
-		Branding: settings.Branding{Name: "filebrowser pretty"},
+		// the wordmark "vitrine" with per-letter theme accents everywhere this
+		// string is rendered (login header chip + heading, etc.).
+		Branding: settings.Branding{Name: "vitrine"},
 		Tus: settings.Tus{
 			ChunkSize:  settings.DefaultTusChunkSize,
 			RetryCount: settings.DefaultTusRetryCount,

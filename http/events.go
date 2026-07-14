@@ -6,7 +6,7 @@ import (
 
 	"github.com/tomasen/realip"
 
-	"github.com/filebrowser/filebrowser/v2/events"
+	"github.com/csummers-dev/vitrine/v3/events"
 )
 
 // eventBase stamps an events.Base with the request's user ID + client IP.

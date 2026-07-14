@@ -37,7 +37,7 @@ import (
 
 	bolt "go.etcd.io/bbolt"
 
-	"github.com/filebrowser/filebrowser/v2/events"
+	"github.com/csummers-dev/vitrine/v3/events"
 )
 
 // entryBucket is the bbolt bucket holding all Entry rows, keyed by the

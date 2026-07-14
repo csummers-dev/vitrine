@@ -7,16 +7,16 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/filebrowser/filebrowser/v2/audit"
-	"github.com/filebrowser/filebrowser/v2/foldersize"
-	"github.com/filebrowser/filebrowser/v2/jobs"
-	"github.com/filebrowser/filebrowser/v2/jobstore"
-	"github.com/filebrowser/filebrowser/v2/searchindex"
-	"github.com/filebrowser/filebrowser/v2/settings"
-	"github.com/filebrowser/filebrowser/v2/storage"
-	"github.com/filebrowser/filebrowser/v2/tags"
-	"github.com/filebrowser/filebrowser/v2/trash"
-	"github.com/filebrowser/filebrowser/v2/webhooks"
+	"github.com/csummers-dev/vitrine/v3/audit"
+	"github.com/csummers-dev/vitrine/v3/foldersize"
+	"github.com/csummers-dev/vitrine/v3/jobs"
+	"github.com/csummers-dev/vitrine/v3/jobstore"
+	"github.com/csummers-dev/vitrine/v3/searchindex"
+	"github.com/csummers-dev/vitrine/v3/settings"
+	"github.com/csummers-dev/vitrine/v3/storage"
+	"github.com/csummers-dev/vitrine/v3/tags"
+	"github.com/csummers-dev/vitrine/v3/trash"
+	"github.com/csummers-dev/vitrine/v3/webhooks"
 )
 
 type modifyRequest struct {

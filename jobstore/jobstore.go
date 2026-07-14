@@ -17,7 +17,7 @@ import (
 
 	bolt "go.etcd.io/bbolt"
 
-	"github.com/filebrowser/filebrowser/v2/jobs"
+	"github.com/csummers-dev/vitrine/v3/jobs"
 )
 
 var bucket = []byte("jobs")

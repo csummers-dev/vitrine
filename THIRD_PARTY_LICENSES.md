@@ -1,6 +1,6 @@
 # Third-Party Licenses
 
-**filebrowser pretty** is licensed under the Apache License 2.0 (see
+**vitrine** is licensed under the Apache License 2.0 (see
 [LICENSE](LICENSE)). The distributed binary statically embeds the third-party
 components below; their licenses and obligations are reproduced or referenced
 here.

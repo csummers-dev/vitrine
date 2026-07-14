@@ -43,14 +43,14 @@ fi
 
 # If we're root (the default), align ownership of the app's OWN state to
 # PUID:PGID and then drop to that unprivileged user before running the app, so
-# filebrowser itself never runs as root. We deliberately do NOT recurse into
+# vitrine itself never runs as root. We deliberately do NOT recurse into
 # /srv: that's your media, which should already be owned by PUID (running
 # `chown -R` over a large library on every boot would be slow, and it isn't
 # ours to re-own). If the operator forced a non-root user (`user:` in their
 # runtime config), we can't chown — so we just run as whoever we already are.
 if [ "$(id -u)" = "0" ]; then
   chown -R "$PUID:$PGID" /config /database 2>/dev/null || true
-  exec su-exec "$PUID:$PGID" filebrowser "$@"
+  exec su-exec "$PUID:$PGID" vitrine "$@"
 fi
 
-exec filebrowser "$@"
+exec vitrine "$@"

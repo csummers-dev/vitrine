@@ -4,9 +4,9 @@ import (
 	"errors"
 	"net/http"
 
-	fberrors "github.com/filebrowser/filebrowser/v2/errors"
-	"github.com/filebrowser/filebrowser/v2/settings"
-	"github.com/filebrowser/filebrowser/v2/users"
+	fberrors "github.com/csummers-dev/vitrine/v3/errors"
+	"github.com/csummers-dev/vitrine/v3/settings"
+	"github.com/csummers-dev/vitrine/v3/users"
 )
 
 // MethodProxyAuth is used to identify no auth.

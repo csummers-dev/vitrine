@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/filebrowser/filebrowser/v2/events"
+	"github.com/csummers-dev/vitrine/v3/events"
 )
 
 func newTestStore(t *testing.T) *Store {

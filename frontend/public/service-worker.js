@@ -1,5 +1,5 @@
 /*
- * filebrowser-pretty service worker — offline app shell (v1.3 S6-4).
+ * vitrine service worker — offline app shell (v1.3 S6-4).
  *
  * Caches the app SHELL only: the server-rendered navigation document plus
  * the content-hashed static assets (JS / CSS / fonts / icons), so the app
@@ -17,7 +17,7 @@
  */
 
 // Bump the suffix to invalidate every previously-cached entry on deploy.
-const CACHE = "fbp-shell-v2";
+const CACHE = "vitrine-shell-v1";
 
 // One canonical key for the shell document, so an offline navigation to
 // ANY route can fall back to it (the SPA routes client-side anyway).

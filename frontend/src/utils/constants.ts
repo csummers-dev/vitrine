@@ -1,6 +1,6 @@
 // The app's fixed wordmark. Lowercase is intentional — it's a brand mark,
 // not a sentence. Used as the trailing segment of the document <title>.
-const brand = "filebrowser pretty";
+const brand = "vitrine";
 // `name` is the instance/branding name (`settings.Branding.Name`), falling
 // back to the wordmark when empty (fresh install before quickSetup, or admin
 // cleared the field). Drives the sidebar wordmark and the root listing title.
@@ -55,7 +55,7 @@ const transcodeEnabled: boolean = window.FileBrowser.TranscodeEnabled ?? false;
 
 // Project source repository — surfaced from the version label in the sidebar
 // header and the login footer.
-const repoUrl = "https://github.com/csummers-dev/filebrowser-pretty";
+const repoUrl = "https://github.com/csummers-dev/vitrine";
 
 export {
   name,

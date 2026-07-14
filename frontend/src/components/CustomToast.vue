@@ -20,7 +20,7 @@ defineProps<{
 }>();
 
 const clicked = () => {
-  window.open("https://github.com/filebrowser/filebrowser/issues/new/choose");
+  window.open("https://github.com/csummers-dev/vitrine/issues/new/choose");
 };
 </script>
 

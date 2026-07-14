@@ -21,8 +21,8 @@ import (
 
 	"github.com/dhowden/tag"
 
-	"github.com/filebrowser/filebrowser/v2/files"
-	"github.com/filebrowser/filebrowser/v2/img"
+	"github.com/csummers-dev/vitrine/v3/files"
+	"github.com/csummers-dev/vitrine/v3/img"
 )
 
 // Server-side cover-art thumbnails for audio, EPUB, and PDF (row icons).

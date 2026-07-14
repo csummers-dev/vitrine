@@ -5,7 +5,7 @@
       <img class="sd__brand-mark" :src="logoURL" alt="logo" />
       <div class="sd__brand-text">
         <div class="sd__brand-name">
-          <BrandName name="filebrowser pretty" />
+          <BrandName name="vitrine" />
         </div>
         <a
           :href="repoUrl"

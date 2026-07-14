@@ -13,7 +13,7 @@
     [{[ end ]}]
 
     <title>
-      [{[ if .Name -]}][{[ .Name ]}][{[ else ]}]filebrowser pretty[{[ end ]}]
+      [{[ if .Name -]}][{[ .Name ]}][{[ else ]}]vitrine[{[ end ]}]
     </title>
 
     <meta name="robots" content="noindex,nofollow" />
@@ -36,7 +36,7 @@
       sizes="180x180"
       href="[{[ .StaticURL ]}]/img/icons/apple-touch-icon.png"
     />
-    <meta name="apple-mobile-web-app-title" content="filebrowser pretty" />
+    <meta name="apple-mobile-web-app-title" content="vitrine" />
 
     <!-- Theme-aware favicon (v2.7.x). The favicon lives on the BROWSER's tab
          strip, so it follows the OS/browser color scheme (prefers-color-scheme,
@@ -88,8 +88,8 @@
         return `${window.FileBrowser.StaticURL}/${url.replace(/^\/+/, "")}`;
       };
       var dynamicManifest = {
-        name: window.FileBrowser.Name || "filebrowser pretty",
-        short_name: window.FileBrowser.Name || "filebrowser pretty",
+        name: window.FileBrowser.Name || "vitrine",
+        short_name: window.FileBrowser.Name || "vitrine",
         icons: [
           {
             src: window.__prependStaticUrl("/img/icons/android-chrome-192x192.png"),

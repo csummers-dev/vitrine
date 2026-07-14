@@ -4,7 +4,7 @@
 // `utils/constants.ts` reads it at *import* time. Shim it here so any module
 // that transitively imports constants can load under the test runner.
 window.FileBrowser = {
-  Name: "filebrowser pretty",
+  Name: "vitrine",
   DisableExternal: false,
   DisableUsedPercentage: false,
   BaseURL: "/",

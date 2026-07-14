@@ -31,8 +31,8 @@ COPY . .
 COPY --from=frontend /app/frontend/dist ./frontend/dist
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -trimpath \
-    -ldflags="-s -w -X 'github.com/filebrowser/filebrowser/v2/version.Version=${VERSION}' -X 'github.com/filebrowser/filebrowser/v2/version.CommitSHA=${REVISION}'" \
-    -o /out/filebrowser .
+    -ldflags="-s -w -X 'github.com/csummers-dev/vitrine/v3/version.Version=${VERSION}' -X 'github.com/csummers-dev/vitrine/v3/version.CommitSHA=${REVISION}'" \
+    -o /out/vitrine .
 
 ## Fetch runtime helper files (ca-certificates, mailcap, tini-static, JSON.sh).
 FROM alpine:3.23 AS fetcher
@@ -63,9 +63,9 @@ FROM alpine:3.23
 ARG VERSION=dev
 ARG REVISION=unknown
 ARG CREATED=""
-LABEL org.opencontainers.image.title="filebrowser-pretty" \
+LABEL org.opencontainers.image.title="vitrine" \
       org.opencontainers.image.description="A modern, polished File Browser fork" \
-      org.opencontainers.image.source="https://github.com/csummers-dev/filebrowser-pretty" \
+      org.opencontainers.image.source="https://github.com/csummers-dev/vitrine" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.revision="${REVISION}" \
@@ -86,7 +86,7 @@ RUN apk --no-cache add poppler-utils ttf-dejavu su-exec && \
 
 # Copy binary (cross-compiled in the `backend` stage for THIS image's arch),
 # scripts, and configurations into image with proper ownership.
-COPY --chown=user:user --from=backend /out/filebrowser /bin/filebrowser
+COPY --chown=user:user --from=backend /out/vitrine /bin/vitrine
 # S6-2: static ffmpeg → /usr/local/bin (on PATH for video-thumbnail
 # generation). If PATH ever misses it, detection just fails gracefully.
 COPY --from=ffmpeg /ffmpeg /usr/local/bin/ffmpeg
@@ -113,7 +113,7 @@ HEALTHCHECK --start-period=2s --interval=5s --timeout=3s CMD /healthcheck.sh
 
 # NOTE: no `USER` here on purpose. The container starts as root so the
 # entrypoint (init.sh) can chown the app's own data to PUID:PGID and then drop
-# to that unprivileged user via su-exec before running filebrowser — so the app
+# to that unprivileged user via su-exec before running vitrine — so the app
 # itself never runs as root. Operators who require strictly-non-root (no root at
 # all) can set `user:` at run time; init.sh detects that and skips the root step.
 VOLUME /srv /config /database

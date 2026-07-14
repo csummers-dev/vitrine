@@ -1,5 +1,5 @@
 name: Bug Report
-description: Report a bug in filebrowser pretty.
+description: Report a bug in vitrine.
 labels: [bug, 'waiting: triage']
 body:
   - type: checkboxes
@@ -9,9 +9,9 @@ body:
       options:
         - label: This is a bug report, not a question.
           required: true
-        - label: I have searched on the [issue tracker](https://github.com/csummers-dev/filebrowser-pretty/issues?q=is%3Aissue) for my bug.
+        - label: I have searched on the [issue tracker](https://github.com/csummers-dev/vitrine/issues?q=is%3Aissue) for my bug.
           required: true
-        - label: I am running the latest [filebrowser pretty version](https://github.com/csummers-dev/filebrowser-pretty/releases) or have an issue updating.
+        - label: I am running the latest [vitrine version](https://github.com/csummers-dev/vitrine/releases) or have an issue updating.
           required: true
   - type: textarea
     id: version
@@ -19,7 +19,7 @@ body:
       label: Version
       render: Text
       description: |
-        Enter the version of filebrowser pretty you are using.
+        Enter the version of vitrine you are using.
     validations:
       required: true
   - type: textarea

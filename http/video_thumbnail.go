@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/filebrowser/filebrowser/v2/files"
+	"github.com/csummers-dev/vitrine/v3/files"
 )
 
 // Server-side video thumbnails (v1.3 S6-2).

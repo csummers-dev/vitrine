@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/filebrowser/filebrowser/v2/foldersize"
+	"github.com/csummers-dev/vitrine/v3/foldersize"
 )
 
 // folderSizeResponse is the JSON body of GET /api/folder-size{path}: the folder's
