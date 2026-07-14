@@ -1,10 +1,10 @@
 // The app's fixed wordmark. Lowercase is intentional — it's a brand mark,
-// not a sentence. Used as the trailing segment of the document <title>.
+// not a sentence. This is THE brand name everywhere it's shown (sidebar,
+// login card, document <title>, PWA). It is deliberately hardcoded and does
+// NOT read `settings.Branding.Name`: this fork ships a fixed wordmark, the
+// instance-name field isn't editable, and a stale/custom stored value must
+// never leak onto the login screen or tab title.
 const brand = "vitrine";
-// `name` is the instance/branding name (`settings.Branding.Name`), falling
-// back to the wordmark when empty (fresh install before quickSetup, or admin
-// cleared the field). Drives the sidebar wordmark and the root listing title.
-const name: string = window.FileBrowser.Name || brand;
 const disableExternal: boolean = window.FileBrowser.DisableExternal;
 const disableUsedPercentage: boolean = window.FileBrowser.DisableUsedPercentage;
 const baseURL: string = window.FileBrowser.BaseURL;
@@ -58,7 +58,6 @@ const transcodeEnabled: boolean = window.FileBrowser.TranscodeEnabled ?? false;
 const repoUrl = "https://github.com/csummers-dev/vitrine";
 
 export {
-  name,
   brand,
   disableExternal,
   disableUsedPercentage,
