@@ -3,7 +3,7 @@
     title="User Management"
     icon="users"
     accent="var(--color-accent)"
-    description="Add and manage accounts that can sign in to this filebrowser instance."
+    description="Add and manage accounts that can sign in to this vitrine instance."
   >
     <SettingsSection
       :title="`Users (${users.length})`"

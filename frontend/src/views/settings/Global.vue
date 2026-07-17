@@ -3,7 +3,7 @@
     :title="t('settings.globalSettings')"
     icon="settings-2"
     accent="var(--color-accent)"
-    description="System-wide configuration. Applies to every account on this filebrowser instance."
+    description="System-wide configuration. Applies to every account on this vitrine instance."
   >
     <template v-if="settings">
       <!-- ── General ────────────────────────────────────────────────── -->
@@ -78,8 +78,8 @@
 
       <!-- ── Interface ──────────────────────────────────────────────────
            Branding identity (instance name, theme, branding asset path) is
-           intentionally NOT editable — the app ships a fixed "filebrowser
-           pretty" wordmark. Only the optional UI-hiding toggles remain. The
+           intentionally NOT editable — the app ships a fixed "vitrine"
+           wordmark. Only the optional UI-hiding toggles remain. The
            per-user theme switcher lives in Profile settings (unaffected). -->
       <SettingsSection
         title="Interface"

@@ -2,6 +2,12 @@
 
 All notable changes to **vitrine**.
 
+## v3.0.2 — Settings copy fix
+
+- **Two settings descriptions still said "filebrowser" instead of "vitrine"** —
+  on the Global Settings and User Management pages. Now corrected. Cosmetic
+  only; no behavior change.
+
 ## v3.0.1 — Login wordmark fix
 
 - **The login page, browser tab, and PWA name now always show the "vitrine"
