@@ -33,7 +33,7 @@
     "@lucide/vue": "^1.17.0",
     "@tailwindcss/vite": "^4.3.0",
     "@vueuse/core": "^14.3.0",
-    "csv-parse": "^6.2.1",
+    "csv-parse": "^7.0.2",
     "dayjs": "^1.11.21",
     "dompurify": "^3.4.13",
     "epubjs": "^0.3.93",
