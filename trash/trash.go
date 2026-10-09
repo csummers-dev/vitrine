@@ -39,7 +39,7 @@ import (
 	"github.com/spf13/afero"
 	bolt "go.etcd.io/bbolt"
 
-	"github.com/csummers-dev/vitrine/v3/fileutils"
+	"github.com/csummers-dev/vitrine/v4/fileutils"
 )
 
 // Dirname is the on-disk name of every trash directory.

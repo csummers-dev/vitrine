@@ -12,8 +12,8 @@ import (
 	"github.com/spf13/afero"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/csummers-dev/vitrine/v3/files"
-	"github.com/csummers-dev/vitrine/v3/share"
+	"github.com/csummers-dev/vitrine/v4/files"
+	"github.com/csummers-dev/vitrine/v4/share"
 )
 
 var withHashFile = func(fn handleFunc) handleFunc {

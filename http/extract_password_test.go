@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/afero"
 	yzip "github.com/yeka/zip"
 
-	fberrors "github.com/csummers-dev/vitrine/v3/errors"
+	fberrors "github.com/csummers-dev/vitrine/v4/errors"
 )
 
 // testExtractOpts returns extractOpts with generous caps + a permissive checker

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/csummers-dev/vitrine/v3/rules"
-	"github.com/csummers-dev/vitrine/v3/settings"
+	"github.com/csummers-dev/vitrine/v4/rules"
+	"github.com/csummers-dev/vitrine/v4/settings"
 )
 
 type settingsData struct {

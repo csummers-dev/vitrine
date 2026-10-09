@@ -3,9 +3,9 @@ package bolt
 import (
 	"github.com/asdine/storm/v3"
 
-	"github.com/csummers-dev/vitrine/v3/auth"
-	fberrors "github.com/csummers-dev/vitrine/v3/errors"
-	"github.com/csummers-dev/vitrine/v3/settings"
+	"github.com/csummers-dev/vitrine/v4/auth"
+	fberrors "github.com/csummers-dev/vitrine/v4/errors"
+	"github.com/csummers-dev/vitrine/v4/settings"
 )
 
 type authBackend struct {

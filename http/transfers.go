@@ -14,10 +14,10 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/spf13/afero"
 
-	fberrors "github.com/csummers-dev/vitrine/v3/errors"
-	"github.com/csummers-dev/vitrine/v3/events"
-	"github.com/csummers-dev/vitrine/v3/fileutils"
-	"github.com/csummers-dev/vitrine/v3/jobs"
+	fberrors "github.com/csummers-dev/vitrine/v4/errors"
+	"github.com/csummers-dev/vitrine/v4/events"
+	"github.com/csummers-dev/vitrine/v4/fileutils"
+	"github.com/csummers-dev/vitrine/v4/jobs"
 )
 
 // transferPayload is the per-job execution context the worker reads back off the

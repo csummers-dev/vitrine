@@ -12,8 +12,8 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/csummers-dev/vitrine/v3/files"
-	"github.com/csummers-dev/vitrine/v3/img"
+	"github.com/csummers-dev/vitrine/v4/files"
+	"github.com/csummers-dev/vitrine/v4/img"
 )
 
 /*

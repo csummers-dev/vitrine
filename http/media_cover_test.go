@@ -12,7 +12,7 @@ import (
 
 	"github.com/spf13/afero"
 
-	"github.com/csummers-dev/vitrine/v3/files"
+	"github.com/csummers-dev/vitrine/v4/files"
 )
 
 // tinyJPEG returns the bytes of a small valid JPEG.

@@ -7,7 +7,7 @@ import (
 
 	"github.com/asticode/go-astisub"
 
-	"github.com/csummers-dev/vitrine/v3/files"
+	"github.com/csummers-dev/vitrine/v4/files"
 )
 
 var subtitleHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {

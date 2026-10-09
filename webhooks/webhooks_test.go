@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/csummers-dev/vitrine/v3/events"
+	"github.com/csummers-dev/vitrine/v4/events"
 )
 
 func newTestStore(t *testing.T) *Store {

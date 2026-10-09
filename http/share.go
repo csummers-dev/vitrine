@@ -14,9 +14,9 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	fberrors "github.com/csummers-dev/vitrine/v3/errors"
-	"github.com/csummers-dev/vitrine/v3/events"
-	"github.com/csummers-dev/vitrine/v3/share"
+	fberrors "github.com/csummers-dev/vitrine/v4/errors"
+	"github.com/csummers-dev/vitrine/v4/events"
+	"github.com/csummers-dev/vitrine/v4/share"
 )
 
 func withPermShare(fn handleFunc) handleFunc {

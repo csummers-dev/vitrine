@@ -20,8 +20,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/mholt/archives"
 
-	fberrors "github.com/csummers-dev/vitrine/v3/errors"
-	"github.com/csummers-dev/vitrine/v3/files"
+	fberrors "github.com/csummers-dev/vitrine/v4/errors"
+	"github.com/csummers-dev/vitrine/v4/files"
 )
 
 // Comic reader — paged CBZ (zip) / CBR (rar) image viewing, read-only.

@@ -7,13 +7,13 @@ import (
 
 	"github.com/tomasen/realip"
 
-	"github.com/csummers-dev/vitrine/v3/rules"
-	"github.com/csummers-dev/vitrine/v3/runner"
-	"github.com/csummers-dev/vitrine/v3/settings"
-	"github.com/csummers-dev/vitrine/v3/storage"
-	"github.com/csummers-dev/vitrine/v3/tags"
-	"github.com/csummers-dev/vitrine/v3/trash"
-	"github.com/csummers-dev/vitrine/v3/users"
+	"github.com/csummers-dev/vitrine/v4/rules"
+	"github.com/csummers-dev/vitrine/v4/runner"
+	"github.com/csummers-dev/vitrine/v4/settings"
+	"github.com/csummers-dev/vitrine/v4/storage"
+	"github.com/csummers-dev/vitrine/v4/tags"
+	"github.com/csummers-dev/vitrine/v4/trash"
+	"github.com/csummers-dev/vitrine/v4/users"
 )
 
 type handleFunc func(w http.ResponseWriter, r *http.Request, d *data) (int, error)

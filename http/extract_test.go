@@ -14,7 +14,7 @@ import (
 
 	"github.com/mholt/archives"
 
-	fberrors "github.com/csummers-dev/vitrine/v3/errors"
+	fberrors "github.com/csummers-dev/vitrine/v4/errors"
 )
 
 func TestFirstRarVolume(t *testing.T) {

@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/csummers-dev/vitrine/v3/settings"
-	"github.com/csummers-dev/vitrine/v3/users"
+	"github.com/csummers-dev/vitrine/v4/settings"
+	"github.com/csummers-dev/vitrine/v4/users"
 )
 
 func init() {

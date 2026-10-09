@@ -12,9 +12,9 @@ import (
 
 	"github.com/mholt/archives"
 
-	"github.com/csummers-dev/vitrine/v3/files"
-	"github.com/csummers-dev/vitrine/v3/fileutils"
-	"github.com/csummers-dev/vitrine/v3/users"
+	"github.com/csummers-dev/vitrine/v4/files"
+	"github.com/csummers-dev/vitrine/v4/fileutils"
+	"github.com/csummers-dev/vitrine/v4/users"
 )
 
 func slashClean(name string) string {

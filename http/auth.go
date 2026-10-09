@@ -14,11 +14,11 @@ import (
 	"github.com/golang-jwt/jwt/v5/request"
 	"github.com/tomasen/realip"
 
-	fbAuth "github.com/csummers-dev/vitrine/v3/auth"
-	fberrors "github.com/csummers-dev/vitrine/v3/errors"
-	"github.com/csummers-dev/vitrine/v3/events"
-	"github.com/csummers-dev/vitrine/v3/settings"
-	"github.com/csummers-dev/vitrine/v3/users"
+	fbAuth "github.com/csummers-dev/vitrine/v4/auth"
+	fberrors "github.com/csummers-dev/vitrine/v4/errors"
+	"github.com/csummers-dev/vitrine/v4/events"
+	"github.com/csummers-dev/vitrine/v4/settings"
+	"github.com/csummers-dev/vitrine/v4/users"
 )
 
 const (

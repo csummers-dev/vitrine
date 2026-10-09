@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/csummers-dev/vitrine/v3/settings"
+	"github.com/csummers-dev/vitrine/v4/settings"
 )
 
 func TestParseCommand_NoShell(t *testing.T) {

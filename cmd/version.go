@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/csummers-dev/vitrine/v3/version"
+	"github.com/csummers-dev/vitrine/v4/version"
 )
 
 func init() {

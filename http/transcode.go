@@ -16,8 +16,8 @@ import (
 	"sync"
 	"time"
 
-	fberrors "github.com/csummers-dev/vitrine/v3/errors"
-	"github.com/csummers-dev/vitrine/v3/files"
+	fberrors "github.com/csummers-dev/vitrine/v4/errors"
+	"github.com/csummers-dev/vitrine/v4/files"
 	"github.com/spf13/afero"
 )
 

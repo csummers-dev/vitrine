@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/csummers-dev/vitrine/v3/jobs"
+	"github.com/csummers-dev/vitrine/v4/jobs"
 )
 
 func TestSaveLoadDelete(t *testing.T) {

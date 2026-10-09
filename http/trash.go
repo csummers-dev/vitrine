@@ -9,8 +9,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/spf13/afero"
 
-	"github.com/csummers-dev/vitrine/v3/events"
-	"github.com/csummers-dev/vitrine/v3/trash"
+	"github.com/csummers-dev/vitrine/v4/events"
+	"github.com/csummers-dev/vitrine/v4/trash"
 )
 
 // Trash HTTP API (2.4.0 Stage 2).

@@ -11,10 +11,10 @@ import (
 	"slices"
 	"strings"
 
-	fberrors "github.com/csummers-dev/vitrine/v3/errors"
-	"github.com/csummers-dev/vitrine/v3/files"
-	"github.com/csummers-dev/vitrine/v3/settings"
-	"github.com/csummers-dev/vitrine/v3/users"
+	fberrors "github.com/csummers-dev/vitrine/v4/errors"
+	"github.com/csummers-dev/vitrine/v4/files"
+	"github.com/csummers-dev/vitrine/v4/settings"
+	"github.com/csummers-dev/vitrine/v4/users"
 )
 
 // MethodHookAuth is used to identify hook auth.

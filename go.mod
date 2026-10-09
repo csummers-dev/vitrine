@@ -1,4 +1,4 @@
-module github.com/csummers-dev/vitrine/v3
+module github.com/csummers-dev/vitrine/v4
 
 go 1.25.13
 

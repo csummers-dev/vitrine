@@ -11,7 +11,7 @@ tasks:
   build:backend:
     desc: Build backend binary
     cmds:
-      - go build -ldflags='-s -w -X "github.com/csummers-dev/vitrine/v3/version.Version={{.VERSION}}" -X "github.com/csummers-dev/vitrine/v3/version.CommitSHA={{.GIT_COMMIT}}"' -o vitrine .
+      - go build -ldflags='-s -w -X "github.com/csummers-dev/vitrine/v4/version.Version={{.VERSION}}" -X "github.com/csummers-dev/vitrine/v4/version.CommitSHA={{.GIT_COMMIT}}"' -o vitrine .
     vars:
       GIT_COMMIT:
         sh: git log -n 1 --format=%h

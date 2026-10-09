@@ -13,9 +13,9 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
-	"github.com/csummers-dev/vitrine/v3/auth"
-	fberrors "github.com/csummers-dev/vitrine/v3/errors"
-	"github.com/csummers-dev/vitrine/v3/users"
+	"github.com/csummers-dev/vitrine/v4/auth"
+	fberrors "github.com/csummers-dev/vitrine/v4/errors"
+	"github.com/csummers-dev/vitrine/v4/users"
 )
 
 var (

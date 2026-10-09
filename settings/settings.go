@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/csummers-dev/vitrine/v3/rules"
+	"github.com/csummers-dev/vitrine/v4/rules"
 )
 
 const DefaultUsersHomeBasePath = "/users"

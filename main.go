@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/csummers-dev/vitrine/v3/cmd"
+	"github.com/csummers-dev/vitrine/v4/cmd"
 )
 
 func main() {

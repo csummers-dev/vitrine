@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/csummers-dev/vitrine/v3/audit"
+	"github.com/csummers-dev/vitrine/v4/audit"
 )
 
 // auditResponse is the payload for GET /api/audit (v1.3 S8-1). Entries are

@@ -1,8 +1,8 @@
 package settings
 
 import (
-	"github.com/csummers-dev/vitrine/v3/files"
-	"github.com/csummers-dev/vitrine/v3/users"
+	"github.com/csummers-dev/vitrine/v4/files"
+	"github.com/csummers-dev/vitrine/v4/users"
 )
 
 // UserDefaults is a type that holds the default values

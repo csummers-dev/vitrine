@@ -21,10 +21,10 @@ import (
 	"github.com/spf13/afero"
 	yzip "github.com/yeka/zip"
 
-	fberrors "github.com/csummers-dev/vitrine/v3/errors"
-	"github.com/csummers-dev/vitrine/v3/events"
-	"github.com/csummers-dev/vitrine/v3/files"
-	"github.com/csummers-dev/vitrine/v3/settings"
+	fberrors "github.com/csummers-dev/vitrine/v4/errors"
+	"github.com/csummers-dev/vitrine/v4/events"
+	"github.com/csummers-dev/vitrine/v4/files"
+	"github.com/csummers-dev/vitrine/v4/settings"
 )
 
 // extractHandler implements POST /api/unzip{path}?destination=...&override=...

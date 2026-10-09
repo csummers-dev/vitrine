@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/afero"
 
-	"github.com/csummers-dev/vitrine/v3/events"
+	"github.com/csummers-dev/vitrine/v4/events"
 )
 
 type allowAll struct{}

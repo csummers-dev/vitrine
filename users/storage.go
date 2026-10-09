@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	fberrors "github.com/csummers-dev/vitrine/v3/errors"
+	fberrors "github.com/csummers-dev/vitrine/v4/errors"
 )
 
 // StorageBackend is the interface to implement for a users storage.

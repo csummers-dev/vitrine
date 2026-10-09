@@ -1,10 +1,10 @@
 package storage
 
 import (
-	"github.com/csummers-dev/vitrine/v3/auth"
-	"github.com/csummers-dev/vitrine/v3/settings"
-	"github.com/csummers-dev/vitrine/v3/share"
-	"github.com/csummers-dev/vitrine/v3/users"
+	"github.com/csummers-dev/vitrine/v4/auth"
+	"github.com/csummers-dev/vitrine/v4/settings"
+	"github.com/csummers-dev/vitrine/v4/share"
+	"github.com/csummers-dev/vitrine/v4/users"
 )
 
 // Storage is a storage powered by a Backend which makes the necessary

@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/csummers-dev/vitrine/v3/files"
+	"github.com/csummers-dev/vitrine/v4/files"
 )
 
 func TestSetContentDisposition(t *testing.T) {

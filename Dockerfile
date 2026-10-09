@@ -31,7 +31,7 @@ COPY . .
 COPY --from=frontend /app/frontend/dist ./frontend/dist
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -trimpath \
-    -ldflags="-s -w -X 'github.com/csummers-dev/vitrine/v3/version.Version=${VERSION}' -X 'github.com/csummers-dev/vitrine/v3/version.CommitSHA=${REVISION}'" \
+    -ldflags="-s -w -X 'github.com/csummers-dev/vitrine/v4/version.Version=${VERSION}' -X 'github.com/csummers-dev/vitrine/v4/version.CommitSHA=${REVISION}'" \
     -o /out/vitrine .
 
 ## Fetch runtime helper files (ca-certificates, mailcap, tini-static, JSON.sh).

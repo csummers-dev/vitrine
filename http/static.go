@@ -15,10 +15,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/csummers-dev/vitrine/v3/auth"
-	"github.com/csummers-dev/vitrine/v3/settings"
-	"github.com/csummers-dev/vitrine/v3/storage"
-	"github.com/csummers-dev/vitrine/v3/version"
+	"github.com/csummers-dev/vitrine/v4/auth"
+	"github.com/csummers-dev/vitrine/v4/settings"
+	"github.com/csummers-dev/vitrine/v4/storage"
+	"github.com/csummers-dev/vitrine/v4/version"
 )
 
 func handleWithStaticData(w http.ResponseWriter, _ *http.Request, d *data, fSys fs.FS, file, contentType string) (int, error) {

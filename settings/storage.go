@@ -1,9 +1,9 @@
 package settings
 
 import (
-	fberrors "github.com/csummers-dev/vitrine/v3/errors"
-	"github.com/csummers-dev/vitrine/v3/rules"
-	"github.com/csummers-dev/vitrine/v3/users"
+	fberrors "github.com/csummers-dev/vitrine/v4/errors"
+	"github.com/csummers-dev/vitrine/v4/rules"
+	"github.com/csummers-dev/vitrine/v4/users"
 )
 
 // StorageBackend is a settings storage backend.

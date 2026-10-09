@@ -25,8 +25,8 @@ import (
 
 	"github.com/spf13/afero"
 
-	fberrors "github.com/csummers-dev/vitrine/v3/errors"
-	"github.com/csummers-dev/vitrine/v3/rules"
+	fberrors "github.com/csummers-dev/vitrine/v4/errors"
+	"github.com/csummers-dev/vitrine/v4/rules"
 )
 
 var (

@@ -3,7 +3,7 @@ package tags
 import (
 	"log"
 
-	"github.com/csummers-dev/vitrine/v3/events"
+	"github.com/csummers-dev/vitrine/v4/events"
 )
 
 // AttachIndexMaintainer wires the tags store into the in-process event

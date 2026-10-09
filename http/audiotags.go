@@ -8,9 +8,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/csummers-dev/vitrine/v3/audiotags"
-	fberrors "github.com/csummers-dev/vitrine/v3/errors"
-	"github.com/csummers-dev/vitrine/v3/files"
+	"github.com/csummers-dev/vitrine/v4/audiotags"
+	fberrors "github.com/csummers-dev/vitrine/v4/errors"
+	"github.com/csummers-dev/vitrine/v4/files"
 )
 
 // Caps for the write endpoint's multipart body.
