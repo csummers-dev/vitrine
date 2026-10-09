@@ -2,6 +2,36 @@
 
 All notable changes to **vitrine**.
 
+## v4.0.0 — In development
+
+> **Upgrading from 3.x:** the 3.x deprecation shims are gone. If you start
+> vitrine with any old hyphenated flag (`--baseurl`, `--cache-dir`,
+> `--token-expiration-time`, …) or set `VITRINE_BASEURL`, startup now stops
+> with a message naming the replacement (`--baseURL`, `--cacheDir`,
+> `--tokenExpirationTime`, `VITRINE_BASE_URL`). Compose files using the
+> documented settings are unaffected.
+
+- **Fixed: search missed files added outside vitrine.** The search index only
+  refreshed when a file changed *through* vitrine, so anything a downloader,
+  an SMB copy, or the host shell added never showed up in search until a
+  manual rebuild. An index older than 10 minutes now rebuilds in the
+  background on the next search (that search still answers instantly from the
+  current index). Tune it with `--searchIndexMaxAge` /
+  `VITRINE_SEARCH_INDEX_MAX_AGE`; `0` turns it off.
+- **Removed the deprecated flag names and `VITRINE_BASEURL`** (scheduled for
+  removal after July 2026). Using one now fails fast with the replacement's
+  name instead of being silently remapped.
+- **Releases are automated.** Pushing a `v*` tag runs the tests, blocks on
+  `govulncheck`, `pnpm audit --prod` and a Trivy image scan, then publishes
+  the multi-arch image and a GitHub Release with this changelog's notes.
+  Pre-release tags publish `:rc` only, never `:latest`.
+- **Go module path is now `github.com/csummers-dev/vitrine/v4`**, matching
+  the major version. Only matters if you build from source with custom
+  `-ldflags`.
+- **README fixes:** leftover "filebrowser" names in the Compose example and
+  commands, a few typos, and the image is documented as multi-arch (amd64 and
+  arm64).
+
 ## v3.1.5 — Fix blank file list + dependency & lint cleanup
 
 - **Fixed: the file list rendered nothing (blank view) after v3.1.4.** The

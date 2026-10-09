@@ -15,16 +15,16 @@ Self-hosted file management.
 - **Image** editor — Crop, rotate, and flip.
 - **Video** — Streams with tracks and subtitles.
 - **Audio** — Album art, embedded tags and artwork.
-- **ID3 tag editor** — Edit id3tag metadata, one track or a whole album at once.
+- **ID3 tag editor** — Edit ID3 tag metadata, one track or a whole album at once.
 - **PDF** — Page through PDFs with thumbnail previews and sharp rendering.
 - **EPUB** — Read EPUBs with a live chapter list and location remembered.
 - **Comic** reader — Read CBZ and CBR, optionally read manga right-to-left.
-- **Text** - Read and edit text files.
-- **Markdown** — Markdown, renderedor raw.
+- **Text** — Read and edit text files.
+- **Markdown** — Markdown, rendered or raw.
 - **Command palette** — ⌘K to open command palette, navigate files, folders, and actions.
 - **Search-as-you-type** — Results the moment you start typing.
 - **Breadcrumb navigation** — Move between folders without backtracking.
-- **Context menu** — Context-aware ight-click options throughout.
+- **Context menu** — Context-aware right-click options throughout.
 - **Favorites** + Recents — Pin favorites, rename them, track recent files.
 - **Drag & drop** — Drag to move. Folders spring open, quick access to parent directory.
 - **Multi-select + lasso** — Select in bulk, click through or lasso a whole region.
@@ -146,13 +146,13 @@ Self-hosted file management.
 
 ---
 
-The published image lives at **`ghcr.io/csummers-dev/vitrine:latest`** and works on any Linux x86_64 host (NAS, mini-PC, VPS, homelab).
+The published image lives at **`ghcr.io/csummers-dev/vitrine:latest`** and is multi-arch — it runs on any Linux **amd64** or **arm64** host (NAS, mini-PC, Raspberry Pi, VPS, homelab).
 
 ### Docker Compose
 
 ```yaml
 services:
-  filebrowser:
+  vitrine:
     image: ghcr.io/csummers-dev/vitrine:latest
     container_name: vitrine
     restart: unless-stopped
@@ -165,9 +165,9 @@ services:
       - /path/to/your/movies:/srv/Movies
       - /path/to/your/music:/srv/Music
       - /path/to/your/downloads:/srv/Downloads
-      # Filebrowser's own state — keep on a fast disk if you have one
-      - ./filebrowser/database:/database
-      - ./filebrowser/config:/config
+      # vitrine's own state — keep on a fast disk if you have one
+      - ./vitrine/database:/database
+      - ./vitrine/config:/config
     environment:
       # The host user that owns your mounted data — run `id -u` / `id -g`.
       PUID: 1000
@@ -182,7 +182,7 @@ services:
 
 #### Permissions
 
-On startup the container reads `PUID`/`PGID`, fixes the ownership of its own data to match, then **drops to that unprivileged user** to run the app — so filebrowser never runs as root, and you never have to `chown` your media or juggle a `user:` line. Just point it at whoever owns your files:
+On startup the container reads `PUID`/`PGID`, fixes the ownership of its own data to match, then **drops to that unprivileged user** to run the app — so vitrine never runs as root, and you never have to `chown` your media or juggle a `user:` line. Just point it at whoever owns your files:
 
 ```yaml
     environment:
@@ -210,11 +210,15 @@ Behind a reverse proxy (Traefik shown here — adapt for Caddy / nginx / your st
 Then:
 
 ```bash
-docker compose up -d filebrowser
-docker compose logs filebrowser | grep "password for"
+docker compose up -d vitrine
+docker compose logs vitrine | grep "password for"
 ```
 
-Or skip Docker entirely and run the binary directly: `./filebrowser` — opens on <http://localhost:8080>.
+Or skip Docker entirely and run the binary directly: `./vitrine` — opens on <http://localhost:8080>.
+
+#### Search and files changed outside vitrine
+
+Search answers from an in-memory index that updates instantly when files change through vitrine. Files added or removed by something else — a downloader, an SMB copy, the host shell — are picked up by a background rebuild the first time you search after the index is more than 10 minutes old. Tune this with `--searchIndexMaxAge` (env `VITRINE_SEARCH_INDEX_MAX_AGE`, e.g. `5m`; `0` turns it off). The **Rebuild search index** action in the command palette (⌘K) forces an immediate refresh.
 
 ## Architecture
 
