@@ -113,9 +113,13 @@ jobs:
         # TOOL-001). No `|| true`: a real vuln fails this STEP (red), but the
         # job stays non-blocking via continue-on-error above. Once the baseline
         # is confirmed clean, drop that job-level continue-on-error to make
-        # govulncheck required (and consider pinning @latest to a fixed tag).
+        # govulncheck required.
+        # Pinned: govulncheck v1.8.0+ requires Go 1.26 to build, and CI runs
+        # the go.mod toolchain (1.25). v1.7.0 is the newest that builds on
+        # 1.25; it still pulls the live vuln database, so findings stay
+        # current. Bump the pin when go.mod moves to Go 1.26.
         run: |
-          go install golang.org/x/vuln/cmd/govulncheck@latest
+          go install golang.org/x/vuln/cmd/govulncheck@v1.7.0
           "$(go env GOPATH)/bin/govulncheck" ./...
       - name: gosec (Go security lint)
         run: |

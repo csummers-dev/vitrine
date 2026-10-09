@@ -64,8 +64,10 @@ jobs:
         with:
           go-version-file: "go.mod"
       - name: govulncheck
+        # Pinned to the newest release that builds on the go.mod toolchain
+        # (v1.8.0+ needs Go 1.26); keep in step with ci.yaml.
         run: |
-          go install golang.org/x/vuln/cmd/govulncheck@latest
+          go install golang.org/x/vuln/cmd/govulncheck@v1.7.0
           "$(go env GOPATH)/bin/govulncheck" ./...
       - uses: pnpm/action-setup@v6
         with:
