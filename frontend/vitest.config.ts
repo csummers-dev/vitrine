@@ -12,6 +12,8 @@ export default mergeConfig(
   defineConfig({
     test: {
       environment: "jsdom",
+      // Unit tests only; e2e/ holds Playwright specs (`pnpm run e2e`).
+      include: ["src/**/*.{test,spec}.ts"],
       setupFiles: ["./src/test/setup.ts"],
     },
   })

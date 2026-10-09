@@ -96,6 +96,7 @@
           v-model.trim="renameValue"
           class="item__name-text item__rename-input"
           type="text"
+          :aria-label="`Rename ${name}`"
           autocomplete="off"
           spellcheck="false"
           @click.stop

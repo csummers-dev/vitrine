@@ -50,3 +50,7 @@ fb-rc.tar.gz
 *.tar.gz
 *.tgz
 *.tar
+
+# Playwright output
+/frontend/test-results/
+/frontend/playwright-report/
