@@ -990,8 +990,10 @@ import { useFolderSizes } from "@/composables/useFolderSizes";
 import { useFolderRename } from "@/composables/listing/useFolderRename";
 import { useListingDelete } from "@/composables/listing/useListingDelete";
 import { useListingPanels } from "@/composables/listing/useListingPanels";
+import { useListingSort } from "@/composables/listing/useListingSort";
+import { useListingViewMode } from "@/composables/listing/useListingViewMode";
 
-import { users, files as api } from "@/api";
+import { files as api } from "@/api";
 import { enableExec, unzipEnabled } from "@/utils/constants";
 import { isExtractable } from "@/utils/archive";
 import { isAudioTaggable } from "@/utils/audio";
@@ -1078,6 +1080,32 @@ const toggleSplit = () => {
   if (panes.split) panes.closeSplit();
   else panes.openSplit(route.path.replace(/\/?$/, "/"));
 };
+
+// ── View mode (list / grid / gallery) + the View popover ────────────────
+// See composables/listing/useListingViewMode.
+const {
+  viewMode,
+  viewMenuShow,
+  viewMenuPos,
+  viewModeIcon,
+  viewModeLabel,
+  openViewMenu,
+  viewMenuItems,
+} = useListingViewMode({
+  split: {
+    available: splitAvailable,
+    active: splitActive,
+    toggle: toggleSplit,
+  },
+  onLayoutChange: () => {
+    setItemWeight();
+    fillWindow();
+  },
+  onViewModeRendered: () => {
+    listingGrid.measure();
+    listingGrid.update();
+  },
+});
 // Interacting with the primary column makes pane A the active pane again (the
 // mirror of ComparePane's pointerdown), so global surfaces target it. No-op
 // when not split. Capture-phase so it fires before row handlers stop it.
@@ -1169,6 +1197,32 @@ onBeforeRouteUpdate(() => {
 });
 
 const { t } = useI18n();
+
+// ── Sorting ──────────────────────────────────────────────────────────
+// Primary sort (server-persisted), secondary tiebreaker (prefs), the Sort
+// popover and the size-sort folder prefetch. Declared before `items`, which
+// reads `secondarySort` (see composables/listing/useListingSort).
+const {
+  nameSorted,
+  sizeSorted,
+  modifiedSorted,
+  nameIcon,
+  sizeIcon,
+  modifiedIcon,
+  sort,
+  sortLabel,
+  sortDirLabel,
+  sortMenuShow,
+  sortMenuPos,
+  openSortMenu,
+  sortMenuItems,
+  secondarySort,
+} = useListingSort({
+  t,
+  prefs,
+  folderSizes,
+  showError: (e) => $showError(e),
+});
 
 const listing = ref<HTMLElement | null>(null);
 const scrollSection = ref<HTMLElement | null>(null);
@@ -1359,22 +1413,6 @@ const dragSelect = useDragSelect({
     ),
 });
 onBeforeUnmount(() => dragSelect.cleanup());
-
-const nameSorted = computed(() =>
-  fileStore.req ? fileStore.req.sorting.by === "name" : false
-);
-
-const sizeSorted = computed(() =>
-  fileStore.req ? fileStore.req.sorting.by === "size" : false
-);
-
-const modifiedSorted = computed(() =>
-  fileStore.req ? fileStore.req.sorting.by === "modified" : false
-);
-
-const ascOrdered = computed(() =>
-  fileStore.req ? fileStore.req.sorting.asc : false
-);
 
 // Custom label for the files root ("My files"), set via the sidebar's
 // right-click rename. Falls back to the default at the root.
@@ -1795,34 +1833,6 @@ const items = computed(() => {
   };
 });
 
-// When sorting by size, prefetch EVERY folder's recursive size (not just the
-// visible rows the Size column lazy-loads) so the order is complete and
-// correct rather than settling only as the user scrolls. ensureMany skips
-// already-cached/in-flight folders and bounds concurrency, and the server
-// caches + singleflights, so repeats are cheap. Fires only while size-sort is
-// active; rows re-sort reactively as each resolves.
-//
-// This reads `fileStore.req` DIRECTLY, never the `items` computed — on purpose.
-// `items` depends on `secondarySort`, which is declared later in this setup, so
-// touching `items.value` under `immediate: true` would evaluate it before that
-// const is initialized: a temporal-dead-zone ReferenceError that broke the
-// whole view. The prefetch only needs the folder SET, not the sorted order.
-watch(
-  () => ({
-    by: fileStore.req?.sorting.by,
-    reqItems: fileStore.req?.items,
-  }),
-  ({ by, reqItems }) => {
-    if (by !== "size" || !reqItems) return;
-    void folderSizes.ensureMany(
-      reqItems
-        .filter((it) => it.isDir)
-        .map((d) => ({ path: d.url, mod: String(d.modified ?? "") }))
-    );
-  },
-  { immediate: true }
-);
-
 const files = computed((): ResourceItem[] => {
   const all = items.value.files;
   if (filesWin.end <= filesWin.start) {
@@ -1895,30 +1905,6 @@ const revealInVirtualList = (): boolean => {
   });
   return true;
 };
-
-const nameIcon = computed(() => {
-  if (nameSorted.value && !ascOrdered.value) {
-    return "arrow-up";
-  }
-
-  return "arrow-down";
-});
-
-const sizeIcon = computed(() => {
-  if (sizeSorted.value && ascOrdered.value) {
-    return "arrow-down";
-  }
-
-  return "arrow-up";
-});
-
-const modifiedIcon = computed(() => {
-  if (modifiedSorted.value && ascOrdered.value) {
-    return "arrow-down";
-  }
-
-  return "arrow-up";
-});
 
 const headerButtons = computed(() => {
   return {
@@ -2968,36 +2954,6 @@ const resetOpacity = () => {
   });
 };
 
-const sort = (by: string) => {
-  let asc = false;
-
-  if (by === "name") {
-    if (nameIcon.value === "arrow-up") {
-      asc = true;
-    }
-  } else if (by === "size") {
-    if (sizeIcon.value === "arrow-up") {
-      asc = true;
-    }
-  } else if (by === "modified") {
-    if (modifiedIcon.value === "arrow-up") {
-      asc = true;
-    }
-  } else if (by === "extension") {
-    // v1.3 S3-5: default to ascending alphabetical extension order
-    // when first selected; subsequent clicks toggle direction. No
-    // column-header for extension yet (S3-4 popover will add proper
-    // direction toggling for it), so the cycle-button entry point
-    // just commits ascending the first time.
-    asc = true;
-  }
-
-  // Delegate to the shared dispatcher (optimistic re-sort + persist). The
-  // asc above is computed from the CURRENT sort icons, so re-clicking a
-  // column toggles its direction.
-  void sortRaw(by as SortKey, asc);
-};
-
 const windowsResize = throttle(() => {
   columnsResize();
   width.value = window.innerWidth;
@@ -3051,60 +3007,6 @@ const download = () => {
     },
   });
 };
-
-// ── Per-folder view-mode memory (v1.3 S3-3) ─────────────────────────
-// localStorage map keyed by folder URL. Per-folder overrides win over
-// the user's global default. Locked decision: per-device, not
-// cross-device — view mode is fundamentally shaped by viewport.
-// View mode (list / grid / gallery) is a single PER-USER account preference,
-// persisted server-side via `users.update` and mirrored locally through
-// `authStore.updateUser`. It deliberately retains across folders — the chosen
-// layout is the user's, not the folder's, so navigating around never resets it.
-// (This replaces the old per-folder localStorage override.)
-const persistViewMode = async (mode: ViewModeType) => {
-  if (!authStore.user) return;
-  const data = { id: authStore.user.id, viewMode: mode };
-  try {
-    await users.update(data, ["viewMode"]);
-  } catch {
-    // Failing to persist shouldn't block the visible switch — the optimistic
-    // ref update below already applied it for this session.
-  }
-  authStore.updateUser(data);
-};
-
-const setView = async (mode: string) => {
-  if (!authStore.user) return;
-  if (viewMode.value === mode) return;
-  layoutStore.closeHovers();
-  viewMode.value = mode as ViewModeType; // optimistic — show immediately
-  setItemWeight();
-  fillWindow();
-  void persistViewMode(mode as ViewModeType);
-};
-
-// Source of truth for the active layout. Seeded from the account default and
-// kept in sync if that default changes elsewhere (command palette, Profile, or
-// another tab via the auth store).
-const viewMode = ref<ViewModeType>(authStore.user?.viewMode ?? "list");
-
-watch(
-  () => authStore.user?.viewMode,
-  (mode) => {
-    if (mode && mode !== viewMode.value) viewMode.value = mode;
-  }
-);
-
-// CH-1: a view-mode switch (list ↔ grid ↔ gallery) changes the tile
-// dimensions + column count. Re-measure + re-window AFTER the DOM has
-// re-rendered with the new mode's classes (so the grid metrics are read
-// from the correct layout, not the outgoing one).
-watch(viewMode, () => {
-  nextTick(() => {
-    listingGrid.measure();
-    listingGrid.update();
-  });
-});
 
 const totalItems = computed(
   () => (fileStore.req?.numDirs ?? 0) + (fileStore.req?.numFiles ?? 0)
@@ -3390,255 +3292,6 @@ const {
     fileStore.draggedItems.length === 0 &&
     dragSelect.lasso.value === null,
 });
-
-const sortLabel = computed(() => {
-  const by = fileStore.req?.sorting.by ?? "name";
-  if (by === "name") return t("files.name");
-  if (by === "size") return t("files.size");
-  // "Modified" instead of "Last modified" — the longer string overflowed
-  // the header sort button at near-md widths once the chevron was removed.
-  if (by === "modified") return "Modified";
-  // v1.3 S3-5: extension sort label. "Type" is shorter than
-  // "Extension" and reads naturally in the cycle button at narrow
-  // widths without needing min-width adjustment.
-  if (by === "extension") return "Type";
-  return by;
-});
-
-// Human-readable sort direction, shown in the Sort button's tooltip and the
-// popover's Direction rows. Direction persists per-user via user.sorting.asc
-// (server-side), so it sticks across folders until changed. Changing it now
-// lives inside the consolidated Sort popover (see sortMenuItems) rather than a
-// separate toolbar toggle button.
-const sortDirLabel = computed(() =>
-  ascOrdered.value ? "Ascending" : "Descending"
-);
-
-// ── Multi-column sort popover (v1.3 S3-4) ───────────────────────────
-// Replaces the legacy cycle button (and the brief S3-5-extension
-// cycle extension). Click → ContextMenu with primary + secondary
-// criterion selection. Primary persists server-side via the existing
-// users.update flow; secondary persists client-side via
-// usePreferences and applies as an in-memory tiebreaker after fetch.
-
-const SORT_OPTIONS: Array<{ key: SortKey; label: string }> = [
-  { key: "name", label: t("files.name") },
-  { key: "size", label: t("files.size") },
-  { key: "modified", label: "Modified" },
-  { key: "extension", label: "Type" },
-];
-
-// ── View menu (v2.7.2 header declutter) ────────────────────────────
-// One popover replaces the 3-button layout switcher + the split toggle —
-// the cluster read as a crowd. Same anchoring + toggle-on-reclick
-// conventions as the Sort popover below; a check marks the active choice.
-const VIEW_OPTIONS = [
-  { key: "list", label: "List", icon: "list" },
-  { key: "mosaic", label: "Grid", icon: "layout-grid" },
-  { key: "mosaic gallery", label: "Gallery", icon: "image" },
-] as const;
-
-const viewMenuShow = ref(false);
-const viewMenuPos = ref({ x: 0, y: 0 });
-
-const viewModeIcon = computed(
-  () => VIEW_OPTIONS.find((o) => o.key === viewMode.value)?.icon ?? "list"
-);
-const viewModeLabel = computed(
-  () => VIEW_OPTIONS.find((o) => o.key === viewMode.value)?.label ?? "List"
-);
-
-const openViewMenu = (event: MouseEvent) => {
-  if (viewMenuShow.value) {
-    viewMenuShow.value = false;
-    return;
-  }
-  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-  viewMenuPos.value = { x: rect.left, y: rect.bottom + 4 };
-  viewMenuShow.value = true;
-};
-
-const viewMenuItems = computed<MenuItem[]>(() => {
-  const items: MenuItem[] = [
-    { type: "header", label: "Layout" },
-    ...VIEW_OPTIONS.map((o) => ({
-      label: o.label,
-      icon: viewMode.value === o.key ? "check" : o.icon,
-      action: () => void setView(o.key),
-    })),
-  ];
-  if (splitAvailable.value) {
-    items.push(
-      { type: "separator" },
-      {
-        label: splitActive.value ? "Close split view" : "Split view",
-        icon: splitActive.value ? "check" : "columns-2",
-        action: () => toggleSplit(),
-      }
-    );
-  }
-  return items;
-});
-
-const sortMenuShow = ref(false);
-const sortMenuPos = ref<{ x: number; y: number }>({ x: 0, y: 0 });
-
-const openSortMenu = (event: MouseEvent) => {
-  // V3-C #7: clicking the trigger again closes an open menu (toggle) instead of
-  // forcing a click outside. `.stop` on the trigger hides this click from
-  // ContextMenu's outside-click listener, so we have to toggle explicitly.
-  if (sortMenuShow.value) {
-    sortMenuShow.value = false;
-    return;
-  }
-  const target = event.currentTarget as HTMLElement;
-  const rect = target.getBoundingClientRect();
-  // Anchor the popover to the bottom-left corner of the button so it
-  // reads as "belongs to the button." ContextMenu's positioner clamps
-  // to viewport, so right-edge overflow is auto-handled.
-  sortMenuPos.value = { x: rect.left, y: rect.bottom + 4 };
-  sortMenuShow.value = true;
-};
-
-/** Read the saved secondary criterion (if any). Stored in prefs as a
- *  SortCriterion or null. */
-const secondarySort = computed<SortCriterion | null>(() =>
-  prefs.get<SortCriterion | null>("sort.secondary", null)
-);
-
-/** Apply the user's choice to the PRIMARY axis. Same flow as before:
- *  PUT to user.sorting + trigger a reload. */
-const setPrimarySort = (by: SortKey, asc: boolean) => {
-  sortMenuShow.value = false;
-  void sortRaw(by, asc);
-};
-
-/** Update the SECONDARY axis. Stored in prefs; no server round-trip;
- *  no reload — the items computed re-applies the tiebreaker reactively. */
-const setSecondarySort = (criterion: SortCriterion | null) => {
-  sortMenuShow.value = false;
-  void prefs.set("sort.secondary", criterion);
-};
-
-/** Build the ContextMenu items array — the single consolidated Sort popover
- *  (field + direction + secondary, replacing the old two-button pair). Layout:
- *
- *    PRIMARY                ← header
- *    Name           [check] ← active field is checked
- *    Size
- *    Modified
- *    Type
- *    ────────────           ← separator
- *    DIRECTION              ← header
- *    Ascending      [check] ← active direction is checked
- *    Descending
- *    ────────────           ← separator
- *    THEN BY                ← header
- *    None           [check]
- *    Name           [arrow] ← secondary shows its own direction arrow
- *    Size
- *    Modified
- *    Type
- *
- * Picking a primary field keeps the current direction; the Direction rows
- * set it explicitly. Picking an inactive secondary sets it to ascending;
- * re-picking it flips direction. "None" clears the secondary. */
-const sortMenuItems = computed<MenuItem[]>(() => {
-  const primaryBy = (fileStore.req?.sorting.by ?? "name") as SortKey;
-  const primaryAsc = fileStore.req?.sorting.asc ?? false;
-  const sec = secondarySort.value;
-
-  const items: MenuItem[] = [
-    { type: "header", label: "Primary" },
-    ...SORT_OPTIONS.map((opt) => ({
-      label: opt.label,
-      // A check marks the active field. Picking a field keeps the current
-      // direction; direction is set in the Direction section below.
-      icon: primaryBy === opt.key ? "check" : undefined,
-      action: () => {
-        setPrimarySort(opt.key, primaryAsc);
-      },
-    })),
-    { type: "separator" },
-    { type: "header", label: "Direction" },
-    {
-      label: "Ascending",
-      icon: primaryAsc ? "check" : undefined,
-      action: () => setPrimarySort(primaryBy, true),
-    },
-    {
-      label: "Descending",
-      icon: !primaryAsc ? "check" : undefined,
-      action: () => setPrimarySort(primaryBy, false),
-    },
-    { type: "separator" },
-    { type: "header", label: "Then by" },
-    {
-      label: "None",
-      icon: sec === null ? "check" : undefined,
-      action: () => setSecondarySort(null),
-    },
-    ...SORT_OPTIONS.map((opt) => ({
-      // Disable picking the same key for primary + secondary — that
-      // would be a no-op tiebreaker (every primary tie also ties on
-      // the same key). Greyed out so the rule is visible.
-      label: opt.label,
-      disabled: opt.key === primaryBy,
-      icon:
-        sec?.by === opt.key ? (sec.asc ? "arrow-up" : "arrow-down") : undefined,
-      action: () => {
-        const nextAsc = sec?.by === opt.key ? !sec.asc : true;
-        setSecondarySort({ by: opt.key, asc: nextAsc });
-      },
-    })),
-  ];
-  return items;
-});
-
-/** Pure sort dispatcher — used by the popover. The legacy `sort()`
- *  function still exists below (called by column-header clicks) and
- *  reuses this codepath internally so the persistence story is
- *  centralized. */
-const sortRaw = async (by: SortKey, asc: boolean) => {
-  // Optimistic + client-authoritative: update the in-memory sorting NOW so the
-  // listing and the sort icons re-order this frame (the `items` computed sorts
-  // client-side). Then persist to the server so the choice sticks on the next
-  // fresh load. No forced reload — the client already shows the new order, and
-  // relying on a silent background reload to re-sort was the source of the
-  // "sort button does nothing" bug.
-  const prev = fileStore.req?.sorting;
-  if (fileStore.req) fileStore.req.sorting = { by, asc };
-  try {
-    if (authStore.user?.id) {
-      await users.update({ id: authStore.user?.id, sorting: { by, asc } }, [
-        "sorting",
-      ]);
-    }
-    // Race guard: a silent background refresh (transfer/upload/tag tick) that
-    // landed WHILE the PUT was in flight calls updateRequest(), which swaps in
-    // the server's PRE-update sorting and snaps the list back. The PUT has now
-    // committed our value server-side, so if the current sorting is still that
-    // stale pre-change value, re-assert ours locally (no reload) to win the
-    // race. If it's a *different* value, the user picked another sort in the
-    // meantime — leave their newer choice alone.
-    const cur = fileStore.req?.sorting;
-    if (
-      fileStore.req &&
-      cur &&
-      prev &&
-      cur.by === prev.by &&
-      cur.asc === prev.asc &&
-      (cur.by !== by || cur.asc !== asc)
-    ) {
-      fileStore.req.sorting = { by, asc };
-    }
-  } catch (e: any) {
-    // Roll the optimistic order back so the view doesn't show a sort the
-    // server never accepted.
-    if (fileStore.req && prev) fileStore.req.sorting = prev;
-    $showError(e);
-  }
-};
 
 const uploadFunc = () => {
   if (

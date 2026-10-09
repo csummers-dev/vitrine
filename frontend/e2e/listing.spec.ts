@@ -75,3 +75,35 @@ test.describe("file listing", () => {
     expect(fake.exists("/Projects")).toBe(true);
   });
 });
+
+test.describe("sorting and layout", () => {
+  test("clicking the Name header reverses the order and saves it", async ({
+    app,
+    fake,
+  }) => {
+    const names = () =>
+      app
+        .locator('[data-index]:not([style*="-9999px"] *)')
+        .evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
+    await expect
+      .poll(names)
+      .toEqual(["Documents", "Music", "photo.jpg", "readme.md"]);
+
+    await app.getByRole("button", { name: "Sort by name" }).click();
+    await expect
+      .poll(names)
+      .toEqual(["Music", "Documents", "readme.md", "photo.jpg"]);
+    expect(
+      fake.calls.some((c) => c.method === "PUT" && c.path === "/users/1")
+    ).toBe(true);
+  });
+
+  test("the View menu switches to the grid layout", async ({ app }) => {
+    await app.getByRole("button", { name: /View options/ }).click();
+    await app.getByRole("menuitem", { name: "Grid", exact: true }).click();
+    await expect(
+      app.getByRole("button", { name: "View options — current: Grid" })
+    ).toBeVisible();
+    await expect(row(app, "readme.md")).toBeVisible();
+  });
+});
