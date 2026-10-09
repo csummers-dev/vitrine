@@ -993,6 +993,8 @@ import { useListingPanels } from "@/composables/listing/useListingPanels";
 import { useListingSort } from "@/composables/listing/useListingSort";
 import { useListingViewMode } from "@/composables/listing/useListingViewMode";
 import { useListingUpload } from "@/composables/listing/useListingUpload";
+import { useListingContextMenu } from "@/composables/listing/useListingContextMenu";
+import { buildRowMenu, buildBackgroundMenu } from "@/utils/listingMenus";
 
 import { files as api } from "@/api";
 import { enableExec, unzipEnabled } from "@/utils/constants";
@@ -1056,7 +1058,6 @@ import { resolveRowDropMode } from "@/utils/dropZone";
 
 const dragCounter = ref<number>(0);
 const width = ref<number>(window.innerWidth);
-const isContextMenuVisible = ref<boolean>(false);
 
 // ── Dual-pane / split view (2.5.0) ───────────────────────────────────
 // `panes.split` is the user's choice; `splitActive` also gates on width — the
@@ -1138,7 +1139,6 @@ watch(
   },
   { immediate: true }
 );
-const contextMenuPos = ref<{ x: number; y: number }>({ x: 0, y: 0 });
 
 const $showError = inject<IToastError>("$showError")!;
 const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
@@ -3179,412 +3179,97 @@ const revealPreviousItem = () => {
   return true;
 };
 
-// ── S4-1 context menu dispatch ──────────────────────────────────────
-// Single entry point invoked by `#listing`'s @contextmenu. We decide
-// which menu (row vs background) based on whether the event target sits
-// inside an `.item` element. Both menus reuse the same `<context-menu>`
-// instance — we just hand it a different `:items` array.
-//
-// Row context: each ListingItem's own @contextmenu has already fired
-// FIRST (events bubble inside-out) and adopted/replaced the selection
-// per the locked spec (right-click on unselected = select that row;
-// right-click on already-selected = preserve multi). All we do here
-// is open the menu with the current selection-derived items.
-//
-// Background context: emit a different items array (New folder, etc.).
-const contextMenuMode = ref<"row" | "background">("row");
-
-const onListingContextMenu = (event: MouseEvent) => {
-  // macOS synthesizes a `contextmenu` event from ctrl+left-click. Treat that
-  // as a (multi-)select modifier, NOT a right-click: suppress both the custom
-  // and the native menu so ctrl+drag can lasso and ctrl+click just toggles
-  // selection (matching cmd+click) instead of popping a menu on first click.
-  if (event.ctrlKey) {
-    event.preventDefault();
-    return;
-  }
-  event.preventDefault();
-  const target = event.target as HTMLElement | null;
-  // Treat `.item.header` (the column-header row) as background — it
-  // shares the `.item` class for layout grid reasons but isn't a
-  // selectable file row. Without this, right-clicking the header
-  // would put us in "row" mode with an empty selection and the menu
-  // would open with no items.
-  const itemEl = target?.closest?.(".item") as HTMLElement | null;
-  const insideRealItem = itemEl != null && !itemEl.classList.contains("header");
-  contextMenuMode.value = insideRealItem ? "row" : "background";
-  isContextMenuVisible.value = true;
-  contextMenuPos.value = {
-    x: event.clientX + 8,
-    y: event.clientY + Math.floor(window.scrollY),
-  };
-};
-
-const hideContextMenu = () => {
-  isContextMenuVisible.value = false;
-};
-
-// ── S4-1 row context menu items ─────────────────────────────────────
-// Computed `MenuItem[]` for right-clicks landing on a row. Reuses
-// `headerButtons` for the permission/selection-size/file-type gating
-// the bulk pill already does, then adds the S4-1 additions (Open,
-// Tag, Copy path). Items that don't pass their gate aren't emitted at
-// all — the ContextMenu primitive handles separators between groups
-// even when leading items disappear.
-//
-// `Open` is single-selection only (multi-open opens N tabs which we
-// don't want — would also race the route guard). `Rename` is single
-// too (bulk rename is S4-2). `Move` / `Copy` / `Delete` / `Download`
-// work on the full selection. `Extract` is single .zip only (gated
-// inside headerButtons.extract). `Share` is single-only too.
-const rowMenuItems = computed<MenuItem[]>(() => {
-  const sel = fileStore.selectedCount;
-  if (sel === 0) return []; // shouldn't open the menu with no selection
-  const items: MenuItem[] = [];
-  const hb = headerButtons.value;
-  const singleItem =
-    sel === 1 ? (fileStore.req?.items[fileStore.selected[0]] ?? null) : null;
-
-  // ── Open / Tag / Copy path (single-selection actions) ────────────
-  if (singleItem) {
-    items.push({
-      label: singleItem.isDir ? "Open folder" : "Open",
-      icon: "external-link",
-      action: () => {
-        hideContextMenu();
-        if (singleItem) void router.push({ path: singleItem.url });
+// ── Right-click menus ────────────────────────────────────────────────
+// One <context-menu> serves both right-click on a row (the selection; each
+// row's own @contextmenu has already adopted or kept the selection) and on
+// empty space (the folder). Menu contents: utils/listingMenus; state:
+// composables/listing/useListingContextMenu.
+const {
+  isContextMenuVisible,
+  contextMenuPos,
+  onListingContextMenu,
+  hideContextMenu,
+  closingFirst,
+  contextMenuItems,
+} = useListingContextMenu({
+  rowItems: () =>
+    buildRowMenu(
+      {
+        selectedCount: fileStore.selectedCount,
+        singleItem:
+          fileStore.selectedCount === 1
+            ? (fileStore.req?.items[fileStore.selected[0]] ?? null)
+            : null,
+        gates: {
+          share: !!headerButtons.value.share,
+          extract: !!headerButtons.value.extract,
+          move: !!headerButtons.value.move,
+          copy: !!headerButtons.value.copy,
+          rename: !!headerButtons.value.rename,
+          download: !!headerButtons.value.download,
+          delete: !!headerButtons.value.delete,
+        },
+        perms: {
+          rename: !!authStore.user?.perm.rename,
+          modify: !!authStore.user?.perm.modify,
+        },
+        split: { active: splitActive.value, available: splitAvailable.value },
+        isFavorited: (url) => favoritesComposable.isFavorited(url),
+        clipboardHasItems: clipboardStore.items.length > 0,
+        bulkAudioCount: bulkAudioCount.value,
+        canBulkEditTags: canBulkEditTags.value,
+        t,
       },
-    });
-  }
-  // Open a folder in a SECOND pane (dual-pane). Single-pane only — once split is
-  // already on, the cross-pane "Move/Copy to other pane" actions cover the rest.
-  if (singleItem?.isDir && !splitActive.value && splitAvailable.value) {
-    const dirUrl = singleItem.url;
-    items.push({
-      label: "Open in new pane",
-      icon: "columns-2",
-      action: () => {
-        hideContextMenu();
-        panes.openSplit(route.path.replace(/\/?$/, "/"));
-        void panes.navigateB(dirUrl);
+      rowMenuActions
+    ),
+  backgroundItems: () =>
+    buildBackgroundMenu(
+      {
+        canCreate: !!authStore.user?.perm.create,
+        clipboardHasItems: clipboardStore.items.length > 0,
+        t,
       },
-    });
-  }
-  if (singleItem) {
-    items.push({
-      label: "Tag…",
-      icon: "tag",
-      action: () => {
-        hideContextMenu();
-        // Route through the bulk tag sheet (mounted at this component's top
-        // level, always available) instead of `tagPicker` — that one lives
-        // INSIDE InfoPane behind `v-if="item"`, so it silently no-ops when the
-        // details rail is collapsed or has no item. A single-path array gives
-        // the same single-file tag UX.
-        bulkTagPicker.open([singleItem.url]);
-      },
-    });
-  }
-  // Favorites display title — only for a folder that's currently pinned, since
-  // the title only shows in the sidebar Favorites section. Sets a sidebar-only
-  // alias; never renames the real folder.
-  if (
-    singleItem &&
-    singleItem.isDir &&
-    favoritesComposable.isFavorited(singleItem.url)
-  ) {
-    const favPath = singleItem.url;
-    items.push({
-      label: "Favorites display title…",
-      icon: "star",
-      action: () => {
-        hideContextMenu();
-        favTitleDialog.open(favPath);
-      },
-    });
-  }
-
-  // ── Share / Extract (single-only, gated by perms + file type) ────
-  if (hb.share) {
-    items.push({
-      label: t("buttons.share"),
-      icon: "share",
-      action: () => {
-        hideContextMenu();
-        layoutStore.showHover("share");
-      },
-    });
-  }
-  if (hb.extract) {
-    items.push({
-      label: t("buttons.unzip"),
-      icon: "package-open",
-      action: () => {
-        hideContextMenu();
-        layoutStore.showHover("extract");
-      },
-    });
-  }
-  // Edit audio tags (1.6.0) — single MP3 / FLAC file, requires modify perm.
-  if (
-    singleItem &&
-    isAudioTaggable(singleItem.name) &&
-    authStore.user?.perm.modify
-  ) {
-    items.push({
-      label: "Edit tags…",
-      icon: "music",
-      action: () => {
-        hideContextMenu();
-        layoutStore.showHover("audio-tags");
-      },
-    });
-  } else if (canBulkEditTags.value) {
-    // Batch variant — multiple audio files in the selection. The editor opens
-    // blank and applies only the fields the user changes to all of them.
-    items.push({
-      label: `Edit tags on ${bulkAudioCount.value} files…`,
-      icon: "music",
-      action: () => {
-        hideContextMenu();
-        layoutStore.showHover("audio-tags");
-      },
-    });
-  }
-
-  // ── Clipboard: Cut / Copy / Paste into folder (2.4.0 Stage 1) ────
-  // Same gates as the Move/Copy pickers (cut pastes as a MOVE → perm.rename;
-  // copy pastes as a COPY → perm.create). "Paste into folder" appears on a
-  // single selected folder when the clipboard is armed — pasting INTO it
-  // without navigating first.
-  if (items.length > 0) items.push({ type: "separator" });
-  if (hb.move) {
-    items.push({
-      label: sel === 1 ? "Cut" : `Cut ${sel} items`,
-      icon: "scissors",
-      kbd: "⌘X",
-      action: () => {
-        hideContextMenu();
-        clipboardCapture("cut");
-      },
-    });
-  }
-  if (hb.copy) {
-    items.push({
-      label: sel === 1 ? "Copy" : `Copy ${sel} items`,
-      icon: "copy",
-      kbd: "⌘C",
-      action: () => {
-        hideContextMenu();
-        clipboardCapture("copy");
-      },
-    });
-  }
-  if (singleItem?.isDir && clipboardStore.items.length > 0) {
-    const folderUrl = singleItem.url;
-    items.push({
-      label: "Paste into folder",
-      icon: "clipboard",
-      action: () => {
-        hideContextMenu();
-        void paste(folderUrl);
-      },
-    });
-  }
-
-  // ── Rename / Move to / Copy to / Copy path / Download (varies) ───
-  // (ContextMenu renders every separator literally, so don't stack one on an
-  // empty or already-separated tail — e.g. a read-only user's menu.)
-  if (items.length > 0 && items[items.length - 1].type !== "separator") {
-    items.push({ type: "separator" });
-  }
-  // Single-selection rename → existing inline rename flow.
-  // Multi-selection rename → S4-2 BulkRenamePanel (different code path,
-  // entirely different UX). Permission gate is the same (perm.rename).
-  if (hb.rename) {
-    items.push({
-      label: t("buttons.rename"),
-      icon: "pencil",
-      action: () => {
-        hideContextMenu();
-        layoutStore.showHover("rename");
-      },
-    });
-  } else if (authStore.user?.perm.rename && sel > 1) {
-    items.push({
-      label: `Bulk rename ${sel} items…`,
-      icon: "pencil",
-      action: () => {
-        hideContextMenu();
-        bulkRename.open();
-      },
-    });
-  }
-  // "… to…" labels = the destination-picker slide-overs, distinct from the
-  // clipboard Cut/Copy entries above (Stage 1) which act via paste.
-  if (hb.move) {
-    items.push({
-      // Folder-aware single-item label so a folder reads "Move folder to…",
-      // not "Move file to…". Multi-select uses the neutral "N items" wording.
-      label:
-        sel === 1
-          ? singleItem?.isDir
-            ? "Move folder to…"
-            : "Move file to…"
-          : `Move ${sel} items to…`,
-      icon: "forward",
-      action: () => {
-        hideContextMenu();
-        layoutStore.showHover("move");
-      },
-    });
-  }
-  if (hb.copy) {
-    items.push({
-      label:
-        sel === 1
-          ? singleItem?.isDir
-            ? "Copy folder to…"
-            : "Copy file to…"
-          : `Copy ${sel} items to…`,
-      icon: "copy-plus",
-      action: () => {
-        hideContextMenu();
-        layoutStore.showHover("copy");
-      },
-    });
-  }
-  if (singleItem) {
-    items.push({
-      label: "Copy path",
-      icon: "link",
-      kbd: "⌘⇧C",
-      action: () => {
-        hideContextMenu();
-        void copyItemPath(singleItem);
-      },
-    });
-  }
-  if (hb.download) {
-    items.push({
-      label:
-        sel === 1
-          ? t("buttons.download")
-          : `${t("buttons.download")} ${sel} items`,
-      icon: "download",
-      action: () => {
-        hideContextMenu();
-        download();
-      },
-    });
-  }
-
-  // ── Delete (destructive — visual separation + red tint) ──────────
-  if (hb.delete) {
-    items.push({ type: "separator" });
-    items.push({
-      label: sel === 1 ? t("buttons.delete") : `Delete ${sel} items`,
-      icon: "trash-2",
-      destructive: true,
-      kbd: "Del",
-      action: () => {
-        hideContextMenu();
-        layoutStore.showHover("delete");
-      },
-    });
-  }
-
-  return items;
+      backgroundMenuActions
+    ),
 });
 
-// ── S4-1 background context menu items ──────────────────────────────
-// Shown when right-click lands on empty listing space (gaps between
-// rows, the area below the last row, the area beneath the
-// folder-file divider). Distinct intent from the row menu — these are
-// "act on the current folder" not "act on a selection."
-const backgroundMenuItems = computed<MenuItem[]>(() => {
-  const items: MenuItem[] = [];
-  const canCreate = !!authStore.user?.perm.create;
+const rowMenuActions = closingFirst({
+  open: (url: string) => void router.push({ path: url }),
+  openInNewPane: (url: string) => {
+    panes.openSplit(route.path.replace(/\/?$/, "/"));
+    void panes.navigateB(url);
+  },
+  // The bulk tag sheet is mounted at this component's top level, so it works
+  // even when the details rail (which hosts the single-file picker) is closed.
+  tag: (url: string) => bulkTagPicker.open([url]),
+  editFavoriteTitle: (url: string) => favTitleDialog.open(url),
+  prompt: (name: string) => layoutStore.showHover(name),
+  cut: () => clipboardCapture("cut"),
+  copy: () => clipboardCapture("copy"),
+  pasteInto: (url: string) => void paste(url),
+  bulkRename: () => bulkRename.open(),
+  copyPath: (item: ResourceItem) => void copyItemPath(item),
+  download: () => download(),
+});
 
-  if (canCreate) {
-    items.push({
-      label: "New folder",
-      icon: "folder-plus",
-      action: () => {
-        hideContextMenu();
-        layoutStore.showHover("newDir");
-      },
-    });
-    items.push({
-      label: "New file",
-      icon: "file-plus",
-      action: () => {
-        hideContextMenu();
-        layoutStore.showHover("newFile");
-      },
-    });
-    items.push({
-      label: t("buttons.upload"),
-      icon: "upload",
-      action: () => {
-        hideContextMenu();
-        uploadFunc();
-      },
-    });
-  }
-
-  // Paste only when the clipboard store has cut/copy contents (placed by
-  // ⌘X / ⌘C or the row menu's Cut / Copy). The `paste()` helper handles
-  // conflict resolution + clipboard reset for cut.
-  if (clipboardStore.items.length > 0) {
-    items.push({
-      label: "Paste",
-      icon: "clipboard",
-      kbd: "⌘V",
-      action: () => {
-        hideContextMenu();
-        void paste();
-      },
-    });
-  }
-
-  if (items.length > 0) items.push({ type: "separator" });
-
-  // "Sort by…" hops to the existing sort popover. The submenu support
-  // ContextMenu doesn't currently have means we re-anchor the sort
-  // menu where the context menu opened (close-enough), so the user
-  // sees a continuous popover flow rather than a sudden teleport.
-  items.push({
-    label: "Sort by…",
-    icon: "arrow-down-narrow-wide",
-    action: () => {
-      const { x, y } = contextMenuPos.value;
-      hideContextMenu();
-      sortMenuPos.value = { x, y };
-      sortMenuShow.value = true;
-    },
-  });
-
-  items.push({
-    label: "Refresh",
-    icon: "rotate-ccw",
-    kbd: "/",
-    action: () => {
-      hideContextMenu();
+const backgroundMenuActions = {
+  ...closingFirst({
+    prompt: (name: string) => layoutStore.showHover(name),
+    upload: () => uploadFunc(),
+    paste: () => void paste(),
+    refresh: () => {
       fileStore.reload = true;
     },
-  });
-
-  return items;
-});
-
-/** Active items array passed to the shared `<context-menu>` instance.
- *  Switches on `contextMenuMode`, set by `onListingContextMenu`. */
-const contextMenuItems = computed<MenuItem[]>(() =>
-  contextMenuMode.value === "row"
-    ? rowMenuItems.value
-    : backgroundMenuItems.value
-);
+  }),
+  // Re-anchors the Sort popover where the context menu opened, so the flow
+  // reads as one continuous popover (ContextMenu has no submenus).
+  sortHere: () => {
+    const { x, y } = contextMenuPos.value;
+    hideContextMenu();
+    sortMenuPos.value = { x, y };
+    sortMenuShow.value = true;
+  },
+};
 
 /** Copy the given item's path to the system clipboard. Mirrors the
  *  InfoPane copy-path behavior (toast on success, silent on total
