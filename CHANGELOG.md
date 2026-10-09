@@ -18,6 +18,9 @@ All notable changes to **vitrine**.
   background on the next search (that search still answers instantly from the
   current index). Tune it with `--searchIndexMaxAge` /
   `VITRINE_SEARCH_INDEX_MAX_AGE`; `0` turns it off.
+- **Fixed: right-clicking an empty folder did nothing.** The background menu
+  (New folder, New file, Upload, Paste) now opens there too, so you can paste
+  into a folder you just created.
 - **Fixed: in split view, "Parent folder" was clickable at the top level.**
   At the root of My files the button (and the drag-to-title shortcut) pointed
   outside the file browser. It is now disabled there.

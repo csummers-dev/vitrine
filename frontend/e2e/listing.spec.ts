@@ -140,3 +140,19 @@ test.describe("drag and drop", () => {
     await expect(parent).toBeDisabled();
   });
 });
+
+test("copies a file and pastes it into another folder", async ({
+  app,
+  fake,
+}) => {
+  await contextAction(app, "readme.md", "Copy");
+  await row(app, "Music").dblclick();
+  await expect(app).toHaveURL(/\/files\/Music\/$/);
+  await app
+    .locator("main")
+    .click({ button: "right", position: { x: 400, y: 500 } });
+  await app.getByRole("menuitem", { name: "Paste", exact: true }).click();
+  await expect(row(app, "readme.md")).toBeVisible();
+  expect(fake.exists("/Music/readme.md")).toBe(true);
+  expect(fake.exists("/readme.md")).toBe(true);
+});
