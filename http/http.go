@@ -200,6 +200,10 @@ func NewHandler(
 	// lazily built + kept fresh off the events bus, so search answers from
 	// memory instead of walking the tree on every keystroke. Server-lifetime.
 	searchIndex := searchindex.New()
+	// Backstop for changes made outside vitrine (downloaders, SMB, the host
+	// shell), which publish no events: an index older than this rebuilds in
+	// the background on the next search.
+	searchIndex.SetMaxAge(server.GetSearchIndexMaxAge(searchindex.DefaultMaxAge))
 	// Order matters: the more-specific /search/recursive + /search/rebuild
 	// routes must register before the plain /search catch-all, otherwise the
 	// catch-all would swallow them.

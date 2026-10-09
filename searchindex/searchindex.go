@@ -51,6 +51,12 @@ const (
 	// the pre-index behavior. A million entries is a high ceiling a normal media
 	// library won't hit; it only guards a pathological tree.
 	defaultMaxEntries = 1_000_000
+
+	// DefaultMaxAge is how old an index may get before a search triggers a
+	// background rebuild. Events keep the index fresh for changes made through
+	// vitrine; this catches changes made outside it (downloaders, SMB copies,
+	// the host shell), which publish no events.
+	DefaultMaxAge = 10 * time.Minute
 )
 
 // errIndexTooBig stops the build walk once the entry cap is exceeded.
@@ -60,6 +66,7 @@ type shard struct {
 	mu        sync.RWMutex
 	entries   map[string]bool // path (fs-rooted, leading "/") → isDir
 	ready     bool
+	builtAt   time.Time // when entries were last swapped in
 	building  bool
 	oversized bool        // tree exceeded the cap → permanent live-walk fallback
 	fs        afero.Fs    // captured from the user's last search, for rebuilds
@@ -74,6 +81,7 @@ type Index struct {
 	now         func() time.Time
 	debounce    time.Duration
 	maxEntries  int
+	maxAge      time.Duration // 0 = never rebuild because of age
 	unsubscribe func()
 }
 
@@ -84,9 +92,19 @@ func New() *Index {
 		now:        time.Now,
 		debounce:   rebuildDebounce,
 		maxEntries: defaultMaxEntries,
+		maxAge:     DefaultMaxAge,
 	}
 	ix.unsubscribe = events.Subscribe(ix.onEvent)
 	return ix
+}
+
+// SetMaxAge sets how old an index may get before the next search rebuilds it
+// in the background (stale results are still served meanwhile). Zero disables
+// age-based rebuilds. Call before serving requests.
+func (ix *Index) SetMaxAge(d time.Duration) {
+	ix.mu.Lock()
+	ix.maxAge = d
+	ix.mu.Unlock()
 }
 
 // Close drops the events subscription. Safe to call once.
@@ -118,6 +136,7 @@ func (ix *Index) Search(
 	checker rules.Checker, found func(relPath string, isDir bool) error,
 ) (served bool, err error) {
 	s := ix.shardFor(userID, true)
+	maxAge := ix.getMaxAge()
 
 	s.mu.Lock()
 	s.fs = fs
@@ -129,7 +148,17 @@ func (ix *Index) Search(
 	if !ready && !building && !oversized {
 		s.building = true
 	}
+	// A ready but stale index answers this search as-is and refreshes in the
+	// background, so out-of-band changes show up on a later search.
+	stale := ready && !building && maxAge > 0 && ix.now().Sub(s.builtAt) > maxAge
+	if stale {
+		s.building = true
+	}
 	s.mu.Unlock()
+
+	if stale {
+		go ix.build(userID, fs)
+	}
 
 	if !ready {
 		if !building && !oversized {
@@ -218,7 +247,14 @@ func (ix *Index) buildSync(userID uint, fs afero.Fs) error {
 	}
 	s.entries = next
 	s.ready = true
+	s.builtAt = ix.now()
 	return walkErr
+}
+
+func (ix *Index) getMaxAge() time.Duration {
+	ix.mu.Lock()
+	defer ix.mu.Unlock()
+	return ix.maxAge
 }
 
 func (ix *Index) onEvent(e events.Event) {

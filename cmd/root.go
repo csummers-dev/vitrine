@@ -113,6 +113,7 @@ func addServerFlags(flags *pflag.FlagSet) {
 	flags.String("socket", "", "socket to listen to (cannot be used with address, port, cert nor key flags)")
 	flags.StringP("baseURL", "b", "", "base url")
 	flags.String("tokenExpirationTime", "2h", "user session timeout")
+	flags.String("searchIndexMaxAge", "10m", "rebuild a search index in the background once it is older than this, to pick up changes made outside vitrine (0 disables)")
 	flags.Bool("disableThumbnails", false, "disable image thumbnails")
 	flags.Bool("disablePreviewResize", false, "disable resize of image previews")
 	flags.Bool("disableExec", true, "disables Command Runner feature")
@@ -449,6 +450,10 @@ func getServerSettings(v *viper.Viper, st *storage.Storage) (*settings.Server, e
 		server.TokenExpirationTime = v.GetString("tokenExpirationTime")
 	}
 
+	if v.IsSet("searchIndexMaxAge") {
+		server.SearchIndexMaxAge = v.GetString("searchIndexMaxAge")
+	}
+
 	if v.IsSet("disableThumbnails") {
 		server.EnableThumbnails = !v.GetBool("disableThumbnails")
 	}
@@ -615,6 +620,7 @@ func quickSetup(v *viper.Viper, s *storage.Storage) error {
 		Address:               v.GetString("address"),
 		Root:                  v.GetString("root"),
 		TokenExpirationTime:   v.GetString("tokenExpirationTime"),
+		SearchIndexMaxAge:     v.GetString("searchIndexMaxAge"),
 		EnableThumbnails:      !v.GetBool("disableThumbnails"),
 		ResizePreview:         !v.GetBool("disablePreviewResize"),
 		EnableExec:            !v.GetBool("disableExec"),

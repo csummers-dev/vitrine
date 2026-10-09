@@ -63,3 +63,21 @@ func TestGetTokenExpirationTime(t *testing.T) {
 		}
 	})
 }
+
+func TestGetSearchIndexMaxAge(t *testing.T) {
+	fallback := 10 * time.Minute
+	cases := map[string]time.Duration{
+		"":        fallback,
+		"30m":     30 * time.Minute,
+		"0":       0,
+		"bogus":   fallback,
+		"-5m":     fallback,
+		"1h30m0s": 90 * time.Minute,
+	}
+	for in, want := range cases {
+		s := &Server{SearchIndexMaxAge: in}
+		if got := s.GetSearchIndexMaxAge(fallback); got != want {
+			t.Errorf("GetSearchIndexMaxAge(%q) = %s, want %s", in, got, want)
+		}
+	}
+}

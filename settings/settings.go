@@ -102,6 +102,7 @@ type Server struct {
 	ImageResolutionCal       bool    `json:"imageResolutionCalculation"`
 	AuthHook                 string  `json:"authHook"`
 	TokenExpirationTime      string  `json:"tokenExpirationTime"`
+	SearchIndexMaxAge        string  `json:"searchIndexMaxAge"`
 	UnzipEnabled             bool    `json:"unzipEnabled"`
 	MaxZipFileSize           int64   `json:"maxZipFileSize"`
 	MaxZipFileEntries        int     `json:"maxZipFileEntries"`
@@ -113,6 +114,23 @@ type Server struct {
 // Clean cleans any variables that might need cleaning.
 func (s *Server) Clean() {
 	s.BaseURL = strings.TrimSuffix(s.BaseURL, "/")
+}
+
+// GetSearchIndexMaxAge returns how old a user's in-memory search index may get
+// before a search triggers a background rebuild. It is the backstop for file
+// changes made outside vitrine (which publish no events). An empty or invalid
+// value yields fallback; "0" disables age-based rebuilds.
+func (s *Server) GetSearchIndexMaxAge(fallback time.Duration) time.Duration {
+	if s.SearchIndexMaxAge == "" {
+		return fallback
+	}
+
+	duration, err := time.ParseDuration(s.SearchIndexMaxAge)
+	if err != nil || duration < 0 {
+		log.Printf("[WARN] Failed to parse searchIndexMaxAge %q; using %s", s.SearchIndexMaxAge, fallback)
+		return fallback
+	}
+	return duration
 }
 
 func (s *Server) GetTokenExpirationTime(fallback time.Duration) time.Duration {
