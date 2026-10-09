@@ -1,0 +1,213 @@
+name: Release
+
+# Push a version tag to cut a release:
+#
+#   git tag -a v4.0.0 -m "v4.0.0" && git push origin v4.0.0
+#
+# The workflow re-runs the tests, gates on vulnerability scans, builds the
+# multi-arch (amd64 + arm64) image, pushes it to GHCR, and publishes a GitHub
+# Release whose notes are that version's section of CHANGELOG.md.
+#
+# Pre-release tags (anything with a hyphen, e.g. v4.0.0-rc.1) push
+# :<version> and :rc only — never :latest or :<major>.<minor>.
+#
+# One-time setup: the GHCR package was first pushed with a personal token, so
+# give this repository write access to it (GitHub → Packages → vitrine →
+# Package settings → Manage Actions access → add csummers-dev/vitrine, role
+# Write). Without that, the push step fails with "denied".
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/csummers-dev/vitrine
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+      - run: go test --race ./...
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: "frontend/package.json"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+          cache: "pnpm"
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
+      - working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run lint
+          pnpm run typecheck
+          pnpm run test
+
+  scan-deps:
+    name: Dependency scan (blocking)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+      - name: govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          "$(go env GOPATH)/bin/govulncheck" ./...
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: "frontend/package.json"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+          cache: "pnpm"
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
+      - name: pnpm audit (shipped deps)
+        working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm audit --prod
+
+  image:
+    name: Build, scan and push image
+    needs: [test, scan-deps]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+      prerelease: ${{ steps.ver.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Resolve version
+        id: ver
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [[ "$version" == *-* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Check the tag matches the frontend version
+        run: |
+          # RC tags may keep the final version in package.json (4.0.0 for v4.0.0-rc.2).
+          pkg="$(jq -r .version frontend/package.json)"
+          version="${{ steps.ver.outputs.version }}"
+          if [[ "$pkg" != "$version" && "$pkg" != "${version%%-*}" ]]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match frontend/package.json version $pkg"
+            exit 1
+          fi
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          flavor: |
+            latest=auto
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=rc,enable=${{ steps.ver.outputs.prerelease == 'true' }}
+
+      # Build the amd64 image locally first so it can be scanned before
+      # anything reaches the registry.
+      - name: Build amd64 image for scanning
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: vitrine:scan
+          build-args: |
+            VERSION=${{ steps.ver.outputs.version }}
+            REVISION=${{ github.sha }}
+            CREATED=${{ steps.ver.outputs.created }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trivy image scan (fixable HIGH/CRITICAL fail the release)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: vitrine:scan
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.ver.outputs.version }}
+            REVISION=${{ github.sha }}
+            CREATED=${{ steps.ver.outputs.created }}
+          cache-from: type=gha
+          provenance: true
+          sbom: true
+
+  github-release:
+    name: GitHub Release
+    needs: image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Extract release notes from CHANGELOG.md
+        env:
+          VERSION: ${{ needs.image.outputs.version }}
+        run: |
+          # Prints the body under "## v<VERSION> — …" up to the next "## v" heading.
+          awk -v v="## v${VERSION} " '
+            index($0, v) == 1 { on = 1; next }
+            on && /^## v/      { exit }
+            on                 { print }
+          ' CHANGELOG.md > notes.md
+          if [[ ! -s notes.md ]]; then
+            echo "No CHANGELOG.md section for v${VERSION}; using a placeholder."
+            echo "Release v${VERSION}." > notes.md
+          fi
+          title="$(grep -m1 "^## v${VERSION} " CHANGELOG.md | sed 's/^## //')"
+          echo "TITLE=${title:-v${VERSION}}" >> "$GITHUB_ENV"
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ needs.image.outputs.prerelease }}
+        run: |
+          flags=()
+          if [[ "$PRERELEASE" == "true" ]]; then flags+=(--prerelease); fi
+          gh release create "$GITHUB_REF_NAME" --title "$TITLE" --notes-file notes.md --verify-tag "${flags[@]}"
