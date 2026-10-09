@@ -12,7 +12,7 @@ interface ISettings {
   userHomeBasePath: string;
   defaults: SettingsDefaults;
   authMethod: string;
-  rules: any[];
+  rules: IRule[];
   branding: SettingsBranding;
   tus: SettingsTus;
   shell: string[];
@@ -26,7 +26,7 @@ interface SettingsDefaults {
   redirectAfterCopyMove: boolean;
   sorting: Sorting;
   perm: UserPermissions;
-  commands: any[];
+  commands: string[];
   hideDotfiles: boolean;
   dateFormat: boolean;
 }

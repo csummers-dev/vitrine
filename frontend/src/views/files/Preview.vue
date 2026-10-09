@@ -1547,8 +1547,8 @@ const updatePreview = async () => {
       const path = url.removeLastDir(route.path);
       const res = await api.fetch(path);
       listing.value = res.items;
-    } catch (e: any) {
-      $showError(e);
+    } catch (e) {
+      $showError(e instanceof Error ? e : String(e));
     }
   }
 

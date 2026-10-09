@@ -208,9 +208,9 @@ const modTime = computed(() => {
 const resolution = computed<{ width: number; height: number } | null>(() => {
   if (selectedCount.value === 1) {
     const item = req.value?.items[selected.value[0]];
-    if (item?.type === "image") return (item as any).resolution ?? null;
+    if (item?.type === "image") return item.resolution ?? null;
   } else if (req.value?.type === "image") {
-    return (req.value as any).resolution ?? null;
+    return req.value.resolution ?? null;
   }
   return null;
 });

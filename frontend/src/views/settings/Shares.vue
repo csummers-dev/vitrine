@@ -76,12 +76,12 @@
           <div class="shares-card__meta">
             <span class="shares-meta-chip">
               <Icon name="clock-3" :size="11" />
-              <span v-if="link.expire !== 0">
+              <span v-if="link.expire">
                 Expires {{ humanTime(link.expire) }}
               </span>
               <span v-else>Never expires</span>
             </span>
-            <span v-if="(link as any).password_hash" class="shares-meta-chip">
+            <span v-if="link.password_hash" class="shares-meta-chip">
               <Icon name="lock" :size="11" />
               Password protected
             </span>

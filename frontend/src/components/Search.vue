@@ -74,6 +74,7 @@ import { useLayoutStore } from "@/stores/layout";
 
 import url from "@/utils/url";
 import { searchSmart } from "@/utils/searchSmart";
+import type { SearchHit } from "@/api/tags";
 import { fileIcon, fileIconColor } from "@/utils/fileIcon";
 import { computed, inject, onMounted, ref, watch, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
@@ -89,7 +90,7 @@ const { currentPromptName } = storeToRefs(layoutStore);
 const prompt = ref<string>("");
 const active = ref<boolean>(false);
 const ongoing = ref<boolean>(false);
-const results = ref<any[]>([]);
+const results = ref<SearchHit[]>([]);
 const resultsCount = ref<number>(50);
 
 const $showError = inject<IToastError>("$showError")!;
@@ -241,9 +242,9 @@ const runSearch = async () => {
     await searchSmart(path, prompt.value, searchAbortController.signal, (hit) =>
       results.value.push(hit)
     );
-  } catch (error: any) {
+  } catch (error) {
     if (error instanceof StatusError && error.is_canceled) return;
-    $showError(error);
+    $showError(error instanceof Error ? error : String(error));
   }
   ongoing.value = false;
 };

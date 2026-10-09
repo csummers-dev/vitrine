@@ -266,9 +266,9 @@ const navigate = async (path: string) => {
     const req = await api.fetch(path, abortCtrl.signal);
     currentPath.value = req.url;
     folders.value = (req.items ?? [])
-      .filter((i: any) => i.isDir)
-      .filter((i: any) => !props.exclude?.includes(i.url))
-      .map((i: any) => ({
+      .filter((i) => i.isDir)
+      .filter((i) => !props.exclude?.includes(i.url))
+      .map((i) => ({
         name: i.name,
         url: i.url,
         modified: i.modified ?? "",

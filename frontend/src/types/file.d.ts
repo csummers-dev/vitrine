@@ -9,6 +9,8 @@ interface ResourceBase {
   isSymlink: boolean;
   type: ResourceType;
   url: string;
+  /** Pixel size, when the server computed it for an image. */
+  resolution?: { width: number; height: number };
 }
 
 interface Resource extends ResourceBase {

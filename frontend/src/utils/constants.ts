@@ -9,8 +9,8 @@ const disableExternal: boolean = window.FileBrowser.DisableExternal;
 const disableUsedPercentage: boolean = window.FileBrowser.DisableUsedPercentage;
 const baseURL: string = window.FileBrowser.BaseURL;
 const staticURL: string = window.FileBrowser.StaticURL;
-const recaptcha: string = window.FileBrowser.ReCaptcha;
-const recaptchaKey: string = window.FileBrowser.ReCaptchaKey;
+const recaptcha: boolean = window.FileBrowser.ReCaptcha;
+const recaptchaKey: string = window.FileBrowser.ReCaptchaKey ?? "";
 const signup: boolean = window.FileBrowser.Signup;
 const version: string = window.FileBrowser.Version;
 // PNG brand marks used by the sidebar/drawer top-left glyph and the login

@@ -112,7 +112,7 @@ export const useFileStore = defineStore("file", {
         )
         .map((item) => item.index);
     },
-    removeSelected(value: any) {
+    removeSelected(value: number) {
       const i = this.selected.indexOf(value);
       if (i === -1) return;
       this.selected.splice(i, 1);

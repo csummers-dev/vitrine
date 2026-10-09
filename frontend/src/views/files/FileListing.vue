@@ -2222,7 +2222,15 @@ const paste = async (dest?: string) => {
     return;
   }
 
-  const items: any[] = [];
+  const items: {
+    from: string;
+    to: string;
+    name: string;
+    size?: number;
+    modified?: string;
+    overwrite: boolean;
+    rename: boolean;
+  }[] = [];
   for (const item of clipboardStore.items) {
     const from = item.from.endsWith("/") ? item.from.slice(0, -1) : item.from;
     const to = path + encodeURIComponent(item.name);
@@ -2389,7 +2397,7 @@ const download = () => {
 
   layoutStore.showHover({
     prompt: "download",
-    confirm: (format: any) => {
+    confirm: (format: DownloadFormat) => {
       layoutStore.closeHovers();
 
       const files = [];
@@ -2419,7 +2427,7 @@ const toggleSelectAll = () => {
   if (allSelected.value) {
     fileStore.selected = [];
   } else {
-    const indices = (fileStore.req?.items ?? []).map((it: any) => it.index);
+    const indices = (fileStore.req?.items ?? []).map((it) => it.index);
     fileStore.selected = indices;
   }
 };

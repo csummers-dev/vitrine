@@ -1056,7 +1056,7 @@ const drop = async (event: DragEvent) => {
   );
   if (dragged.length === 0) return;
 
-  const items: any[] = dragged.map((it) => ({
+  const items = dragged.map((it) => ({
     from: it.url,
     to: props.url + encodeURIComponent(it.name),
     name: it.name,

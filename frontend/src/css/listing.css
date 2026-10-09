@@ -942,7 +942,6 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }
 
-
 /* Calm Minimal: the folder section shares the SAME track width as the file
    section (both minmax(220px) from rule A) so folder + file tiles are the same
    size and the gallery reads as one uniform 4:3 grid. Folders used to get

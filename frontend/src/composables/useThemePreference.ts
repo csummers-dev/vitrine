@@ -97,9 +97,12 @@ export function useThemePreference() {
     // Modern API (Chrome/Safari/FF current): addEventListener('change', …)
     if (typeof mql.addEventListener === "function") {
       mql.addEventListener("change", onMediaChange);
-    } else if (typeof (mql as any).addListener === "function") {
-      // Safari < 14 fallback
-      (mql as any).addListener(onMediaChange);
+    } else {
+      // Safari < 14 fallback: the deprecated listener API.
+      const legacy = mql as MediaQueryList & {
+        addListener?: (cb: (e: MediaQueryListEvent) => void) => void;
+      };
+      legacy.addListener?.(onMediaChange);
     }
   };
 

@@ -331,7 +331,7 @@ const modTime = computed(() =>
     : new Date().toLocaleString()
 );
 
-const base64 = (name: any) => Base64.encodeURI(name);
+const base64 = (name: string) => Base64.encodeURI(name);
 
 const fetchData = async () => {
   fileStore.reload = false;

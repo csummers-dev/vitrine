@@ -320,7 +320,7 @@ const submit = async (event: Event) => {
       }
     }
     router.push({ path: destination });
-  } catch (e: any) {
+  } catch (e) {
     if (e instanceof StatusError) {
       if (e.status === 409) {
         error.value = t("login.usernameTaken");

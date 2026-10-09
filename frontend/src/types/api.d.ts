@@ -3,13 +3,13 @@ type ApiMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 type ApiContent =
   | Blob
   | File
-  | Pick<ReadableStreamDefaultReader<any>, "read">
+  | Pick<ReadableStreamDefaultReader<Uint8Array>, "read">
   | "";
 
 interface ApiOpts {
   method?: ApiMethod;
   headers?: object;
-  body?: any;
+  body?: BodyInit | null;
   signal?: AbortSignal;
 }
 
@@ -23,7 +23,9 @@ type ChecksumAlg = "md5" | "sha1" | "sha256" | "sha512";
 interface Share {
   hash: string;
   path: string;
-  expire?: any;
+  expire?: number;
+  /** Set when the share is password protected. */
+  password_hash?: string;
   userID?: number;
   token?: string;
   username?: string;

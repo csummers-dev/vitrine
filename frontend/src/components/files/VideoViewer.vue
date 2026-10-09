@@ -81,7 +81,7 @@ export interface VideoMeta {
 const props = defineProps<{
   source: string;
   subtitles?: string[];
-  options?: any;
+  options?: Record<string, unknown>;
   /** S5-7: URL of the subtitle track to show by default. */
   defaultSubtitle?: string;
   /** #3: transcode endpoint URL; loaded when native playback fails. */

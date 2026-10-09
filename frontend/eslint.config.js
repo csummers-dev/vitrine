@@ -21,8 +21,9 @@ export default defineConfigWithVueTs(
     rules: {
       // Note: you must disable the base rule as it can report incorrect errors
       "@typescript-eslint/no-unused-expressions": "off",
-      // TODO: theres too many of these from before ts
-      "@typescript-eslint/no-explicit-any": "off",
+      // 4.0 Phase 1.2: the codebase is any-free (bar the documented prompt
+      // channel in types/layout.d.ts); keep it that way.
+      "@typescript-eslint/no-explicit-any": "error",
       // TODO: finish the ts conversion
       "vue/block-lang": "off",
       "vue/multi-word-component-names": "off",

@@ -288,7 +288,7 @@ const onSubmit = async () => {
     layoutStore.showHover({
       prompt: "resolve-conflict",
       props: { conflict, files: items, from: sourceUrl, to: dest },
-      confirm: (event: any, result: any[]) => {
+      confirm: (event: Event | null, result: ConflictingResource[]) => {
         event?.preventDefault?.();
         layoutStore.closeHovers();
         for (let i = result.length - 1; i >= 0; i--) {

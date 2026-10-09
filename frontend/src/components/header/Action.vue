@@ -18,7 +18,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "action"): any;
+  (e: "action"): void;
 }>();
 
 const layoutStore = useLayoutStore();

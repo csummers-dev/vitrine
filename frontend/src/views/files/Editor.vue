@@ -177,8 +177,8 @@ const save = async (throwError?: boolean) => {
     justSaved.value = true;
     if (savedTimer) clearTimeout(savedTimer);
     savedTimer = setTimeout(() => (justSaved.value = false), 1400);
-  } catch (e: any) {
-    $showError(e);
+  } catch (e) {
+    $showError(e instanceof Error ? e : String(e));
     if (throwError) throw e;
   } finally {
     saving.value = false;

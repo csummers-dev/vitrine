@@ -7,7 +7,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, type Component } from "vue";
 import { storeToRefs } from "pinia";
 import { useLayoutStore } from "@/stores/layout";
 
@@ -27,7 +27,7 @@ const layoutStore = useLayoutStore();
 
 const { currentPromptName } = storeToRefs(layoutStore);
 
-const components = new Map<string, any>([
+const components = new Map<string, Component>([
   ["info", Info],
   // help → migrated to the global ShortcutsOverlay (Stage 11g). Triggered
   // via the `?` shortcut, F1 from Files.vue, or useShortcutsOverlay().open().

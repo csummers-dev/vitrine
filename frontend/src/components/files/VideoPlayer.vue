@@ -33,14 +33,14 @@ const props = withDefaults(
   defineProps<{
     source: string;
     subtitles?: string[];
-    options?: any;
+    options?: Record<string, unknown>;
     /** S5-7: URL of the track to show by default (e.g. a just-uploaded
      *  subtitle). When set, this track gets `default` instead of the
      *  first one, so video.js shows it on init. */
     defaultSubtitle?: string;
   }>(),
   {
-    options: {},
+    options: () => ({}),
   }
 );
 
@@ -80,7 +80,7 @@ const initVideoPlayer = () => {
   }
 };
 
-const getOptions = (...srcOpt: any[]) => {
+const getOptions = (...srcOpt: (Record<string, unknown> | undefined)[]) => {
   const options = {
     controlBar: {
       skipButtons: {
