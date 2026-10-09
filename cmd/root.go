@@ -39,46 +39,48 @@ import (
 	"github.com/csummers-dev/vitrine/v4/webhooks"
 )
 
-var (
-	flagNamesMigrations = map[string]string{
-		"file-mode":                        "fileMode",
-		"dir-mode":                         "dirMode",
-		"hide-login-button":                "hideLoginButton",
-		"create-user-dir":                  "createUserDir",
-		"minimum-password-length":          "minimumPasswordLength",
-		"socket-perm":                      "socketPerm",
-		"disable-thumbnails":               "disableThumbnails",
-		"disable-preview-resize":           "disablePreviewResize",
-		"disable-exec":                     "disableExec",
-		"disable-type-detection-by-header": "disableTypeDetectionByHeader",
-		"img-processors":                   "imageProcessors",
-		"cache-dir":                        "cacheDir",
-		"redis-cache-url":                  "redisCacheUrl",
-		"token-expiration-time":            "tokenExpirationTime",
-		"baseurl":                          "baseURL",
+// removedFlags maps flag names that were deprecated in 3.x and removed in
+// 4.0 to their replacements, so a stale flag fails with a helpful message
+// instead of cobra's bare "unknown flag".
+var removedFlags = map[string]string{
+	"file-mode":                        "fileMode",
+	"dir-mode":                         "dirMode",
+	"hide-login-button":                "hideLoginButton",
+	"create-user-dir":                  "createUserDir",
+	"minimum-password-length":          "minimumPasswordLength",
+	"socket-perm":                      "socketPerm",
+	"disable-thumbnails":               "disableThumbnails",
+	"disable-preview-resize":           "disablePreviewResize",
+	"disable-exec":                     "disableExec",
+	"disable-type-detection-by-header": "disableTypeDetectionByHeader",
+	"img-processors":                   "imageProcessors",
+	"cache-dir":                        "cacheDir",
+	"redis-cache-url":                  "redisCacheUrl",
+	"token-expiration-time":            "tokenExpirationTime",
+	"baseurl":                          "baseURL",
+}
+
+// removedFlagError rewrites cobra's "unknown flag: --x" for a flag removed in
+// 4.0 into a message naming its replacement. Other errors pass through.
+func removedFlagError(_ *cobra.Command, err error) error {
+	const prefix = "unknown flag: --"
+	msg := err.Error()
+	if !strings.HasPrefix(msg, prefix) {
+		return err
 	}
-
-	warnedFlags = map[string]bool{}
-)
-
-// TODO(remove): remove after July 2026.
-func migrateFlagNames(_ *pflag.FlagSet, name string) pflag.NormalizedName {
-	if newName, ok := flagNamesMigrations[name]; ok {
-
-		if !warnedFlags[name] {
-			warnedFlags[name] = true
-			log.Printf("DEPRECATION NOTICE: Flag --%s has been deprecated, use --%s instead\n", name, newName)
-		}
-
-		name = newName
+	name := strings.TrimPrefix(msg, prefix)
+	if i := strings.IndexAny(name, "= "); i >= 0 {
+		name = name[:i]
 	}
-
-	return pflag.NormalizedName(name)
+	if repl, ok := removedFlags[name]; ok {
+		return fmt.Errorf("flag --%s was removed in vitrine 4.0; use --%s instead", name, repl)
+	}
+	return err
 }
 
 func init() {
 	rootCmd.SilenceUsage = true
-	rootCmd.SetGlobalNormalizationFunc(migrateFlagNames)
+	rootCmd.SetFlagErrorFunc(removedFlagError)
 
 	cobra.MousetrapHelpText = ""
 
@@ -396,7 +398,15 @@ user created with the credentials from options "username" and "password".`,
 	}, storeOptions{allowsNoDatabase: true}),
 }
 
+// errRemovedBaseURLEnv is returned when the 3.x-era VITRINE_BASEURL variable
+// is still set: silently ignoring it would serve the app at the wrong path.
+var errRemovedBaseURLEnv = errors.New("environment variable VITRINE_BASEURL was removed in vitrine 4.0; rename it to VITRINE_BASE_URL")
+
 func getServerSettings(v *viper.Viper, st *storage.Storage) (*settings.Server, error) {
+	if os.Getenv("VITRINE_BASEURL") != "" && os.Getenv("VITRINE_BASE_URL") == "" {
+		return nil, errRemovedBaseURLEnv
+	}
+
 	server, err := st.Settings.GetServer()
 	if err != nil {
 		return nil, err
@@ -440,10 +450,6 @@ func getServerSettings(v *viper.Viper, st *storage.Storage) (*settings.Server, e
 
 	if v.IsSet("baseURL") {
 		server.BaseURL = v.GetString("baseURL")
-		// TODO(remove): remove after July 2026.
-	} else if v := os.Getenv("VITRINE_BASEURL"); v != "" {
-		log.Println("DEPRECATION NOTICE: Environment variable VITRINE_BASEURL has been deprecated, use VITRINE_BASE_URL instead")
-		server.BaseURL = v
 	}
 
 	if v.IsSet("tokenExpirationTime") {
