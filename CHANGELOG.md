@@ -18,6 +18,9 @@ All notable changes to **vitrine**.
   background on the next search (that search still answers instantly from the
   current index). Tune it with `--searchIndexMaxAge` /
   `VITRINE_SEARCH_INDEX_MAX_AGE`; `0` turns it off.
+- **Fixed: in split view, "Parent folder" was clickable at the top level.**
+  At the root of My files the button (and the drag-to-title shortcut) pointed
+  outside the file browser. It is now disabled there.
 - **Removed the deprecated flag names and `VITRINE_BASEURL`** (scheduled for
   removal after July 2026). Using one now fails fast with the replacement's
   name instead of being silently remapped.

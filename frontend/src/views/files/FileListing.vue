@@ -994,6 +994,10 @@ import { useListingSort } from "@/composables/listing/useListingSort";
 import { useListingViewMode } from "@/composables/listing/useListingViewMode";
 import { useListingUpload } from "@/composables/listing/useListingUpload";
 import { useListingContextMenu } from "@/composables/listing/useListingContextMenu";
+import { useListingDropTargets } from "@/composables/listing/useListingDropTargets";
+import { useListingTouchDrag } from "@/composables/listing/useListingTouchDrag";
+import { useOsFileDrop } from "@/composables/listing/useOsFileDrop";
+import { useDragAutoScroll } from "@/composables/useDragAutoScroll";
 import { buildRowMenu, buildBackgroundMenu } from "@/utils/listingMenus";
 
 import { files as api } from "@/api";
@@ -1038,8 +1042,6 @@ import { useBulkTagPicker } from "@/composables/useBulkTagPicker";
 import ExtractPanel from "@/components/files/ExtractPanel.vue";
 import SharePanel from "@/components/files/SharePanel.vue";
 import ContextMenu, { type MenuItem } from "@/components/ContextMenu.vue";
-import { useDropTarget } from "@/composables/useDropTarget";
-import { useTouchDrag } from "@/composables/useTouchDrag";
 import {
   computed,
   inject,
@@ -1050,13 +1052,10 @@ import {
   watch,
 } from "vue";
 import { useRoute, useRouter, onBeforeRouteUpdate } from "vue-router";
-import url from "@/utils/url";
 import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
 import { startTransfer } from "@/utils/transfers";
-import { resolveRowDropMode } from "@/utils/dropZone";
 
-const dragCounter = ref<number>(0);
 const width = ref<number>(window.innerWidth);
 
 // ── Dual-pane / split view (2.5.0) ───────────────────────────────────
@@ -1430,39 +1429,29 @@ const folderTitle = computed(() => {
   return fileStore.req.name || rootLabel.value || t("sidebar.myFiles");
 });
 
-// ── Section title as parent-folder drop + spring-load target (F2) ──
-// During a drag, the section-title area (the row that shows the
-// current folder name + meta) acts as a shortcut to the PARENT folder:
-//   • Drop on it           → move/copy the selection up one level
-//   • Hover 2 s during drag → navigate up one level (no drop required)
-// Both are gated by the existence of a parent — at the storage root
-// we suppress the drop target entirely (no parent to navigate to).
-const PARENT_SPRING_MS = 2000;
-const sectionDropActive = ref<boolean>(false);
-let sectionSpringTimer: number | null = null;
-let sectionDragDepth = 0;
-
-const { performDrop: performParentDrop } = useDropTarget();
-
-/** Parent folder URL relative to the current route, or null at root. */
-const parentFolderUrl = computed<string | null>(() => {
-  if (!fileStore.req?.isDir) return null;
-  const here = fileStore.req.url; // ends with "/"
-  // Strip trailing slash, then drop the last segment.
-  const trimmed = here.endsWith("/") ? here.slice(0, -1) : here;
-  const parent = url.removeLastDir(trimmed) + "/";
-  // If removing the last segment lands us back at the same place, we
-  // were already at the root — nothing to navigate to.
-  if (parent === here) return null;
-  return parent;
+// ── Drop targets around the listing (parent-folder title, pane A body,
+// "alongside" row drops); see composables/listing/useListingDropTargets.
+const {
+  performDrop: performParentDrop,
+  sectionDropActive,
+  parentFolderUrl,
+  goToParentFolder,
+  onSectionDragEnter,
+  onSectionDragOver,
+  onSectionDragLeave,
+  onSectionDrop,
+  paneADropActive,
+  onPaneADragEnter,
+  onPaneADragOver,
+  onPaneADragLeave,
+  onPaneADrop,
+  onListingDragEnd,
+  currentFolderUrl,
+  onItemDropAlongside,
+} = useListingDropTargets({
+  splitActive,
+  navigate: (path) => void router.push({ path }),
 });
-
-/** Click handler for the inline ↑ button. Same destination as the
- *  spring-load drag behavior so users get one mental model regardless
- *  of which input modality they're using. */
-const goToParentFolder = () => {
-  if (parentFolderUrl.value) router.push({ path: parentFolderUrl.value });
-};
 
 // ── Current-folder favorites (v1.3 S3-2) ────────────────────────────
 // Star toggle in the section-title eyebrow. Pinning the current
@@ -1483,264 +1472,13 @@ const onCurrentFolderFavToggle = () => {
   favoritesComposable.toggle(currentFolderPath.value);
 };
 
-const cancelSectionSpring = () => {
-  if (sectionSpringTimer !== null) {
-    window.clearTimeout(sectionSpringTimer);
-    sectionSpringTimer = null;
-  }
-};
-
-const onSectionDragEnter = (event: DragEvent) => {
-  // Gate on the active DRAG set (not the current selection) so a cross-pane
-  // drag — whose items live in `draggedItems`, not pane A's `selected` — also
-  // arms the parent spring-load when held over the split header (#18).
-  if (fileStore.draggedItems.length === 0) return;
-  if (!parentFolderUrl.value) return;
-  event.preventDefault();
-  sectionDragDepth++;
-  if (sectionDragDepth === 1) {
-    sectionDropActive.value = true;
-    // Spring-load: hover for PARENT_SPRING_MS → navigate up.
-    sectionSpringTimer = window.setTimeout(() => {
-      sectionSpringTimer = null;
-      sectionDropActive.value = false;
-      sectionDragDepth = 0;
-      if (parentFolderUrl.value) router.push({ path: parentFolderUrl.value });
-    }, PARENT_SPRING_MS);
-  }
-};
-
-const onSectionDragOver = (event: DragEvent) => {
-  if (fileStore.draggedItems.length === 0) return;
-  if (!parentFolderUrl.value) return;
-  event.preventDefault();
-  if (event.dataTransfer) {
-    event.dataTransfer.dropEffect =
-      event.ctrlKey || event.metaKey ? "copy" : "move";
-  }
-};
-
-const onSectionDragLeave = () => {
-  if (!parentFolderUrl.value) return;
-  sectionDragDepth = Math.max(0, sectionDragDepth - 1);
-  if (sectionDragDepth === 0) {
-    sectionDropActive.value = false;
-    cancelSectionSpring();
-  }
-};
-
-const onSectionDrop = (event: DragEvent) => {
-  // Drop wins over spring-load: kill the timer before any conflict
-  // prompts so we don't navigate mid-resolve.
-  cancelSectionSpring();
-  sectionDragDepth = 0;
-  sectionDropActive.value = false;
-  if (!parentFolderUrl.value) return;
-  void performParentDrop(event, parentFolderUrl.value);
-};
-
-// ── Pane A cross-pane drop overlay (#17) ─────────────────────────────
-// Mirrors ComparePane's `.compare-body--drop`: while an internal selection is
-// dragged over pane A's body, draw the same dashed accent frame so pane A reads
-// as a drop target too (previously only pane B lit up). Split-only — in single
-// pane these handlers early-return, so that path is byte-for-byte unchanged.
-// `fileStore.draggedItems` is the shared cross-pane drag set (written by either
-// pane's dragstart), so this fires for both A→A and B→A drags.
-const paneADropDepth = ref<number>(0);
-const paneADropActive = computed(
-  () =>
-    splitActive.value &&
-    paneADropDepth.value > 0 &&
-    fileStore.draggedItems.length > 0
-);
-const onPaneADragEnter = (event: DragEvent) => {
-  if (!splitActive.value || fileStore.draggedItems.length === 0) return;
-  event.preventDefault();
-  paneADropDepth.value++;
-};
-const onPaneADragOver = (event: DragEvent) => {
-  if (!splitActive.value || fileStore.draggedItems.length === 0) return;
-  event.preventDefault();
-  if (event.dataTransfer) {
-    event.dataTransfer.dropEffect =
-      event.ctrlKey || event.metaKey ? "copy" : "move";
-  }
-};
-const onPaneADragLeave = () => {
-  if (paneADropDepth.value > 0) paneADropDepth.value--;
-};
-const onPaneADrop = (event: DragEvent) => {
-  paneADropDepth.value = 0;
-  // Only internal cross-pane drags land here; OS-file drops (no draggedItems)
-  // are owned by the global document `drop` handler — don't double-handle them.
-  if (!splitActive.value || fileStore.draggedItems.length === 0) return;
-  // A row (folder into-zone, or a file row's dropAlongside) already handled it.
-  if ((event.target as HTMLElement | null)?.closest(".item")) return;
-  if (!currentFolderUrl.value) return;
-  void performParentDrop(event, currentFolderUrl.value);
-};
-
-// Drag-cancel safety net (review #1): Esc-cancelling a drag fires `dragend` but
-// NOT `dragleave`/`drop`, so a pending section spring-load timer would otherwise
-// still navigate ~PARENT_SPRING_MS later, and the pane-A drop overlay would stay
-// lit. Wired to the document `dragend` alongside `resetOpacity` (same rationale).
-const onListingDragEnd = () => {
-  cancelSectionSpring();
-  sectionDropActive.value = false;
-  sectionDragDepth = 0;
-  paneADropDepth.value = 0;
-};
-
-// `currentFolderUrl` — the current folder's url (trailing "/" like the
-// ListingItem rows, so a conflict prompt's `to` matches the breadcrumb).
-// Destination for an "alongside" drop (below) and for the touch drop path.
-const currentFolderUrl = computed<string>(() => fileStore.req?.url ?? "");
-
-// Alongside drop on any row → move into the CURRENT folder via the shared
-// useDropTarget.performDrop (target-agnostic; it just takes a destination
-// URL). A release on a row's non-into-zone area, or on any file row, routes
-// here. No-op if we somehow have no current folder.
-const onItemDropAlongside = (event: DragEvent) => {
-  if (!currentFolderUrl.value) return;
-  void performParentDrop(event, currentFolderUrl.value);
-};
-
-// ── Touch drag-and-drop (lifted from ListingItem, CH-2) ─────────────
-// HTML5 DnD never fires on touch, so a single pointer-based gesture
-// drives the SAME move pipeline (`useDropTarget.performDrop`) — conflict
-// prompt, self-drop guard, transfer indicator. This used to be one
-// useTouchDrag instance PER row; hoisting it here means the listing owns
-// exactly one regardless of how many rows are mounted. Rows forward their
-// pointerdown via the `rowPointerDown` event (mouse pointers are ignored
-// inside the composable, so desktop is untouched). Drop targets are any
-// element carrying `data-drop-url` — folder rows, breadcrumb segments,
-// and the current-folder area.
-let touchHighlightEl: HTMLElement | null = null;
-let touchSpringUrl: string | null = null;
-let touchSpringTimer: number | null = null;
-// Destination the in-flight touch drop will resolve to, cached on every
-// onMove so onDrop matches EXACTLY what was highlighted (the same robustness as
-// the desktop cached-into-zone fix). A folder url when over a folder's tight
-// into-zone (or a dedicated breadcrumb / current-folder target); the current
-// folder ("alongside") when over a folder row OUTSIDE its into-zone; null when
-// over nothing droppable (→ no-op drop).
-let touchDropUrl: string | null = null;
-
-const clearTouchHighlight = () => {
-  if (touchHighlightEl) {
-    touchHighlightEl.style.outline = "";
-    touchHighlightEl.style.outlineOffset = "";
-    touchHighlightEl = null;
-  }
-};
-const cancelTouchSpring = () => {
-  if (touchSpringTimer !== null) {
-    window.clearTimeout(touchSpringTimer);
-    touchSpringTimer = null;
-  }
-  touchSpringUrl = null;
-};
-const resolveDropEl = (el: Element | null): HTMLElement | null =>
-  (el?.closest?.("[data-drop-url]") as HTMLElement | null) ?? null;
-
-const listingTouchDrag = useTouchDrag<{ index: number }>({
-  // The ghost is created before onStart runs (so draggedItems isn't
-  // populated yet for this gesture); read the pressed row's name straight
-  // off the listing for the single-item label, matching the old per-row
-  // behavior. Multi-select uses the snapshot count once it exists.
-  ghostLabel: (p) => {
-    const c = fileStore.draggedItems.length;
-    if (c > 1) return `${c} items`;
-    return fileStore.req?.items[p.index]?.name ?? "";
-  },
-  // Edge auto-scroll during a touch drag targets the ACTUAL scroll
-  // container (the recycler in list view, the <section> in grid/gallery) —
-  // resolved by ptrScrollEl — rather than #listing, which isn't the scroller.
+// ── Touch drag-and-drop; see composables/listing/useListingTouchDrag ──
+const { onItemPointerDown } = useListingTouchDrag({
+  currentFolderUrl,
   scrollEl: () => ptrScrollEl.value,
-  onStart: (p) => fileStore.snapshotDragSelection(p.index),
-  onMove: (_p, x, y, el) => {
-    const raw = resolveDropEl(el);
-    const isFolderRow =
-      !!raw &&
-      raw.classList.contains("item") &&
-      raw.getAttribute("data-dir") === "true";
-    // Parity with desktop: a folder ROW is an into-folder target ONLY when the
-    // finger is in its tight icon+name into-zone. Outside that the drop goes
-    // "alongside" into the current folder, so don't highlight/spring the folder.
-    // Dedicated drop targets (breadcrumb segments, the current-folder area)
-    // aren't `.item` rows and keep their whole-element target.
-    const inIntoZone = isFolderRow && resolveRowDropMode(raw!, x, y) === "into";
-    const highlightEl = isFolderRow ? (inIntoZone ? raw : null) : raw;
-
-    if (highlightEl !== touchHighlightEl) {
-      clearTouchHighlight();
-      if (highlightEl) {
-        highlightEl.style.outline = "2px solid var(--color-accent, #6e72d9)";
-        highlightEl.style.outlineOffset = "-2px";
-        touchHighlightEl = highlightEl;
-      }
-    }
-
-    // Cache where this drop resolves: the highlighted target's url, else the
-    // current folder for a folder row we're not "into" ("alongside"), else null.
-    if (highlightEl) {
-      touchDropUrl = highlightEl.dataset.dropUrl ?? null;
-    } else if (isFolderRow) {
-      touchDropUrl = currentFolderUrl.value || null;
-    } else {
-      touchDropUrl = null;
-    }
-
-    // Spring-load: hovering a folder row's into-zone (not the current folder)
-    // for 2s drills into it so nested drops are possible (F6 parity).
-    const springUrl = inIntoZone ? (raw!.dataset.dropUrl ?? null) : null;
-    if (springUrl && springUrl !== fileStore.req?.url) {
-      if (touchSpringUrl !== springUrl) {
-        cancelTouchSpring();
-        touchSpringUrl = springUrl;
-        touchSpringTimer = window.setTimeout(() => {
-          touchSpringTimer = null;
-          void router.push({ path: springUrl });
-        }, 2000);
-      }
-    } else {
-      cancelTouchSpring();
-    }
-  },
-  onDrop: () => {
-    cancelTouchSpring();
-    clearTouchHighlight();
-    // Use the destination cached during onMove so the drop lands exactly where
-    // it was highlighted (no fresh recompute). null = released over nothing
-    // droppable → no-op.
-    const dest = touchDropUrl;
-    touchDropUrl = null;
-    if (!dest) return;
-    // Touch has no Ctrl/Cmd → always a move. performParentDrop reads the
-    // snapshot from fileStore.draggedItems and applies all the usual guards
-    // (incl. the from===to short-circuit, so an "alongside" drop is a no-op).
-    const synthetic = {
-      preventDefault: () => {},
-      ctrlKey: false,
-      metaKey: false,
-    } as unknown as DragEvent;
-    void performParentDrop(synthetic, dest);
-  },
-  onEnd: () => {
-    cancelTouchSpring();
-    clearTouchHighlight();
-    touchDropUrl = null;
-    fileStore.draggedItems = [];
-    // Swallow the synthetic click the browser fires on the drop row.
-    fileStore.suppressClicksUntil = Date.now() + 350;
-  },
+  navigate: (path) => void router.push({ path }),
+  performDrop: performParentDrop,
 });
-
-// Forwarded from each row's pointerdown (after the row's own read-only +
-// interactive-child guard). Mouse pointers are ignored inside the gesture.
-const onItemPointerDown = (event: PointerEvent, index: number) => {
-  listingTouchDrag.onPointerDown(event, { index });
-};
 
 // ── Rename the currently-viewed folder ─────────────────────────────────
 // "Rename folder" in the ⋯ menu; see composables/listing/useFolderRename.
@@ -2412,93 +2150,10 @@ const preventDefault = (event: Event) => {
   }
 };
 
-// Document-level fallback to clear the internal-drag snapshot once a drag ends
-// (see the drop/dragend listeners in onMounted). Idempotent.
-const clearDragSnapshot = () => {
-  if (fileStore.draggedItems.length > 0) fileStore.draggedItems = [];
-};
-
-// Esc-cancel safety net (registered as a capture keydown in onMounted): when a
-// drag is cancelled with Escape and the browser doesn't fire `dragend` — or the
-// source row unmounted mid-drag — the Copy/Move badge + drag snapshot get
-// stranded on screen. Re-run the same idempotent teardown the dragend nets do.
-// Guarded on an active drag so a plain Escape (clear selection) is unaffected.
-const onDragCancelKey = (event: KeyboardEvent) => {
-  if (event.key !== "Escape") return;
-  if (fileStore.draggedItems.length === 0) return;
-  endDragBadge();
-  clearDragSnapshot();
-  resetOpacity();
-  onListingDragEnd();
-  stopDragScroll();
-};
-
-// HTML5 (mouse) drag edge auto-scroll. Touch drag already auto-scrolls via
-// useTouchDrag; this brings the same behavior to mouse dragging so that
-// dragging a row (or OS files) toward the top/bottom edge gently scrolls the
-// listing — making deep drops reachable without letting go. Targets the real
-// scroll container (the recycler in list view, the <section> in grid/gallery)
-// via ptrScrollEl, matching the touch path. Speed is intentionally gentler
-// than touch ("not too quickly").
-const DRAG_EDGE = 56; // px from an edge where auto-scroll engages
-const DRAG_EDGE_SPEED = 8; // max px/frame (vs touch's 12)
-let dragScrollY = 0; // latest pointer Y during a drag
-let dragScrollDir = 0; // -1 = up, +1 = down, 0 = idle
-let dragScrollRaf: number | null = null;
-
-const dragScrollTick = () => {
-  dragScrollRaf = null;
-  const el = ptrScrollEl.value;
-  if (!el || dragScrollDir === 0) return;
-  const rect = el.getBoundingClientRect();
-  // How far the pointer is *into* the edge band → proportional speed ramp,
-  // so it eases in near the boundary and tops out at DRAG_EDGE_SPEED.
-  // Clamp the "into the band" depth to DRAG_EDGE so the speed never exceeds
-  // DRAG_EDGE_SPEED — the pointer can sit *past* the edge (over the header
-  // above the list / a bar below it), which would otherwise ramp dy beyond the
-  // cap and scroll faster than the intended gentle pace.
-  let dy = 0;
-  if (dragScrollDir < 0) {
-    const into = Math.min(DRAG_EDGE, DRAG_EDGE - (dragScrollY - rect.top));
-    if (into > 0) dy = -Math.ceil((into / DRAG_EDGE) * DRAG_EDGE_SPEED);
-  } else {
-    const into = Math.min(DRAG_EDGE, DRAG_EDGE - (rect.bottom - dragScrollY));
-    if (into > 0) dy = Math.ceil((into / DRAG_EDGE) * DRAG_EDGE_SPEED);
-  }
-  if (dy !== 0) {
-    el.scrollTop += dy;
-    dragScrollRaf = requestAnimationFrame(dragScrollTick);
-  } else {
-    dragScrollDir = 0;
-  }
-};
-
-const onDragScrollOver = (event: DragEvent) => {
-  const el = ptrScrollEl.value;
-  if (!el) return;
-  const rect = el.getBoundingClientRect();
-  dragScrollY = event.clientY;
-  // Only engage when the pointer is horizontally over the scroll area, so a
-  // drag across the sidebar/info-pane doesn't scroll the listing.
-  const insideX = event.clientX >= rect.left && event.clientX <= rect.right;
-  let dir = 0;
-  if (insideX) {
-    if (dragScrollY < rect.top + DRAG_EDGE) dir = -1;
-    else if (dragScrollY > rect.bottom - DRAG_EDGE) dir = 1;
-  }
-  dragScrollDir = dir;
-  if (dir !== 0 && dragScrollRaf === null) {
-    dragScrollRaf = requestAnimationFrame(dragScrollTick);
-  }
-};
-
-const stopDragScroll = () => {
-  dragScrollDir = 0;
-  if (dragScrollRaf !== null) {
-    cancelAnimationFrame(dragScrollRaf);
-    dragScrollRaf = null;
-  }
-};
+// Mouse-drag edge auto-scroll; see composables/useDragAutoScroll.
+const { onDragScrollOver, stopDragScroll } = useDragAutoScroll(
+  () => ptrScrollEl.value
+);
 
 /**
  * Capture the current selection into the app clipboard (NOT the OS clipboard —
@@ -2681,104 +2336,22 @@ const scrollEvent = throttle(() => {
   listingGrid.update();
 }, 100);
 
-const dragEnter = () => {
-  dragCounter.value++;
-
-  // When the user starts dragging an item, put every
-  // file on the listing with 50% opacity.
-  const items = document.getElementsByClassName("item");
-
-  Array.from(items).forEach((file: Element) => {
-    // V3-B #4: never re-dim the active drop target. dragenter fires on every
-    // child element the cursor crosses, so this runs repeatedly during a drag.
-    // ListingItem.enterIntoZone set the hovered folder to opacity:1 and its
-    // `inIntoZone` guard won't re-assert — so re-dimming it here is exactly
-    // what made the highlighted folder flicker bright→dim. Skipping rows that
-    // carry `item--drop-into` lets the highlight and the spring-load ring
-    // coexist, while rows virtualized in mid-drag still get dimmed.
-    if (file.classList.contains("item--drop-into")) return;
-    (file as HTMLElement).style.opacity = "0.5";
-  });
-};
-
-const dragLeave = () => {
-  dragCounter.value--;
-
-  if (dragCounter.value == 0) {
-    resetOpacity();
-    // The drag fully left the document. An OS-file drag that exits the window
-    // without dropping fires neither `drop` nor `dragend` on us, so this is the
-    // only signal to halt the edge auto-scroll rAF (otherwise it busy-loops).
-    stopDragScroll();
-  }
-};
-
-const drop = async (event: DragEvent) => {
-  event.preventDefault();
-  dragCounter.value = 0;
-  resetOpacity();
-
-  const dt = event.dataTransfer;
-  let el: HTMLElement | null = event.target as HTMLElement;
-
-  if (fileStore.req === null || dt === null || dt.files.length <= 0) return;
-
-  for (let i = 0; i < 5; i++) {
-    if (el !== null && !el.classList.contains("item")) {
-      el = el.parentElement;
-    }
-  }
-
-  const files: UploadList = (await upload.scanFiles(dt)) as UploadList;
-
-  // Dual-pane: when the OS-file drop lands inside pane B (ComparePane), the base
-  // destination is pane B's folder, not pane A's route path. This single global
-  // handler catches every OS-file drop (it's on `document`); without this, a drop
-  // on pane B's empty space or a file row fell through to pane A's path. A drop
-  // landing ON a folder row still uploads into that row's folder — resolved just
-  // below from its `data-drop-url`, which is already pane-correct.
-  const inPaneB =
-    (event.target as HTMLElement | null)?.closest?.(".compare-pane") != null;
-  const basePath = inPaneB ? panes.secondaryPath : route.path;
-  let path = basePath.endsWith("/") ? basePath : basePath + "/";
-
-  // Upload INTO a folder ONLY when the cursor is over its icon + name — the same
-  // shared `resolveRowDropMode` hit-test that draws the highlight (path #4 of the
-  // four drop surfaces; see utils/dropZone). Anywhere else on the row (or empty
-  // space) keeps `path` as the current directory, so the file uploads "alongside".
-  // The target folder's url is the row's `data-drop-url` (set only for droppable,
-  // non-read-only folders) — no Vue-internals poke.
-  const intoFolderUrl =
-    el !== null &&
-    el.classList.contains("item") &&
-    resolveRowDropMode(el, event.clientX, event.clientY) === "into"
-      ? el.dataset.dropUrl
-      : undefined;
-  if (intoFolderUrl) {
-    path = intoFolderUrl;
-
-    try {
-      (await api.fetch(path)).items;
-    } catch (error: any) {
-      $showError(error);
-      return;
-    }
-  }
-
-  // Preselect is a pane-A concept; pane-B uploads refresh pane B.
-  await startUpload(files, path, !inPaneB);
-};
-
-const resetOpacity = () => {
-  const items = document.getElementsByClassName("item");
-
-  Array.from(items).forEach((file: Element) => {
-    (file as HTMLElement).style.opacity = "1";
-    // Clear any lingering drop-into highlight (covers Esc-cancel while the
-    // cursor was still inside a folder's into-zone).
-    file.classList.remove("item--drop-into");
-  });
-};
+// OS-file drops, drag dimming and drag teardown nets; see
+// composables/listing/useOsFileDrop. Listeners are wired in onMounted.
+const {
+  dragEnter,
+  dragLeave,
+  drop,
+  resetOpacity,
+  clearDragSnapshot,
+  onDragCancelKey,
+} = useOsFileDrop({
+  routePath: () => route.path,
+  startUpload,
+  showError: (e) => $showError(e),
+  stopDragScroll,
+  onListingDragEnd,
+});
 
 const windowsResize = throttle(() => {
   columnsResize();

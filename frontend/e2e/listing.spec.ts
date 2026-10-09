@@ -117,3 +117,26 @@ test("uploads a file from the file picker", async ({ app, fake }) => {
   await expect(row(app, "hello.txt")).toBeVisible();
   expect(fake.fs.get("/hello.txt")?.content).toBe("uploaded in a smoke test");
 });
+
+test.describe("drag and drop", () => {
+  test("dragging a file onto a folder's name moves it there", async ({
+    app,
+    fake,
+  }) => {
+    const target = row(app, "Music").locator(".item__name-text").first();
+    await row(app, "readme.md").dragTo(target, {
+      targetPosition: { x: 12, y: 8 },
+    });
+    await expect(row(app, "readme.md")).toHaveCount(0);
+    expect(fake.exists("/Music/readme.md")).toBe(true);
+  });
+
+  test("split view: Parent folder is disabled at the root", async ({ app }) => {
+    await app.getByRole("button", { name: /View options/ }).click();
+    await app
+      .getByRole("menuitem", { name: "Split view", exact: true })
+      .click();
+    const parent = app.getByRole("button", { name: "Parent folder" }).first();
+    await expect(parent).toBeDisabled();
+  });
+});

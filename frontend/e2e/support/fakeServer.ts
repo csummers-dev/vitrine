@@ -108,6 +108,7 @@ export class FakeServer {
   readonly fs = new Map<string, FakeEntry>();
   readonly calls: ApiCall[] = [];
   readonly unhandled: string[] = [];
+  readonly jobs: { id: string; [k: string]: unknown }[] = [];
   readonly trash: {
     id: string;
     path: string;
@@ -344,7 +345,44 @@ export class FakeServer {
       if (method === "PUT") return text("", 200);
       return json(USER);
     }
-    if (api === "/jobs") return json([]);
+    // Background transfers: the work happens instantly; polls report it done.
+    if (api === "/jobs" && method === "POST") {
+      const body = JSON.parse(req.postData() ?? "{}") as {
+        kind: "move" | "copy";
+        items: { from: string; to: string }[];
+      };
+      for (const it of body.items)
+        this.move(norm(it.from), norm(it.to), body.kind === "copy");
+      const now = new Date().toISOString();
+      const job = {
+        id: `j${this.jobs.length + 1}`,
+        kind: body.kind,
+        status: "completed",
+        name: body.items.length === 1 ? baseName(norm(body.items[0].from)) : "",
+        dest: parentOf(norm(body.items[0]?.to ?? "/")),
+        toPaths: body.items.map((i) => norm(i.to)),
+        fromPaths: body.items.map((i) => norm(i.from)),
+        itemCount: body.items.length,
+        totalBytes: 0,
+        doneBytes: 0,
+        fileCount: body.items.length,
+        filesDone: body.items.length,
+        currentName: "",
+        currentTo: "",
+        createdAt: now,
+        startedAt: now,
+        finishedAt: now,
+      };
+      this.jobs.push(job);
+      // Like the real registry, the enqueue snapshot is always pre-scheduled
+      // ("queued"); the UI reloads when a later poll sees it settle.
+      return json({ ...job, status: "queued" });
+    }
+    if (api === "/jobs") return json(this.jobs);
+    if (api.startsWith("/jobs/")) {
+      const job = this.jobs.find((j) => j.id === api.slice("/jobs/".length));
+      return job ? json(job) : text("404 Not Found", 404);
+    }
     if (api === "/shares") return json([]);
     if (api.startsWith("/search")) return text("", 200);
 
