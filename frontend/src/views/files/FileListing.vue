@@ -987,8 +987,11 @@ import { usePullToRefresh } from "@/composables/usePullToRefresh";
 import { copy } from "@/utils/clipboard";
 import { sortListing } from "@/utils/secondarySort";
 import { useFolderSizes } from "@/composables/useFolderSizes";
+import { useFolderRename } from "@/composables/listing/useFolderRename";
+import { useListingDelete } from "@/composables/listing/useListingDelete";
+import { useListingPanels } from "@/composables/listing/useListingPanels";
 
-import { users, files as api, trash as trashApi } from "@/api";
+import { users, files as api } from "@/api";
 import { enableExec, unzipEnabled } from "@/utils/constants";
 import { isExtractable } from "@/utils/archive";
 import { isAudioTaggable } from "@/utils/audio";
@@ -1023,7 +1026,6 @@ import ImageHoverPreview from "@/components/files/ImageHoverPreview.vue";
 import InlineNewItem from "@/components/files/InlineNewItem.vue";
 import ListingSkeleton from "@/components/files/ListingSkeleton.vue";
 import EmptyState from "@/components/EmptyState.vue";
-import UndoToast from "@/components/UndoToast.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import MoveCopyPanel from "@/components/files/MoveCopyPanel.vue";
 import BulkRenamePanel from "@/components/files/BulkRenamePanel.vue";
@@ -1031,7 +1033,6 @@ import TagPickerSheet from "@/components/files/TagPickerSheet.vue";
 import { useBulkTagPicker } from "@/composables/useBulkTagPicker";
 import ExtractPanel from "@/components/files/ExtractPanel.vue";
 import SharePanel from "@/components/files/SharePanel.vue";
-import { useToast } from "vue-toastification";
 import ContextMenu, { type MenuItem } from "@/components/ContextMenu.vue";
 import { useDropTarget } from "@/composables/useDropTarget";
 import { useTouchDrag } from "@/composables/useTouchDrag";
@@ -1697,90 +1698,22 @@ const onItemPointerDown = (event: PointerEvent, index: number) => {
 };
 
 // ── Rename the currently-viewed folder ─────────────────────────────────
-// Surfaced as a "Rename folder" action in the ⋯ menu (header section title
-// More dropdown). UX matches the inline row rename in ListingItem: swap
-// the h1 for an input, Enter commits, Esc/blur cancels. We can't rename
-// at the storage root (no parent to move into), so the action hides via
-// `canRenameCurrentFolder` when the folder has no usable parent.
+// "Rename folder" in the ⋯ menu; see composables/listing/useFolderRename.
 const router = useRouter();
-const isRenamingCurrentFolder = ref<boolean>(false);
-const folderRenameValue = ref<string>("");
-const folderRenameInputEl = ref<HTMLInputElement | null>(null);
-let folderRenameSubmitting = false;
-
-// Mirror the current-folder rename into the shared store flag so a background
-// listing refresh (e.g. a transfer's incremental reload) defers instead of
-// interrupting the rename mid-edit (see Files.vue's reload gate). Row rename /
-// new-folder / new-file already surface via layoutStore.currentPromptName.
-watch(isRenamingCurrentFolder, (active) => {
-  fileStore.inlineEditing = active;
+const {
+  isRenaming: isRenamingCurrentFolder,
+  value: folderRenameValue,
+  inputEl: folderRenameInputEl,
+  canRename: canRenameCurrentFolder,
+  start: startFolderRename,
+  cancel: cancelFolderRename,
+  onBlur: onFolderRenameBlur,
+  submit: submitFolderRename,
+} = useFolderRename({
+  renameFavorite: (from, to) => favoritesComposable.renamePath(from, to),
+  navigate: (path) => router.push({ path }),
+  showError: (e) => $showError(e),
 });
-
-const canRenameCurrentFolder = computed<boolean>(() => {
-  if (!authStore.user?.perm.rename) return false;
-  const req = fileStore.req;
-  if (!req || !req.isDir) return false;
-  // Don't expose at the storage root — there's no parent to move into.
-  // Root URL looks like "/files/" with no folder name.
-  if (!req.name) return false;
-  return true;
-});
-
-const startFolderRename = async () => {
-  if (!canRenameCurrentFolder.value || !fileStore.req) return;
-  folderRenameValue.value = fileStore.req.name;
-  folderRenameSubmitting = false;
-  isRenamingCurrentFolder.value = true;
-  await nextTick();
-  const el = folderRenameInputEl.value;
-  if (!el) return;
-  el.focus();
-  el.select();
-};
-
-const cancelFolderRename = () => {
-  if (folderRenameSubmitting) return;
-  isRenamingCurrentFolder.value = false;
-};
-
-const onFolderRenameBlur = () => {
-  if (folderRenameSubmitting) return;
-  // Small delay so an Enter keydown can commit before the blur cancel
-  // fires (input loses focus when the keydown fires too).
-  setTimeout(() => {
-    if (!folderRenameSubmitting && isRenamingCurrentFolder.value) {
-      cancelFolderRename();
-    }
-  }, 120);
-};
-
-const submitFolderRename = async () => {
-  if (folderRenameSubmitting || !fileStore.req) return;
-  const next = folderRenameValue.value.trim();
-  if (next === "" || next === fileStore.req.name) {
-    cancelFolderRename();
-    return;
-  }
-  folderRenameSubmitting = true;
-  const oldUrl = fileStore.req.url;
-  // Strip trailing slash before computing the parent (removeLastDir
-  // would otherwise drop the folder name itself, not its parent).
-  const trimmed = oldUrl.endsWith("/") ? oldUrl.slice(0, -1) : oldUrl;
-  const newUrl = url.removeLastDir(trimmed) + "/" + encodeURIComponent(next);
-  try {
-    await api.move([{ from: oldUrl, to: newUrl }]);
-    // Keep Favorites pointing at this folder (or descendants) pinned —
-    // follow the rename so the sidebar link doesn't break.
-    favoritesComposable.renamePath(oldUrl, newUrl);
-    // The route URL still points at the old name — navigate to the new
-    // path so the listing reloads against the renamed folder.
-    router.push({ path: newUrl });
-    isRenamingCurrentFolder.value = false;
-  } catch (e) {
-    if (e instanceof Error) $showError(e);
-    folderRenameSubmitting = false;
-  }
-};
 
 const folderMeta = computed(() => {
   const req = fileStore.req;
@@ -3208,334 +3141,35 @@ const inlineNewKind = computed<"newDir" | "newFile" | null>(() => {
 });
 
 // ── Delete → confirm → trash + Undo-restores toast ───────────────────
-// (Stage 8 flow, rebuilt for the 2.4.0 Stage 2 recycle bin.) Flow:
-//   1. Any "delete" trigger (header button, palette, pill, ctx menu, the
-//      Delete key) routes through the confirm dialog.
-//   2. Confirm → the delete API runs IMMEDIATELY — the backend MOVES the
-//      items into the trash (an instant same-volume rename) and returns a
-//      trashId per item.
-//   3. An Undo toast shows for 10s; Undo RESTORES the trashed entries (the
-//      delete already happened — undo is a real round-trip, so it works
-//      even after navigating away). Items also remain recoverable from the
-//      Trash view long after the toast is gone.
-//   4. Shift+Delete (or the Trash view) deletes permanently: same confirm
-//      dialog with "Delete forever" wording, no undo.
-// The legacy modal is still kept in Prompts.vue for the file-editor
-// delete case (where `isListing === false`).
-const $toast = useToast();
-const UNDO_WINDOW_MS = 5000;
+// See composables/listing/useListingDelete for the flow.
+const {
+  confirmOpen,
+  confirmTitle,
+  confirmMessage,
+  pendingPermanent,
+  openDeleteConfirm,
+  onDeleteConfirm,
+  onDeleteCancel,
+  collectSelectedDeleteItems,
+} = useListingDelete({
+  visibleItems: () => [...items.value.dirs, ...items.value.files],
+  showError: (e) => $showError(e),
+});
 
-const confirmOpen = ref(false);
-const confirmTitle = ref("");
-const confirmMessage = ref("");
-const pendingConfirm = ref<{ url: string; name: string }[]>([]);
-const pendingPermanent = ref(false);
-
-// After an optimistic delete, move the selection to the nearest remaining
-// item so a follow-up Shift+Delete (RC-10) has a target instead of
-// no-opping on an empty selection. Mirrors the image-preview delete flow,
-// which already advances to a neighbor. Runs BEFORE the deleted items are
-// hidden by the pending filter, so the pre-delete visual order is intact.
-const selectNeighborAfterDelete = (deletedUrls: Set<string>) => {
-  // dirs-then-files matches the listing's render order.
-  const visible = [...items.value.dirs, ...items.value.files];
-  const firstDeletedPos = visible.findIndex((it) => deletedUrls.has(it.url));
-  const remaining = visible.filter((it) => !deletedUrls.has(it.url));
-  fileStore.multiple = false;
-  if (remaining.length === 0) {
-    // Deleted the whole folder's worth of items — nothing left to select.
-    fileStore.selected = [];
-    return;
-  }
-  // The item that slides up into the first deleted slot (or the last
-  // remaining item if the deletion was at the end of the list).
-  const pos = firstDeletedPos === -1 ? 0 : firstDeletedPos;
-  const neighbor = remaining[Math.min(pos, remaining.length - 1)];
-  // Immediate re-selection — `index` is the same key space the rows bind
-  // to, so the selection ring + a follow-up keyboard delete both work now.
-  fileStore.selected = [neighbor.index];
-  // Survive the eventual reload: performDelete sets reload=true, and
-  // Files.vue re-resolves queued preselect paths into the selection.
-  if (neighbor.path) fileStore.setPreselect(neighbor.path);
-};
-
-// Undo = restore the just-trashed entries by id. A real API round-trip (the
-// delete already happened), so it works even after navigating away.
-const undoRestore = async (ids: string[]) => {
-  try {
-    await Promise.all(ids.map((id) => trashApi.restore(id)));
-  } catch (e) {
-    if (e instanceof Error) $showError(e);
-  } finally {
-    fileStore.reload = true;
-  }
-};
-
-const startUndoDelete = async (
-  items: { url: string; name: string }[],
-  permanent: boolean
-) => {
-  // Advance the selection to a neighbor before the items vanish (RC-10).
-  selectNeighborAfterDelete(new Set(items.map((i) => i.url)));
-
-  if (permanent) {
-    try {
-      await Promise.all(items.map((i) => api.remove(i.url, true)));
-    } catch (e) {
-      if (e instanceof Error) $showError(e);
-    } finally {
-      fileStore.reload = true;
-    }
-    return;
-  }
-
-  // Move to trash NOW (instant same-volume rename server-side), keep the ids
-  // for the undo toast. Partial failures: whatever made it into the trash is
-  // undoable; the error for the rest surfaces via the toast.
-  let trashIds: string[] = [];
-  try {
-    const results = await Promise.all(items.map((i) => api.remove(i.url)));
-    trashIds = results
-      .filter((r): r is { trashId: string } => !!r?.trashId)
-      .map((r) => r.trashId);
-  } catch (e) {
-    if (e instanceof Error) $showError(e);
-  } finally {
-    fileStore.reload = true;
-  }
-  if (trashIds.length === 0) return;
-
-  const message =
-    items.length === 1
-      ? `Moved “${items[0].name}” to Trash`
-      : `Moved ${items.length} items to Trash`;
-
-  const toastId = $toast(
-    {
-      component: UndoToast,
-      props: {
-        message,
-        onClick: () => {
-          $toast.dismiss(toastId);
-          void undoRestore(trashIds);
-        },
-      },
-    },
-    {
-      timeout: UNDO_WINDOW_MS,
-      closeOnClick: false,
-      icon: false,
-      // Dedicated class so the delete toast gets its own dark-orange skin +
-      // width clamp (see .Vue-Toastification__toast.toast--undo in styles.css),
-      // distinct from the neutral grey of generic toasts.
-      toastClassName: "toast--undo",
-    }
-  );
-};
-
-// Open the trash/permanent confirm for `items`. Shared by the prompt
-// intercept watcher (header button, pill, ctx menu, palette) and the
-// Delete-key shortcut, so every entry point gets identical wording.
-const openDeleteConfirm = (
-  items: { url: string; name: string }[],
-  permanent: boolean
-) => {
-  if (items.length === 0) return;
-  pendingConfirm.value = items;
-  pendingPermanent.value = permanent;
-  if (permanent) {
-    confirmTitle.value =
-      items.length === 1
-        ? `Permanently delete “${items[0].name}”?`
-        : `Permanently delete ${items.length} items?`;
-    confirmMessage.value = "This skips the Trash and cannot be undone.";
-  } else {
-    const it = items[0];
-    const labelHint = it.url.endsWith("/") ? "folder" : "file";
-    confirmTitle.value =
-      items.length === 1
-        ? `Move this ${labelHint} to the Trash?`
-        : `Move ${items.length} items to the Trash?`;
-    confirmMessage.value =
-      items.length === 1
-        ? `“${it.name}” can be restored from the Trash later.`
-        : "They can be restored from the Trash later.";
-  }
-  confirmOpen.value = true;
-};
-
-const onDeleteConfirm = () => {
-  const items = pendingConfirm.value;
-  const permanent = pendingPermanent.value;
-  confirmOpen.value = false;
-  pendingConfirm.value = [];
-  pendingPermanent.value = false;
-  if (items.length === 0) return;
-  void startUndoDelete(items, permanent);
-};
-
-const onDeleteCancel = () => {
-  confirmOpen.value = false;
-  pendingConfirm.value = [];
-  pendingPermanent.value = false;
-};
-
-// Build the {url, name}[] list for the current listing selection.
-// Shared by the confirm-dialog intercept watcher and the S4-5
-// skip-confirm shortcut path so both agree on what "the selection" is.
-const collectSelectedDeleteItems = (): { url: string; name: string }[] => {
-  const req = fileStore.req;
-  if (!req) return [];
-  return fileStore.selected
-    .map((idx) => req.items[idx])
-    .filter(Boolean)
-    .map((i) => ({ url: i.url, name: i.name }));
-};
-
-// ── Stage 8: Move / Copy / Share slide-overs ──────────────────────────
-// Same intercept pattern as delete: when one of these prompts fires from
-// the listing context, snapshot what we need, dismiss the prompt, and
-// open the slide-over panel. The legacy modals remain registered in
-// Prompts.vue only as a safety net for non-listing callers.
-const moveCopyOpen = ref(false);
-const moveCopyMode = ref<"move" | "copy">("move");
-// Dual-pane: pane B opens the move/copy picker for ITS selection by passing an
-// `override` on the prompt. Captured here (before closeHovers clears the prompt)
-// and handed to MoveCopyPanel; null for pane A, which reads fileStore as before.
-const moveCopyOverride = ref<{
-  items: {
-    url: string;
-    name: string;
-    isDir: boolean;
-    size: number;
-    modified: string;
-  }[];
-  sourceUrl: string;
-} | null>(null);
-const shareOpen = ref(false);
-const extractOpen = ref(false);
-// v1.3 S4-2: BulkRenamePanel state lives on `bulkRename` (composable
-// declared up top with the other singleton composables) so the
-// command palette can flip it without prop drilling. Local helpers
-// are just thin wrappers that match the SlideOver's cancel/done
-// emit shape.
-
-const closeMoveCopy = () => {
-  moveCopyOpen.value = false;
-  moveCopyOverride.value = null;
-};
-const closeShare = () => {
-  shareOpen.value = false;
-};
-const closeExtract = () => {
-  extractOpen.value = false;
-};
-
-// True when ANY of the slide-over panels is open. Drives the pill-hide
-// (so the bottom pill doesn't overlap a panel) and the one-at-a-time
-// enforcement below.
-const anyPanelOpen = computed(
-  () =>
-    moveCopyOpen.value ||
-    shareOpen.value ||
-    extractOpen.value ||
-    bulkRename.isOpen.value
-);
-
-// Only one slide-over may be open at a time. Each open-path calls this
-// first so opening (say) Rename dismisses an already-open Copy panel
-// instead of stacking them.
-const closeAllPanels = () => {
-  moveCopyOpen.value = false;
-  shareOpen.value = false;
-  extractOpen.value = false;
-  bulkRename.close();
-};
-
-// BulkRename is opened from outside FileListing (pill button, command
-// palette, row context menu) via the composable singleton — so close the
-// sibling panels reactively whenever it opens.
-watch(
-  () => bulkRename.isOpen.value,
-  (open) => {
-    if (open) {
-      moveCopyOpen.value = false;
-      shareOpen.value = false;
-      extractOpen.value = false;
-    }
-  }
-);
-
-watch(
-  () => layoutStore.currentPromptName,
-  (name) => {
-    if (name === "move" || name === "copy") {
-      // Pane B passes its own items via `props.override`; capture it BEFORE
-      // closeHovers clears the prompt. With an override we skip the pane-A
-      // fileStore gate (pane B's selection lives in its own store).
-      const override = layoutStore.currentPrompt?.props?.override ?? null;
-      if (!override && (!fileStore.isListing || fileStore.selectedCount === 0))
-        return;
-      moveCopyMode.value = name;
-      moveCopyOverride.value = override;
-      layoutStore.closeHovers();
-      closeAllPanels();
-      moveCopyOpen.value = true;
-      return;
-    }
-    if (name === "share") {
-      // Share targets a single item — either the file being viewed, or the
-      // sole selected item in the listing. If the listing has 0 or 2+
-      // selected, do nothing (legacy modal would have noop'd too).
-      const singleListingSelection =
-        fileStore.isListing && fileStore.selectedCount === 1;
-      const fileView = !fileStore.isListing;
-      if (!singleListingSelection && !fileView) return;
-      layoutStore.closeHovers();
-      closeAllPanels();
-      shareOpen.value = true;
-      return;
-    }
-    if (name === "extract") {
-      // Extract targets one OR MORE selected archives in the current listing
-      // (each extracts into its own subfolder). Mirror the gate from
-      // `headerButtons.extract` so a stray `layoutStore.showHover("extract")`
-      // from a stale code path can't open the panel with no valid source:
-      // every selected item must be extractable.
-      if (!unzipEnabled) return;
-      const req = fileStore.req;
-      if (!fileStore.isListing || fileStore.selectedCount < 1 || !req) return;
-      const allArchives = fileStore.selected.every((i) =>
-        isExtractable(req.items[i]?.name ?? "")
-      );
-      if (!allArchives) return;
-      layoutStore.closeHovers();
-      closeAllPanels();
-      extractOpen.value = true;
-      return;
-    }
-  }
-);
-
-watch(
-  () => layoutStore.currentPromptName,
-  (name) => {
-    if (name !== "delete") return;
-    // Only intercept when we have a listing-level selection; the legacy
-    // modal still handles file-editor deletes (a different code path).
-    if (!fileStore.isListing || fileStore.selectedCount === 0) return;
-
-    const req = fileStore.req;
-    if (!req) return;
-    const items = collectSelectedDeleteItems();
-    if (items.length === 0) return;
-
-    // Dismiss the prompt so the legacy modal doesn't render alongside ours
-    layoutStore.closeHovers();
-
-    openDeleteConfirm(items, false);
-  }
-);
+// ── Stage 8: Move / Copy / Share / Extract slide-overs ────────────────
+// See composables/listing/useListingPanels (prompt intercepts + the
+// one-panel-at-a-time rule).
+const {
+  moveCopyOpen,
+  moveCopyMode,
+  moveCopyOverride,
+  shareOpen,
+  extractOpen,
+  closeMoveCopy,
+  closeShare,
+  closeExtract,
+  anyPanelOpen,
+} = useListingPanels({ bulkRename });
 
 const clearSelection = () => {
   fileStore.selected = [];
