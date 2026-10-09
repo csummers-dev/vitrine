@@ -992,6 +992,7 @@ import { useListingDelete } from "@/composables/listing/useListingDelete";
 import { useListingPanels } from "@/composables/listing/useListingPanels";
 import { useListingSort } from "@/composables/listing/useListingSort";
 import { useListingViewMode } from "@/composables/listing/useListingViewMode";
+import { useListingUpload } from "@/composables/listing/useListingUpload";
 
 import { files as api } from "@/api";
 import { enableExec, unzipEnabled } from "@/utils/constants";
@@ -1022,7 +1023,6 @@ import {
   TYPE_FILTER_ORDER,
   type TypeFilterKey,
 } from "@/utils/typeFilter";
-import { pastedFileName } from "@/utils/filename";
 import { pressStartedOnEmptyListing } from "@/utils/listingPress";
 import ImageHoverPreview from "@/components/files/ImageHoverPreview.vue";
 import InlineNewItem from "@/components/files/InlineNewItem.vue";
@@ -1051,7 +1051,6 @@ import { useRoute, useRouter, onBeforeRouteUpdate } from "vue-router";
 import url from "@/utils/url";
 import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
-import { removePrefix } from "@/api/utils";
 import { startTransfer } from "@/utils/transfers";
 import { resolveRowDropMode } from "@/utils/dropZone";
 
@@ -1080,6 +1079,14 @@ const toggleSplit = () => {
   if (panes.split) panes.closeSplit();
   else panes.openSplit(route.path.replace(/\/?$/, "/"));
 };
+
+// ── Upload entry points (button, inputs, paste, drop) ──────────────────
+// See composables/listing/useListingUpload.
+const { startUpload, uploadFunc, uploadInput, onPasteUpload } =
+  useListingUpload({
+    routePath: () => route.path,
+    splitActive,
+  });
 
 // ── View mode (list / grid / gallery) + the View popover ────────────────
 // See composables/listing/useListingViewMode.
@@ -2758,189 +2765,8 @@ const drop = async (event: DragEvent) => {
     }
   }
 
-  const conflict = await upload.checkConflict(files, path);
-
-  // Build a preselect list of every uploaded file's destination path.
-  // For folder-uploads, `fullPath` carries the relative path inside
-  // the dropped folder (already decoded from webkitRelativePath); for
-  // plain file drops, `name` is the bare filename (also decoded).
-  const buildPreselect = (sourceFiles: typeof files) =>
-    sourceFiles.map((f) => removePrefix(path) + (f.fullPath || f.name));
-
-  if (conflict.length > 0) {
-    layoutStore.showHover({
-      prompt: "resolve-conflict",
-      props: {
-        conflict: conflict,
-        isUploadAction: true,
-        to: path,
-      },
-      confirm: (event: Event, result: Array<ConflictingResource>) => {
-        event.preventDefault();
-        layoutStore.closeHovers();
-        for (let i = result.length - 1; i >= 0; i--) {
-          const item = result[i];
-          if (item.checked.length == 2) {
-            continue;
-          } else if (item.checked.length == 1 && item.checked[0] == "origin") {
-            files[item.index].overwrite = true;
-          } else {
-            files.splice(item.index, 1);
-          }
-        }
-        if (files.length > 0) {
-          upload.handleFiles(files, path, true);
-          // Re-select against the post-conflict-resolution survivors
-          // so skipped files don't end up "selected but missing". Preselect is
-          // a pane-A concept; skip it for pane-B uploads (those refresh pane B).
-          if (!inPaneB) fileStore.setPreselect(buildPreselect(files));
-        }
-      },
-    });
-
-    return;
-  }
-
-  upload.handleFiles(files, path);
-  if (!inPaneB) fileStore.setPreselect(buildPreselect(files));
-};
-
-// ── Paste-to-upload (v2.7) ───────────────────────────────────────────
-// ⌘V with FILES on the OS clipboard (a screenshot, a Finder copy) uploads
-// them into the active pane's folder. Registered on `document` (like the OS
-// drop handler) so it works wherever focus sits, with the same guards the
-// keyboard handler uses. The app's own cut/copy clipboard keeps priority:
-// when it's armed, ⌘V means "paste those items" (handled in keyEvent) and
-// this handler stays out of the way.
-const onPasteUpload = async (event: ClipboardEvent) => {
-  if (layoutStore.currentPrompt !== null) return;
-  if (!authStore.user?.perm.create) return;
-  if (clipboardStore.key !== "") return; // internal clipboard wins
-  const t = event.target as HTMLElement | null;
-  const tag = t?.tagName?.toLowerCase();
-  if (tag === "input" || tag === "textarea" || t?.isContentEditable) return;
-  const clipFiles = event.clipboardData?.files;
-  if (!clipFiles || clipFiles.length === 0) return; // plain text — not ours
-  event.preventDefault();
-
-  // Paste lands in the ACTIVE pane's folder (split) or the current route.
-  const inPaneB = splitActive.value && panes.activePane === "b";
-  const basePath = inPaneB ? panes.secondaryPath : route.path;
-  const path = basePath.endsWith("/") ? basePath : basePath + "/";
-
-  const now = new Date();
-  const uploadFiles: UploadList = [];
-  for (let i = 0; i < clipFiles.length; i++) {
-    const file = clipFiles[i];
-    uploadFiles.push({
-      file,
-      // Generic clipboard names ("image.png") get a timestamp so repeat
-      // pastes don't fight the conflict dialog every time.
-      name: pastedFileName(file.name, now),
-      size: file.size,
-      isDir: false,
-    });
-  }
-
-  const buildPreselect = (sourceFiles: typeof uploadFiles) =>
-    sourceFiles.map((f) => removePrefix(path) + f.name);
-
-  const conflict = await upload.checkConflict(uploadFiles, path);
-  if (conflict.length > 0) {
-    layoutStore.showHover({
-      prompt: "resolve-conflict",
-      props: {
-        conflict: conflict,
-        isUploadAction: true,
-        to: path,
-      },
-      confirm: (e: Event, result: Array<ConflictingResource>) => {
-        e.preventDefault();
-        layoutStore.closeHovers();
-        for (let i = result.length - 1; i >= 0; i--) {
-          const item = result[i];
-          if (item.checked.length == 2) {
-            continue;
-          } else if (item.checked.length == 1 && item.checked[0] == "origin") {
-            uploadFiles[item.index].overwrite = true;
-          } else {
-            uploadFiles.splice(item.index, 1);
-          }
-        }
-        if (uploadFiles.length > 0) {
-          upload.handleFiles(uploadFiles, path, true);
-          if (!inPaneB) fileStore.setPreselect(buildPreselect(uploadFiles));
-        }
-      },
-    });
-    return;
-  }
-
-  upload.handleFiles(uploadFiles, path);
-  if (!inPaneB) fileStore.setPreselect(buildPreselect(uploadFiles));
-};
-
-const uploadInput = async (event: Event) => {
-  const files = (event.currentTarget as HTMLInputElement)?.files;
-  if (files === null) return;
-
-  const folder_upload = !!files[0].webkitRelativePath;
-
-  const uploadFiles: UploadList = [];
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    const fullPath = folder_upload ? file.webkitRelativePath : undefined;
-    uploadFiles.push({
-      file,
-      name: file.name,
-      size: file.size,
-      isDir: false,
-      fullPath,
-    });
-  }
-
-  const path = route.path.endsWith("/") ? route.path : route.path + "/";
-  const conflict = await upload.checkConflict(uploadFiles, path);
-
-  // Mirror dropUpload's preselect behavior so users see their freshly-
-  // uploaded files highlighted in the destination — consistent UX
-  // regardless of which upload entry point they used.
-  const buildPreselect = (sourceFiles: typeof uploadFiles) =>
-    sourceFiles.map((f) => removePrefix(path) + (f.fullPath || f.name));
-
-  if (conflict.length > 0) {
-    layoutStore.showHover({
-      prompt: "resolve-conflict",
-      props: {
-        conflict: conflict,
-        isUploadAction: true,
-        to: path,
-      },
-      confirm: (event: Event, result: Array<ConflictingResource>) => {
-        event.preventDefault();
-        layoutStore.closeHovers();
-        for (let i = result.length - 1; i >= 0; i--) {
-          const item = result[i];
-          if (item.checked.length == 2) {
-            continue;
-          } else if (item.checked.length == 1 && item.checked[0] == "origin") {
-            uploadFiles[item.index].overwrite = true;
-          } else {
-            uploadFiles.splice(item.index, 1);
-          }
-        }
-        if (uploadFiles.length > 0) {
-          upload.handleFiles(uploadFiles, path, true);
-          fileStore.setPreselect(buildPreselect(uploadFiles));
-        }
-      },
-    });
-
-    return;
-  }
-
-  upload.handleFiles(uploadFiles, path);
-  fileStore.setPreselect(buildPreselect(uploadFiles));
+  // Preselect is a pane-A concept; pane-B uploads refresh pane B.
+  await startUpload(files, path, !inPaneB);
 };
 
 const resetOpacity = () => {
@@ -3292,17 +3118,6 @@ const {
     fileStore.draggedItems.length === 0 &&
     dragSelect.lasso.value === null,
 });
-
-const uploadFunc = () => {
-  if (
-    typeof window.DataTransferItem !== "undefined" &&
-    typeof DataTransferItem.prototype.webkitGetAsEntry !== "undefined"
-  ) {
-    layoutStore.showHover("upload");
-  } else {
-    document.getElementById("upload-input")?.click();
-  }
-};
 
 const setItemWeight = () => {
   // CH-1: legacy hook from the old showLimit windowing. Now it just

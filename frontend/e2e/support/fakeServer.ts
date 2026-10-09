@@ -262,6 +262,45 @@ export class FakeServer {
       }
     }
 
+    // Minimal tus (resumable upload) server: create, then PATCH the bytes.
+    if (api.startsWith("/tus/")) {
+      const p = norm(api.slice("/tus".length));
+      const tusHeaders = { "Tus-Resumable": "1.0.0" };
+      if (method === "POST") {
+        if (this.fs.has(p) && query.override !== "true")
+          return text("409 Conflict", 409);
+        this.fs.set(p, {
+          isDir: false,
+          content: "",
+          modified: new Date().toISOString(),
+        });
+        return route.fulfill({
+          status: 201,
+          headers: { ...tusHeaders, Location: req.url() },
+        });
+      }
+      const e = this.fs.get(p);
+      if (!e) return text("404 Not Found", 404);
+      if (method === "PATCH") {
+        e.content =
+          (e.content ?? "") + (req.postDataBuffer()?.toString() ?? "");
+        return route.fulfill({
+          status: 204,
+          headers: {
+            ...tusHeaders,
+            "Upload-Offset": String((e.content ?? "").length),
+          },
+        });
+      }
+      if (method === "HEAD")
+        return route.fulfill({
+          status: 200,
+          headers: {
+            ...tusHeaders,
+            "Upload-Offset": String((e.content ?? "").length),
+          },
+        });
+    }
     if (api.startsWith("/preview/"))
       return route.fulfill({
         status: 200,

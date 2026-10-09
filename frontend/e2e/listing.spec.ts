@@ -107,3 +107,13 @@ test.describe("sorting and layout", () => {
     await expect(row(app, "readme.md")).toBeVisible();
   });
 });
+
+test("uploads a file from the file picker", async ({ app, fake }) => {
+  await app.locator("#upload-input").setInputFiles({
+    name: "hello.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("uploaded in a smoke test"),
+  });
+  await expect(row(app, "hello.txt")).toBeVisible();
+  expect(fake.fs.get("/hello.txt")?.content).toBe("uploaded in a smoke test");
+});
