@@ -188,6 +188,7 @@ func NewHandler(
 	api.Handle("/webhooks/{id:[0-9]+}", monkey(webhooksUpdateHandler(webhookStore), "")).Methods("PUT")
 	api.Handle("/webhooks/{id:[0-9]+}", monkey(webhooksDeleteHandler(webhookStore), "")).Methods("DELETE")
 	api.Handle("/webhooks/{id:[0-9]+}/test", monkey(webhooksTestHandler(webhookStore, webhookDispatcher), "")).Methods("POST")
+	api.Handle("/webhooks/{id:[0-9]+}/secret", monkey(webhooksSecretHandler(webhookStore), "")).Methods("POST", "DELETE")
 
 	api.PathPrefix("/raw").Handler(monkey(rawHandler, "/api/raw")).Methods("GET")
 	// 4.0 3.6: photo-map tiles, fetched and cached by the server.

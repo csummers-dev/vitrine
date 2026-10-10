@@ -23,6 +23,17 @@ func isBlockedIP(ip net.IP) bool {
 		ip.IsUnspecified() || ip.IsMulticast()
 }
 
+// isBlockedIPFor is isBlockedIP for an endpoint that may reach the local
+// network: private and loopback addresses pass, link-local (cloud metadata
+// at 169.254.169.254), unspecified and multicast addresses never do.
+func isBlockedIPFor(ip net.IP, allowLocal bool) bool {
+	if !allowLocal {
+		return isBlockedIP(ip)
+	}
+	return ip == nil || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() ||
+		ip.IsUnspecified() || ip.IsMulticast()
+}
+
 // ssrfGuardDisabled relaxes the dial guard so tests can reach a loopback
 // httptest server. Never set in production; isBlockedIP is covered directly by
 // TestIsBlockedIP.
@@ -33,7 +44,7 @@ var ssrfGuardDisabled bool
 // dials the vetted IP directly (not the hostname), which closes the
 // DNS-rebinding window a create-time URL check can't — and every redirect hop
 // re-enters this dialer, so an external endpoint can't 3xx us inward either.
-func guardedDialContext(d *net.Dialer) func(context.Context, string, string) (net.Conn, error) {
+func guardedDialContext(d *net.Dialer, allowLocal bool) func(context.Context, string, string) (net.Conn, error) {
 	return func(ctx context.Context, network, addr string) (net.Conn, error) {
 		host, port, err := net.SplitHostPort(addr)
 		if err != nil {
@@ -44,7 +55,7 @@ func guardedDialContext(d *net.Dialer) func(context.Context, string, string) (ne
 			return nil, err
 		}
 		for _, ip := range ips {
-			if !ssrfGuardDisabled && isBlockedIP(ip) {
+			if !ssrfGuardDisabled && isBlockedIPFor(ip, allowLocal) {
 				return nil, errBlockedWebhookAddr
 			}
 		}
@@ -60,13 +71,14 @@ func guardedDialContext(d *net.Dialer) func(context.Context, string, string) (ne
 	}
 }
 
-// newGuardedHTTPClient builds the webhook delivery client with the SSRF dialer.
-func newGuardedHTTPClient(timeout time.Duration) *http.Client {
+// newGuardedHTTPClient builds the webhook delivery client with the SSRF
+// dialer; allowLocal admits the local network (see isBlockedIPFor).
+func newGuardedHTTPClient(timeout time.Duration, allowLocal bool) *http.Client {
 	dialer := &net.Dialer{Timeout: timeout}
 	return &http.Client{
 		Timeout: timeout,
 		Transport: &http.Transport{
-			DialContext:         guardedDialContext(dialer),
+			DialContext:         guardedDialContext(dialer, allowLocal),
 			TLSHandshakeTimeout: timeout,
 			ForceAttemptHTTP2:   true,
 		},

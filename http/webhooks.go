@@ -14,9 +14,40 @@ import (
 // webhookBody is the editable shape of an endpoint (PUT/POST). Status
 // fields are server-managed and not accepted from the client.
 type webhookBody struct {
-	URL     string   `json:"url"`
-	Enabled bool     `json:"enabled"`
-	Events  []string `json:"events"`
+	URL        string   `json:"url"`
+	Enabled    bool     `json:"enabled"`
+	Events     []string `json:"events"`
+	Kind       string   `json:"kind"`
+	Paths      []string `json:"paths"`
+	AllowLocal bool     `json:"allowLocal"`
+	// APIKey (Jellyfin) is write-only; empty on an edit keeps the old one.
+	APIKey string `json:"apiKey"`
+}
+
+// endpoint validates the body and builds the endpoint it describes.
+func (b webhookBody) endpoint(id string) (*webhooks.Endpoint, error) {
+	if !validWebhookURL(b.URL) {
+		return nil, errors.New("webhook url must be http(s)")
+	}
+	if b.Kind != webhooks.KindGeneric && b.Kind != webhooks.KindJellyfin {
+		return nil, errors.New("unknown webhook kind")
+	}
+	var paths []string
+	for _, p := range b.Paths {
+		if p = strings.TrimSpace(p); p != "" {
+			paths = append(paths, "/"+strings.Trim(p, "/"))
+		}
+	}
+	return &webhooks.Endpoint{
+		ID:         id,
+		URL:        b.URL,
+		Enabled:    b.Enabled,
+		Events:     sanitizeEvents(b.Events),
+		Kind:       b.Kind,
+		Paths:      paths,
+		AllowLocal: b.AllowLocal,
+		APIKey:     strings.TrimSpace(b.APIKey),
+	}, nil
 }
 
 func validWebhookURL(u string) bool {
@@ -45,9 +76,11 @@ func webhooksListHandler(store *webhooks.Store) handleFunc {
 		if err != nil {
 			return http.StatusInternalServerError, err
 		}
-		if eps == nil {
-			eps = []webhooks.Endpoint{}
+		out := make([]webhooks.Endpoint, 0, len(eps))
+		for _, ep := range eps {
+			out = append(out, ep.Public())
 		}
+		eps = out
 		return renderJSON(w, r, map[string]interface{}{
 			"endpoints":  eps,
 			"eventTypes": webhooks.FileEventTypes(),
@@ -61,18 +94,17 @@ func webhooksCreateHandler(store *webhooks.Store) handleFunc {
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			return http.StatusBadRequest, err
 		}
-		if !validWebhookURL(body.URL) {
-			return http.StatusBadRequest, errors.New("webhook url must be http(s)")
+		ep, err := body.endpoint("")
+		if err != nil {
+			return http.StatusBadRequest, err
 		}
-		ep := &webhooks.Endpoint{
-			URL:     body.URL,
-			Enabled: body.Enabled,
-			Events:  sanitizeEvents(body.Events),
+		if ep.Kind == webhooks.KindJellyfin && ep.APIKey == "" {
+			return http.StatusBadRequest, errors.New("a Jellyfin endpoint needs an API key")
 		}
 		if err := store.Create(ep); err != nil {
 			return http.StatusInternalServerError, err
 		}
-		return renderJSON(w, r, ep)
+		return renderJSON(w, r, ep.Public())
 	})
 }
 
@@ -82,14 +114,9 @@ func webhooksUpdateHandler(store *webhooks.Store) handleFunc {
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			return http.StatusBadRequest, err
 		}
-		if !validWebhookURL(body.URL) {
-			return http.StatusBadRequest, errors.New("webhook url must be http(s)")
-		}
-		ep := &webhooks.Endpoint{
-			ID:      mux.Vars(r)["id"],
-			URL:     body.URL,
-			Enabled: body.Enabled,
-			Events:  sanitizeEvents(body.Events),
+		ep, err := body.endpoint(mux.Vars(r)["id"])
+		if err != nil {
+			return http.StatusBadRequest, err
 		}
 		if err := store.Update(ep); err != nil {
 			if errors.Is(err, webhooks.ErrNotFound) {
@@ -97,7 +124,7 @@ func webhooksUpdateHandler(store *webhooks.Store) handleFunc {
 			}
 			return http.StatusInternalServerError, err
 		}
-		return renderJSON(w, r, ep)
+		return renderJSON(w, r, ep.Public())
 	})
 }
 
@@ -122,7 +149,7 @@ func webhooksTestHandler(store *webhooks.Store, dispatcher *webhooks.Dispatcher)
 		if ep == nil {
 			return http.StatusNotFound, nil
 		}
-		code, derr := dispatcher.Test(ep.ID, ep.URL)
+		code, derr := dispatcher.Test(*ep)
 		result := map[string]interface{}{
 			"ok":   derr == nil && code >= 200 && code < 300,
 			"code": code,
@@ -131,5 +158,31 @@ func webhooksTestHandler(store *webhooks.Store, dispatcher *webhooks.Dispatcher)
 			result["error"] = derr.Error()
 		}
 		return renderJSON(w, r, result)
+	})
+}
+
+// webhooksSecretHandler creates or rotates (POST) or removes (DELETE) an
+// endpoint's signing secret. A new secret is returned once and never shown
+// again.
+func webhooksSecretHandler(store *webhooks.Store) handleFunc {
+	return withAdmin(func(w http.ResponseWriter, r *http.Request, _ *data) (int, error) {
+		id := mux.Vars(r)["id"]
+		secret := ""
+		if r.Method == http.MethodPost {
+			var err error
+			if secret, err = webhooks.NewSecret(); err != nil {
+				return http.StatusInternalServerError, err
+			}
+		}
+		if err := store.SetSecret(id, secret); err != nil {
+			if errors.Is(err, webhooks.ErrNotFound) {
+				return http.StatusNotFound, nil
+			}
+			return http.StatusInternalServerError, err
+		}
+		if secret == "" {
+			return http.StatusOK, nil
+		}
+		return renderJSON(w, r, map[string]string{"secret": secret})
 	})
 }

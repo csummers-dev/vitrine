@@ -21,6 +21,22 @@ All notable changes to **vitrine**.
   `--fileWatching` / `VITRINE_FILE_WATCHING` = `auto` (default), `poll` (for
   network mounts) or `off`. See the README for the inotify limit and reverse
   proxies.
+- **Share usage and one-time links.** Share links count views and
+  downloads and remember when they were last opened, shown in the share
+  panel and Settings → Shares and updated live. A download limit (one-time,
+  5, 10 or 25) ends a link once it's used up; visitors then get a clear
+  "no longer available" page.
+- **Signed webhooks.** An endpoint can have a signing secret (generated,
+  shown once); deliveries then carry `X-Vitrine-Signature: t=…,v1=…`
+  (HMAC-SHA256 over `<t>.<body>`). Unsigned endpoints keep working.
+- **Jellyfin preset.** A webhook of type *Jellyfin library refresh* asks
+  Jellyfin to rescan when files change in chosen folders, at most once a
+  minute.
+- **Webhook folders and LAN targets.** Any endpoint can be limited to
+  folders, and can be allowed to reach local-network addresses (still never
+  link-local or cloud-metadata ones).
+- **Fixed: webhooks never fired for `file.modified`**, although it was
+  offered in the event filter.
 - **Play queue and mini-player.** Play a folder, a track (the folder plays
   from there) or a selection, add tracks to the queue, shuffle and repeat. A
   mini-player keeps playing while you browse and works with media keys and

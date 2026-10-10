@@ -11,12 +11,12 @@ import (
 func TestIsBlockedIP(t *testing.T) {
 	blocked := []string{
 		"127.0.0.1", "::1", // loopback
-		"169.254.169.254",     // cloud metadata (link-local)
-		"10.0.0.5",            // RFC1918
-		"192.168.1.1",         // RFC1918
-		"172.16.0.1",          // RFC1918
-		"fd00::1",             // ULA
-		"0.0.0.0", "::",       // unspecified
+		"169.254.169.254", // cloud metadata (link-local)
+		"10.0.0.5",        // RFC1918
+		"192.168.1.1",     // RFC1918
+		"172.16.0.1",      // RFC1918
+		"fd00::1",         // ULA
+		"0.0.0.0", "::",   // unspecified
 		"224.0.0.1", "ff02::1", // multicast
 	}
 	allowed := []string{

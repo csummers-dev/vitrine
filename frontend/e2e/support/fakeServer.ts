@@ -175,6 +175,9 @@ export class FakeServer {
     maxDownloads?: number;
   }[] = [];
 
+  /** Webhook endpoints (secrets kept here, never returned). */
+  readonly webhooks: Record<string, unknown>[] = [];
+
   /** The user's preferences: served in the token, updated by PUT /users. */
   preferences: Record<string, unknown> = {};
 
@@ -499,6 +502,46 @@ export class FakeServer {
     if (api.startsWith("/jobs/")) {
       const job = this.jobs.find((j) => j.id === api.slice("/jobs/".length));
       return job ? json(job) : text("404 Not Found", 404);
+    }
+    if (api.startsWith("/webhooks")) {
+      const pub = (w: Record<string, unknown>) => {
+        const { secret, apiKey, ...rest } = w;
+        return { ...rest, hasSecret: !!secret, hasApiKey: !!apiKey };
+      };
+      const m = /^\/webhooks(?:\/(\d+))?(?:\/(test|secret))?$/.exec(api);
+      if (!m) return text("404 Not Found", 404);
+      const [, id, action] = m;
+      const ep = this.webhooks.find((w) => w.id === id);
+      if (!id && method === "GET")
+        return json({
+          endpoints: this.webhooks.map(pub),
+          eventTypes: ["file.created", "file.uploaded", "file.deleted"],
+        });
+      if (!id && method === "POST") {
+        const body = JSON.parse(req.postData() || "{}");
+        const w = { ...body, id: String(this.webhooks.length + 1) };
+        this.webhooks.push(w);
+        return json(pub(w));
+      }
+      if (!ep) return text("404 Not Found", 404);
+      if (action === "test") return json({ ok: true, code: 204 });
+      if (action === "secret") {
+        if (method === "DELETE") {
+          delete ep.secret;
+          return text("", 200);
+        }
+        ep.secret = `whsec_${"ab".repeat(32)}`;
+        return json({ secret: ep.secret });
+      }
+      if (method === "PUT") {
+        const body = JSON.parse(req.postData() || "{}");
+        Object.assign(ep, body, { apiKey: body.apiKey || ep.apiKey });
+        return json(pub(ep));
+      }
+      if (method === "DELETE") {
+        this.webhooks.splice(this.webhooks.indexOf(ep), 1);
+        return text("", 200);
+      }
     }
     if (api === "/shares") return json(this.shares);
     if (api.startsWith("/share/")) {

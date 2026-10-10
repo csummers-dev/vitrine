@@ -23,18 +23,79 @@
 
       <!-- Editor (add / edit) -->
       <div v-if="editor.open" class="wh-editor">
+        <!-- 4.3: a plain webhook, or the Jellyfin library-refresh preset. -->
+        <div class="wh-field">
+          <span>Type</span>
+          <div class="wh-kinds" role="radiogroup" aria-label="Type">
+            <label class="wh-kind">
+              <input v-model="editor.kind" type="radio" value="" />
+              <span>Webhook</span>
+            </label>
+            <label class="wh-kind">
+              <input
+                v-model="editor.kind"
+                type="radio"
+                value="jellyfin"
+                @change="editor.allowLocal = true"
+              />
+              <span>Jellyfin library refresh</span>
+            </label>
+          </div>
+        </div>
+
         <label class="wh-field">
-          <span>Payload URL</span>
+          <span>{{
+            editor.kind === "jellyfin" ? "Jellyfin server URL" : "Payload URL"
+          }}</span>
           <input
             ref="urlInput"
             v-model.trim="editor.url"
             type="url"
             class="settings-input"
-            placeholder="https://example.com/webhook"
+            :placeholder="
+              editor.kind === 'jellyfin'
+                ? 'http://192.168.1.20:8096'
+                : 'https://example.com/webhook'
+            "
             spellcheck="false"
             autocomplete="off"
           />
         </label>
+
+        <div v-if="editor.kind === 'jellyfin'" class="wh-field">
+          <label for="wh-api-key">API key</label>
+          <input
+            id="wh-api-key"
+            v-model.trim="editor.apiKey"
+            type="password"
+            class="settings-input"
+            :placeholder="
+              editor.hasApiKey
+                ? 'Saved — leave blank to keep it'
+                : 'Jellyfin → Dashboard → API Keys'
+            "
+            autocomplete="off"
+          />
+          <p class="wh-hint">
+            A change in the chosen folders schedules one library scan a minute
+            later; changes in that minute share it.
+          </p>
+        </div>
+
+        <div class="wh-field">
+          <label for="wh-paths">Folders</label>
+          <textarea
+            id="wh-paths"
+            v-model="editor.paths"
+            class="settings-input wh-paths"
+            rows="2"
+            placeholder="/Movies&#10;/TV"
+            spellcheck="false"
+          ></textarea>
+          <p class="wh-hint">
+            One folder per line. Leave empty to react to changes anywhere.
+          </p>
+        </div>
 
         <div class="wh-field">
           <span>Events</span>
@@ -57,6 +118,51 @@
           <Toggle v-model="editor.enabled" />
           <span>Enabled</span>
         </label>
+
+        <label class="wh-toggle-row">
+          <Toggle v-model="editor.allowLocal" />
+          <span>Allow addresses on the local network</span>
+        </label>
+        <p class="wh-hint wh-hint--indent">
+          Needed for services on your LAN or this host. Cloud metadata and
+          link-local addresses stay blocked.
+        </p>
+
+        <!-- Signing (generic endpoints, once saved). -->
+        <div v-if="editor.id && editor.kind === ''" class="wh-field">
+          <span>Signing secret</span>
+          <div class="wh-secret-row">
+            <span class="wh-hint">{{
+              editor.hasSecret
+                ? "Deliveries are signed (X-Vitrine-Signature)."
+                : "Deliveries are not signed."
+            }}</span>
+            <button type="button" class="wh-btn" @click="makeSecret">
+              {{ editor.hasSecret ? "Rotate" : "Generate" }}
+            </button>
+            <button
+              v-if="editor.hasSecret"
+              type="button"
+              class="wh-btn"
+              @click="dropSecret"
+            >
+              Remove
+            </button>
+          </div>
+          <div v-if="newSecret" class="wh-secret-new">
+            <input
+              readonly
+              class="settings-input"
+              :value="newSecret"
+              data-testid="webhook-secret"
+              @focus="(e) => (e.target as HTMLInputElement).select()"
+            />
+            <p class="wh-hint">
+              Copy it now: it won't be shown again. Verify each delivery with
+              HMAC-SHA256 over "&lt;t&gt;.&lt;body&gt;" (see the README).
+            </p>
+          </div>
+        </div>
 
         <div class="wh-editor-actions">
           <button type="button" class="wh-btn" @click="cancelEdit">
@@ -99,11 +205,20 @@
       <ul v-else class="wh-list">
         <li v-for="ep in endpoints" :key="ep.id" class="wh-row">
           <div class="wh-row__main">
-            <div class="wh-row__url" :title="ep.url">{{ ep.url }}</div>
+            <div class="wh-row__url" :title="ep.url">
+              <span v-if="ep.kind === 'jellyfin'" class="wh-tag">Jellyfin</span>
+              <span v-if="ep.hasSecret" class="wh-tag" title="Signed">
+                <Icon name="lock" :size="10" />
+              </span>
+              {{ ep.url }}
+            </div>
             <div class="wh-row__meta">
               <span class="wh-events-summary">{{
                 eventsSummary(ep.events)
               }}</span>
+              <span v-if="ep.paths?.length" class="wh-events-summary">
+                in {{ ep.paths.join(", ") }}
+              </span>
               <span
                 v-if="ep.lastStatus"
                 class="wh-status"
@@ -190,7 +305,7 @@
 import { inject, nextTick, reactive, ref } from "vue";
 import dayjs from "dayjs";
 import { webhooks as api } from "@/api";
-import type { WebhookEndpoint } from "@/api/webhooks";
+import { inputOf, type WebhookEndpoint } from "@/api/webhooks";
 import SettingsPage from "@/components/settings/SettingsPage.vue";
 import SettingsSection from "@/components/settings/SettingsSection.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
@@ -216,7 +331,15 @@ const editor = reactive({
   url: "",
   enabled: true,
   events: new Set<string>(),
+  kind: "",
+  paths: "",
+  allowLocal: false,
+  apiKey: "",
+  hasApiKey: false,
+  hasSecret: false,
 });
+/** A just-generated secret, shown once. */
+const newSecret = ref("");
 
 const EVENT_LABELS: Record<string, string> = {
   "file.created": "Created",
@@ -225,6 +348,7 @@ const EVENT_LABELS: Record<string, string> = {
   "file.copied": "Copied",
   "file.deleted": "Deleted",
   "file.uploaded": "Uploaded",
+  "file.modified": "Modified",
 };
 const eventLabel = (e: string) => EVENT_LABELS[e] ?? e;
 
@@ -259,6 +383,13 @@ const openNew = () => {
   editor.url = "";
   editor.enabled = true;
   editor.events = new Set();
+  editor.kind = "";
+  editor.paths = "";
+  editor.allowLocal = false;
+  editor.apiKey = "";
+  editor.hasApiKey = false;
+  editor.hasSecret = false;
+  newSecret.value = "";
   focusUrl();
 };
 
@@ -268,7 +399,37 @@ const openEdit = (ep: WebhookEndpoint) => {
   editor.url = ep.url;
   editor.enabled = ep.enabled;
   editor.events = new Set(ep.events ?? []);
+  editor.kind = ep.kind ?? "";
+  editor.paths = (ep.paths ?? []).join("\n");
+  editor.allowLocal = !!ep.allowLocal;
+  editor.apiKey = "";
+  editor.hasApiKey = !!ep.hasApiKey;
+  editor.hasSecret = !!ep.hasSecret;
+  newSecret.value = "";
   focusUrl();
+};
+
+const makeSecret = async () => {
+  if (!editor.id) return;
+  try {
+    newSecret.value = await api.rotateSecret(editor.id);
+    editor.hasSecret = true;
+    await load();
+  } catch (e) {
+    $showError(e instanceof Error ? e : "Couldn't create a secret.");
+  }
+};
+
+const dropSecret = async () => {
+  if (!editor.id) return;
+  try {
+    await api.removeSecret(editor.id);
+    editor.hasSecret = false;
+    newSecret.value = "";
+    await load();
+  } catch (e) {
+    $showError(e instanceof Error ? e : "Couldn't remove the secret.");
+  }
 };
 
 const cancelEdit = () => {
@@ -287,6 +448,13 @@ const save = async () => {
     url: editor.url,
     enabled: editor.enabled,
     events: [...editor.events],
+    kind: editor.kind,
+    paths: editor.paths
+      .split("\n")
+      .map((p) => p.trim())
+      .filter(Boolean),
+    allowLocal: editor.allowLocal,
+    apiKey: editor.apiKey,
   };
   try {
     if (editor.id) {
@@ -307,7 +475,7 @@ const save = async () => {
 
 const toggleEnabled = async (ep: WebhookEndpoint, enabled: boolean) => {
   try {
-    await api.update(ep.id, { url: ep.url, enabled, events: ep.events ?? [] });
+    await api.update(ep.id, { ...inputOf(ep), enabled });
     ep.enabled = enabled;
   } catch (e) {
     $showError(e instanceof Error ? e : "Couldn't update the webhook.");
@@ -356,6 +524,50 @@ load();
 </script>
 
 <style scoped>
+.wh-kinds {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.wh-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.wh-paths {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  resize: vertical;
+}
+.wh-hint--indent {
+  margin-top: -6px;
+  padding-left: 44px;
+}
+.wh-secret-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.wh-secret-new {
+  margin-top: 8px;
+}
+.wh-secret-new input {
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+.wh-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-right: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--color-elevated, #f4f4f5);
+  color: var(--color-ink-2, #52525b);
+  font-size: 10px;
+  font-weight: 600;
+  vertical-align: 1px;
+}
 .wh-add-btn {
   display: inline-flex;
   align-items: center;
@@ -398,7 +610,8 @@ load();
   flex-direction: column;
   gap: 5px;
 }
-.wh-field > span {
+.wh-field > span,
+.wh-field > label {
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;

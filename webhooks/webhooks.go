@@ -2,9 +2,12 @@
 // HTTP endpoints (v1.3 S8-2).
 //
 // Design (locked decisions):
-//   - **Admin-global, unsigned.** Endpoints are a single global set; any
-//     file event server-wide is eligible. Payloads are plain JSON POSTs,
-//     no HMAC (trusted-LAN assumption).
+//   - **Admin-global.** Endpoints are a single global set; any file event
+//     server-wide is eligible. Payloads are plain JSON POSTs, signed with
+//     HMAC-SHA256 when the endpoint has a secret (4.0 Phase 4.3, see
+//     sign.go); unsigned endpoints keep working.
+//   - **Presets.** A Jellyfin endpoint asks the server for a library scan,
+//     at most once a minute, instead of POSTing payloads.
 //   - **Own bolt DB file** (`<dbName>-webhooks.db`, sibling of the main
 //     store) so endpoint config + last-delivery status live apart from
 //     authoritative user data — same pattern as audit/ and tags/.
@@ -38,12 +41,37 @@ type Endpoint struct {
 	// file events".
 	Events []string `json:"events"`
 
+	// Kind is "" (generic POST) or "jellyfin" (library refresh).
+	Kind string `json:"kind,omitempty"`
+	// Paths limits the endpoint to changes in these folders (as the acting
+	// user sees them); empty means everywhere.
+	Paths []string `json:"paths,omitempty"`
+	// AllowLocal lets the endpoint reach private and loopback addresses
+	// (a Jellyfin server on the LAN). Link-local and metadata addresses
+	// stay blocked.
+	AllowLocal bool `json:"allowLocal,omitempty"`
+	// Secret signs deliveries; APIKey authenticates to Jellyfin. Both are
+	// write-only: Public() blanks them for API responses.
+	Secret    string `json:"secret,omitempty"`
+	APIKey    string `json:"apiKey,omitempty"`
+	HasSecret bool   `json:"hasSecret,omitempty"`
+	HasAPIKey bool   `json:"hasApiKey,omitempty"`
+
 	// Last-delivery status, updated after each POST (incl. the Test
 	// button) so the UI can show health at a glance.
 	LastStatus string     `json:"lastStatus,omitempty"` // "" | "success" | "failed"
 	LastCode   int        `json:"lastCode,omitempty"`
 	LastError  string     `json:"lastError,omitempty"`
 	LastAt     *time.Time `json:"lastAt,omitempty"`
+}
+
+// Public is the endpoint as the API returns it: secrets replaced by flags.
+func (e Endpoint) Public() Endpoint {
+	e.HasSecret = e.Secret != ""
+	e.HasAPIKey = e.APIKey != ""
+	e.Secret = ""
+	e.APIKey = ""
+	return e
 }
 
 // Store is the webhook-endpoint persistence handle.
@@ -154,6 +182,25 @@ func (s *Store) Update(ep *Endpoint) error {
 	ep.LastCode = existing.LastCode
 	ep.LastError = existing.LastError
 	ep.LastAt = existing.LastAt
+	// Secrets are write-only: an edit that doesn't send one keeps it.
+	ep.Secret = existing.Secret
+	if ep.APIKey == "" {
+		ep.APIKey = existing.APIKey
+	}
+	ep.HasSecret, ep.HasAPIKey = false, false
+	return s.put(ep)
+}
+
+// SetSecret replaces (or, with "", removes) an endpoint's signing secret.
+func (s *Store) SetSecret(id, secret string) error {
+	ep, err := s.Get(id)
+	if err != nil {
+		return err
+	}
+	if ep == nil {
+		return ErrNotFound
+	}
+	ep.Secret = secret
 	return s.put(ep)
 }
 

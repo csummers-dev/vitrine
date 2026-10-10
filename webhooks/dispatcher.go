@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/csummers-dev/vitrine/v4/events"
@@ -19,6 +20,7 @@ var fileEventTypes = map[string]bool{
 	"file.copied":   true,
 	"file.deleted":  true,
 	"file.uploaded": true,
+	"file.modified": true,
 }
 
 // FileEventTypes returns the event types webhooks can fire on (used by
@@ -45,20 +47,31 @@ type Payload struct {
 // events to configured endpoints — backgrounded, concurrency-bounded,
 // with retry + backoff.
 type Dispatcher struct {
-	store  *Store
-	client *http.Client
-	sem    chan struct{}
+	store       *Store
+	client      *http.Client
+	localClient *http.Client
+	sem         chan struct{}
+	now         func() time.Time
+
+	// Jellyfin endpoints refresh at most once per jellyfinDelay.
+	jellyfinDelay time.Duration
+	jfMu          sync.Mutex
+	jfPending     map[string]*time.Timer
 }
 
 // NewDispatcher builds a dispatcher over store. The HTTP client refuses to
 // connect to internal/non-routable addresses (SEC-002 SSRF guard).
 func NewDispatcher(store *Store) *Dispatcher {
 	return &Dispatcher{
-		store:  store,
-		client: newGuardedHTTPClient(10 * time.Second),
+		store:       store,
+		client:      newGuardedHTTPClient(10*time.Second, false),
+		localClient: newGuardedHTTPClient(10*time.Second, true),
 		// Cap concurrent in-flight deliveries so a burst of events (or a
 		// slow receiver) can't spawn unbounded goroutines / sockets.
-		sem: make(chan struct{}, 4),
+		sem:           make(chan struct{}, 4),
+		now:           time.Now,
+		jellyfinDelay: JellyfinRefreshDelay,
+		jfPending:     map[string]*time.Timer{},
 	}
 }
 
@@ -74,15 +87,21 @@ func (d *Dispatcher) Attach(subscribe func(func(events.Event)) func()) func() {
 		if err != nil || len(eps) == 0 {
 			return
 		}
-		body, err := json.Marshal(buildPayload(e))
+		payload := buildPayload(e)
+		body, err := json.Marshal(payload)
 		if err != nil {
 			return
 		}
+		paths := eventPaths(e)
 		for _, ep := range eps {
-			if !ep.Enabled || !matches(ep.Events, e.Type()) {
+			if !ep.Enabled || !matches(ep.Events, e.Type()) || !pathMatches(ep.Paths, paths...) {
 				continue
 			}
-			d.deliver(ep.ID, ep.URL, body)
+			if ep.Kind == KindJellyfin {
+				d.scheduleJellyfin(ep.ID)
+				continue
+			}
+			d.deliver(ep, body)
 		}
 	})
 }
@@ -101,10 +120,14 @@ func matches(filter []string, t string) bool {
 	return false
 }
 
-// deliver POSTs body to url in the background, retrying transient failures
-// (network errors / 5xx) with exponential backoff, then records the
-// outcome on the endpoint.
-func (d *Dispatcher) deliver(id, url string, body []byte) {
+// deliver POSTs body to the endpoint in the background, retrying transient
+// failures (network errors / 5xx) with exponential backoff, then records
+// the outcome on the endpoint. Retries carry the same signature.
+func (d *Dispatcher) deliver(ep Endpoint, body []byte) {
+	headers := map[string]string{}
+	if ep.Secret != "" {
+		headers[SignatureHeader] = Sign(ep.Secret, d.now(), body)
+	}
 	go func() {
 		d.sem <- struct{}{}
 		defer func() { <-d.sem }()
@@ -118,7 +141,7 @@ func (d *Dispatcher) deliver(id, url string, body []byte) {
 			if delay > 0 {
 				time.Sleep(delay)
 			}
-			code, err := d.post(url, body)
+			code, err := d.post(ep, body, headers)
 			lastCode = code
 			lastErr = ""
 			if err != nil {
@@ -127,56 +150,149 @@ func (d *Dispatcher) deliver(id, url string, body []byte) {
 
 			switch {
 			case err == nil && code >= 200 && code < 300:
-				d.store.RecordDelivery(id, "success", code, "")
+				d.store.RecordDelivery(ep.ID, "success", code, "")
 				return
 			case err == nil && code >= 400 && code < 500:
 				// Client error — a retry won't fix it; fail fast.
-				d.store.RecordDelivery(id, "failed", code, "")
+				d.store.RecordDelivery(ep.ID, "failed", code, "")
 				return
 			}
 			// Network error or 5xx → retry with the next backoff.
 		}
-		d.store.RecordDelivery(id, "failed", lastCode, lastErr)
+		d.store.RecordDelivery(ep.ID, "failed", lastCode, lastErr)
 	}()
 }
 
-// Test POSTs a synthetic `webhook.test` payload to url immediately (the
-// admin "Test" button), records the result on the endpoint when id is
-// non-empty, and returns the status + error for the handler to surface.
-func (d *Dispatcher) Test(id, url string) (int, error) {
-	body, _ := json.Marshal(Payload{Event: "webhook.test", Timestamp: time.Now()})
-	code, err := d.post(url, body)
-
-	status := "success"
-	msg := ""
-	if err != nil {
-		status, msg = "failed", err.Error()
-	} else if code < 200 || code >= 300 {
-		status = "failed"
+// scheduleJellyfin asks a Jellyfin endpoint for a library scan after
+// jellyfinDelay, unless one is already scheduled.
+func (d *Dispatcher) scheduleJellyfin(id string) {
+	d.jfMu.Lock()
+	defer d.jfMu.Unlock()
+	if _, pending := d.jfPending[id]; pending {
+		return
 	}
-	if id != "" {
-		d.store.RecordDelivery(id, status, code, msg)
-	}
-	return code, err
+	d.jfPending[id] = time.AfterFunc(d.jellyfinDelay, func() {
+		d.jfMu.Lock()
+		delete(d.jfPending, id)
+		d.jfMu.Unlock()
+		ep, err := d.store.Get(id)
+		if err != nil || ep == nil || !ep.Enabled {
+			return
+		}
+		code, err := d.jellyfin(*ep, false)
+		d.record(ep.ID, code, err)
+	})
 }
 
-func (d *Dispatcher) post(url string, body []byte) (int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+// Stop cancels scheduled Jellyfin scans (tests, shutdown).
+func (d *Dispatcher) Stop() {
+	d.jfMu.Lock()
+	defer d.jfMu.Unlock()
+	for id, t := range d.jfPending {
+		t.Stop()
+		delete(d.jfPending, id)
+	}
+}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+func (d *Dispatcher) record(id string, code int, err error) {
+	switch {
+	case err != nil:
+		d.store.RecordDelivery(id, "failed", code, err.Error())
+	case code < 200 || code >= 300:
+		d.store.RecordDelivery(id, "failed", code, "")
+	default:
+		d.store.RecordDelivery(id, "success", code, "")
+	}
+}
+
+func (d *Dispatcher) clientFor(ep Endpoint) *http.Client {
+	if ep.AllowLocal {
+		return d.localClient
+	}
+	return d.client
+}
+
+// jellyfin sends a library refresh (or, for test, a connection check).
+func (d *Dispatcher) jellyfin(ep Endpoint, test bool) (int, error) {
+	req, err := jellyfinRequest(ep.URL, ep.APIKey, test)
 	if err != nil {
 		return 0, err
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "filebrowser-webhooks")
-
-	resp, err := d.client.Do(req)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	resp, err := d.clientFor(ep).Do(req.WithContext(ctx))
 	if err != nil {
 		return 0, err
 	}
 	defer resp.Body.Close()
 	return resp.StatusCode, nil
+}
+
+// Test checks an endpoint now (the admin "Test" button): a synthetic,
+// signed `webhook.test` POST, or for Jellyfin a connection check that
+// doesn't start a scan. The result is recorded on the endpoint.
+func (d *Dispatcher) Test(ep Endpoint) (int, error) {
+	var (
+		code int
+		err  error
+	)
+	if ep.Kind == KindJellyfin {
+		code, err = d.jellyfin(ep, true)
+	} else {
+		body, _ := json.Marshal(Payload{Event: "webhook.test", Timestamp: d.now()})
+		headers := map[string]string{}
+		if ep.Secret != "" {
+			headers[SignatureHeader] = Sign(ep.Secret, d.now(), body)
+		}
+		code, err = d.post(ep, body, headers)
+	}
+	if ep.ID != "" {
+		d.record(ep.ID, code, err)
+	}
+	return code, err
+}
+
+func (d *Dispatcher) post(ep Endpoint, body []byte, headers map[string]string) (int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, ep.URL, bytes.NewReader(body))
+	if err != nil {
+		return 0, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "filebrowser-webhooks")
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+
+	resp, err := d.clientFor(ep).Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+	return resp.StatusCode, nil
+}
+
+// eventPaths lists the paths an event touches, for endpoint path filters.
+func eventPaths(e events.Event) []string {
+	switch v := e.(type) {
+	case events.FileCreated:
+		return []string{v.Path}
+	case events.FileRenamed:
+		return []string{v.From, v.To}
+	case events.FileMoved:
+		return []string{v.From, v.To}
+	case events.FileCopied:
+		return []string{v.To}
+	case events.FileDeleted:
+		return []string{v.Path}
+	case events.FileUploaded:
+		return []string{v.Path}
+	case events.FileModified:
+		return []string{v.Path}
+	}
+	return nil
 }
 
 // buildPayload maps a concrete event onto the webhook Payload, picking a

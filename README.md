@@ -44,9 +44,9 @@ Self-hosted file management.
 - **User Management** — Manage users and permissions.
 - **Settings** — Global and per-user settings.
 - **Audit log** — Actions taken in-app recorded to an audit log available to administrators.
-- **Webhooks** — Fire a webhook on any file event.
+- **Webhooks** — Fire a signed webhook on any file event, or have Jellyfin rescan its library when media changes.
 - **Sessions** — View active sessions and sign out everywhere.
-- **Shares** — Share a link in seconds.
+- **Shares** — Share a link in seconds, see how often it's opened and downloaded, or make it one-time.
 - **Mobile** — Mobile design prioritized.
 - **Mobile upload / pull-to-refresh** — Upload from your camera roll; pull to refresh.
 
@@ -239,6 +239,26 @@ Search answers from an in-memory index that updates as changes are reported. As 
 - **Slideshow.** Right-click empty space in a folder → *Slideshow*, or a photo → *Slideshow from here*. ←/→ step, Space pauses, F goes full screen, Esc leaves.
 - **Photo map.** Right-click empty space → *Photo map* to see the folder's photos where they were taken (from their EXIF GPS position). Map tiles are fetched and cached by the vitrine server, so browsers only ever talk to vitrine. The default source is OpenStreetMap; point `--mapTiles` (env `VITRINE_MAP_TILES`) at another `{z}/{x}/{y}` tile URL, or set it to `off` to remove the map.
 - **Resume and watched.** Videos of five minutes or more resume where you stopped (with a *Start over* button); reaching 98% marks a video watched. Right-click videos to mark them watched or unwatched. Positions, like book and comic positions, are saved to your account and follow renames and moves.
+
+#### Shares and webhooks
+
+- **Share usage.** Each link shows its views, downloads and when it was last opened, updating live. A download limit (one-time, 5, 10 or 25) ends the link once it's used up; the visitor then sees "This link is no longer available". On limited links every download counts, previews included, so the public page doesn't preview them.
+- **Signed webhooks.** In Settings → Webhooks, edit an endpoint and choose *Generate* under *Signing secret*. Each delivery then carries `X-Vitrine-Signature: t=<unix time>,v1=<hex>`, where `v1` is HMAC-SHA256 with the secret over `<t>.<raw body>`. Check it in constant time and reject old timestamps:
+
+  ```python
+  import hashlib, hmac, time
+
+  def verify(secret: str, header: str, body: bytes, tolerance=300) -> bool:
+      parts = dict(p.split("=", 1) for p in header.split(","))
+      if abs(time.time() - int(parts["t"])) > tolerance:
+          return False
+      mac = hmac.new(secret.encode(), f"{parts['t']}.".encode() + body, hashlib.sha256)
+      return hmac.compare_digest(mac.hexdigest(), parts["v1"])
+  ```
+
+  Endpoints without a secret are sent unsigned, as before. Retries of one delivery carry the same signature.
+- **Jellyfin.** Add an endpoint of type *Jellyfin library refresh* with your server's URL and an API key (Jellyfin → Dashboard → API Keys). When files change in its folders (all folders if you list none), vitrine asks Jellyfin for a library scan a minute later; changes during that minute share one scan.
+- **Local addresses.** Webhooks refuse private and loopback addresses unless *Allow addresses on the local network* is on (it is by default for Jellyfin). Link-local and cloud-metadata addresses are always refused.
 
 ## Architecture
 
