@@ -12,12 +12,14 @@ Self-hosted file management.
 - **Grid + Gallery** — Comfortable file listings with previews.
 - **Split pane view** — Navigate multiple folders at once.
 - **Image + EXIF** — Pixel-perfect previews with EXIF details.
+- **Slideshow + photo map** — Full-screen slideshows of a folder; see where your photos were taken on a map.
 - **Image** editor — Crop, rotate, and flip.
 - **Image formats** — Thumbnails for WebP, HEIC and AVIF (HEIC/AVIF previews are converted for the browser).
 - **Video** — Streams with tracks and subtitles. Picks up where you left off; watched videos are marked.
 - **Continue shelf** — Books, comics and videos you started, one click from the sidebar, on every device.
 - **Folder covers** — Folder tiles show a poster/folder/cover image or a music folder's album art.
 - **Audio** — Album art, embedded tags and artwork.
+- **Play queue** — Play a folder or album, shuffle and repeat; a mini-player keeps going while you browse, with media-key support.
 - **ID3 tag editor** — Edit ID3 tag metadata, one track or a whole album at once.
 - **PDF** — Page through PDFs with thumbnail previews and sharp rendering.
 - **EPUB** — Read EPUBs with a live chapter list and location remembered.
@@ -233,6 +235,9 @@ Search answers from an in-memory index that updates as changes are reported. As 
 
 - **Folder covers.** In grid and gallery views a folder shows the first of `poster`, `folder`, `cover` or `fanart` (`.jpg`, `.jpeg`, `.png`, `.webp`, any case) inside it; a music folder without one shows its first track's embedded album art. Turn it off under Settings → Profile → Folder cover art.
 - **HEIC, HEIF and AVIF.** Thumbnails and previews are converted to JPEG with ffmpeg (bundled in the Docker image) or, outside Docker, `heif-convert` from libheif. Without either, these files keep the generic image icon. WebP thumbnails need nothing extra.
+- **Music.** A folder that's mostly audio gets an album header with Play, Shuffle and Add to queue. Right-click a track to play the folder from there, or a folder to play it. The mini-player (bottom left) has shuffle, repeat and the queue, and responds to your keyboard's media keys.
+- **Slideshow.** Right-click empty space in a folder → *Slideshow*, or a photo → *Slideshow from here*. ←/→ step, Space pauses, F goes full screen, Esc leaves.
+- **Photo map.** Right-click empty space → *Photo map* to see the folder's photos where they were taken (from their EXIF GPS position). Map tiles are fetched and cached by the vitrine server, so browsers only ever talk to vitrine. The default source is OpenStreetMap; point `--mapTiles` (env `VITRINE_MAP_TILES`) at another `{z}/{x}/{y}` tile URL, or set it to `off` to remove the map.
 - **Resume and watched.** Videos of five minutes or more resume where you stopped (with a *Start over* button); reaching 98% marks a video watched. Right-click videos to mark them watched or unwatched. Positions, like book and comic positions, are saved to your account and follow renames and moves.
 
 ## Architecture

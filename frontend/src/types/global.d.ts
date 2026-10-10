@@ -28,6 +28,10 @@ interface VitrineGlobals {
   TranscodeEnabled?: boolean;
   TusSettings: TusSettings;
   UnzipEnabled?: boolean;
+  /** 4.0 3.6: a map tile source is configured (--mapTiles). */
+  MapEnabled?: boolean;
+  /** Credit line (HTML) for the tile source. */
+  MapAttribution?: string;
   Version: string;
 }
 

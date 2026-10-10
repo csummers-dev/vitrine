@@ -32,6 +32,8 @@ export interface RowMenuContext {
   clipboardHasItems: boolean;
   bulkAudioCount: number;
   canBulkEditTags: boolean;
+  /** 3.5: selected audio files (for Play / Add to queue). */
+  audioCount?: number;
   /** 3.4: selected videos and how many of them are marked watched. */
   videos?: { count: number; watched: number };
   t: (key: string) => string;
@@ -50,6 +52,13 @@ export interface RowMenuActions {
   bulkRename: () => void;
   copyPath: (item: ResourceItem) => void;
   download: () => void;
+  /** 3.5: play the selected audio (a single track plays its folder from
+   *  there), queue it, or play a selected folder. */
+  playAudio?: () => void;
+  queueAudio?: () => void;
+  playFolder?: (folderUrl: string) => void;
+  /** 3.6: start the folder's slideshow at the selected photo. */
+  slideshowFrom?: (item: ResourceItem) => void;
   /** 3.4: mark the selected videos watched / unwatched. */
   setWatched?: (watched: boolean) => void;
 }
@@ -135,6 +144,38 @@ export function buildRowMenu(
       label: `Edit tags on ${ctx.bulkAudioCount} files…`,
       icon: "music",
       action: () => act.prompt("audio-tags"),
+    });
+  }
+
+  // ── Audio: Play / Add to queue / Play folder (3.5) ─────────────────
+  const audio = ctx.audioCount ?? 0;
+  if (audio > 0 && act.playAudio) {
+    items.push({
+      label: audio === 1 ? "Play" : `Play ${audio} tracks`,
+      icon: "play",
+      action: () => act.playAudio!(),
+    });
+  }
+  if (audio > 0 && act.queueAudio) {
+    items.push({
+      label: "Add to queue",
+      icon: "list-plus",
+      action: () => act.queueAudio!(),
+    });
+  }
+  if (singleItem?.isDir && act.playFolder) {
+    items.push({
+      label: "Play folder",
+      icon: "play",
+      action: () => act.playFolder!(singleItem.url),
+    });
+  }
+
+  if (singleItem && singleItem.type === "image" && act.slideshowFrom) {
+    items.push({
+      label: "Slideshow from here",
+      icon: "presentation",
+      action: () => act.slideshowFrom!(singleItem),
     });
   }
 
@@ -255,10 +296,18 @@ export function buildRowMenu(
 export interface BackgroundMenuContext {
   canCreate: boolean;
   clipboardHasItems: boolean;
+  /** 3.5/3.6: media in this folder. */
+  audioCount?: number;
+  imageCount?: number;
+  mapEnabled?: boolean;
   t: (key: string) => string;
 }
 
 export interface BackgroundMenuActions {
+  /** 3.5/3.6: play the folder's audio; slideshow / map of its photos. */
+  playAll?: () => void;
+  slideshow?: () => void;
+  photoMap?: () => void;
   prompt: (name: string) => void;
   upload: () => void;
   paste: () => void;
@@ -299,6 +348,33 @@ export function buildBackgroundMenu(
       kbd: "⌘V",
       action: () => act.paste(),
     });
+  }
+  // ── Media in this folder (3.5 / 3.6) ──────────────────────────────
+  const media: MenuItem[] = [];
+  if ((ctx.audioCount ?? 0) > 0 && act.playAll) {
+    media.push({
+      label: "Play all",
+      icon: "play",
+      action: () => act.playAll!(),
+    });
+  }
+  if ((ctx.imageCount ?? 0) > 0 && act.slideshow) {
+    media.push({
+      label: "Slideshow",
+      icon: "presentation",
+      action: () => act.slideshow!(),
+    });
+  }
+  if ((ctx.imageCount ?? 0) > 0 && ctx.mapEnabled && act.photoMap) {
+    media.push({
+      label: "Photo map",
+      icon: "map",
+      action: () => act.photoMap!(),
+    });
+  }
+  if (media.length > 0) {
+    if (items.length > 0) items.push({ type: "separator" });
+    items.push(...media);
   }
   if (items.length > 0) items.push({ type: "separator" });
   items.push(

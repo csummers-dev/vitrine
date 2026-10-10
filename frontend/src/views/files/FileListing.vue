@@ -530,6 +530,14 @@
               @mousedown.capture="recordListingPressOrigin"
               @mousedown="dragSelect.onMouseDown"
             >
+              <AlbumHeader
+                v-if="showAlbumHeader"
+                :folder="fileStore.req!"
+                :tracks="folderAudio"
+                @play="player.playTracks(folderAudio, 0, { shuffle: false })"
+                @shuffle="player.playTracks(folderAudio, 0, { shuffle: true })"
+                @queue="player.enqueue(folderAudio)"
+              />
               <div>
                 <div class="item header">
                   <div class="item__select">
@@ -979,6 +987,16 @@ import { useLayoutStore } from "@/stores/layout";
 import { useTagsStore } from "@/stores/tags";
 import { useFavorites } from "@/composables/useFavorites";
 import { useVideoProgress } from "@/composables/useVideoProgress";
+import {
+  audioTracks,
+  folderTracks,
+  usePlayer,
+  type Track,
+} from "@/composables/usePlayer";
+import AlbumHeader from "@/components/files/AlbumHeader.vue";
+import { imageSlides, useSlideshow } from "@/composables/useSlideshow";
+import { usePhotoMap } from "@/composables/usePhotoGeo";
+import { mapEnabled } from "@/utils/constants";
 import { useRootLabel } from "@/composables/useRootLabel";
 import { usePreferences } from "@/composables/usePreferences";
 import { useFolderScrollMemory } from "@/composables/useFolderScrollMemory";
@@ -1710,6 +1728,61 @@ const headerButtons = computed(() => {
 // audio files (MP3 / FLAC). Drives the bulk "Edit tags" entry points (pill +
 // context menu). Non-audio items in a mixed selection are simply ignored; the
 // editor operates on the audio subset and states the count it'll affect.
+// 3.5: the play queue. A single selected track plays the folder from that
+// track; several play just those, in folder order.
+const player = usePlayer();
+const folderAudio = computed<Track[]>(() =>
+  fileStore.req?.isDir ? audioTracks(fileStore.req.items) : []
+);
+const selectedAudio = (): Track[] => {
+  const req = fileStore.req;
+  if (!req) return [];
+  return audioTracks(
+    fileStore.selected.map((i) => req.items[i]).filter(Boolean)
+  );
+};
+const playSelectedAudio = () => {
+  const sel = selectedAudio();
+  if (sel.length === 1) {
+    const all = folderAudio.value;
+    const start = all.findIndex((t) => t.path === sel[0].path);
+    player.playTracks(all, Math.max(0, start));
+  } else {
+    player.playTracks(sel);
+  }
+};
+const playFolderAt = async (folderUrl: string) => {
+  try {
+    const tracks = await folderTracks(folderUrl);
+    if (tracks.length === 0) {
+      $showError("No audio files in this folder");
+      return;
+    }
+    player.playTracks(tracks);
+  } catch (e) {
+    $showError(e as Error);
+  }
+};
+// 3.6: slideshow + photo map over this folder's images, in listing order.
+const slideshow = useSlideshow();
+const photoMap = usePhotoMap();
+const folderImages = computed(() =>
+  fileStore.req?.isDir ? imageSlides(fileStore.req.items) : []
+);
+const startSlideshow = (from?: ResourceItem) => {
+  const list = folderImages.value;
+  const start = from ? list.findIndex((s) => s.path === from.path) : 0;
+  slideshow.open(list, Math.max(0, start));
+};
+
+// Album header: folders that are mostly audio (2+ tracks, at least half of
+// the files).
+const showAlbumHeader = computed(() => {
+  const n = folderAudio.value.length;
+  const files = fileStore.req?.numFiles ?? 0;
+  return n >= 2 && n * 2 >= files && !splitActive.value;
+});
+
 // 3.4: selected videos, for Mark watched / unwatched.
 const videoProgress = useVideoProgress();
 const selectedVideoPaths = (): string[] => {
@@ -2680,6 +2753,7 @@ const {
         bulkAudioCount: bulkAudioCount.value,
         canBulkEditTags: canBulkEditTags.value,
         videos: selectedVideos(),
+        audioCount: selectedAudio().length,
         t,
       },
       rowMenuActions
@@ -2689,6 +2763,9 @@ const {
       {
         canCreate: !!authStore.user?.perm.create,
         clipboardHasItems: clipboardStore.items.length > 0,
+        audioCount: folderAudio.value.length,
+        imageCount: folderImages.value.length,
+        mapEnabled,
         t,
       },
       backgroundMenuActions
@@ -2712,12 +2789,20 @@ const rowMenuActions = closingFirst({
   bulkRename: () => bulkRename.open(),
   copyPath: (item: ResourceItem) => void copyItemPath(item),
   download: () => download(),
+  playAudio: () => playSelectedAudio(),
+  queueAudio: () => player.enqueue(selectedAudio()),
+  playFolder: (url: string) => void playFolderAt(url),
+  slideshowFrom: (item: ResourceItem) => startSlideshow(item),
   setWatched: (watched: boolean) =>
     videoProgress.setWatched(selectedVideoPaths(), watched),
 });
 
 const backgroundMenuActions = {
   ...closingFirst({
+    playAll: () => player.playTracks(folderAudio.value),
+    slideshow: () => startSlideshow(),
+    photoMap: () =>
+      photoMap.open(folderImages.value, fileStore.req?.name || "My files"),
     prompt: (name: string) => layoutStore.showHover(name),
     upload: () => uploadFunc(),
     paste: () => void paste(),

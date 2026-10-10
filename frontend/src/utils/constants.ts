@@ -48,6 +48,8 @@ const hideLoginButton = window.FileBrowser.HideLoginButton;
 // flip this flag, and every Extract trigger surface checks it before
 // rendering so a disabled instance shows zero broken affordances.
 const unzipEnabled: boolean = window.FileBrowser.UnzipEnabled ?? true;
+// 4.0 3.6: the photo map (off with --mapTiles=off).
+const mapEnabled: boolean = window.FileBrowser.MapEnabled ?? false;
 // #3: on-demand video transcoding. True only when the server has ffmpeg.
 // The player attempts the transcode fallback (on a native playback error)
 // only when this is set; otherwise it goes straight to the download card.
@@ -83,6 +85,7 @@ export {
   tusEndpoint,
   hideLoginButton,
   unzipEnabled,
+  mapEnabled,
   transcodeEnabled,
   repoUrl,
 };

@@ -117,6 +117,7 @@ func addServerFlags(flags *pflag.FlagSet) {
 	flags.StringP("baseURL", "b", "", "base url")
 	flags.String("tokenExpirationTime", "2h", "user session timeout")
 	flags.String("fileWatching", "auto", "detect file changes made outside vitrine: auto (OS notifications, falling back to polling), poll (check folders every minute; use for network mounts) or off")
+	flags.String("mapTiles", settings.DefaultMapTiles, "tile URL template for the photo map ({z}, {x}, {y}); vitrine fetches and caches the tiles itself. \"off\" turns the map off")
 	flags.String("searchIndexMaxAge", "10m", "rebuild a search index in the background once it is older than this, to pick up changes made outside vitrine (0 disables)")
 	flags.Bool("disableThumbnails", false, "disable image thumbnails")
 	flags.Bool("disablePreviewResize", false, "disable resize of image previews")
@@ -490,6 +491,10 @@ func getServerSettings(v *viper.Viper, st *storage.Storage) (*settings.Server, e
 		server.FileWatching = v.GetString("fileWatching")
 	}
 
+	if v.IsSet("mapTiles") {
+		server.MapTiles = v.GetString("mapTiles")
+	}
+
 	if v.IsSet("disableThumbnails") {
 		server.EnableThumbnails = !v.GetBool("disableThumbnails")
 	}
@@ -658,6 +663,7 @@ func quickSetup(v *viper.Viper, s *storage.Storage) error {
 		TokenExpirationTime:   v.GetString("tokenExpirationTime"),
 		SearchIndexMaxAge:     v.GetString("searchIndexMaxAge"),
 		FileWatching:          v.GetString("fileWatching"),
+		MapTiles:              v.GetString("mapTiles"),
 		EnableThumbnails:      !v.GetBool("disableThumbnails"),
 		ResizePreview:         !v.GetBool("disablePreviewResize"),
 		EnableExec:            !v.GetBool("disableExec"),

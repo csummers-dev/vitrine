@@ -63,6 +63,9 @@ func handleWithStaticData(w http.ResponseWriter, _ *http.Request, d *data, fSys 
 		"TusSettings":      d.settings.Tus,
 		"HideLoginButton":  d.settings.HideLoginButton,
 		"UnzipEnabled":     d.server.UnzipEnabled,
+		// 4.0 3.6: the photo map needs a tile source (--mapTiles).
+		"MapEnabled":     d.server.MapTileURL() != "",
+		"MapAttribution": mapAttribution(d.server.MapTileURL()),
 	}
 
 	if d.settings.Branding.Files != "" {

@@ -92,6 +92,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import VideoPlayer from "@/components/files/VideoPlayer.vue";
 import Icon from "@/components/Icon.vue";
 import { transcodeEnabled } from "@/utils/constants";
+import { pausePlayer } from "@/composables/usePlayer";
 import {
   formatTimestamp,
   useVideoProgress,
@@ -283,6 +284,7 @@ const detach = () => {
   video?.removeEventListener("timeupdate", onTimeUpdate);
   video?.removeEventListener("pause", savePosition);
   video?.removeEventListener("ended", onEnded);
+  video?.removeEventListener("play", pausePlayer);
 };
 const attach = () => {
   detach();
@@ -293,6 +295,7 @@ const attach = () => {
   video.addEventListener("timeupdate", onTimeUpdate);
   video.addEventListener("pause", savePosition);
   video.addEventListener("ended", onEnded);
+  video.addEventListener("play", pausePlayer);
   // Already errored before we attached (fast failure) — escalate now.
   if (video.error) {
     onVideoError();

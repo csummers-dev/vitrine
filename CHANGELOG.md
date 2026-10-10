@@ -21,6 +21,18 @@ All notable changes to **vitrine**.
   `--fileWatching` / `VITRINE_FILE_WATCHING` = `auto` (default), `poll` (for
   network mounts) or `off`. See the README for the inotify limit and reverse
   proxies.
+- **Play queue and mini-player.** Play a folder, a track (the folder plays
+  from there) or a selection, add tracks to the queue, shuffle and repeat. A
+  mini-player keeps playing while you browse and works with media keys and
+  the lock screen. Folders that are mostly audio get an album header with
+  Play, Shuffle and Add to queue.
+- **Slideshow.** A full-screen slideshow of a folder's photos (or from a
+  chosen photo), with 3–20 second intervals, shuffle and full screen.
+- **Photo map.** See a folder's photos on a map, from their EXIF GPS
+  positions; nearby photos group together, and a group can play as a
+  slideshow. Tiles come through vitrine and are cached on the server
+  (OpenStreetMap by default); `--mapTiles` / `VITRINE_MAP_TILES` picks
+  another source or `off` removes the map.
 - **Pick up where you left off.** Videos of five minutes or more resume at
   the last position, with a *Start over* button. A video counts as watched at
   98%; tiles show a watched tick or a progress bar, and the right-click menu

@@ -104,6 +104,7 @@ type Server struct {
 	TokenExpirationTime      string  `json:"tokenExpirationTime"`
 	SearchIndexMaxAge        string  `json:"searchIndexMaxAge"`
 	FileWatching             string  `json:"fileWatching"`
+	MapTiles                 string  `json:"mapTiles"`
 	UnzipEnabled             bool    `json:"unzipEnabled"`
 	MaxZipFileSize           int64   `json:"maxZipFileSize"`
 	MaxZipFileEntries        int     `json:"maxZipFileEntries"`
@@ -157,4 +158,20 @@ func GenerateKey() ([]byte, error) {
 	}
 
 	return b, nil
+}
+
+// DefaultMapTiles is the photo map's tile source (OpenStreetMap). The server
+// fetches and caches tiles itself, so browsers never contact it directly.
+const DefaultMapTiles = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+
+// MapTileURL is the tile URL template for the photo map, or "" when the map
+// is turned off ("off"). Empty (older configs) means the default.
+func (s *Server) MapTileURL() string {
+	switch strings.ToLower(strings.TrimSpace(s.MapTiles)) {
+	case "":
+		return DefaultMapTiles
+	case "off", "none", "false":
+		return ""
+	}
+	return strings.TrimSpace(s.MapTiles)
 }

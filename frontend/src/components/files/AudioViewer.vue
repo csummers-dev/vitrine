@@ -163,7 +163,7 @@
         preload="metadata"
         @loadedmetadata="onLoadedMetadata"
         @timeupdate="onTimeUpdate"
-        @play="isPlaying = true"
+        @play="onPlay"
         @pause="isPlaying = false"
         @volumechange="onVolumeChange"
         @ended="onEnded"
@@ -174,6 +174,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { pausePlayer } from "@/composables/usePlayer";
 import Icon from "@/components/Icon.vue";
 import { parseBlob, type IAudioMetadata } from "music-metadata";
 
@@ -367,6 +368,12 @@ const onVolumeChange = () => {
   if (!audioEl.value) return;
   volume.value = audioEl.value.volume;
   muted.value = audioEl.value.muted;
+};
+
+// A preview playing its own track pauses the play queue (4.0 3.5).
+const onPlay = () => {
+  isPlaying.value = true;
+  pausePlayer();
 };
 
 const onEnded = () => {

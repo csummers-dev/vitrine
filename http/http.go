@@ -188,6 +188,9 @@ func NewHandler(
 	api.Handle("/webhooks/{id:[0-9]+}/test", monkey(webhooksTestHandler(webhookStore, webhookDispatcher), "")).Methods("POST")
 
 	api.PathPrefix("/raw").Handler(monkey(rawHandler, "/api/raw")).Methods("GET")
+	// 4.0 3.6: photo-map tiles, fetched and cached by the server.
+	api.Handle("/tiles/{z:[0-9]+}/{x:[0-9]+}/{y:[0-9]+}",
+		monkey(tilesHandler(fileCache, server.MapTileURL()), "")).Methods("GET")
 	api.PathPrefix("/preview/{size}/{path:.*}").
 		Handler(monkey(previewHandler(imgSvc, fileCache, server.EnableThumbnails, server.ResizePreview), "/api/preview")).Methods("GET")
 

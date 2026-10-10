@@ -37,8 +37,10 @@
       <SidebarDrawer @click="onDrawerNavClick" />
     </Drawer>
 
-    <main id="main" class="flex-1 flex flex-col min-w-0 min-h-0">
+    <main id="main" class="relative flex-1 flex flex-col min-w-0 min-h-0">
       <router-view />
+      <!-- 4.0 3.5: the play queue keeps playing while you browse. -->
+      <MiniPlayer v-if="authStore.isLoggedIn" />
       <shell
         v-if="
           enableExec && authStore.isLoggedIn && authStore.user?.perm.execute
@@ -49,6 +51,8 @@
     <prompts />
     <upload-files />
     <TransferDock />
+    <Slideshow />
+    <PhotoMap v-if="mapEnabled" />
   </div>
 </template>
 
@@ -63,10 +67,16 @@ import Prompts from "@/components/prompts/Prompts.vue";
 import Shell from "@/components/Shell.vue";
 import UploadFiles from "@/components/prompts/UploadFiles.vue";
 import TransferDock from "@/components/files/TransferDock.vue";
+import MiniPlayer from "@/components/files/MiniPlayer.vue";
+import Slideshow from "@/components/files/Slideshow.vue";
+// Leaflet loads only when the map is first opened.
+const PhotoMap = defineAsyncComponent(
+  () => import("@/components/files/PhotoMap.vue")
+);
 import Drawer from "@/components/Drawer.vue";
 import { useMobileNav } from "@/composables/useMobileNav";
-import { enableExec } from "@/utils/constants";
-import { watch } from "vue";
+import { enableExec, mapEnabled } from "@/utils/constants";
+import { defineAsyncComponent, watch } from "vue";
 import { useRoute } from "vue-router";
 
 const layoutStore = useLayoutStore();

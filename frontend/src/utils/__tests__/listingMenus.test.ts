@@ -90,6 +90,33 @@ describe("buildRowMenu", () => {
     expect(labels(done)).not.toContain("Mark watched");
   });
 
+  it("offers Play / Add to queue for audio and Play folder (3.5)", () => {
+    const a = {
+      ...actions(),
+      playAudio: vi.fn(),
+      queueAudio: vi.fn(),
+      playFolder: vi.fn(),
+    };
+    const one = labels(buildRowMenu(ctx({ audioCount: 1 }), a));
+    expect(one).toEqual(expect.arrayContaining(["Play", "Add to queue"]));
+    expect(one).not.toContain("Play folder");
+
+    const many = labels(
+      buildRowMenu(
+        ctx({ selectedCount: 2, singleItem: null, audioCount: 2 }),
+        a
+      )
+    );
+    expect(many).toContain("Play 2 tracks");
+
+    const dir = buildRowMenu(
+      ctx({ singleItem: folder as unknown as ResourceItem }),
+      a
+    );
+    dir.find((i) => i.label === "Play folder")!.action!();
+    expect(a.playFolder).toHaveBeenCalledWith("/files/Music/");
+  });
+
   it("has no watched items without videos or without the action", () => {
     expect(labels(buildRowMenu(ctx(), actions()))).not.toContain(
       "Mark watched"
@@ -243,6 +270,39 @@ describe("buildBackgroundMenu", () => {
       "Upload",
       "Paste",
       "—separator",
+      "Sort by…",
+      "Refresh",
+    ]);
+  });
+
+  it("adds Play all, Slideshow and Photo map for media folders (3.5/3.6)", () => {
+    const a = {
+      ...act(),
+      playAll: vi.fn(),
+      slideshow: vi.fn(),
+      photoMap: vi.fn(),
+    };
+    const base = { canCreate: false, clipboardHasItems: false, t };
+    expect(
+      labels(
+        buildBackgroundMenu(
+          { ...base, audioCount: 3, imageCount: 2, mapEnabled: true },
+          a
+        )
+      )
+    ).toEqual([
+      "Play all",
+      "Slideshow",
+      "Photo map",
+      "—separator",
+      "Sort by…",
+      "Refresh",
+    ]);
+    // No map without a tile source; nothing without media.
+    expect(
+      labels(buildBackgroundMenu({ ...base, imageCount: 2 }, a))
+    ).not.toContain("Photo map");
+    expect(labels(buildBackgroundMenu(base, a))).toEqual([
       "Sort by…",
       "Refresh",
     ]);

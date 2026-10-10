@@ -117,8 +117,34 @@ export class FakeServer {
 
   /** Simulates a change made outside vitrine: updates the fake disk and
    *  pushes `files.changed` to open streams. `content` null removes. */
+  /** Binary file bodies (served by /api/raw), keyed by path. */
+  readonly binary = new Map<string, Buffer>();
+
+  /** Add a binary file (e.g. a real JPEG) without a live-update event. */
+  putBinary(path: string, bytes: Buffer): void {
+    const p = norm(path);
+    this.ensureParents(p);
+    this.binary.set(p, bytes);
+    this.fs.set(p, {
+      isDir: false,
+      content: "x".repeat(bytes.length),
+      modified: new Date().toISOString(),
+    });
+  }
+
+  /** Create any missing ancestor folders of `p`. */
+  private ensureParents(p: string): void {
+    for (
+      let dir = parentOf(p);
+      dir !== "/" && !this.fs.has(dir);
+      dir = parentOf(dir)
+    )
+      this.fs.set(dir, { isDir: true, modified: new Date().toISOString() });
+  }
+
   changeOnDisk(path: string, content: string | null): void {
     const p = norm(path);
+    if (content !== null) this.ensureParents(p);
     if (content === null) this.fs.delete(p);
     else
       this.fs.set(p, {
@@ -342,6 +368,28 @@ export class FakeServer {
         status: 200,
         contentType: "text/event-stream",
         body,
+      });
+    }
+    // Audio tags: the fake files carry none.
+    if (api === "/audio-tags/read" && method === "POST")
+      return json({ results: [] });
+    // Raw file bytes (media elements, downloads).
+    if (api.startsWith("/raw/") && method === "GET") {
+      const rp = norm(api.slice("/raw".length));
+      const e = this.fs.get(rp);
+      if (!e || e.isDir) return text("404 Not Found", 404);
+      return route.fulfill({
+        status: 200,
+        contentType: "application/octet-stream",
+        body: this.binary.get(rp) ?? e.content ?? "",
+      });
+    }
+    // Photo-map tiles.
+    if (/^\/tiles\/\d+\/\d+\/\d+$/.test(api)) {
+      return route.fulfill({
+        status: 200,
+        contentType: "image/png",
+        body: PIXEL,
       });
     }
     if (api.startsWith("/preview/")) {
