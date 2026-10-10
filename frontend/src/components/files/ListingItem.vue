@@ -291,6 +291,9 @@ const props = defineProps<{
   index: number;
   readOnly?: boolean;
   path?: string;
+  /** 4.0 3.2: ask the server for this folder's cover art (folder tiles in
+   *  grid / gallery views). */
+  folderCover?: boolean;
 }>();
 
 // v1.3 H12: row drag-drop notifications so FileListing can route drops.
@@ -546,6 +549,7 @@ watch(
 
 const showThumbnail = computed(() => {
   if (props.readOnly || !props.path || thumbError.value) return false;
+  if (props.isDir) return !!props.folderCover && enableThumbs;
   const ext = getExtension(props.name).toLowerCase();
   if (props.type === "image") return enableThumbs;
   if (props.type === "video") return enableThumbs && enableVideoThumbs;

@@ -13,7 +13,10 @@ Self-hosted file management.
 - **Split pane view** — Navigate multiple folders at once.
 - **Image + EXIF** — Pixel-perfect previews with EXIF details.
 - **Image** editor — Crop, rotate, and flip.
-- **Video** — Streams with tracks and subtitles.
+- **Image formats** — Thumbnails for WebP, HEIC and AVIF (HEIC/AVIF previews are converted for the browser).
+- **Video** — Streams with tracks and subtitles. Picks up where you left off; watched videos are marked.
+- **Continue shelf** — Books, comics and videos you started, one click from the sidebar, on every device.
+- **Folder covers** — Folder tiles show a poster/folder/cover image or a music folder's album art.
 - **Audio** — Album art, embedded tags and artwork.
 - **ID3 tag editor** — Edit ID3 tag metadata, one track or a whole album at once.
 - **PDF** — Page through PDFs with thumbnail previews and sharp rendering.
@@ -225,6 +228,12 @@ vitrine watches the folders it serves, so files added, renamed or removed by any
 - **Reverse proxies.** Live updates use a long-lived server-sent-events connection at `/api/events/stream`. vitrine disables proxy buffering with `X-Accel-Buffering: no`; if your proxy still holds responses, turn buffering off for that path.
 
 Search answers from an in-memory index that updates as changes are reported. As a backstop, an index older than 10 minutes is rebuilt in the background on the next search. Tune this with `--searchIndexMaxAge` (env `VITRINE_SEARCH_INDEX_MAX_AGE`, e.g. `5m`; `0` turns it off). The **Rebuild search index** action in the command palette (⌘K) forces an immediate refresh.
+
+#### Media extras
+
+- **Folder covers.** In grid and gallery views a folder shows the first of `poster`, `folder`, `cover` or `fanart` (`.jpg`, `.jpeg`, `.png`, `.webp`, any case) inside it; a music folder without one shows its first track's embedded album art. Turn it off under Settings → Profile → Folder cover art.
+- **HEIC, HEIF and AVIF.** Thumbnails and previews are converted to JPEG with ffmpeg (bundled in the Docker image) or, outside Docker, `heif-convert` from libheif. Without either, these files keep the generic image icon. WebP thumbnails need nothing extra.
+- **Resume and watched.** Videos of five minutes or more resume where you stopped (with a *Start over* button); reaching 98% marks a video watched. Right-click videos to mark them watched or unwatched. Positions, like book and comic positions, are saved to your account and follow renames and moves.
 
 ## Architecture
 

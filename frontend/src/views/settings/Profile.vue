@@ -134,6 +134,16 @@
           @update:model-value="onShowExtensionsChange"
         />
       </SettingsRow>
+      <!-- 4.0 3.2: folder tiles show poster/folder/cover art. -->
+      <SettingsRow
+        label="Folder cover art"
+        description="In grid and gallery views, folders show a poster.jpg, folder.jpg, cover.jpg or fanart.jpg inside them, or a music folder's album art."
+      >
+        <Toggle
+          v-model="folderCovers"
+          @update:model-value="onFolderCoversChange"
+        />
+      </SettingsRow>
     </SettingsSection>
 
     <!-- ── Appearance (Stage 11b) ───────────────────────────────────── -->
@@ -426,6 +436,14 @@ const showExtensions = ref<boolean>(
 );
 const onShowExtensionsChange = (val: boolean) => {
   void prefs.set("nav.showExtensions", val);
+};
+
+// 4.0 3.2: cover art on folder tiles (default on).
+const folderCovers = ref<boolean>(
+  prefs.get<boolean>("view.folderCovers", true)
+);
+const onFolderCoversChange = (val: boolean) => {
+  void prefs.set("view.folderCovers", val);
 };
 
 // ── Appearance (theme preference) ────────────────────────────────────

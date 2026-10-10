@@ -21,6 +21,20 @@ All notable changes to **vitrine**.
   `--fileWatching` / `VITRINE_FILE_WATCHING` = `auto` (default), `poll` (for
   network mounts) or `off`. See the README for the inotify limit and reverse
   proxies.
+- **Pick up where you left off.** Videos of five minutes or more resume at
+  the last position, with a *Start over* button. A video counts as watched at
+  98%; tiles show a watched tick or a progress bar, and the right-click menu
+  marks one or many videos watched or unwatched.
+- **Continue shelf.** The sidebar lists the books, comics and videos you've
+  started but not finished, newest first, with progress bars. Right-click to
+  mark one finished or remove it. Reading and watching positions now follow
+  renames and moves, and are cleared when a file is deleted.
+- **Folder cover art.** Folder tiles in grid and gallery views show a
+  `poster`, `folder`, `cover` or `fanart` image from inside the folder, or a
+  music folder's album art. Settings → Profile → Folder cover art turns it off.
+- **WebP, HEIC and AVIF thumbnails.** WebP thumbnails are built in; HEIC,
+  HEIF and AVIF thumbnails and previews are converted to JPEG with ffmpeg
+  (in the Docker image) or `heif-convert`, so they display in every browser.
 - **Fixed: search missed files added outside vitrine.** The search index only
   refreshed when a file changed *through* vitrine, so anything a downloader,
   an SMB copy, or the host shell added never showed up in search until a

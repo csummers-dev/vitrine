@@ -491,7 +491,8 @@ func (i *FileInfo) readListing(checker rules.Checker, readHeader bool, calcImgRe
 			currentDir: dir,
 		}
 
-		if !file.IsDir && strings.HasPrefix(mime.TypeByExtension(file.Extension), "image/") && calcImgRes {
+		if !file.IsDir && strings.HasPrefix(mime.TypeByExtension(file.Extension), "image/") && calcImgRes &&
+			!noGoDecoder[strings.ToLower(file.Extension)] {
 			resolution, err := calculateImageResolution(file.Fs, file.Path)
 			if err != nil {
 				log.Printf("Error calculating resolution for image %s: %v", file.Path, err)
@@ -616,3 +617,7 @@ func lstatIfPossible(afs afero.Fs, name string) (os.FileInfo, error) {
 
 	return afs.Stat(name)
 }
+
+// noGoDecoder lists image types Go can't read the dimensions of (they're
+// converted by an external tool for previews), so the listing doesn't try.
+var noGoDecoder = map[string]bool{".heic": true, ".heif": true, ".avif": true}

@@ -344,12 +344,21 @@ export class FakeServer {
         body,
       });
     }
-    if (api.startsWith("/preview/"))
+    if (api.startsWith("/preview/")) {
+      // Folders (4.0 3.2): a cover only when one of the cover files exists.
+      const target = norm(api.replace(/^\/preview\/[^/]+/, ""));
+      if (this.fs.get(target)?.isDir) {
+        const has = ["poster", "folder", "cover", "fanart"].some((n) =>
+          this.fs.has(`${target === "/" ? "" : target}/${n}.jpg`)
+        );
+        if (!has) return text("404 Not Found", 404);
+      }
       return route.fulfill({
         status: 200,
         contentType: "image/png",
         body: PIXEL,
       });
+    }
     if (api.startsWith("/folder-size")) return json({ size: 0, count: 0 });
     if (api.startsWith("/usage")) return json({ total: 1e12, used: 2.5e11 });
     if (api === "/tags") return json([]);

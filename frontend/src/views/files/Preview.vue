@@ -1146,7 +1146,12 @@ const onImageSaved = (newName: string) => {
 
 const previewUrl = computed(() => {
   if (!fileStore.req) return "";
-  if (fileStore.req.type === "image" && !fullSize.value) {
+  // HEIC / HEIF / AVIF: browsers can't (reliably) show the original, so
+  // always use the server's JPEG conversion, even at "full size".
+  if (
+    fileStore.req.type === "image" &&
+    (!fullSize.value || /\.(heic|heif|avif)$/i.test(fileStore.req.name))
+  ) {
     return api.getPreviewURL(fileStore.req, "big");
   }
   // RC-44: EPUBs must carry the auth token like every other media URL.

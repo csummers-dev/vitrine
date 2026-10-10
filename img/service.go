@@ -8,12 +8,16 @@ import (
 	"fmt"
 	"image"
 	"io"
+	"strings"
 
 	"github.com/disintegration/imaging"
 	"github.com/dsoprea/go-exif/v3"
 	"github.com/marusama/semaphore/v2"
 
 	exifcommon "github.com/dsoprea/go-exif/v3/common"
+
+	// Registers the WebP decoder with image.Decode (4.0 Phase 3.1).
+	_ "golang.org/x/image/webp"
 )
 
 // ErrUnsupportedFormat means the given image format is not supported.
@@ -99,6 +103,11 @@ fill
 type ResizeMode int
 
 func (s *Service) FormatFromExtension(ext string) (Format, error) {
+	// WebP decodes (x/image/webp) but can't be encoded, so resized WebP
+	// comes out as PNG unless the caller asks for a format (thumbs: JPEG).
+	if strings.EqualFold(ext, ".webp") {
+		return FormatPng, nil
+	}
 	format, err := imaging.FormatFromExtension(ext)
 	if err != nil {
 		return -1, ErrUnsupportedFormat
@@ -207,6 +216,9 @@ func (s *Service) detectFormat(in io.Reader) (Format, io.Reader, error) {
 			imgConfig.Width, imgConfig.Height, MaxImageWidth, MaxImageHeight, ErrImageTooLarge)
 	}
 
+	if imgFormat == "webp" {
+		return FormatPng, io.MultiReader(buf, in), nil
+	}
 	format, err := ParseFormat(imgFormat)
 	if err != nil {
 		return 0, nil, ErrUnsupportedFormat

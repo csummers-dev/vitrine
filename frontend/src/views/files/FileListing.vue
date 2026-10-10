@@ -683,6 +683,7 @@
                       v-bind:type="item.type"
                       v-bind:size="item.size"
                       v-bind:path="item.path"
+                      :folder-cover="folderCovers"
                       @dropAlongside="onItemDropAlongside"
                       @rowPointerDown="onItemPointerDown"
                     >
@@ -1168,6 +1169,10 @@ const fileStore = useFileStore();
 const layoutStore = useLayoutStore();
 const tagsStore = useTagsStore();
 const prefs = usePreferences();
+// 4.0 3.2: folder tiles (grid / gallery) show cover art.
+const folderCovers = computed(() =>
+  prefs.get<boolean>("view.folderCovers", true)
+);
 // Shared lazy folder-size cache — feeds both the Size column display and,
 // when sorting by size, the folder sort order (see the `items` computed).
 const folderSizes = useFolderSizes();

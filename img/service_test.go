@@ -3,6 +3,7 @@ package img
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"image"
 	"image/gif"
 	"image/jpeg"
@@ -426,6 +427,10 @@ func TestService_FormatFromExtension(t *testing.T) {
 			ext:  ".bmp",
 			want: FormatBmp,
 		},
+		"webp re-encodes as png": {
+			ext:  ".WebP",
+			want: FormatPng,
+		},
 		"unknown": {
 			ext:     ".mov",
 			wantErr: ErrUnsupportedFormat,
@@ -443,4 +448,29 @@ func TestService_FormatFromExtension(t *testing.T) {
 			require.Equal(t, test.want, got)
 		})
 	}
+}
+
+// A 1×1 lossy WebP (the classic feature-detection image).
+const tinyWebP = "UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA"
+
+func TestService_ResizeWebP(t *testing.T) {
+	raw, err := base64.StdEncoding.DecodeString(tinyWebP)
+	require.NoError(t, err)
+
+	svc := New(1)
+	buf := &bytes.Buffer{}
+	err = svc.Resize(context.Background(), bytes.NewReader(raw), 16, 16, buf,
+		WithMode(ResizeModeFill), WithFormat(FormatJpeg))
+	require.NoError(t, err)
+	_, format, err := image.DecodeConfig(buf)
+	require.NoError(t, err)
+	require.Equal(t, "jpeg", format)
+
+	// Without an explicit format, WebP comes out as PNG.
+	buf.Reset()
+	err = svc.Resize(context.Background(), bytes.NewReader(raw), 16, 16, buf)
+	require.NoError(t, err)
+	_, format, err = image.DecodeConfig(buf)
+	require.NoError(t, err)
+	require.Equal(t, "png", format)
 }

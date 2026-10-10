@@ -47,9 +47,25 @@ func previewHandler(imgSvc ImgService, fileCache FileCache, enableThumbnails, re
 			return http.StatusBadRequest, err
 		}
 
+		// Stat first: a folder gets its cover art (4.0 3.2), and must not be
+		// expanded into a full listing just to find that out.
+		target := "/" + vars["path"]
+		st, err := files.NewFileInfo(&files.FileOptions{
+			Fs:      d.user.Fs,
+			Path:    target,
+			Modify:  d.user.Perm.Modify,
+			Checker: d,
+		})
+		if err != nil {
+			return errToStatus(err), err
+		}
+		if st.IsDir {
+			return handleFolderCover(w, r, imgSvc, fileCache, d, st, previewSize, enableThumbnails)
+		}
+
 		file, err := files.NewFileInfo(&files.FileOptions{
 			Fs:         d.user.Fs,
-			Path:       "/" + vars["path"],
+			Path:       target,
 			Modify:     d.user.Perm.Modify,
 			Expand:     true,
 			ReadHeader: d.server.TypeDetectionByHeader,
@@ -63,6 +79,11 @@ func previewHandler(imgSvc ImgService, fileCache FileCache, enableThumbnails, re
 
 		switch file.Type {
 		case "image":
+			// HEIC / HEIF / AVIF: converted to JPEG by an external tool
+			// (4.0 3.1); browsers can't display the originals.
+			if isConvertedImageExt(file.Extension) {
+				return handleConvertedImagePreview(w, r, imgSvc, fileCache, file, previewSize, enableThumbnails)
+			}
 			return handleImagePreview(w, r, imgSvc, fileCache, file, previewSize, enableThumbnails, resizePreview)
 		case "video":
 			// S6-2: ffmpeg-generated poster frame, cached + served like an
@@ -106,6 +127,10 @@ func handleImagePreview(
 ) (int, error) {
 	if (previewSize == PreviewSizeBig && !resizePreview) ||
 		(previewSize == PreviewSizeThumb && !enableThumbnails) {
+		return rawFileHandler(w, r, file)
+	}
+	// Browsers show WebP natively; only thumbnails are re-encoded.
+	if previewSize == PreviewSizeBig && strings.EqualFold(file.Extension, ".webp") {
 		return rawFileHandler(w, r, file)
 	}
 
