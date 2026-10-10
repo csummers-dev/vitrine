@@ -36,6 +36,14 @@ interface Share {
   lastAccessAt?: number;
   /** > 0: the link ends after this many downloads (1 = one-time). */
   maxDownloads?: number;
+  /** "upload": a drop-box (4.1). */
+  mode?: string;
+  maxFileSize?: number;
+  maxTotalSize?: number;
+  allowedExtensions?: string[];
+  perUploaderFolder?: boolean;
+  uploadedBytes?: number;
+  uploads?: number;
 }
 
 interface SearchParams {

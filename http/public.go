@@ -32,6 +32,11 @@ var withHashFile = func(fn handleFunc) handleFunc {
 			return status, err
 		}
 
+		// Drop-boxes never show or serve their contents (4.1).
+		if link.IsUpload() {
+			return http.StatusNotFound, nil
+		}
+
 		// A download-limited link that has been used up is gone (4.2).
 		if link.Exhausted() {
 			return http.StatusGone, nil
@@ -115,7 +120,7 @@ func ifPathWithName(r *http.Request) (id, filePath string) {
 	}
 }
 
-var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+var publicShareHandler = withUploadShareInfo(withHashFile(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 	file := d.raw.(*files.FileInfo)
 
 	// Opening the share counts as a view; browsing into its subfolders
@@ -134,7 +139,7 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 	}
 
 	return renderJSON(w, r, file)
-})
+}))
 
 var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 	file := d.raw.(*files.FileInfo)

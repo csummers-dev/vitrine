@@ -2,6 +2,8 @@ interface ISettings {
   signup: boolean;
   createUserDir: boolean;
   hideLoginButton: boolean;
+  /** 4.1: drop-box shares turned off server-wide. */
+  uploadSharesDisabled?: boolean;
   rememberLastPage: boolean;
   minimumPasswordLength: number;
   /** Days before trashed items are auto-purged; 0 = keep forever (2.4.0). */

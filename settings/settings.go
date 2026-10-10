@@ -78,6 +78,10 @@ type Settings struct {
 	// doubles I/O, so it's an explicit admin opt-in. Existing databases unmarshal
 	// to false.
 	VerifyTransfers bool `json:"verifyTransfers"`
+	// UploadSharesDisabled turns off drop-box (upload) share links
+	// server-wide (4.0 Phase 4.1): none can be created and existing ones
+	// stop accepting files.
+	UploadSharesDisabled bool `json:"uploadSharesDisabled"`
 }
 
 // GetRules implements rules.Provider.

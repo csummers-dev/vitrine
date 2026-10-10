@@ -167,6 +167,28 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 		return http.StatusBadRequest, fmt.Errorf("maxDownloads must be between 0 and %d", maxShareDownloads)
 	}
 
+	upload := body.Mode == share.ModeUpload
+	switch {
+	case body.Mode != share.ModeDownload && !upload:
+		return http.StatusBadRequest, fmt.Errorf("unknown share mode %q", body.Mode)
+	case upload && d.settings.UploadSharesDisabled:
+		return http.StatusForbidden, nil
+	case upload && !d.user.Perm.Create:
+		return http.StatusForbidden, nil
+	case body.MaxFileSize < 0 || body.MaxFileSize > share.MaxUploadLimit,
+		body.MaxTotalSize < 0 || body.MaxTotalSize > share.MaxUploadLimit:
+		return http.StatusBadRequest, errors.New("upload size limits out of range")
+	}
+	if upload {
+		info, err := d.user.Fs.Stat(r.URL.Path)
+		if err != nil {
+			return errToStatus(err), err
+		}
+		if !info.IsDir() {
+			return http.StatusBadRequest, errors.New("only folders can receive uploads")
+		}
+	}
+
 	s = &share.Link{
 		Path:         r.URL.Path,
 		Hash:         str,
@@ -175,6 +197,14 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 		PasswordHash: string(hash),
 		Token:        token,
 		MaxDownloads: body.MaxDownloads,
+	}
+	if upload {
+		s.Mode = share.ModeUpload
+		s.MaxDownloads = 0
+		s.MaxFileSize = body.MaxFileSize
+		s.MaxTotalSize = body.MaxTotalSize
+		s.AllowedExtensions = share.NormalizeExtensions(body.AllowedExtensions)
+		s.PerUploaderFolder = body.PerUploaderFolder
 	}
 
 	if err := d.store.Share.Save(s); err != nil {

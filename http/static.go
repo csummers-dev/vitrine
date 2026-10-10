@@ -65,6 +65,7 @@ func handleWithStaticData(w http.ResponseWriter, _ *http.Request, d *data, fSys 
 		"UnzipEnabled":     d.server.UnzipEnabled,
 		// 4.0 3.6: the photo map needs a tile source (--mapTiles).
 		"MapEnabled":     d.server.MapTileURL() != "",
+		"UploadShares":   !d.settings.UploadSharesDisabled,
 		"MapAttribution": mapAttribution(d.server.MapTileURL()),
 	}
 

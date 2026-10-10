@@ -24,6 +24,7 @@
           <Icon name="clipboard" :size="13" />
         </button>
         <button
+          v-if="!dropBox"
           type="button"
           class="share-btn share-btn--ghost"
           @click="toggleMultipleSelection"
@@ -100,6 +101,9 @@
 
     <!-- Other errors → reuse the redesigned Errors page -->
     <errors v-else-if="error" :errorCode="error.status" :showHeader="false" />
+
+    <!-- 4.1: a drop-box — upload only, its contents are never shown -->
+    <DropBox v-else-if="dropBox" :info="dropBox" :password="password" />
 
     <!-- Content -->
     <div v-else-if="req !== null" class="share__body">
@@ -280,6 +284,8 @@ import { createURL } from "@/api/utils";
 import HeaderBar from "@/components/header/HeaderBar.vue";
 import Breadcrumbs from "@/components/Breadcrumbs.vue";
 import Errors from "@/views/Errors.vue";
+import DropBox from "@/components/files/DropBox.vue";
+import type { DropBoxInfo } from "@/api/pub";
 import QrcodeVue from "qrcode.vue";
 import Item from "@/components/files/ListingItem.vue";
 import { useFileStore } from "@/stores/file";
@@ -297,6 +303,7 @@ const password = ref<string>("");
 const attemptedPasswordLogin = ref<boolean>(false);
 const hash = ref<string>("");
 const token = ref<string>("");
+const dropBox = ref<DropBoxInfo | null>(null);
 
 const $showError = inject<IToastError>("$showError")!;
 const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
@@ -390,6 +397,12 @@ const fetchData = async () => {
 
   try {
     const file = await api.fetch(url, password.value);
+    if (file.dropBox) {
+      dropBox.value = file.dropBox;
+      document.title = `Send files to ${file.dropBox.name} - ${document.title}`;
+      return;
+    }
+    dropBox.value = null;
     file.hash = hash.value;
     token.value = file.token || "";
     fileStore.updateRequest(file);

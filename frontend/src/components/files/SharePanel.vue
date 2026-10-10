@@ -62,6 +62,10 @@
                 <Icon name="lock" :size="10" />
                 Password
               </span>
+              <span v-if="link.mode === 'upload'" class="share-card__badge">
+                <Icon name="inbox" :size="10" />
+                Upload only
+              </span>
               <span
                 v-if="link.maxDownloads"
                 class="share-card__badge"
@@ -78,7 +82,7 @@
               </span>
             </div>
             <div class="share-card__usage" data-testid="share-usage">
-              {{ usageSummary(link, humanTime) }}
+              {{ usageSummary(link, humanTime, filesize) }}
             </div>
           </li>
         </ul>
@@ -109,7 +113,74 @@
           </div>
           <div class="share-field__hint">Leave 0 for a permanent link.</div>
         </div>
-        <div class="share-field">
+        <!-- 4.1: folders can also be shared as a drop-box. -->
+        <div v-if="canDropBox" class="share-field">
+          <span class="share-field__label">Link type</span>
+          <div class="share-kinds" role="radiogroup" aria-label="Link type">
+            <label class="share-kind">
+              <input v-model="mode" type="radio" value="" />
+              <span>Download</span>
+            </label>
+            <label class="share-kind">
+              <input v-model="mode" type="radio" value="upload" />
+              <span>Upload only (file request)</span>
+            </label>
+          </div>
+          <div v-if="mode === 'upload'" class="share-field__hint">
+            People with the link can add files to this folder but can't see or
+            download what's in it.
+          </div>
+        </div>
+        <template v-if="mode === 'upload'">
+          <div class="share-field">
+            <label class="share-field__label" for="share-max-file">
+              Largest file
+            </label>
+            <select
+              id="share-max-file"
+              v-model.number="maxFileSize"
+              class="share-input share-input--select"
+            >
+              <option :value="0">No limit</option>
+              <option :value="100 * MB">100 MB</option>
+              <option :value="GB">1 GB</option>
+              <option :value="10 * GB">10 GB</option>
+            </select>
+          </div>
+          <div class="share-field">
+            <label class="share-field__label" for="share-max-total">
+              Total for this link
+            </label>
+            <select
+              id="share-max-total"
+              v-model.number="maxTotalSize"
+              class="share-input share-input--select"
+            >
+              <option :value="0">No limit</option>
+              <option :value="GB">1 GB</option>
+              <option :value="10 * GB">10 GB</option>
+              <option :value="50 * GB">50 GB</option>
+            </select>
+          </div>
+          <div class="share-field">
+            <label class="share-field__label" for="share-exts">
+              Allowed file types
+              <span class="share-field__label-hint">(optional)</span>
+            </label>
+            <input
+              id="share-exts"
+              v-model.trim="allowedExts"
+              type="text"
+              class="share-input"
+              placeholder="e.g. jpg, png, pdf"
+            />
+          </div>
+          <label class="share-check">
+            <input v-model="perUploaderFolder" type="checkbox" />
+            <span>Put each person's files in a folder named after them</span>
+          </label>
+        </template>
+        <div v-if="mode !== 'upload'" class="share-field">
           <label class="share-field__label" for="share-limit">
             Download limit
           </label>
@@ -190,6 +261,9 @@ import SlideOver from "@/components/SlideOver.vue";
 import Icon from "@/components/Icon.vue";
 import { useServerEvents } from "@/composables/useServerEvents";
 import { isExhausted, usageSummary } from "@/api/share";
+import { uploadSharesEnabled } from "@/utils/constants";
+import { useAuthStore } from "@/stores/auth";
+import { filesize } from "@/utils";
 
 // The backend's /api/share endpoint returns an array of shares — the API
 // helper in share.ts is typed as `Share` (singular), so we widen here.
@@ -214,6 +288,7 @@ const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
 
 const route = useRoute();
 const fileStore = useFileStore();
+const authStore = useAuthStore();
 
 const links = ref<ShareLink[]>([]);
 const loading = ref<boolean>(false);
@@ -221,6 +296,14 @@ const time = ref<number>(0);
 const unit = ref<"seconds" | "minutes" | "hours" | "days">("hours");
 const password = ref<string>("");
 const maxDownloads = ref<number>(0);
+// 4.1 drop-box options.
+const MB = 1024 * 1024;
+const GB = 1024 * MB;
+const mode = ref<"" | "upload">("");
+const maxFileSize = ref<number>(0);
+const maxTotalSize = ref<number>(0);
+const allowedExts = ref<string>("");
+const perUploaderFolder = ref<boolean>(false);
 
 // 4.2: usage counts update live while the panel is open.
 useServerEvents("share.accessed", (u) => {
@@ -261,6 +344,17 @@ const targetPath = computed<string>(() => {
   return item?.path ?? item?.url ?? "";
 });
 
+// Only folders can receive uploads, and only with create permission.
+const canDropBox = computed(
+  () =>
+    uploadSharesEnabled &&
+    !!authStore.user?.perm.create &&
+    targetUrl.value.endsWith("/")
+);
+watch(canDropBox, (ok) => {
+  if (!ok) mode.value = "";
+});
+
 const title = computed(() =>
   targetName.value ? `Share “${targetName.value}”` : "Share"
 );
@@ -295,27 +389,34 @@ const loadLinks = async () => {
 const onCreate = async () => {
   if (!targetUrl.value) return;
   try {
-    const res = (await (time.value
-      ? shareApi.create(
-          targetUrl.value,
-          password.value,
-          String(time.value),
-          unit.value,
-          maxDownloads.value
-        )
-      : shareApi.create(
-          targetUrl.value,
-          password.value,
-          "",
-          "hours",
-          maxDownloads.value
-        ))) as ShareLink;
+    const upload =
+      mode.value === "upload"
+        ? {
+            maxFileSize: maxFileSize.value,
+            maxTotalSize: maxTotalSize.value,
+            allowedExtensions: allowedExts.value ? [allowedExts.value] : [],
+            perUploaderFolder: perUploaderFolder.value,
+          }
+        : undefined;
+    const res = (await shareApi.create(
+      targetUrl.value,
+      password.value,
+      time.value ? String(time.value) : "",
+      time.value ? unit.value : "hours",
+      upload ? 0 : maxDownloads.value,
+      upload
+    )) as ShareLink;
     links.value.push(res);
     sortLinks();
     time.value = 0;
     unit.value = "hours";
     password.value = "";
     maxDownloads.value = 0;
+    mode.value = "";
+    maxFileSize.value = 0;
+    maxTotalSize.value = 0;
+    allowedExts.value = "";
+    perUploaderFolder.value = false;
     $showSuccess("Share link created");
   } catch (e) {
     if (e instanceof Error) $showError(e);
@@ -525,6 +626,22 @@ watch(
 .share-card__badge--done {
   background: var(--status-danger-soft, #fee2e2);
   color: var(--status-danger, #b91c1c);
+}
+.share-kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+.share-kind,
+.share-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-ink-1, #18181b);
+}
+.share-check {
+  margin-bottom: 14px;
 }
 .share-card__usage {
   margin-top: 4px;

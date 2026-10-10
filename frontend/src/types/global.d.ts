@@ -32,6 +32,8 @@ interface VitrineGlobals {
   MapEnabled?: boolean;
   /** Credit line (HTML) for the tile source. */
   MapAttribution?: string;
+  /** 4.1: drop-box (upload) shares are allowed. */
+  UploadShares?: boolean;
   Version: string;
 }
 

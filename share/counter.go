@@ -141,3 +141,47 @@ func (c *Counter) Run(ctx context.Context, logf func(string, ...any)) {
 		}
 	}
 }
+
+// ReserveUpload checks a drop-box upload of size bytes against the link's
+// limits and, if it fits, records it (UploadedBytes, Uploads) before the
+// file is written, so concurrent uploads can't overrun MaxTotalSize. Call
+// ReleaseUpload if writing the file then fails.
+func (c *Counter) ReserveUpload(hash, name string, size int64) (*Link, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	l, err := c.store.GetByHash(hash)
+	if err != nil {
+		return nil, err
+	}
+	if u := c.pending[hash]; u != nil {
+		l.Views += u.views
+		l.Downloads += u.downloads
+		delete(c.pending, hash)
+	}
+	if err := l.CheckUpload(name, size); err != nil {
+		return l, err
+	}
+	l.UploadedBytes += size
+	l.Uploads++
+	l.LastAccessAt = c.now().Unix()
+	if err := c.store.Save(l); err != nil {
+		return nil, err
+	}
+	if c.onSaved != nil {
+		c.onSaved(l)
+	}
+	return l, nil
+}
+
+// ReleaseUpload undoes a ReserveUpload whose file wasn't written.
+func (c *Counter) ReleaseUpload(hash string, size int64) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	l, err := c.store.GetByHash(hash)
+	if err != nil {
+		return
+	}
+	l.UploadedBytes = max(0, l.UploadedBytes-size)
+	l.Uploads = max(0, l.Uploads-1)
+	_ = c.store.Save(l)
+}

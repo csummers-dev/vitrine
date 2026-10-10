@@ -46,7 +46,7 @@ Self-hosted file management.
 - **Audit log** — Actions taken in-app recorded to an audit log available to administrators.
 - **Webhooks** — Fire a signed webhook on any file event, or have Jellyfin rescan its library when media changes.
 - **Sessions** — View active sessions and sign out everywhere.
-- **Shares** — Share a link in seconds, see how often it's opened and downloaded, or make it one-time.
+- **Shares** — Share a link in seconds, see how often it's opened and downloaded, make it one-time, or turn a folder into a file request.
 - **Mobile** — Mobile design prioritized.
 - **Mobile upload / pull-to-refresh** — Upload from your camera roll; pull to refresh.
 
@@ -243,6 +243,7 @@ Search answers from an in-memory index that updates as changes are reported. As 
 #### Shares and webhooks
 
 - **Share usage.** Each link shows its views, downloads and when it was last opened, updating live. A download limit (one-time, 5, 10 or 25) ends the link once it's used up; the visitor then sees "This link is no longer available". On limited links every download counts, previews included, so the public page doesn't preview them.
+- **File requests (upload-only links).** Share a folder as *Upload only* and anyone with the link can send you files without seeing what's already there. Optional limits: largest file, total size, allowed file types, and a subfolder per sender (named after what they type). Files never overwrite each other — a clash gets a " (2)" suffix — and are written with your permissions and rules. Each IP can send up to 300 files an hour and each link takes 3 uploads at a time; wrong passwords are throttled like logins. Admins can turn file requests off in Settings → Global. Uploads don't resume after a dropped connection yet.
 - **Signed webhooks.** In Settings → Webhooks, edit an endpoint and choose *Generate* under *Signing secret*. Each delivery then carries `X-Vitrine-Signature: t=<unix time>,v1=<hex>`, where `v1` is HMAC-SHA256 with the secret over `<t>.<raw body>`. Check it in constant time and reject old timestamps:
 
   ```python

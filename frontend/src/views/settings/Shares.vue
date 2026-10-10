@@ -85,6 +85,10 @@
               <Icon name="lock" :size="11" />
               Password protected
             </span>
+            <span v-if="link.mode === 'upload'" class="shares-meta-chip">
+              <Icon name="inbox" :size="11" />
+              Upload only
+            </span>
             <span
               v-if="authStore.user?.perm.admin && link.username"
               class="shares-meta-chip"
@@ -109,7 +113,7 @@
           </div>
           <!-- 4.2: usage, live over the event stream. -->
           <div class="shares-card__usage" data-testid="share-usage">
-            {{ api.usageSummary(link, humanTime) }}
+            {{ api.usageSummary(link, humanTime, filesize) }}
           </div>
         </li>
       </ul>
@@ -125,6 +129,7 @@ import { useLayoutStore } from "@/stores/layout";
 import { share as api, users } from "@/api";
 import { copy } from "@/utils/clipboard";
 import dayjs from "dayjs";
+import { filesize } from "@/utils";
 
 import SettingsPage from "@/components/settings/SettingsPage.vue";
 import SettingsSection from "@/components/settings/SettingsSection.vue";

@@ -247,6 +247,7 @@ func NewHandler(
 	public := api.PathPrefix("/public").Subrouter()
 	public.PathPrefix("/dl").Handler(monkey(publicDlHandler, "/api/public/dl/")).Methods("GET")
 	public.PathPrefix("/share").Handler(monkey(publicShareHandler, "/api/public/share/")).Methods("GET")
+	public.PathPrefix("/upload").Handler(monkey(publicUploadHandler, "/api/public/upload/")).Methods("POST")
 
 	return stripPrefix(server.BaseURL, r), nil
 }

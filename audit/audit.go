@@ -352,6 +352,10 @@ func buildEntry(e events.Event) Entry {
 		base.UserID = v.UserID
 		base.IP = v.IP
 		base.Path = v.Path
+	case events.ShareUploaded:
+		base.UserID = v.UserID
+		base.IP = v.IP
+		base.Path = v.Path
 	case events.UserLoggedIn:
 		base.UserID = v.UserID
 		base.IP = v.IP

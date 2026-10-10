@@ -30,3 +30,35 @@ test("a one-time link works once, then is gone", async ({ app, fake }) => {
     "no longer available"
   );
 });
+
+// 4.0 Phase 4.1: upload-only (drop-box) links.
+test("a visitor uploads to a drop-box without seeing its contents", async ({
+  app,
+  fake,
+}) => {
+  await contextAction(app, "Documents", "Share");
+  await app.getByLabel("Upload only (file request)").check();
+  await app
+    .getByLabel("Put each person's files in a folder named after them")
+    .check();
+  await app.getByRole("button", { name: "Create link" }).click();
+  await expect(app.getByText("Upload only", { exact: true })).toBeVisible();
+  expect(fake.shares[0]).toMatchObject({
+    mode: "upload",
+    perUploaderFolder: true,
+  });
+
+  await app.goto(`/share/${fake.shares[0].hash}`);
+  const box = app.getByTestId("dropbox");
+  await expect(box).toContainText("Send files to “Documents”");
+  await expect(app.getByText("notes.txt")).toHaveCount(0);
+  await box.getByLabel(/Your name/).fill("Alice");
+  await box.getByTestId("dropbox-input").setInputFiles({
+    name: "notes.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("from alice"),
+  });
+  await expect(box.getByTestId("dropbox-state")).toHaveText("Sent");
+  expect(fake.shares[0].uploads).toBe(1);
+  expect(fake.fs.has("/Documents/Alice/notes.txt")).toBe(true);
+});

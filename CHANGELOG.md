@@ -21,6 +21,13 @@ All notable changes to **vitrine**.
   `--fileWatching` / `VITRINE_FILE_WATCHING` = `auto` (default), `poll` (for
   network mounts) or `off`. See the README for the inotify limit and reverse
   proxies.
+- **File requests (upload-only links).** A folder can be shared as *Upload
+  only*: visitors drop files in without seeing the folder's contents. Limits
+  for file size, total size and file types, an optional subfolder per
+  sender, no overwrites (" (2)" suffixes), per-IP and per-link rate limits,
+  throttled passwords, and an admin switch in Settings → Global. Uploads
+  appear live in the owner's listing and are recorded in the audit log as
+  `share.uploaded`.
 - **Share usage and one-time links.** Share links count views and
   downloads and remember when they were last opened, shown in the share
   panel and Settings → Shares and updated live. A download limit (one-time,

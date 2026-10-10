@@ -128,3 +128,20 @@ func TestCounterTakeDownloadConcurrent(t *testing.T) {
 		t.Errorf("granted %d downloads, stored %d; want 3", ok, back.links["x"].Downloads)
 	}
 }
+
+func TestCounterReserveUpload(t *testing.T) {
+	c, back, _ := newCounterFixture(Link{Hash: "box", Mode: ModeUpload, MaxTotalSize: 100})
+	if _, err := c.ReserveUpload("box", "a.bin", 60); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.ReserveUpload("box", "b.bin", 60); !errors.Is(err, ErrQuotaExceeded) {
+		t.Fatalf("second reserve err = %v, want ErrQuotaExceeded", err)
+	}
+	c.ReleaseUpload("box", 60)
+	if l := back.links["box"]; l.UploadedBytes != 0 || l.Uploads != 0 {
+		t.Fatalf("after release: %+v", l)
+	}
+	if _, err := c.ReserveUpload("box", "b.bin", 100); err != nil {
+		t.Fatalf("reserve after release: %v", err)
+	}
+}

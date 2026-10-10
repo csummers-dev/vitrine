@@ -180,6 +180,20 @@ type ShareAccessed struct {
 
 func (ShareAccessed) Type() string { return "share.accessed" }
 
+// ShareUploaded fires when a visitor adds a file through a drop-box share
+// (4.0 Phase 4.1). UserID is the link's owner; Uploader is the name the
+// visitor typed (may be empty). A FileUploaded event is published too, so
+// webhooks and live listings see the new file.
+type ShareUploaded struct {
+	Base
+	ShareID  string `json:"shareId"`
+	Path     string `json:"path"`
+	Size     int64  `json:"size"`
+	Uploader string `json:"uploader,omitempty"`
+}
+
+func (ShareUploaded) Type() string { return "share.uploaded" }
+
 // UserLoggedIn fires after a successful login.
 type UserLoggedIn struct {
 	Base

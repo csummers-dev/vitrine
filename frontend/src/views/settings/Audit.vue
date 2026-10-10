@@ -195,6 +195,7 @@ const ACTION_OPTIONS = [
   { value: "file.uploaded", label: "Uploaded" },
   { value: "share.granted", label: "Share granted" },
   { value: "share.revoked", label: "Share revoked" },
+  { value: "share.uploaded", label: "Uploaded to a share" },
   { value: "user.loggedIn", label: "Signed in" },
   { value: "user.loggedOut", label: "Signed out" },
   { value: "settings.changed", label: "Settings changed" },

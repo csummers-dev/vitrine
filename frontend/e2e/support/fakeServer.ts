@@ -173,6 +173,9 @@ export class FakeServer {
     downloads: number;
     lastAccessAt?: number;
     maxDownloads?: number;
+    mode?: string;
+    perUploaderFolder?: boolean;
+    uploads?: number;
   }[] = [];
 
   /** Webhook endpoints (secrets kept here, never returned). */
@@ -555,6 +558,8 @@ export class FakeServer {
       if (method === "POST") {
         const body = JSON.parse(req.postData() || "{}") as {
           maxDownloads?: number;
+          mode?: string;
+          perUploaderFolder?: boolean;
         };
         const link = {
           hash: `h${this.shares.length + 1}`,
@@ -564,11 +569,39 @@ export class FakeServer {
           views: 0,
           downloads: 0,
           maxDownloads: body.maxDownloads || undefined,
+          mode: body.mode || undefined,
+          perUploaderFolder: body.perUploaderFolder || undefined,
         };
         this.shares.push(link);
         return json(link);
       }
       return json(this.shares.filter((x) => x.path === p));
+    }
+    // Drop-box uploads.
+    const up = /^\/public\/upload\/([^/]+)$/.exec(api);
+    if (up && method === "POST") {
+      const link = this.shares.find((x) => x.hash === up[1]);
+      if (!link || link.mode !== "upload") return text("404 Not Found", 404);
+      const name = query.name ?? "";
+      if (!name || name.includes("/") || name === "..")
+        return text("400 Bad Request", 400);
+      let dir = link.path;
+      if (link.perUploaderFolder)
+        dir = `${dir}/${(query.uploader || "Anonymous").replace(/[/\\]/g, "")}`;
+      let final = name;
+      for (let i = 2; this.fs.has(norm(`${dir}/${final}`)); i++) {
+        const dot = name.lastIndexOf(".");
+        final =
+          dot > 0
+            ? `${name.slice(0, dot)} (${i})${name.slice(dot)}`
+            : `${name} (${i})`;
+      }
+      this.changeOnDisk(
+        `${dir}/${final}`,
+        req.postDataBuffer()?.toString() ?? ""
+      );
+      link.uploads = (link.uploads ?? 0) + 1;
+      return json({ name: final, size: 0 });
     }
     // Public share pages (no auth).
     const pub = /^\/public\/(share|dl)\/([^/]+)(\/.*)?$/.exec(api);
@@ -576,6 +609,16 @@ export class FakeServer {
       const [, kind, hash, sub = ""] = pub;
       const link = this.shares.find((x) => x.hash === hash);
       if (!link) return text("404 Not Found", 404);
+      if (link.mode === "upload") {
+        if (kind === "dl") return text("404 Not Found", 404);
+        link.views++;
+        return json({
+          mode: "upload",
+          name: baseName(link.path),
+          hash,
+          perUploaderFolder: link.perUploaderFolder,
+        });
+      }
       const limited = (link.maxDownloads ?? 0) > 0;
       if (limited && link.downloads >= link.maxDownloads!)
         return text("410 Gone", 410);
