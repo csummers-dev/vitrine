@@ -181,6 +181,9 @@ export class FakeServer {
   /** Webhook endpoints (secrets kept here, never returned). */
   readonly webhooks: Record<string, unknown>[] = [];
 
+  /** Two-factor state for the signed-in user. */
+  readonly twoFactor = { enabled: false };
+
   /** The user's preferences: served in the token, updated by PUT /users. */
   preferences: Record<string, unknown> = {};
 
@@ -277,6 +280,38 @@ export class FakeServer {
     const text = (body: string, status = 200) =>
       route.fulfill({ status, contentType: "text/plain", body });
 
+    // Two-factor sign-in (4.4). The fake's valid code is always 123456.
+    if (api === "/login" && this.twoFactor.enabled)
+      return json({ twoFactor: true, challenge: "c1" }, 202);
+    if (api === "/login/2fa") {
+      const b = JSON.parse(req.postData() || "{}");
+      return b.challenge === "c1" && b.code === "123456"
+        ? text(makeToken(this.preferences))
+        : text("403 Forbidden", 403);
+    }
+    if (api === "/2fa" && method === "GET")
+      return json({
+        available: true,
+        enabled: this.twoFactor.enabled,
+        recoveryCodesLeft: this.twoFactor.enabled ? 10 : 0,
+      });
+    if (api === "/2fa/setup")
+      return json({
+        secret: "JBSWY3DPEHPK3PXP",
+        uri: "otpauth://totp/vitrine:admin?secret=JBSWY3DPEHPK3PXP&issuer=vitrine",
+      });
+    if (api === "/2fa/enable") {
+      const b = JSON.parse(req.postData() || "{}");
+      if (b.code !== "123456") return text("400 Bad Request", 400);
+      this.twoFactor.enabled = true;
+      return json({
+        recoveryCodes: Array.from({ length: 10 }, (_, i) => `ABCDE-FGH${i}J`),
+      });
+    }
+    if (api === "/2fa/disable") {
+      this.twoFactor.enabled = false;
+      return text("", 200);
+    }
     if (api === "/login" || api === "/renew")
       return text(makeToken(this.preferences));
 

@@ -356,6 +356,9 @@ func buildEntry(e events.Event) Entry {
 		base.UserID = v.UserID
 		base.IP = v.IP
 		base.Path = v.Path
+	case events.TwoFactorChanged:
+		base.UserID = v.UserID
+		base.IP = v.IP
 	case events.UserLoggedIn:
 		base.UserID = v.UserID
 		base.IP = v.IP

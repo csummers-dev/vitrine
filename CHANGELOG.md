@@ -21,6 +21,13 @@ All notable changes to **vitrine**.
   `--fileWatching` / `VITRINE_FILE_WATCHING` = `auto` (default), `poll` (for
   network mounts) or `off`. See the README for the inotify limit and reverse
   proxies.
+- **Two-factor sign-in.** Users can require a code from an authenticator
+  app after their password (Settings → Profile), with ten single-use
+  recovery codes. Codes can't be reused, failed codes share the login
+  lockout, admins can reset a user's second factor, and enabling,
+  disabling, resets and recovery-code use are recorded in the audit log.
+  Secrets are encrypted with a new key file beside the database,
+  `<database name>-2fa.key`: back it up with the database.
 - **File requests (upload-only links).** A folder can be shared as *Upload
   only*: visitors drop files in without seeing the folder's contents. Limits
   for file size, total size and file types, an optional subfolder per

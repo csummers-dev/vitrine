@@ -8,6 +8,7 @@ import * as trash from "./trash";
 import * as audit from "./audit";
 import * as webhooks from "./webhooks";
 import * as audiotags from "./audiotags";
+import * as twofactor from "./twofactor";
 import search from "./search";
 import commands from "./commands";
 
@@ -24,4 +25,5 @@ export {
   audit,
   webhooks,
   audiotags,
+  twofactor,
 };

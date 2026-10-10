@@ -7,6 +7,7 @@ import (
 	"github.com/csummers-dev/vitrine/v4/settings"
 	"github.com/csummers-dev/vitrine/v4/share"
 	"github.com/csummers-dev/vitrine/v4/storage"
+	"github.com/csummers-dev/vitrine/v4/twofactor"
 	"github.com/csummers-dev/vitrine/v4/users"
 )
 
@@ -23,9 +24,10 @@ func NewStorage(db *storm.DB) (*storage.Storage, error) {
 	}
 
 	return &storage.Storage{
-		Auth:     authStore,
-		Users:    userStore,
-		Share:    shareStore,
-		Settings: settingsStore,
+		Auth:      authStore,
+		Users:     userStore,
+		Share:     shareStore,
+		Settings:  settingsStore,
+		TwoFactor: twofactor.NewStorage(twoFactorBackend{db: db}),
 	}, nil
 }

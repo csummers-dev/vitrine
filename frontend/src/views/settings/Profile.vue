@@ -293,6 +293,9 @@
       </SettingsSection>
     </form>
 
+    <!-- ── Two-factor sign-in (4.0 4.4) ─────────────────────────────── -->
+    <TwoFactorSettings v-if="!noAuth" />
+
     <!-- ── Save status indicator (auto-save toast-replacement) ───────── -->
     <Transition name="savestate">
       <div v-if="saveState !== 'idle'" class="save-state" :class="saveState">
@@ -340,6 +343,7 @@ import { useAccentColor } from "@/composables/useAccentColor";
 import { useProfileAvatar } from "@/composables/useProfileAvatar";
 import AvatarCropper from "@/components/settings/AvatarCropper.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import TwoFactorSettings from "@/components/settings/TwoFactorSettings.vue";
 
 const { t } = useI18n();
 const authStore = useAuthStore();

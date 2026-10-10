@@ -25,6 +25,9 @@ test("slideshow from a photo steps, wraps and closes with Esc", async ({
   await contextAction(app, "b.jpg", "Slideshow from here");
   const show = app.getByTestId("slideshow");
   await expect(show.getByTestId("slideshow-counter")).toHaveText("2 / 3");
+  // Pause, so the 5-second timer can't move on while the test steps.
+  await app.keyboard.press(" ");
+  await expect(show.getByRole("button", { name: "Play" })).toBeVisible();
   await app.keyboard.press("ArrowRight");
   await expect(show.getByTestId("slideshow-counter")).toHaveText("3 / 3");
   await app.keyboard.press("ArrowRight");

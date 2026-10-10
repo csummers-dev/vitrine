@@ -48,91 +48,119 @@
         <span>{{ t(`login.logout_reasons.${reason}`) }}</span>
       </div>
 
-      <!-- Form fields -->
-      <div class="login-field">
-        <label for="login-username" class="login-field__label">
-          {{ t("login.username") }}
+      <!-- 4.4: second step for accounts with two-factor sign-in -->
+      <div v-if="challenge" class="login-field">
+        <label for="login-code" class="login-field__label">
+          Authentication code
         </label>
         <input
-          id="login-username"
-          ref="usernameInput"
-          v-model="username"
-          name="username"
+          id="login-code"
+          ref="codeInput"
+          v-model.trim="code"
+          name="code"
           type="text"
-          autocomplete="username"
-          autocapitalize="off"
+          inputmode="numeric"
+          autocomplete="one-time-code"
           class="login-input"
           :class="{ 'is-error': !!error }"
           :disabled="submitting"
           @input="clearError"
         />
-      </div>
-
-      <div class="login-field">
-        <label for="login-password" class="login-field__label">
-          {{ t("login.password") }}
-        </label>
-        <div class="login-input-wrap">
-          <input
-            id="login-password"
-            v-model="password"
-            name="password"
-            :type="showPassword ? 'text' : 'password'"
-            :autocomplete="createMode ? 'new-password' : 'current-password'"
-            class="login-input login-input--has-toggle"
-            :class="{ 'is-error': !!error || passwordMismatch }"
-            :disabled="submitting"
-            @input="clearError"
-          />
-          <button
-            type="button"
-            class="login-password-toggle"
-            :aria-label="showPassword ? 'Hide password' : 'Show password'"
-            :aria-pressed="showPassword"
-            :title="showPassword ? 'Hide password' : 'Show password'"
-            :disabled="submitting"
-            @click="showPassword = !showPassword"
-          >
-            <Icon :name="showPassword ? 'eye-off' : 'eye'" :size="15" />
+        <p class="login-helper">
+          Enter the 6-digit code from your authenticator app, or one of your
+          recovery codes.
+          <button type="button" class="login-toggle__link" @click="cancelCode">
+            Start over
           </button>
-        </div>
-      </div>
-
-      <div v-if="createMode" class="login-field">
-        <label for="login-password-confirm" class="login-field__label">
-          {{ t("login.passwordConfirm") }}
-        </label>
-        <div class="login-input-wrap">
-          <input
-            id="login-password-confirm"
-            v-model="passwordConfirm"
-            name="password-confirm"
-            :type="showPassword ? 'text' : 'password'"
-            autocomplete="new-password"
-            class="login-input login-input--has-toggle"
-            :class="passwordConfirmClass"
-            :disabled="submitting"
-            @input="clearError"
-          />
-          <button
-            type="button"
-            class="login-password-toggle"
-            :aria-label="showPassword ? 'Hide password' : 'Show password'"
-            :aria-pressed="showPassword"
-            :title="showPassword ? 'Hide password' : 'Show password'"
-            :disabled="submitting"
-            @click="showPassword = !showPassword"
-          >
-            <Icon :name="showPassword ? 'eye-off' : 'eye'" :size="15" />
-          </button>
-        </div>
-        <p v-if="passwordMismatch" class="login-helper login-helper--error">
-          Passwords don't match.
         </p>
       </div>
 
+      <!-- Form fields -->
+      <template v-if="!challenge">
+        <div class="login-field">
+          <label for="login-username" class="login-field__label">
+            {{ t("login.username") }}
+          </label>
+          <input
+            id="login-username"
+            ref="usernameInput"
+            v-model="username"
+            name="username"
+            type="text"
+            autocomplete="username"
+            autocapitalize="off"
+            class="login-input"
+            :class="{ 'is-error': !!error }"
+            :disabled="submitting"
+            @input="clearError"
+          />
+        </div>
+
+        <div class="login-field">
+          <label for="login-password" class="login-field__label">
+            {{ t("login.password") }}
+          </label>
+          <div class="login-input-wrap">
+            <input
+              id="login-password"
+              v-model="password"
+              name="password"
+              :type="showPassword ? 'text' : 'password'"
+              :autocomplete="createMode ? 'new-password' : 'current-password'"
+              class="login-input login-input--has-toggle"
+              :class="{ 'is-error': !!error || passwordMismatch }"
+              :disabled="submitting"
+              @input="clearError"
+            />
+            <button
+              type="button"
+              class="login-password-toggle"
+              :aria-label="showPassword ? 'Hide password' : 'Show password'"
+              :aria-pressed="showPassword"
+              :title="showPassword ? 'Hide password' : 'Show password'"
+              :disabled="submitting"
+              @click="showPassword = !showPassword"
+            >
+              <Icon :name="showPassword ? 'eye-off' : 'eye'" :size="15" />
+            </button>
+          </div>
+        </div>
+
+        <div v-if="createMode" class="login-field">
+          <label for="login-password-confirm" class="login-field__label">
+            {{ t("login.passwordConfirm") }}
+          </label>
+          <div class="login-input-wrap">
+            <input
+              id="login-password-confirm"
+              v-model="passwordConfirm"
+              name="password-confirm"
+              :type="showPassword ? 'text' : 'password'"
+              autocomplete="new-password"
+              class="login-input login-input--has-toggle"
+              :class="passwordConfirmClass"
+              :disabled="submitting"
+              @input="clearError"
+            />
+            <button
+              type="button"
+              class="login-password-toggle"
+              :aria-label="showPassword ? 'Hide password' : 'Show password'"
+              :aria-pressed="showPassword"
+              :title="showPassword ? 'Hide password' : 'Show password'"
+              :disabled="submitting"
+              @click="showPassword = !showPassword"
+            >
+              <Icon :name="showPassword ? 'eye-off' : 'eye'" :size="15" />
+            </button>
+          </div>
+          <p v-if="passwordMismatch" class="login-helper login-helper--error">
+            Passwords don't match.
+          </p>
+        </div>
+      </template>
       <!-- reCAPTCHA — preserved as-is, wrapped for layout consistency -->
-      <div v-if="recaptcha" class="login-field">
+      <div v-if="recaptcha && !challenge" class="login-field">
         <div id="recaptcha"></div>
       </div>
 
@@ -262,6 +290,16 @@ const passwordConfirmClass = computed(() => {
   return "";
 });
 
+// ── Two-factor step (4.4) ────────────────────────────────────────────
+const challenge = ref("");
+const code = ref("");
+const codeInput = ref<HTMLInputElement | null>(null);
+const cancelCode = () => {
+  challenge.value = "";
+  code.value = "";
+  clearError();
+};
+
 // ── Handlers ─────────────────────────────────────────────────────────
 const toggleMode = () => {
   createMode.value = !createMode.value;
@@ -297,10 +335,22 @@ const submit = async (event: Event) => {
 
   submitting.value = true;
   try {
-    if (createMode.value) {
-      await auth.signup(username.value, password.value);
+    if (challenge.value) {
+      await auth.loginSecondFactor(challenge.value, code.value);
+    } else {
+      if (createMode.value) {
+        await auth.signup(username.value, password.value);
+      }
+      const res = await auth.login(username.value, password.value, captcha);
+      if (res.challenge) {
+        challenge.value = res.challenge;
+        code.value = "";
+        submitting.value = false; // the code field can't focus while disabled
+        await nextTick();
+        codeInput.value?.focus();
+        return;
+      }
     }
-    await auth.login(username.value, password.value, captcha);
 
     // Honor an explicit ?redirect= first. Otherwise consult the global
     // "Re-open last visited page on login" setting and (if on) restore
@@ -322,7 +372,15 @@ const submit = async (event: Event) => {
     router.push({ path: destination });
   } catch (e) {
     if (e instanceof StatusError) {
-      if (e.status === 409) {
+      if (challenge.value && (e.status === 403 || e.status === 400)) {
+        error.value = "That code didn't work. Try the current one.";
+      } else if (challenge.value && e.status === 401) {
+        // The challenge expired (5 minutes): back to the password step.
+        cancelCode();
+        error.value = "That took too long. Sign in again.";
+      } else if (e.status === 429) {
+        error.value = "Too many attempts. Wait a few minutes and try again.";
+      } else if (e.status === 409) {
         error.value = t("login.usernameTaken");
       } else if (e.status === 403) {
         error.value = t("login.wrongCredentials");

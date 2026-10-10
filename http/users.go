@@ -127,6 +127,9 @@ var userDeleteHandler = withSelfOrAdmin(func(_ http.ResponseWriter, r *http.Requ
 	if err != nil {
 		return errToStatus(err), err
 	}
+	if d.store.TwoFactor != nil {
+		_ = d.store.TwoFactor.Delete(d.raw.(uint))
+	}
 
 	return http.StatusOK, nil
 })

@@ -194,6 +194,17 @@ type ShareUploaded struct {
 
 func (ShareUploaded) Type() string { return "share.uploaded" }
 
+// TwoFactorChanged records a change to a user's second factor (4.0 Phase
+// 4.4). Action is "enabled", "disabled", "reset" (by an admin; UserID is the
+// admin) or "recovery-used". TargetUserID is whose factor changed.
+type TwoFactorChanged struct {
+	Base
+	Action       string `json:"action"`
+	TargetUserID uint   `json:"targetUserId"`
+}
+
+func (TwoFactorChanged) Type() string { return "user.2fa" }
+
 // UserLoggedIn fires after a successful login.
 type UserLoggedIn struct {
 	Base

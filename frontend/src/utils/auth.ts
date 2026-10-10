@@ -52,7 +52,7 @@ export async function login(
   username: string,
   password: string,
   recaptcha: string
-) {
+): Promise<{ challenge?: string }> {
   const data = { username, password, recaptcha };
 
   const res = await fetch(`${baseURL}/api/login`, {
@@ -67,12 +67,29 @@ export async function login(
 
   if (res.status === 200) {
     parseToken(body);
-  } else {
-    throw new StatusError(
-      body || `${res.status} ${res.statusText}`,
-      res.status
-    );
+    return {};
   }
+  // 4.4: the account has a second factor; finish with loginSecondFactor.
+  if (res.status === 202) {
+    const { challenge } = JSON.parse(body) as { challenge: string };
+    return { challenge };
+  }
+  throw new StatusError(body || `${res.status} ${res.statusText}`, res.status);
+}
+
+/** Second login step (4.4): an authenticator or recovery code. */
+export async function loginSecondFactor(challenge: string, code: string) {
+  const res = await fetch(`${baseURL}/api/login/2fa`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ challenge, code }),
+  });
+  const body = await res.text();
+  if (res.status === 200) {
+    parseToken(body);
+    return;
+  }
+  throw new StatusError(body || `${res.status} ${res.statusText}`, res.status);
 }
 
 export async function renew(jwt: string) {

@@ -46,6 +46,7 @@ Self-hosted file management.
 - **Audit log** — Actions taken in-app recorded to an audit log available to administrators.
 - **Webhooks** — Fire a signed webhook on any file event, or have Jellyfin rescan its library when media changes.
 - **Sessions** — View active sessions and sign out everywhere.
+- **Two-factor sign-in** — Codes from any authenticator app, with recovery codes.
 - **Shares** — Share a link in seconds, see how often it's opened and downloaded, make it one-time, or turn a folder into a file request.
 - **Mobile** — Mobile design prioritized.
 - **Mobile upload / pull-to-refresh** — Upload from your camera roll; pull to refresh.
@@ -239,6 +240,12 @@ Search answers from an in-memory index that updates as changes are reported. As 
 - **Slideshow.** Right-click empty space in a folder → *Slideshow*, or a photo → *Slideshow from here*. ←/→ step, Space pauses, F goes full screen, Esc leaves.
 - **Photo map.** Right-click empty space → *Photo map* to see the folder's photos where they were taken (from their EXIF GPS position). Map tiles are fetched and cached by the vitrine server, so browsers only ever talk to vitrine. The default source is OpenStreetMap; point `--mapTiles` (env `VITRINE_MAP_TILES`) at another `{z}/{x}/{y}` tile URL, or set it to `off` to remove the map.
 - **Resume and watched.** Videos of five minutes or more resume where you stopped (with a *Start over* button); reaching 98% marks a video watched. Right-click videos to mark them watched or unwatched. Positions, like book and comic positions, are saved to your account and follow renames and moves.
+
+#### Two-factor sign-in
+
+Each user can turn on two-factor sign-in under Settings → Profile: scan the QR code with an authenticator app (1Password, Aegis, Google Authenticator…), confirm a code, and save the ten recovery codes, each of which works once. Signing in then asks for a code after the password; failed codes count toward the same lockout as wrong passwords. An admin can reset a user's second factor from the user's page in Settings → Users.
+
+It applies to password sign-in; with proxy or hook authentication, use your identity provider's own second factor. The secrets are encrypted with a key stored beside the database as `<database name>-2fa.key` (for example `vitrine-2fa.key`). **Back it up with the database**: without it, users with two-factor sign-in can't log in until an admin resets them.
 
 #### Shares and webhooks
 

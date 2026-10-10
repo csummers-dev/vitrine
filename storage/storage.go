@@ -4,6 +4,7 @@ import (
 	"github.com/csummers-dev/vitrine/v4/auth"
 	"github.com/csummers-dev/vitrine/v4/settings"
 	"github.com/csummers-dev/vitrine/v4/share"
+	"github.com/csummers-dev/vitrine/v4/twofactor"
 	"github.com/csummers-dev/vitrine/v4/users"
 )
 
@@ -14,4 +15,6 @@ type Storage struct {
 	Share    *share.Storage
 	Auth     *auth.Storage
 	Settings *settings.Storage
+	// TwoFactor holds TOTP second factors (4.0 Phase 4.4).
+	TwoFactor *twofactor.Storage
 }

@@ -15,6 +15,33 @@
       />
     </form>
 
+    <!-- 4.4: an admin can reset a user's second factor. -->
+    <div
+      v-if="user && !isNew && userHas2fa"
+      class="user-edit__2fa"
+      data-testid="user-2fa"
+    >
+      <Icon name="shield-check" :size="14" />
+      <span>Two-factor sign-in is on for this user.</span>
+      <button
+        type="button"
+        class="user-edit__btn"
+        @click="confirmReset2fa = true"
+      >
+        Reset
+      </button>
+    </div>
+    <ConfirmDialog
+      :open="confirmReset2fa"
+      title="Reset two-factor sign-in?"
+      message="They'll sign in with their password alone until they set it up again."
+      confirm-label="Reset"
+      cancel-label="Cancel"
+      destructive
+      @confirm="reset2fa"
+      @cancel="confirmReset2fa = false"
+    />
+
     <!-- Sticky bottom action bar. Stays visible while editing long forms. -->
     <div v-if="user" class="user-edit__actions">
       <button
@@ -52,7 +79,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useAuthStore } from "@/stores/auth";
 import { useLayoutStore } from "@/stores/layout";
-import { users as api, settings } from "@/api";
+import { users as api, settings, twofactor } from "@/api";
 import { StatusError } from "@/api/utils";
 import { authMethod } from "@/utils/constants";
 import { logout } from "@/utils/auth";
@@ -60,6 +87,7 @@ import { logout } from "@/utils/auth";
 import SettingsPage from "@/components/settings/SettingsPage.vue";
 import UserForm from "@/components/settings/UserForm.vue";
 import Icon from "@/components/Icon.vue";
+import ConfirmDialog from "@/components/ConfirmDialog.vue";
 
 const originalUser = ref<IUser>();
 const user = ref<IUser>();
@@ -141,11 +169,31 @@ const fetchData = async () => {
         ? route.params.id.join("")
         : route.params.id;
       user.value = { ...(await api.get(parseInt(id))) };
+      try {
+        userHas2fa.value = await twofactor.userStatus(parseInt(id));
+      } catch {
+        userHas2fa.value = false;
+      }
     }
   } catch (err) {
     if (err instanceof Error) $showError(err);
   } finally {
     layoutStore.loading = false;
+  }
+};
+
+// 4.4: reset (remove) the user's second factor.
+const userHas2fa = ref(false);
+const confirmReset2fa = ref(false);
+const reset2fa = async () => {
+  confirmReset2fa.value = false;
+  if (!user.value) return;
+  try {
+    await twofactor.reset(user.value.id);
+    userHas2fa.value = false;
+    $showSuccess("Two-factor sign-in was reset.");
+  } catch (e) {
+    if (e instanceof Error) $showError(e);
   }
 };
 
@@ -247,6 +295,21 @@ const send = async (currentPassword: string) => {
 </script>
 
 <style scoped>
+.user-edit__2fa {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface, #fff);
+  font-size: 13px;
+  color: var(--color-ink-2, #52525b);
+}
+.user-edit__2fa span {
+  flex: 1;
+}
 .user-edit {
   display: flex;
   flex-direction: column;

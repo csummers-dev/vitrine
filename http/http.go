@@ -69,6 +69,12 @@ func NewHandler(
 
 	tokenExpirationTime := server.GetTokenExpirationTime(DefaultTokenExpirationTime)
 	api.Handle("/login", monkey(loginHandler(tokenExpirationTime), ""))
+	api.Handle("/login/2fa", monkey(twoFactorLoginHandler(tokenExpirationTime), "")).Methods("POST")
+	api.Handle("/2fa", monkey(twoFactorGetHandler, "")).Methods("GET")
+	api.Handle("/2fa/setup", monkey(twoFactorSetupHandler, "")).Methods("POST")
+	api.Handle("/2fa/enable", monkey(twoFactorEnableHandler, "")).Methods("POST")
+	api.Handle("/2fa/disable", monkey(twoFactorDisableHandler, "")).Methods("POST")
+	api.Handle("/2fa/recovery", monkey(twoFactorRecoveryHandler, "")).Methods("POST")
 	api.Handle("/signup", monkey(signupHandler, ""))
 	api.Handle("/renew", monkey(renewHandler(tokenExpirationTime), ""))
 
@@ -78,6 +84,7 @@ func NewHandler(
 	users.Handle("/{id:[0-9]+}", monkey(userPutHandler, "")).Methods("PUT")
 	users.Handle("/{id:[0-9]+}", monkey(userGetHandler, "")).Methods("GET")
 	users.Handle("/{id:[0-9]+}", monkey(userDeleteHandler, "")).Methods("DELETE")
+	users.Handle("/{id:[0-9]+}/2fa", monkey(userTwoFactorHandler, "")).Methods("GET", "DELETE")
 
 	api.PathPrefix("/resources/recursive").Handler(monkey(resourceGetRecursiveHandler, "/api/resources/recursive")).Methods("GET")
 	api.PathPrefix("/resources").Handler(monkey(resourceGetHandler, "/api/resources")).Methods("GET")

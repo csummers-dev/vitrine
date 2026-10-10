@@ -36,6 +36,7 @@ import (
 	"github.com/csummers-dev/vitrine/v4/storage"
 	"github.com/csummers-dev/vitrine/v4/tags"
 	"github.com/csummers-dev/vitrine/v4/trash"
+	"github.com/csummers-dev/vitrine/v4/twofactor"
 	"github.com/csummers-dev/vitrine/v4/users"
 	"github.com/csummers-dev/vitrine/v4/webhooks"
 )
@@ -254,6 +255,19 @@ user created with the credentials from options "username" and "password".`,
 		unsubscribeWebhooks := webhookDispatcher.Attach(events.Subscribe)
 		defer unsubscribeWebhooks()
 		log.Println("Webhooks store: " + webhooksPath)
+		defer webhookDispatcher.Stop()
+
+		// Two-factor login (4.0 Phase 4.4): TOTP secrets are encrypted with
+		// a key kept beside the database, not inside it.
+		twoFactorKeyPath := dbBase + "-2fa.key"
+		twoFactorKey, err := twofactor.LoadOrCreateKey(twoFactorKeyPath)
+		if err != nil {
+			return fmt.Errorf("two-factor key: %w", err)
+		}
+		if err := fbhttp.SetTwoFactorKey(twoFactorKey); err != nil {
+			return fmt.Errorf("two-factor key: %w", err)
+		}
+		log.Println("Two-factor key: " + twoFactorKeyPath)
 
 		// Trash index (2.4.0 Stage 2). Sibling bolt DB; the .trash payload
 		// dirs live inside the served tree (per volume), this DB only maps
