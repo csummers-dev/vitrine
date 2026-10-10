@@ -24,6 +24,24 @@
           <Toggle v-model="settings.hideLoginButton" />
         </SettingsRow>
         <SettingsRow
+          label="Most files a user uploads at once"
+          description="Caps each user's own setting (1–10), so one person can't saturate the server."
+        >
+          <select
+            :value="settings.uploadConcurrencyMax || 10"
+            class="settings-input"
+            aria-label="Most files a user uploads at once"
+            @change="
+              settings &&
+              (settings.uploadConcurrencyMax = Number(
+                ($event.target as HTMLSelectElement).value
+              ))
+            "
+          >
+            <option v-for="n in 10" :key="n" :value="n">{{ n }}</option>
+          </select>
+        </SettingsRow>
+        <SettingsRow
           label="Allow upload-only share links"
           description="Let users turn a folder into a file request that anyone with the link can upload to. Turning this off stops existing ones from accepting files."
         >

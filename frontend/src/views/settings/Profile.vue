@@ -134,6 +134,22 @@
           @update:model-value="onShowExtensionsChange"
         />
       </SettingsRow>
+      <!-- 4.0 5.4: upload concurrency. -->
+      <SettingsRow
+        label="Files uploaded at once"
+        description="More is faster on a fast connection; fewer is gentler on a small NAS or a slow link."
+      >
+        <select
+          v-model.number="uploadLimit"
+          class="settings-input settings-input--compact"
+          aria-label="Files uploaded at once"
+          @change="onUploadLimitChange"
+        >
+          <option v-for="n in uploadLimitChoices" :key="n" :value="n">
+            {{ n }}
+          </option>
+        </select>
+      </SettingsRow>
       <!-- 4.0 3.2: folder tiles show poster/folder/cover art. -->
       <SettingsRow
         label="Folder cover art"
@@ -344,6 +360,13 @@ import { useProfileAvatar } from "@/composables/useProfileAvatar";
 import AvatarCropper from "@/components/settings/AvatarCropper.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import TwoFactorSettings from "@/components/settings/TwoFactorSettings.vue";
+import { uploadConcurrencyMax } from "@/utils/constants";
+import {
+  effectiveUploadLimit,
+  UPLOAD_LIMIT_DEFAULT,
+  UPLOAD_LIMIT_MAX,
+  UPLOAD_LIMIT_PREF,
+} from "@/utils/uploadLimit";
 
 const { t } = useI18n();
 const authStore = useAuthStore();
@@ -440,6 +463,21 @@ const showExtensions = ref<boolean>(
 );
 const onShowExtensionsChange = (val: boolean) => {
   void prefs.set("nav.showExtensions", val);
+};
+
+// 4.0 5.4: simultaneous uploads, capped by the admin.
+const uploadLimitChoices = Array.from(
+  { length: effectiveUploadLimit(UPLOAD_LIMIT_MAX, uploadConcurrencyMax) },
+  (_, i) => i + 1
+);
+const uploadLimit = ref<number>(
+  effectiveUploadLimit(
+    prefs.get<number>(UPLOAD_LIMIT_PREF, UPLOAD_LIMIT_DEFAULT),
+    uploadConcurrencyMax
+  )
+);
+const onUploadLimitChange = () => {
+  void prefs.set(UPLOAD_LIMIT_PREF, uploadLimit.value);
 };
 
 // 4.0 3.2: cover art on folder tiles (default on).
@@ -725,6 +763,11 @@ const updatePassword = async () => {
 
 .settings-helper--error {
   color: var(--status-danger);
+}
+
+.settings-input--compact {
+  width: auto;
+  min-width: 72px;
 }
 
 .settings-btn {

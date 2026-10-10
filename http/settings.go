@@ -23,6 +23,7 @@ type settingsData struct {
 	Shell                 []string              `json:"shell"`
 	Commands              map[string][]string   `json:"commands"`
 	UploadSharesDisabled  bool                  `json:"uploadSharesDisabled"`
+	UploadConcurrencyMax  uint                  `json:"uploadConcurrencyMax"`
 }
 
 var settingsGetHandler = withAdmin(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
@@ -41,6 +42,7 @@ var settingsGetHandler = withAdmin(func(w http.ResponseWriter, r *http.Request, 
 		Shell:                 d.settings.Shell,
 		Commands:              d.settings.Commands,
 		UploadSharesDisabled:  d.settings.UploadSharesDisabled,
+		UploadConcurrencyMax:  d.settings.UploadConcurrencyMax,
 	}
 
 	return renderJSON(w, r, data)
@@ -66,6 +68,7 @@ var settingsPutHandler = withAdmin(func(_ http.ResponseWriter, r *http.Request, 
 	d.settings.Commands = req.Commands
 	d.settings.HideLoginButton = req.HideLoginButton
 	d.settings.UploadSharesDisabled = req.UploadSharesDisabled
+	d.settings.UploadConcurrencyMax = min(req.UploadConcurrencyMax, 10)
 
 	err = d.store.Settings.Save(d.settings)
 	return errToStatus(err), err

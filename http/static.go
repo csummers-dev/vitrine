@@ -64,9 +64,11 @@ func handleWithStaticData(w http.ResponseWriter, _ *http.Request, d *data, fSys 
 		"HideLoginButton":  d.settings.HideLoginButton,
 		"UnzipEnabled":     d.server.UnzipEnabled,
 		// 4.0 3.6: the photo map needs a tile source (--mapTiles).
-		"MapEnabled":     d.server.MapTileURL() != "",
-		"UploadShares":   !d.settings.UploadSharesDisabled,
-		"MapAttribution": mapAttribution(d.server.MapTileURL()),
+		"MapEnabled":   d.server.MapTileURL() != "",
+		"UploadShares": !d.settings.UploadSharesDisabled,
+		// 5.4: admin cap on simultaneous uploads (0 = no cap beyond 10).
+		"UploadConcurrencyMax": d.settings.UploadConcurrencyMax,
+		"MapAttribution":       mapAttribution(d.server.MapTileURL()),
 	}
 
 	if d.settings.Branding.Files != "" {

@@ -3,11 +3,30 @@ import { useFileStore } from "./file";
 import { usePanesStore } from "./panes";
 import { files as api } from "@/api";
 import buttons from "@/utils/buttons";
-import { computed, inject, markRaw, ref } from "vue";
+import { computed, inject, markRaw, ref, watch } from "vue";
 import * as tus from "@/api/tus";
+import { usePreferences } from "@/composables/usePreferences";
+import { uploadConcurrencyMax } from "@/utils/constants";
+import {
+  effectiveUploadLimit,
+  UPLOAD_LIMIT_DEFAULT,
+  UPLOAD_LIMIT_PREF,
+} from "@/utils/uploadLimit";
 
-// TODO: make this into a user setting
-const UPLOADS_LIMIT = 5;
+// 4.0 5.4: how many files upload at once is a per-user preference, capped
+// by an admin-set ceiling (see utils/uploadLimit.ts).
+function uploadsLimit(): number {
+  let pref: unknown;
+  try {
+    pref = usePreferences().get<number>(
+      UPLOAD_LIMIT_PREF,
+      UPLOAD_LIMIT_DEFAULT
+    );
+  } catch {
+    pref = UPLOAD_LIMIT_DEFAULT; // no signed-in user (public pages)
+  }
+  return effectiveUploadLimit(pref, uploadConcurrencyMax);
+}
 
 /**
  * beforeunload guard fires on hard refresh / tab close / browser
@@ -135,7 +154,7 @@ export const useUploadStore = defineStore("upload", () => {
    *     aborted" (swallowed by its `.catch`), then `finishUpload` runs
    *     and the `canceled` branch reverses the byte accounting and
    *     pumps the queue so a waiting file fills the freed slot — keeping
-   *     the concurrency window at UPLOADS_LIMIT.
+   *     the concurrency window at the upload limit.
    */
   const removeUpload = (target: Upload) => {
     const idx = allUploads.value.indexOf(target);
@@ -171,11 +190,11 @@ export const useUploadStore = defineStore("upload", () => {
 
   /**
    * Every upload that should appear in the floating dock's per-file
-   * list: currently transferring OR queued behind the UPLOADS_LIMIT
+   * list: currently transferring OR queued behind the upload-limit
    * concurrency cap (v1.3 H7).
    *
    * Why a derived list rather than just iterating `activeUploads`:
-   * `activeUploads` is a Set capped at UPLOADS_LIMIT (5 in-flight
+   * `activeUploads` is a Set capped at the upload limit (5 in-flight
    * uploads at a time). Without this computed, a queue of 30 files
    * would only show the 5 currently transferring — the other 25 would
    * be invisible until each in-flight one completed and a queued one
@@ -225,7 +244,16 @@ export const useUploadStore = defineStore("upload", () => {
   const hasPendingUploads = () =>
     allUploads.value.length > lastUpload.value + 1;
 
-  const isActiveUploadsOnLimit = () => activeUploads.value.size < UPLOADS_LIMIT;
+  const isActiveUploadsOnLimit = () =>
+    activeUploads.value.size < uploadsLimit();
+
+  // A raised limit takes effect mid-queue: start uploads into the new
+  // slots. (A lowered one just starts nothing new until it's under.)
+  watch(uploadsLimit, (now, before) => {
+    for (let i = before; i < now && hasPendingUploads(); i++) {
+      void processUploads();
+    }
+  });
 
   const processUploads = async () => {
     if (!hasActiveUploads() && !hasPendingUploads()) {

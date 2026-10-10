@@ -55,6 +55,9 @@ const uploadSharesEnabled: boolean = window.FileBrowser.UploadShares ?? true;
 // 4.0 4.5: OpenID Connect single sign-on.
 const ssoName: string = window.FileBrowser.SSOName ?? "";
 const passwordLogin: boolean = window.FileBrowser.PasswordLogin ?? true;
+// 4.0 5.4: admin cap on simultaneous uploads per user (1–10).
+const uploadConcurrencyMax: number =
+  window.FileBrowser.UploadConcurrencyMax || 10;
 // #3: on-demand video transcoding. True only when the server has ffmpeg.
 // The player attempts the transcode fallback (on a native playback error)
 // only when this is set; otherwise it goes straight to the download card.
@@ -94,6 +97,7 @@ export {
   uploadSharesEnabled,
   ssoName,
   passwordLogin,
+  uploadConcurrencyMax,
   transcodeEnabled,
   repoUrl,
 };

@@ -82,6 +82,9 @@ type Settings struct {
 	// server-wide (4.0 Phase 4.1): none can be created and existing ones
 	// stop accepting files.
 	UploadSharesDisabled bool `json:"uploadSharesDisabled"`
+	// UploadConcurrencyMax caps how many files one user uploads at once
+	// (4.0 Phase 5.4); 0 means the built-in maximum of 10.
+	UploadConcurrencyMax uint `json:"uploadConcurrencyMax"`
 }
 
 // GetRules implements rules.Provider.
