@@ -7,13 +7,22 @@
  *   after the connection drops; a successful open resets the backoff.
  * - Pauses while the tab is hidden: after a short grace period the connection
  *   is closed, and it reopens as soon as the tab is visible again.
- * - Authenticates with the `auth` cookie the login flow sets, because
- *   EventSource cannot send an X-Auth header.
+ * - Authenticates with an `auth` query parameter (re-read on every
+ *   reconnect), because EventSource cannot send an X-Auth header.
  *
  * Event payloads are JSON in the `data:` field, and the SSE `event:` name is
  * the key of ServerEventMap.
  */
 import { baseURL } from "@/utils/constants";
+import { useAuthStore } from "@/stores/auth";
+
+/** The stream URL with the current token: EventSource can't send X-Auth,
+ *  and the `auth` cookie can lag behind a renewed token. */
+function defaultStreamUrl(): string {
+  const jwt = useAuthStore().jwt;
+  const auth = jwt ? `?auth=${encodeURIComponent(jwt)}` : "";
+  return `${baseURL}/api/events/stream${auth}`;
+}
 
 /** Every event the server can push, by SSE event name. */
 export interface ServerEventMap {
@@ -40,7 +49,8 @@ export interface EventSourceLike {
 }
 
 export interface StreamOptions {
-  url?: string;
+  /** Stream URL, re-read on every (re)connect so a renewed token is used. */
+  url?: string | (() => string);
   createSource?: (url: string) => EventSourceLike;
   /** Delay before the first reconnect; doubles up to maxDelayMs. */
   baseDelayMs?: number;
@@ -76,7 +86,7 @@ export class EventStream {
 
   constructor(opts: StreamOptions = {}) {
     this.opts = {
-      url: opts.url ?? `${baseURL}/api/events/stream`,
+      url: opts.url ?? defaultStreamUrl,
       createSource:
         opts.createSource ??
         ((u) => new EventSource(u, { withCredentials: true })),
@@ -138,7 +148,9 @@ export class EventStream {
   }
 
   private connect(): void {
-    const src = this.opts.createSource(this.opts.url);
+    const url =
+      typeof this.opts.url === "function" ? this.opts.url() : this.opts.url;
+    const src = this.opts.createSource(url);
     this.source = src;
     src.onopen = () => {
       this.attempt = 0;

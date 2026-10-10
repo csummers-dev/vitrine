@@ -156,3 +156,43 @@ test("copies a file and pastes it into another folder", async ({
   expect(fake.exists("/Music/readme.md")).toBe(true);
   expect(fake.exists("/readme.md")).toBe(true);
 });
+
+test.describe("live updates", () => {
+  test("a file added outside vitrine appears without a refresh", async ({
+    app,
+    fake,
+  }) => {
+    await expect(row(app, "readme.md")).toBeVisible();
+    fake.changeOnDisk("/downloaded.mkv", "movie bytes");
+    await expect(row(app, "downloaded.mkv")).toBeVisible();
+  });
+
+  test("a file removed outside vitrine disappears, keeping the selection", async ({
+    app,
+    fake,
+  }) => {
+    await row(app, "readme.md").click();
+    await expect(row(app, "readme.md")).toHaveAttribute(
+      "aria-selected",
+      "true"
+    );
+    fake.changeOnDisk("/photo.jpg", null);
+    await expect(row(app, "photo.jpg")).toHaveCount(0);
+    await expect(row(app, "readme.md")).toHaveAttribute(
+      "aria-selected",
+      "true"
+    );
+  });
+
+  test("changes to other folders don't refresh this one", async ({
+    app,
+    fake,
+  }) => {
+    await expect(row(app, "readme.md")).toBeVisible();
+    const before = fake.calls.filter((c) => c.path === "/resources/").length;
+    fake.changeOnDisk("/Music/new.flac", "x");
+    await app.waitForTimeout(1500);
+    const after = fake.calls.filter((c) => c.path === "/resources/").length;
+    expect(after).toBe(before);
+  });
+});

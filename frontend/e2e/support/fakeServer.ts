@@ -109,6 +109,24 @@ export class FakeServer {
   readonly calls: ApiCall[] = [];
   readonly unhandled: string[] = [];
   readonly jobs: { id: string; [k: string]: unknown }[] = [];
+  readonly streamQueue: { event: string; data: unknown }[] = [];
+
+  /** Simulates a change made outside vitrine: updates the fake disk and
+   *  pushes `files.changed` to open streams. `content` null removes. */
+  changeOnDisk(path: string, content: string | null): void {
+    const p = norm(path);
+    if (content === null) this.fs.delete(p);
+    else
+      this.fs.set(p, {
+        isDir: false,
+        content,
+        modified: new Date().toISOString(),
+      });
+    this.streamQueue.push({
+      event: "files.changed",
+      data: { dir: parentOf(p), names: [baseName(p)] },
+    });
+  }
   readonly trash: {
     id: string;
     path: string;
@@ -301,6 +319,22 @@ export class FakeServer {
             "Upload-Offset": String((e.content ?? "").length),
           },
         });
+    }
+    // Server-sent events. Playwright can't hold a response open, so each
+    // request returns the queued messages and asks EventSource to reconnect
+    // shortly (`retry:`), which makes the stream behave like quick polling.
+    if (api === "/events/stream") {
+      const body =
+        "retry: 150\n\n" +
+        this.streamQueue
+          .map((m) => `event: ${m.event}\ndata: ${JSON.stringify(m.data)}\n\n`)
+          .join("");
+      this.streamQueue.length = 0;
+      return route.fulfill({
+        status: 200,
+        contentType: "text/event-stream",
+        body,
+      });
     }
     if (api.startsWith("/preview/"))
       return route.fulfill({

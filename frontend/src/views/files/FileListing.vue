@@ -1000,6 +1000,10 @@ import { useListingContextMenu } from "@/composables/listing/useListingContextMe
 import { useListingDropTargets } from "@/composables/listing/useListingDropTargets";
 import { useListingTouchDrag } from "@/composables/listing/useListingTouchDrag";
 import { useOsFileDrop } from "@/composables/listing/useOsFileDrop";
+import {
+  useLiveListing,
+  dirFromFilesUrl,
+} from "@/composables/listing/useLiveListing";
 import { useDragAutoScroll } from "@/composables/useDragAutoScroll";
 import { useListingClipboard } from "@/composables/listing/useListingClipboard";
 import { buildRowMenu, buildBackgroundMenu } from "@/utils/listingMenus";
@@ -1081,6 +1085,19 @@ const toggleSplit = () => {
   if (panes.split) panes.closeSplit();
   else panes.openSplit(route.path.replace(/\/?$/, "/"));
 };
+
+// ── Live listings: refresh when the server reports a change on screen ──
+// See composables/listing/useLiveListing.
+useLiveListing({
+  currentDir: () =>
+    fileStore.isListing ? (fileStore.req?.path ?? null) : null,
+  paneBDir: () =>
+    splitActive.value ? dirFromFilesUrl(panes.secondaryPath) : null,
+  refreshCurrent: () => {
+    fileStore.reload = true;
+  },
+  refreshPaneB: () => panes.refreshB(),
+});
 
 // ── Upload entry points (button, inputs, paste, drop) ──────────────────
 // See composables/listing/useListingUpload.

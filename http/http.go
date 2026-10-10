@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/csummers-dev/vitrine/v4/audit"
+	"github.com/csummers-dev/vitrine/v4/events"
 	"github.com/csummers-dev/vitrine/v4/foldersize"
 	"github.com/csummers-dev/vitrine/v4/jobs"
 	"github.com/csummers-dev/vitrine/v4/jobstore"
@@ -199,6 +200,13 @@ func NewHandler(
 	// In-memory search index (2.4.0 Stage 5 / H): per-user name+path index,
 	// lazily built + kept fresh off the events bus, so search answers from
 	// memory instead of walking the tree on every keystroke. Server-lifetime.
+	// Live updates (4.0 Phase 2.3): one server-sent-events stream per tab.
+	hub := newStreamHub(events.Subscribe)
+	streamsMu.Lock()
+	streams = hub
+	streamsMu.Unlock()
+	api.Handle("/events/stream", monkey(eventsStreamHandler(hub), "")).Methods("GET")
+
 	searchIndex := searchindex.New()
 	// Backstop for changes made outside vitrine (downloaders, SMB, the host
 	// shell), which publish no events: an index older than this rebuilds in

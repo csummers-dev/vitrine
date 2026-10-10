@@ -11,6 +11,16 @@ All notable changes to **vitrine**.
 > `--tokenExpirationTime`, `VITRINE_BASE_URL`). Compose files using the
 > documented settings are unaffected.
 
+- **Live updates.** vitrine now watches the folders it serves. Files added,
+  renamed or removed by anything — a downloader, an SMB copy, the host shell,
+  another user — appear in open tabs (both panes in split view), in search and
+  in folder sizes within a second or two, without a refresh. Your selection
+  and scroll position are kept, and a refresh waits while you're renaming,
+  dragging or have a panel open. Uses OS file notifications (inotify), falling
+  back to checking folders every minute if the host's watch limit is reached;
+  `--fileWatching` / `VITRINE_FILE_WATCHING` = `auto` (default), `poll` (for
+  network mounts) or `off`. See the README for the inotify limit and reverse
+  proxies.
 - **Fixed: search missed files added outside vitrine.** The search index only
   refreshed when a file changed *through* vitrine, so anything a downloader,
   an SMB copy, or the host shell added never showed up in search until a

@@ -216,9 +216,15 @@ docker compose logs vitrine | grep "password for"
 
 Or skip Docker entirely and run the binary directly: `./vitrine` — opens on <http://localhost:8080>.
 
-#### Search and files changed outside vitrine
+#### Files changed outside vitrine
 
-Search answers from an in-memory index that updates instantly when files change through vitrine. Files added or removed by something else — a downloader, an SMB copy, the host shell — are picked up by a background rebuild the first time you search after the index is more than 10 minutes old. Tune this with `--searchIndexMaxAge` (env `VITRINE_SEARCH_INDEX_MAX_AGE`, e.g. `5m`; `0` turns it off). The **Rebuild search index** action in the command palette (⌘K) forces an immediate refresh.
+vitrine watches the folders it serves, so files added, renamed or removed by anything else — a downloader, an SMB copy, the host shell — show up in open browser tabs, in search and in folder sizes within a second or two, without a refresh.
+
+- **Linux file-watch limit.** Watching uses inotify, which needs one watch per folder. Very large libraries can exceed the host's limit (`fs.inotify.max_user_watches`, often 8,192 or 65,536). vitrine then logs a warning and falls back to checking folders every minute. Raise the limit on the host for instant updates: `sudo sysctl fs.inotify.max_user_watches=524288` (add it to `/etc/sysctl.conf` to keep it).
+- **Network mounts.** inotify can't see changes other machines make on NFS or SMB mounts. Set `--fileWatching=poll` (env `VITRINE_FILE_WATCHING=poll`) to check folders every minute instead, or `off` to disable watching.
+- **Reverse proxies.** Live updates use a long-lived server-sent-events connection at `/api/events/stream`. vitrine disables proxy buffering with `X-Accel-Buffering: no`; if your proxy still holds responses, turn buffering off for that path.
+
+Search answers from an in-memory index that updates as changes are reported. As a backstop, an index older than 10 minutes is rebuilt in the background on the next search. Tune this with `--searchIndexMaxAge` (env `VITRINE_SEARCH_INDEX_MAX_AGE`, e.g. `5m`; `0` turns it off). The **Rebuild search index** action in the command palette (⌘K) forces an immediate refresh.
 
 ## Architecture
 

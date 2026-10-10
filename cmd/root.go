@@ -390,6 +390,8 @@ user created with the credentials from options "username" and "password".`,
 			Handler:           handler,
 			ReadHeaderTimeout: 60 * time.Second,
 		}
+		// Live-update streams never go idle; end them so Shutdown can finish.
+		srv.RegisterOnShutdown(fbhttp.ShutdownStreams)
 
 		go func() {
 			if err := srv.Serve(listener); !errors.Is(err, http.ErrServerClosed) {
