@@ -28,6 +28,20 @@ func (a ProxyAuth) Auth(r *http.Request, usr users.Store, setting *settings.Sett
 }
 
 func (a ProxyAuth) createUser(usr users.Store, setting *settings.Settings, srv *settings.Server, username string) (*users.User, error) {
+	user, err := a.newUser(setting, srv, username)
+	if err != nil {
+		return nil, err
+	}
+	if err := usr.Save(user); err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+// newUser builds (without saving) an account for an externally
+// authenticated user: default permissions without admin or exec, a random
+// locked password, and a home folder when configured.
+func (a ProxyAuth) newUser(setting *settings.Settings, srv *settings.Server, username string) (*users.User, error) {
 	const randomPasswordLength = settings.DefaultMinimumPasswordLength + 10
 	pwd, err := users.RandomPwd(randomPasswordLength)
 	if err != nil {
@@ -56,12 +70,6 @@ func (a ProxyAuth) createUser(usr users.Store, setting *settings.Settings, srv *
 		return nil, err
 	}
 	user.Scope = userHome
-
-	err = usr.Save(user)
-	if err != nil {
-		return nil, err
-	}
-
 	return user, nil
 }
 

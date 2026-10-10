@@ -47,6 +47,18 @@ func addConfigFlags(flags *pflag.FlagSet) {
 	flags.String("auth.command", "", "command for auth.method=hook")
 	flags.String("auth.logoutPage", "", "url of custom logout page")
 
+	flags.String("oidc.issuer", "", "OpenID Connect issuer URL for auth.method=oidc")
+	flags.String("oidc.clientId", "", "OpenID Connect client ID")
+	flags.String("oidc.clientSecret", "", "OpenID Connect client secret")
+	flags.StringSlice("oidc.scopes", nil, "scopes to request (default openid,profile,email)")
+	flags.String("oidc.usernameClaim", "", "claim used as the username (default preferred_username)")
+	flags.String("oidc.groupsClaim", "", "claim listing the user's groups (default groups)")
+	flags.String("oidc.adminGroup", "", "members of this group are admins")
+	flags.Bool("oidc.autoCreate", true, "create accounts for new users on first sign-in")
+	flags.Bool("oidc.passwordLogin", true, "keep password sign-in available beside SSO")
+	flags.String("oidc.name", "", "provider name shown on the sign-in button")
+	flags.String("oidc.redirectURL", "", "callback URL to register with the provider, if vitrine can't work it out (…/api/auth/oidc/callback)")
+
 	flags.String("recaptcha.host", "https://www.google.com", "use another host for ReCAPTCHA. recaptcha.net might be useful in China")
 	flags.String("recaptcha.key", "", "ReCaptcha site key")
 	flags.String("recaptcha.secret", "", "ReCaptcha secret")
@@ -169,6 +181,72 @@ func getHookAuth(flags *pflag.FlagSet, defaultAuther map[string]interface{}) (au
 	return &auth.HookAuth{Command: command}, nil
 }
 
+// getOIDCAuth reads the oidc.* flags. On "config set", flags that weren't
+// given keep their stored values.
+func getOIDCAuth(flags *pflag.FlagSet, defaultAuther map[string]interface{}) (auth.Auther, error) {
+	a := &auth.OIDCAuth{AutoCreate: true, PasswordLogin: true}
+	if defaultAuther != nil {
+		raw, err := json.Marshal(defaultAuther)
+		if err != nil {
+			return nil, err
+		}
+		if err := json.Unmarshal(raw, a); err != nil {
+			return nil, err
+		}
+	}
+	str := func(name string, dst *string) error {
+		if defaultAuther == nil || flags.Changed(name) {
+			v, err := flags.GetString(name)
+			if err != nil {
+				return err
+			}
+			*dst = v
+		}
+		return nil
+	}
+	boolean := func(name string, dst *bool) error {
+		if defaultAuther == nil || flags.Changed(name) {
+			v, err := flags.GetBool(name)
+			if err != nil {
+				return err
+			}
+			*dst = v
+		}
+		return nil
+	}
+	for name, dst := range map[string]*string{
+		"oidc.issuer":        &a.Issuer,
+		"oidc.clientId":      &a.ClientID,
+		"oidc.clientSecret":  &a.ClientSecret,
+		"oidc.usernameClaim": &a.UsernameClaim,
+		"oidc.groupsClaim":   &a.GroupsClaim,
+		"oidc.adminGroup":    &a.AdminGroup,
+		"oidc.name":          &a.ProviderName,
+		"oidc.redirectURL":   &a.RedirectURL,
+	} {
+		if err := str(name, dst); err != nil {
+			return nil, err
+		}
+	}
+	if err := boolean("oidc.autoCreate", &a.AutoCreate); err != nil {
+		return nil, err
+	}
+	if err := boolean("oidc.passwordLogin", &a.PasswordLogin); err != nil {
+		return nil, err
+	}
+	if defaultAuther == nil || flags.Changed("oidc.scopes") {
+		scopes, err := flags.GetStringSlice("oidc.scopes")
+		if err != nil {
+			return nil, err
+		}
+		a.Scopes = scopes
+	}
+	if a.Issuer == "" || a.ClientID == "" {
+		return nil, errors.New("you must set 'oidc.issuer' and 'oidc.clientId' for method 'oidc'")
+	}
+	return a, nil
+}
+
 func getAuthentication(flags *pflag.FlagSet, defaults ...interface{}) (settings.AuthMethod, auth.Auther, error) {
 	method, defaultAuther, err := getAuthMethod(flags, defaults...)
 	if err != nil {
@@ -185,6 +263,8 @@ func getAuthentication(flags *pflag.FlagSet, defaults ...interface{}) (settings.
 		auther, err = getJSONAuth(flags, defaultAuther)
 	case auth.MethodHookAuth:
 		auther, err = getHookAuth(flags, defaultAuther)
+	case auth.MethodOIDCAuth:
+		auther, err = getOIDCAuth(flags, defaultAuther)
 	default:
 		return "", nil, fberrors.ErrInvalidAuthMethod
 	}

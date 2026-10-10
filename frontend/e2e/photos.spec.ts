@@ -32,7 +32,8 @@ test("slideshow from a photo steps, wraps and closes with Esc", async ({
   await expect(show.getByTestId("slideshow-counter")).toHaveText("3 / 3");
   await app.keyboard.press("ArrowRight");
   await expect(show.getByTestId("slideshow-counter")).toHaveText("1 / 3");
-  await expect(show.getByRole("img", { name: "a-eiffel.jpg" })).toBeVisible();
+  // The caption names the photo (the image itself crossfades in).
+  await expect(show.locator(".slideshow__caption")).toHaveText("a-eiffel.jpg");
   await app.keyboard.press("Escape");
   await expect(show).toHaveCount(0);
 });

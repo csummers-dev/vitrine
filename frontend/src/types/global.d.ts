@@ -34,6 +34,10 @@ interface VitrineGlobals {
   MapAttribution?: string;
   /** 4.1: drop-box (upload) shares are allowed. */
   UploadShares?: boolean;
+  /** 4.5: single sign-on provider name (auth method oidc). */
+  SSOName?: string;
+  /** 4.5: password sign-in is still offered beside SSO. */
+  PasswordLogin?: boolean;
   Version: string;
 }
 

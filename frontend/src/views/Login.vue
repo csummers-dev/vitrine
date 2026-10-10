@@ -48,6 +48,17 @@
         <span>{{ t(`login.logout_reasons.${reason}`) }}</span>
       </div>
 
+      <!-- 4.5: single sign-on -->
+      <template v-if="sso && !challenge && !createMode">
+        <a :href="ssoHref" class="login-submit login-sso" data-testid="sso">
+          <Icon name="key-round" :size="14" />
+          <span>Sign in with {{ ssoName }}</span>
+        </a>
+        <div v-if="passwordLogin" class="login-or">
+          <span>or with a password</span>
+        </div>
+      </template>
+
       <!-- 4.4: second step for accounts with two-factor sign-in -->
       <div v-if="challenge" class="login-field">
         <label for="login-code" class="login-field__label">
@@ -76,7 +87,7 @@
       </div>
 
       <!-- Form fields -->
-      <template v-if="!challenge">
+      <template v-if="!challenge && showPasswordForm">
         <div class="login-field">
           <label for="login-username" class="login-field__label">
             {{ t("login.username") }}
@@ -160,7 +171,10 @@
         </div>
       </template>
       <!-- reCAPTCHA — preserved as-is, wrapped for layout consistency -->
-      <div v-if="recaptcha && !challenge" class="login-field">
+      <div
+        v-if="recaptcha && !challenge && showPasswordForm"
+        class="login-field"
+      >
         <div id="recaptcha"></div>
       </div>
 
@@ -174,6 +188,7 @@
 
       <!-- Submit button — loading state during the auth.login() await -->
       <button
+        v-if="showPasswordForm || challenge"
         type="submit"
         class="login-submit"
         :disabled="submitting || (createMode && passwordMismatch)"
@@ -225,10 +240,14 @@ import { settings as settingsApi } from "@/api";
 import { useAuthStore } from "@/stores/auth";
 import { lastFilesPathKey } from "@/router";
 import {
+  authMethod,
+  baseURL,
   brand,
+  passwordLogin,
   recaptcha,
   recaptchaKey,
   signup,
+  ssoName,
   version,
   repoUrl,
 } from "@/utils/constants";
@@ -289,6 +308,43 @@ const passwordConfirmClass = computed(() => {
   if (password.value === passwordConfirm.value) return "is-ok";
   return "";
 });
+
+// ── Single sign-on (4.5) ─────────────────────────────────────────────
+const sso = authMethod === "oidc";
+const showPasswordForm = computed(() => !sso || passwordLogin);
+const ssoHref = computed(
+  () =>
+    `${baseURL}/api/auth/oidc/login?redirect=${encodeURIComponent(
+      (route.query.redirect as string) || "/files/"
+    )}`
+);
+const SSO_ERRORS: Record<string, string> = {
+  no_account: "There's no account for you here yet. Ask the admin to add one.",
+  access_denied: "Sign-in was cancelled.",
+  state: "The sign-in didn't complete. Try again.",
+};
+// The callback lands here with #sso=<token>&redirect=… or #sso_error=….
+const takeSSOResult = (): boolean => {
+  const h = new URLSearchParams(window.location.hash.slice(1));
+  const token = h.get("sso");
+  const err = h.get("sso_error");
+  if (!token && !err) return false;
+  history.replaceState(
+    null,
+    "",
+    window.location.pathname + window.location.search
+  );
+  if (err) {
+    error.value = SSO_ERRORS[err] ?? "Single sign-on failed. Try again.";
+    return false;
+  }
+  auth.parseToken(token!);
+  const dest = h.get("redirect") || "/files/";
+  router.push({
+    path: dest.startsWith("/") && !dest.startsWith("//") ? dest : "/files/",
+  });
+  return true;
+};
 
 // ── Two-factor step (4.4) ────────────────────────────────────────────
 const challenge = ref("");
@@ -404,6 +460,7 @@ const submit = async (event: Event) => {
 
 // ── Lifecycle ────────────────────────────────────────────────────────
 onMounted(async () => {
+  if (takeSSOResult()) return;
   await nextTick();
   usernameInput.value?.focus();
 
@@ -714,6 +771,28 @@ html[dir="rtl"] .login-password-toggle {
 }
 
 /* ── Submit ─────────────────────────────────────────────────────────── */
+.login-sso {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+}
+.login-or {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 2px;
+  font-size: 12px;
+  color: var(--color-ink-3, #a1a1aa);
+}
+.login-or::before,
+.login-or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--color-line, #ececec);
+}
 .login-submit {
   height: 36px;
   border-radius: 8px;

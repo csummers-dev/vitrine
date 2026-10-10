@@ -52,6 +52,9 @@ const unzipEnabled: boolean = window.FileBrowser.UnzipEnabled ?? true;
 const mapEnabled: boolean = window.FileBrowser.MapEnabled ?? false;
 // 4.0 4.1: drop-box shares (admins can turn them off in Global settings).
 const uploadSharesEnabled: boolean = window.FileBrowser.UploadShares ?? true;
+// 4.0 4.5: OpenID Connect single sign-on.
+const ssoName: string = window.FileBrowser.SSOName ?? "";
+const passwordLogin: boolean = window.FileBrowser.PasswordLogin ?? true;
 // #3: on-demand video transcoding. True only when the server has ffmpeg.
 // The player attempts the transcode fallback (on a native playback error)
 // only when this is set; otherwise it goes straight to the download card.
@@ -89,6 +92,8 @@ export {
   unzipEnabled,
   mapEnabled,
   uploadSharesEnabled,
+  ssoName,
+  passwordLogin,
   transcodeEnabled,
   repoUrl,
 };

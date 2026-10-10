@@ -47,6 +47,7 @@ Self-hosted file management.
 - **Webhooks** — Fire a signed webhook on any file event, or have Jellyfin rescan its library when media changes.
 - **Sessions** — View active sessions and sign out everywhere.
 - **Two-factor sign-in** — Codes from any authenticator app, with recovery codes.
+- **Single sign-on** — Sign in through Authelia, Authentik, Keycloak or any OpenID Connect provider.
 - **Shares** — Share a link in seconds, see how often it's opened and downloaded, make it one-time, or turn a folder into a file request.
 - **Mobile** — Mobile design prioritized.
 - **Mobile upload / pull-to-refresh** — Upload from your camera roll; pull to refresh.
@@ -246,6 +247,25 @@ Search answers from an in-memory index that updates as changes are reported. As 
 Each user can turn on two-factor sign-in under Settings → Profile: scan the QR code with an authenticator app (1Password, Aegis, Google Authenticator…), confirm a code, and save the ten recovery codes, each of which works once. Signing in then asks for a code after the password; failed codes count toward the same lockout as wrong passwords. An admin can reset a user's second factor from the user's page in Settings → Users.
 
 It applies to password sign-in; with proxy or hook authentication, use your identity provider's own second factor. The secrets are encrypted with a key stored beside the database as `<database name>-2fa.key` (for example `vitrine-2fa.key`). **Back it up with the database**: without it, users with two-factor sign-in can't log in until an admin resets them.
+
+#### Single sign-on (OpenID Connect)
+
+vitrine can sign people in through an OpenID Connect provider such as Authelia, Authentik or Keycloak. Register a client with the provider, using the redirect URI `https://<your vitrine address>/api/auth/oidc/callback` and the scopes `openid profile email` (plus `groups` to sync admins), then configure vitrine with the server stopped:
+
+```sh
+vitrine config set --auth.method=oidc \
+  --oidc.issuer=https://auth.example.com \
+  --oidc.clientId=vitrine --oidc.clientSecret='<secret>' \
+  --oidc.name=Authelia --oidc.adminGroup=admins
+```
+
+- The login page shows *Sign in with Authelia*. The username comes from the `preferred_username` claim (`--oidc.usernameClaim` to change it).
+- New users get an account with the default permissions on first sign-in; `--oidc.autoCreate=false` admits only existing usernames.
+- With `--oidc.adminGroup`, members of that group (from the `groups` claim, `--oidc.groupsClaim`) are admins, and lose admin on their next sign-in after leaving it.
+- Password sign-in stays available beside SSO so you can't lock yourself out; turn it off with `--oidc.passwordLogin=false` once SSO works.
+- Behind a proxy that changes the host or scheme, set `--oidc.redirectURL` to the exact callback URL registered with the provider.
+
+Sessions from SSO are ordinary vitrine sessions: they show under Settings → Sessions and end with *Sign out everywhere*.
 
 #### Shares and webhooks
 

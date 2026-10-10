@@ -82,6 +82,16 @@ func handleWithStaticData(w http.ResponseWriter, _ *http.Request, d *data, fSys 
 		}
 	}
 
+	// 4.5: single sign-on button, and whether the password form stays.
+	if d.settings.AuthMethod == auth.MethodOIDCAuth {
+		if raw, err := d.store.Auth.Get(d.settings.AuthMethod); err == nil {
+			if a, ok := raw.(*auth.OIDCAuth); ok {
+				data["SSOName"] = a.Name()
+				data["PasswordLogin"] = a.PasswordLogin
+			}
+		}
+	}
+
 	if d.settings.AuthMethod == auth.MethodJSONAuth {
 		raw, err := d.store.Auth.Get(d.settings.AuthMethod)
 		if err != nil {

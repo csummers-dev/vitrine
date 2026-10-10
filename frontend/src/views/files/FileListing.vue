@@ -1766,8 +1766,9 @@ const playFolderAt = async (folderUrl: string) => {
 // 3.6: slideshow + photo map over this folder's images, in listing order.
 const slideshow = useSlideshow();
 const photoMap = usePhotoMap();
+// In the order (and with the type filter) the listing shows them.
 const folderImages = computed(() =>
-  fileStore.req?.isDir ? imageSlides(fileStore.req.items) : []
+  fileStore.req?.isDir ? imageSlides(items.value.files) : []
 );
 const startSlideshow = (from?: ResourceItem) => {
   const list = folderImages.value;

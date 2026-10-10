@@ -70,6 +70,8 @@ func NewHandler(
 	tokenExpirationTime := server.GetTokenExpirationTime(DefaultTokenExpirationTime)
 	api.Handle("/login", monkey(loginHandler(tokenExpirationTime), ""))
 	api.Handle("/login/2fa", monkey(twoFactorLoginHandler(tokenExpirationTime), "")).Methods("POST")
+	api.Handle("/auth/oidc/login", monkey(oidcLoginHandler, "")).Methods("GET")
+	api.Handle("/auth/oidc/callback", monkey(oidcCallbackHandler(tokenExpirationTime), "")).Methods("GET")
 	api.Handle("/2fa", monkey(twoFactorGetHandler, "")).Methods("GET")
 	api.Handle("/2fa/setup", monkey(twoFactorSetupHandler, "")).Methods("POST")
 	api.Handle("/2fa/enable", monkey(twoFactorEnableHandler, "")).Methods("POST")

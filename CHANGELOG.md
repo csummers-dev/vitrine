@@ -21,6 +21,13 @@ All notable changes to **vitrine**.
   `--fileWatching` / `VITRINE_FILE_WATCHING` = `auto` (default), `poll` (for
   network mounts) or `off`. See the README for the inotify limit and reverse
   proxies.
+- **Single sign-on (OpenID Connect).** A new auth method, `oidc`, signs
+  people in through Authelia, Authentik, Keycloak or any OpenID provider
+  (authorization code with PKCE; ID tokens verified against the provider's
+  keys, with issuer, audience, expiry and nonce checks). Accounts can be
+  created on first sign-in, admin rights follow a group, and password
+  sign-in can stay as a fallback. Configure with `vitrine config set
+  --auth.method=oidc --oidc.*`.
 - **Two-factor sign-in.** Users can require a code from an authenticator
   app after their password (Settings → Profile), with ten single-use
   recovery codes. Codes can't be reused, failed codes share the login

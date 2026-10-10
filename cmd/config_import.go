@@ -88,6 +88,10 @@ The path must be for a json or yaml file.`,
 			var a interface{}
 			a, autherErr = getAuther(&auth.HookAuth{}, rawAuther)
 			auther = a.(*auth.HookAuth)
+		case auth.MethodOIDCAuth:
+			var a interface{}
+			a, autherErr = getAuther(auth.OIDCAuth{}, rawAuther)
+			auther = a.(*auth.OIDCAuth)
 		default:
 			return errors.New("invalid auth method")
 		}

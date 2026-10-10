@@ -260,7 +260,23 @@ func renewHandler(tokenExpireTime time.Duration) handleFunc {
 }
 
 func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.User, tokenExpirationTime time.Duration) (int, error) {
-	claims := &authToken{
+	claims := tokenClaims(user, tokenExpirationTime)
+
+	signed, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(d.settings.Key)
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	if _, err := w.Write([]byte(signed)); err != nil {
+		return http.StatusInternalServerError, err
+	}
+	return 0, nil
+}
+
+// tokenClaims are the claims of a session token for user.
+func tokenClaims(user *users.User, tokenExpirationTime time.Duration) *authToken {
+	return &authToken{
 		User: userInfo{
 			ID:                    user.ID,
 			ViewMode:              user.ViewMode,
@@ -280,16 +296,4 @@ func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.Use
 			Issuer:    "File Browser",
 		},
 	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signed, err := token.SignedString(d.settings.Key)
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
-
-	w.Header().Set("Content-Type", "text/plain")
-	if _, err := w.Write([]byte(signed)); err != nil {
-		return http.StatusInternalServerError, err
-	}
-	return 0, nil
 }
