@@ -9,6 +9,7 @@ import {
 } from "./tus";
 import { createURL, fetchURL, removePrefix, StatusError } from "./utils";
 import { isEncodableResponse, makeRawResource } from "@/utils/encodings";
+import { progressDeleted, progressMoved } from "@/utils/progressSync";
 
 export async function fetch(url: string, signal?: AbortSignal) {
   const encoding = isEncodableResponse(url);
@@ -93,6 +94,7 @@ export async function remove(
     permanent ? `${url}?permanent=true` : url,
     "DELETE"
   );
+  progressDeleted(url);
   try {
     const body = await res.json();
     return body && typeof body.trashId === "string" ? body : null;
@@ -260,7 +262,13 @@ function moveCopy(
     const url = `${from}?action=${
       copy ? "copy" : "rename"
     }&destination=${to}&override=${finalOverwrite}&rename=${finalRename}`;
-    promises.push(resourceAction(url, "PATCH"));
+    const done = resourceAction(url, "PATCH");
+    // 3.3: a rename/move carries reading + watching progress along.
+    if (!copy && item.to) {
+      const to = item.to;
+      void done.then(() => progressMoved(from, to)).catch(() => {});
+    }
+    promises.push(done);
   }
   layoutStore.closeHovers();
   return Promise.all(promises);

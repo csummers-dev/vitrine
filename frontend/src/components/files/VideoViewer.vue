@@ -43,6 +43,30 @@
         :options="options"
         :default-subtitle="defaultSubtitle"
       />
+      <!-- 3.4: shown after auto-resuming a partly watched video. -->
+      <div
+        v-if="resumedFrom > 0"
+        class="video-viewer__resume"
+        role="status"
+        data-testid="video-resume"
+      >
+        <span>Resumed at {{ resumedLabel }}</span>
+        <button
+          type="button"
+          class="video-viewer__resume-btn"
+          @click="startOver"
+        >
+          Start over
+        </button>
+        <button
+          type="button"
+          class="video-viewer__resume-close"
+          aria-label="Dismiss"
+          @click="resumedFrom = 0"
+        >
+          <Icon name="x" :size="12" />
+        </button>
+      </div>
       <!-- Shown while the server prepares a transcoded stream (this format
            can't be decoded natively). A remux is near-instant; a full
            re-encode of a long/HEVC file takes minutes — the elapsed timer
@@ -68,6 +92,10 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import VideoPlayer from "@/components/files/VideoPlayer.vue";
 import Icon from "@/components/Icon.vue";
 import { transcodeEnabled } from "@/utils/constants";
+import {
+  formatTimestamp,
+  useVideoProgress,
+} from "@/composables/useVideoProgress";
 
 /** Metadata surfaced once the underlying <video> reports loadedmetadata.
  *  Used by Preview.vue to populate the info-rail "Tracks" section. */
@@ -94,6 +122,9 @@ const props = defineProps<{
   /** Download / open URLs for the can't-play fallback card. */
   downloadUrl?: string;
   directUrl?: string;
+  /** 3.4: file path to remember the playback position under. Omit (e.g.
+   *  on public shares) to disable resume. */
+  progressKey?: string;
 }>();
 
 // On-demand transcode fallback (#3): start on the original source; if the
@@ -176,6 +207,7 @@ const findVideoEl = (): HTMLVideoElement | null => {
 const onLoadedMetadata = (event: Event) => {
   const el = event.currentTarget as HTMLVideoElement;
   preparing.value = false; // the (possibly transcoded) stream is playing
+  maybeResume(el);
   emit("metadata", {
     width: el.videoWidth,
     height: el.videoHeight,
@@ -201,10 +233,56 @@ const onVideoError = () => {
   }
 };
 
+// ── Resume + watched state (3.4) ─────────────────────────────────────
+const progress = useVideoProgress();
+/** Position we auto-resumed from (drives the chip); 0 hides it. */
+const resumedFrom = ref(0);
+const resumedLabel = computed(() => formatTimestamp(resumedFrom.value));
+const SAVE_EVERY_MS = 10_000;
+let lastSaveAt = 0;
+let resumeChecked = false;
+let resumeChipTimer: ReturnType<typeof setTimeout> | null = null;
+
+const savePosition = () => {
+  if (!props.progressKey || !video) return;
+  // Don't overwrite the stored position with 0 before we've resumed.
+  if (!resumeChecked) return;
+  lastSaveAt = Date.now();
+  progress.save(props.progressKey, video.currentTime, video.duration);
+};
+
+const maybeResume = (el: HTMLVideoElement) => {
+  if (resumeChecked || !props.progressKey) return;
+  resumeChecked = true;
+  const at = progress.resumeAt(props.progressKey);
+  if (at <= 0 || !(el.duration > at)) return;
+  el.currentTime = at;
+  resumedFrom.value = at;
+  if (resumeChipTimer) clearTimeout(resumeChipTimer);
+  resumeChipTimer = setTimeout(() => (resumedFrom.value = 0), 8000);
+};
+
+const startOver = () => {
+  resumedFrom.value = 0;
+  if (video) video.currentTime = 0;
+  savePosition();
+};
+
+const onTimeUpdate = () => {
+  if (Date.now() - lastSaveAt >= SAVE_EVERY_MS) savePosition();
+};
+const onEnded = () => {
+  if (!props.progressKey || !video) return;
+  progress.save(props.progressKey, video.duration, video.duration);
+};
+
 let video: HTMLVideoElement | null = null;
 const detach = () => {
   video?.removeEventListener("loadedmetadata", onLoadedMetadata);
   video?.removeEventListener("error", onVideoError);
+  video?.removeEventListener("timeupdate", onTimeUpdate);
+  video?.removeEventListener("pause", savePosition);
+  video?.removeEventListener("ended", onEnded);
 };
 const attach = () => {
   detach();
@@ -212,6 +290,9 @@ const attach = () => {
   if (!video) return;
   video.addEventListener("loadedmetadata", onLoadedMetadata);
   video.addEventListener("error", onVideoError);
+  video.addEventListener("timeupdate", onTimeUpdate);
+  video.addEventListener("pause", savePosition);
+  video.addEventListener("ended", onEnded);
   // Already errored before we attached (fast failure) — escalate now.
   if (video.error) {
     onVideoError();
@@ -234,9 +315,14 @@ onMounted(() => {
 
 // Re-attach whenever the player remounts: a new file (props.source) or a
 // swap to the transcoded stream (effectiveSource).
-watch(effectiveSource, () => requestAnimationFrame(attach));
+watch(effectiveSource, () => {
+  resumeChecked = false; // the transcoded stream resumes too
+  requestAnimationFrame(attach);
+});
 
 onBeforeUnmount(() => {
+  savePosition();
+  if (resumeChipTimer) clearTimeout(resumeChipTimer);
   detach();
   video = null;
   stopPrepTimer();
@@ -287,6 +373,43 @@ onBeforeUnmount(() => {
 .video-viewer__frame :deep(.video-js video),
 .video-viewer__frame :deep(.vjs-tech) {
   object-fit: contain;
+}
+
+/* ── "Resumed at" chip (3.4) ────────────────────────────────────────── */
+.video-viewer__resume {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 6px 12px;
+  border-radius: 999px;
+  background: rgba(10, 10, 10, 0.72);
+  color: #fff;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.video-viewer__resume-btn {
+  border: 0;
+  border-radius: 999px;
+  padding: 3px 10px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+.video-viewer__resume-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+.video-viewer__resume-close {
+  display: inline-flex;
+  border: 0;
+  background: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  padding: 2px;
 }
 
 /* ── "Preparing…" overlay (during transcode) ─────────────────────────── */

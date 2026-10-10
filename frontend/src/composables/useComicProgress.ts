@@ -14,6 +14,8 @@ const MAX_ENTRIES = 100;
 
 interface ComicPosition {
   page: number;
+  /** 4.0 3.3: page count, for the Continue shelf's progress. */
+  total?: number;
   at: number; // unix-ms, for LRU eviction
 }
 
@@ -31,10 +33,13 @@ export function useComicProgress() {
 
   /** Upsert the page for a comic path, trimming to the MAX_ENTRIES
    *  most-recently-read comics. Debounced + rolled-back by usePreferences. */
-  const set = (path: string, page: number) => {
+  const set = (path: string, page: number, total?: number) => {
     if (!path) return;
     const current = prefs.get<PositionMap>(PREF_KEY, {});
-    const next: PositionMap = { ...current, [path]: { page, at: Date.now() } };
+    const next: PositionMap = {
+      ...current,
+      [path]: { page, at: Date.now(), total: total ?? current[path]?.total },
+    };
 
     const entries = Object.entries(next);
     if (entries.length > MAX_ENTRIES) {

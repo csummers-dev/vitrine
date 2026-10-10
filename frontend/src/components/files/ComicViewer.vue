@@ -218,7 +218,7 @@ const goTo = (i: number) => {
   const clamped = Math.min(Math.max(i, 0), pages.value - 1);
   if (clamped === current.value) return;
   current.value = clamped;
-  progress.set(props.path, clamped);
+  progress.set(props.path, clamped, pages.value);
   stage.value?.scrollTo({ top: 0 });
   preloadNeighbors();
 };

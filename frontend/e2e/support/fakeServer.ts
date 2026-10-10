@@ -63,9 +63,13 @@ function b64url(obj: unknown): string {
 }
 
 /** An unsigned JWT the frontend can decode (it never verifies signatures). */
-export function makeToken(): string {
+export function makeToken(preferences: Record<string, unknown> = {}): string {
   const now = Math.floor(Date.now() / 1000);
-  const payload = { user: USER, iat: now, exp: now + 2 * 60 * 60 };
+  const payload = {
+    user: { ...USER, preferences },
+    iat: now,
+    exp: now + 2 * 60 * 60,
+  };
   return `${b64url({ alg: "HS256", typ: "JWT" })}.${b64url(payload)}.sig`;
 }
 
@@ -132,6 +136,9 @@ export class FakeServer {
     path: string;
     subtree: [string, FakeEntry][];
   }[] = [];
+
+  /** The user's preferences: served in the token, updated by PUT /users. */
+  preferences: Record<string, unknown> = {};
 
   constructor(files: Record<string, string | null>) {
     const when = "2026-10-01T12:00:00Z";
@@ -226,7 +233,8 @@ export class FakeServer {
     const text = (body: string, status = 200) =>
       route.fulfill({ status, contentType: "text/plain", body });
 
-    if (api === "/login" || api === "/renew") return text(makeToken());
+    if (api === "/login" || api === "/renew")
+      return text(makeToken(this.preferences));
 
     if (api.startsWith("/resources/recursive")) return json([]);
 
@@ -376,8 +384,14 @@ export class FakeServer {
     if (api === "/settings" && method === "GET")
       return text("404 Not Found", 404);
     if (/^\/users\/\d+$/.test(api)) {
-      if (method === "PUT") return text("", 200);
-      return json(USER);
+      if (method === "PUT") {
+        const body = JSON.parse(req.postData() ?? "{}") as {
+          data?: { preferences?: Record<string, unknown> };
+        };
+        if (body.data?.preferences) this.preferences = body.data.preferences;
+        return text("", 200);
+      }
+      return json({ ...USER, preferences: this.preferences });
     }
     // Background transfers: the work happens instantly; polls report it done.
     if (api === "/jobs" && method === "POST") {

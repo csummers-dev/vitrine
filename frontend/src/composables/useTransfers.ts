@@ -13,6 +13,7 @@
 import { ref, computed } from "vue";
 import * as jobsApi from "@/api/jobs";
 import type { TransferJob, TransferItem, TransferKind } from "@/api/jobs";
+import { progressMoved } from "@/utils/progressSync";
 
 const POLL_MS = 1000;
 
@@ -109,12 +110,32 @@ function ensurePolling(): void {
   }
 }
 
+// 3.3: when a move job we watched run completes, carry reading / watching
+// progress to the new paths. Only jobs seen active in this tab count, so a
+// reload doesn't replay old moves.
+const seenActive = new Set<string>();
+function syncMovedProgress(server: TransferJob[]): void {
+  for (const j of server) {
+    if (isActiveStatus(j.status)) {
+      seenActive.add(j.id);
+      continue;
+    }
+    if (!seenActive.delete(j.id)) continue;
+    if (j.kind !== "move" || j.status !== "completed") continue;
+    const from = j.fromPaths ?? [];
+    const to = j.toPaths ?? [];
+    if (from.length !== to.length) continue;
+    from.forEach((f, i) => progressMoved(f, to[i]));
+  }
+}
+
 async function refresh(): Promise<void> {
   try {
     const server = await jobsApi.listJobs();
     // Keep any client-side pending placeholders the server doesn't know about
     // yet (their enqueue POST is still in flight) so a poll can't wipe them.
     const pending = jobs.value.filter((j) => isPending(j.id));
+    syncMovedProgress(server);
     jobs.value = [...pending, ...server];
   } catch {
     // Network blip (or a 401, which fetchURL handles by logging out) — keep the
@@ -148,6 +169,7 @@ async function start(
   try {
     const job = await jobsApi.startJob(kind, items);
     removeJob(pending.id);
+    seenActive.add(job.id);
     upsert(job);
     ensurePolling();
     // The enqueue snapshot is "queued" with no progress; pull the running
@@ -186,6 +208,7 @@ async function cancel(id: string): Promise<void> {
 async function retry(id: string): Promise<TransferJob> {
   const job = await jobsApi.retryJob(id);
   removeJob(id); // the server dismissed the original as part of the retry
+  seenActive.add(job.id);
   upsert(job);
   ensurePolling();
   // The retry snapshot is "queued"; pull its running status + first bytes

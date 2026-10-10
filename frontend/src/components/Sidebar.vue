@@ -279,6 +279,70 @@
           </ul>
         </nav>
 
+        <!-- Continue (4.0 3.3): started-but-unfinished books, comics and
+             videos, newest first, with a thin progress bar. -->
+        <nav
+          v-if="isLoggedIn && continueItems.length > 0 && !collapsed"
+          class="px-2 pt-4 max-md:hidden"
+          data-testid="continue-shelf"
+        >
+          <div class="px-2 pb-1.5 flex items-center justify-between gap-2">
+            <button
+              type="button"
+              class="flex items-center gap-1 text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] hover:text-ink-2 transition"
+              :aria-expanded="!isSectionCollapsed('continue')"
+              @click="toggleSection('continue')"
+            >
+              <Icon
+                name="chevron-down"
+                :size="11"
+                :stroke-width="2.4"
+                class="transition-transform shrink-0"
+                :class="isSectionCollapsed('continue') ? '-rotate-90' : ''"
+              />
+              <span>Continue</span>
+            </button>
+          </div>
+          <ul
+            v-show="!isSectionCollapsed('continue')"
+            class="list-none m-0 p-0 space-y-0.5"
+          >
+            <li
+              v-for="c in continueItems"
+              :key="`${c.kind}:${c.path}`"
+              @contextmenu="onContinueContextMenu(c, $event)"
+            >
+              <router-link
+                :to="`/files${c.path}`"
+                class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] hover:bg-hover text-ink-2 transition"
+                :title="continueTitle(c)"
+                @click="onRecentClick(`/files${c.path}`, $event)"
+              >
+                <Icon
+                  :name="SHELF_ICONS[c.kind]"
+                  :size="12"
+                  class="text-[var(--color-ink-3)] shrink-0"
+                />
+                <span class="flex-1 min-w-0 flex flex-col gap-1">
+                  <span class="truncate">{{ recentLabel(c.name) }}</span>
+                  <span
+                    v-if="c.fraction !== null"
+                    class="block h-[2px] rounded-full bg-[var(--color-line)] overflow-hidden"
+                    aria-hidden="true"
+                  >
+                    <span
+                      class="block h-full bg-[var(--color-accent,#6e72d9)]"
+                      :style="{
+                        width: `${Math.max(3, Math.round(c.fraction * 100))}%`,
+                      }"
+                    />
+                  </span>
+                </span>
+              </router-link>
+            </li>
+          </ul>
+        </nav>
+
         <!-- Recent (v1.3 S3-1). MRU log of recently-previewed files.
            Capped at 5 visible; "View all" disclosure expands the rest
            (up to the 50-cap from the store). Click opens preview by
@@ -509,6 +573,7 @@ import prettyBytes from "pretty-bytes";
 import { usePreferences } from "@/composables/usePreferences";
 import { displayName } from "@/utils/filename";
 import { useRecents } from "@/composables/useRecents";
+import { useContinueShelf, SHELF_ICONS } from "@/composables/useContinueShelf";
 import { useFavorites } from "@/composables/useFavorites";
 import { useFavoriteTitleDialog } from "@/composables/useFavoriteTitleDialog";
 import { useRootLabel } from "@/composables/useRootLabel";
@@ -646,6 +711,43 @@ export default {
           action: () => {
             hideSidebarMenu();
             rootLabelComposable.openDialog();
+          },
+        },
+      ]);
+    };
+    // Continue (3.3): Open · Mark finished · Remove from Continue.
+    const continueShelf = useContinueShelf();
+    const KIND_LABEL = { epub: "Book", comic: "Comic", video: "Video" };
+    const continueTitle = (c) =>
+      c.fraction === null
+        ? `${KIND_LABEL[c.kind]} · ${c.path}`
+        : `${KIND_LABEL[c.kind]} · ${Math.round(c.fraction * 100)}% · ${c.path}`;
+    const onContinueContextMenu = (c, event) => {
+      openSidebarMenu(event, [
+        {
+          label: "Open",
+          icon: "external-link",
+          action: () => {
+            hideSidebarMenu();
+            navigateActivePane(`/files${c.path}`);
+          },
+        },
+        {
+          label: c.kind === "video" ? "Mark watched" : "Mark finished",
+          icon: "check",
+          action: () => {
+            hideSidebarMenu();
+            continueShelf.markFinished(c);
+          },
+        },
+        { type: "separator" },
+        {
+          label: "Remove from Continue",
+          icon: "x",
+          destructive: true,
+          action: () => {
+            hideSidebarMenu();
+            continueShelf.remove(c);
           },
         },
       ]);
@@ -910,6 +1012,10 @@ export default {
       hideSidebarMenu,
       onFavoriteContextMenu,
       onRecentContextMenu,
+      onContinueContextMenu,
+      continueShelf,
+      continueTitle,
+      SHELF_ICONS,
       onMyFilesContextMenu,
       rootLabel: rootLabelComposable.rootLabel,
     };
@@ -958,6 +1064,9 @@ export default {
      *  cross-tab + post-mutation reactivity. */
     recents() {
       return this.recentsComposable.recents.value;
+    },
+    continueItems() {
+      return this.continueShelf.items.value;
     },
     favorites() {
       return this.favoritesComposable.favorites.value;

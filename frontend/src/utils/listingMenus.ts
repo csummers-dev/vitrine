@@ -32,6 +32,8 @@ export interface RowMenuContext {
   clipboardHasItems: boolean;
   bulkAudioCount: number;
   canBulkEditTags: boolean;
+  /** 3.4: selected videos and how many of them are marked watched. */
+  videos?: { count: number; watched: number };
   t: (key: string) => string;
 }
 
@@ -48,6 +50,8 @@ export interface RowMenuActions {
   bulkRename: () => void;
   copyPath: (item: ResourceItem) => void;
   download: () => void;
+  /** 3.4: mark the selected videos watched / unwatched. */
+  setWatched?: (watched: boolean) => void;
 }
 
 function separate(items: MenuItem[]): void {
@@ -132,6 +136,26 @@ export function buildRowMenu(
       icon: "music",
       action: () => act.prompt("audio-tags"),
     });
+  }
+
+  // ── Videos: Mark watched / unwatched (3.4) ─────────────────────────
+  const v = ctx.videos;
+  if (v && v.count > 0 && act.setWatched) {
+    const n = v.count === 1 ? "" : ` (${v.count} videos)`;
+    if (v.watched < v.count) {
+      items.push({
+        label: `Mark watched${n}`,
+        icon: "eye",
+        action: () => act.setWatched!(true),
+      });
+    }
+    if (v.watched > 0) {
+      items.push({
+        label: `Mark unwatched${n}`,
+        icon: "eye-off",
+        action: () => act.setWatched!(false),
+      });
+    }
   }
 
   // ── Clipboard: Cut / Copy / Paste into folder ──────────────────────

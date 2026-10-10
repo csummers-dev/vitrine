@@ -977,6 +977,7 @@ import { usePanesStore } from "@/stores/panes";
 import { useLayoutStore } from "@/stores/layout";
 import { useTagsStore } from "@/stores/tags";
 import { useFavorites } from "@/composables/useFavorites";
+import { useVideoProgress } from "@/composables/useVideoProgress";
 import { useRootLabel } from "@/composables/useRootLabel";
 import { usePreferences } from "@/composables/usePreferences";
 import { useFolderScrollMemory } from "@/composables/useFolderScrollMemory";
@@ -1704,6 +1705,26 @@ const headerButtons = computed(() => {
 // audio files (MP3 / FLAC). Drives the bulk "Edit tags" entry points (pill +
 // context menu). Non-audio items in a mixed selection are simply ignored; the
 // editor operates on the audio subset and states the count it'll affect.
+// 3.4: selected videos, for Mark watched / unwatched.
+const videoProgress = useVideoProgress();
+const selectedVideoPaths = (): string[] => {
+  const req = fileStore.req;
+  if (!req) return [];
+  const out: string[] = [];
+  for (const idx of fileStore.selected) {
+    const item = req.items[idx];
+    if (item && !item.isDir && item.type === "video") out.push(item.path);
+  }
+  return out;
+};
+const selectedVideos = () => {
+  const paths = selectedVideoPaths();
+  return {
+    count: paths.length,
+    watched: paths.filter((p) => videoProgress.isWatched(p)).length,
+  };
+};
+
 const bulkAudioCount = computed(() => {
   const req = fileStore.req;
   if (!req) return 0;
@@ -2653,6 +2674,7 @@ const {
         clipboardHasItems: clipboardStore.items.length > 0,
         bulkAudioCount: bulkAudioCount.value,
         canBulkEditTags: canBulkEditTags.value,
+        videos: selectedVideos(),
         t,
       },
       rowMenuActions
@@ -2685,6 +2707,8 @@ const rowMenuActions = closingFirst({
   bulkRename: () => bulkRename.open(),
   copyPath: (item: ResourceItem) => void copyItemPath(item),
   download: () => download(),
+  setWatched: (watched: boolean) =>
+    videoProgress.setWatched(selectedVideoPaths(), watched),
 });
 
 const backgroundMenuActions = {

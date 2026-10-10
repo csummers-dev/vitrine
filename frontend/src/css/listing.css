@@ -429,6 +429,51 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   transform: translate(-50%, -50%);
 }
 
+/* 3.4: video watched tick + resume progress, pinned to the tile. */
+.item__watched {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  z-index: 1;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--c-green, #16a34a);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 12px;
+  text-align: center;
+  box-shadow: 0 0 0 1.5px var(--color-surface, #fff);
+  pointer-events: none;
+}
+.item__progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  height: 3px;
+  background: rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+.item__progress-fill {
+  display: block;
+  height: 100%;
+  background: var(--c-red, #dc2626);
+}
+:is(#listing, .fb-listing).mosaic .item__watched {
+  right: 6px;
+  bottom: 6px;
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+  line-height: 20px;
+}
+:is(#listing, .fb-listing).mosaic .item__progress {
+  height: 4px;
+}
+
 /* Default: inner wrapper is layout-transparent (list & grid use icon directly).
    Gallery overrides this to make it a visible squircle for non-image files. */
 .item__icon-inner {

@@ -23,6 +23,8 @@ const MAX_ENTRIES = 100;
 interface EpubPosition {
   cfi: string | number;
   at: number;
+  /** 4.0 3.3: approximate share read (0..1), for the Continue shelf. */
+  pct?: number;
 }
 
 type PositionMap = Record<string, EpubPosition>;
@@ -44,7 +46,11 @@ export function useEpubProgress() {
   const set = (path: string, cfi: string | number) => {
     if (!path) return;
     const current = prefs.get<PositionMap>(PREF_KEY, {});
-    const next: PositionMap = { ...current, [path]: { cfi, at: Date.now() } };
+    const prev = current[path];
+    const next: PositionMap = {
+      ...current,
+      [path]: { cfi, at: Date.now(), pct: prev?.pct },
+    };
 
     const entries = Object.entries(next);
     if (entries.length > MAX_ENTRIES) {
@@ -57,5 +63,17 @@ export function useEpubProgress() {
     }
   };
 
-  return { get, set };
+  /** Record how far through the book the reader is (0..1). Only touches a
+   *  book that already has a position, and only on a visible change. */
+  const setFraction = (path: string, pct: number) => {
+    if (!path || !Number.isFinite(pct)) return;
+    const current = prefs.get<PositionMap>(PREF_KEY, {});
+    const prev = current[path];
+    if (!prev) return;
+    const rounded = Math.round(pct * 1000) / 1000;
+    if (prev.pct === rounded) return;
+    void prefs.set(PREF_KEY, { ...current, [path]: { ...prev, pct: rounded } });
+  };
+
+  return { get, set, setFraction };
 }

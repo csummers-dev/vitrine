@@ -65,6 +65,40 @@ const labels = (items: { label?: string; type?: string }[]) =>
   items.map((i) => i.label ?? `—${i.type}`);
 
 describe("buildRowMenu", () => {
+  it("offers Mark watched / unwatched by the selection's state (3.4)", () => {
+    const a = { ...actions(), setWatched: vi.fn() };
+    const one = buildRowMenu(ctx({ videos: { count: 1, watched: 0 } }), a);
+    expect(labels(one)).toContain("Mark watched");
+    expect(labels(one)).not.toContain("Mark unwatched");
+
+    const mixed = labels(
+      buildRowMenu(
+        ctx({
+          selectedCount: 3,
+          singleItem: null,
+          videos: { count: 3, watched: 1 },
+        }),
+        a
+      )
+    );
+    expect(mixed).toContain("Mark watched (3 videos)");
+    expect(mixed).toContain("Mark unwatched (3 videos)");
+
+    const done = buildRowMenu(ctx({ videos: { count: 1, watched: 1 } }), a);
+    done.find((i) => i.label === "Mark unwatched")!.action!();
+    expect(a.setWatched).toHaveBeenCalledWith(false);
+    expect(labels(done)).not.toContain("Mark watched");
+  });
+
+  it("has no watched items without videos or without the action", () => {
+    expect(labels(buildRowMenu(ctx(), actions()))).not.toContain(
+      "Mark watched"
+    );
+    expect(
+      labels(buildRowMenu(ctx({ videos: { count: 1, watched: 0 } }), actions()))
+    ).not.toContain("Mark watched");
+  });
+
   it("is empty with no selection", () => {
     expect(buildRowMenu(ctx({ selectedCount: 0 }), actions())).toEqual([]);
   });

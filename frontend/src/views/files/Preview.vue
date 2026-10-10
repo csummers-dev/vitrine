@@ -157,6 +157,7 @@
             @navigate-next="next"
             @toc="onEpubToc"
             @chapter="onEpubChapter"
+            @progress="onEpubProgress"
             @cover="onEpubCover"
           />
 
@@ -220,6 +221,7 @@
             :prefer-transcode="preferTranscode"
             :download-url="downloadUrl"
             :direct-url="directUrl"
+            :progress-key="fileStore.req?.path"
             @metadata="onVideoMetadata"
           />
 
@@ -769,6 +771,12 @@ const locationChange = (epubcifi: string | number) => {
   // Persist against the current book's path so reopening resumes here.
   if (isEpub.value && fileStore.req?.path) {
     epubProgress.set(fileStore.req.path, epubcifi);
+  }
+};
+// 3.3: how far through the book, for the Continue shelf.
+const onEpubProgress = (fraction: number) => {
+  if (isEpub.value && fileStore.req?.path) {
+    epubProgress.setFraction(fileStore.req.path, fraction);
   }
 };
 const changeSize = (val: number) => {

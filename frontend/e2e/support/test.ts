@@ -20,11 +20,19 @@ export const SEED: Record<string, string | null> = {
   "/photo.jpg": "not really a jpeg",
 };
 
-type Fixtures = { fake: FakeServer; app: Page };
+type Fixtures = {
+  fake: FakeServer;
+  app: Page;
+  /** User preferences to start with (`test.use({ prefs: … })`). */
+  prefs: Record<string, unknown>;
+};
 
 export const test = base.extend<Fixtures>({
-  fake: async ({}, use) => {
-    await use(new FakeServer(SEED));
+  prefs: [{}, { option: true }],
+  fake: async ({ prefs }, use) => {
+    const fake = new FakeServer(SEED);
+    fake.preferences = structuredClone(prefs);
+    await use(fake);
   },
   app: async ({ page, fake }, use) => {
     const pageErrors: string[] = [];

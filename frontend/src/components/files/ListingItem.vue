@@ -62,6 +62,24 @@
         <div v-else class="item__icon-inner">
           <Icon :name="iconName" :size="16" :stroke-width="1.6" />
         </div>
+        <!-- 3.4: watched tick / partly-watched progress bar on videos. Plain
+             elements (not <Icon>): `.item__icon svg` rules resize every svg
+             inside the tile. -->
+        <span
+          v-if="videoWatched"
+          class="item__watched"
+          title="Watched"
+          aria-label="Watched"
+          >✓</span
+        >
+        <span
+          v-else-if="videoFraction > 0"
+          class="item__progress"
+          aria-hidden="true"
+          ><span
+            class="item__progress-fill"
+            :style="{ width: `${Math.round(videoFraction * 100)}%` }"
+        /></span>
         <!-- Spring-load progress ring (F6): renders only while a drag is
              hovering this folder, fills clockwise over 3s, then we
              navigate into the folder. V2: ONLY the filling arc is drawn —
@@ -213,6 +231,7 @@ import { useLayoutStore } from "@/stores/layout";
 import { useTagsStore } from "@/stores/tags";
 import { usePreferences } from "@/composables/usePreferences";
 import { useFavorites } from "@/composables/useFavorites";
+import { useVideoProgress } from "@/composables/useVideoProgress";
 import { useImageHoverPreview } from "@/composables/useImageHoverPreview";
 import { startTransfer, isPathInMove } from "@/utils/transfers";
 import { useTransfers } from "@/composables/useTransfers";
@@ -298,6 +317,17 @@ const layoutStore = useLayoutStore();
 const folderSizes = useFolderSizes();
 const tagsStore = useTagsStore();
 const prefs = usePreferences();
+const videoProgress = useVideoProgress();
+// Reactive through prefs (user.preferences is reactive).
+const videoWatched = computed(
+  () =>
+    props.type === "video" &&
+    !!props.path &&
+    videoProgress.isWatched(props.path)
+);
+const videoFraction = computed(() =>
+  props.type === "video" && props.path ? videoProgress.fraction(props.path) : 0
+);
 const favorites = useFavorites();
 const { movingPaths } = useTransfers();
 

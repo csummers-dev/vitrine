@@ -74,6 +74,7 @@
 import Icon from "@/components/Icon.vue";
 import { VueReader } from "vue-reader";
 import type { Rendition } from "epubjs";
+import { spineFraction } from "@/utils/mediaProgress";
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 const props = defineProps<{
@@ -100,6 +101,8 @@ const emit = defineEmits<{
   (e: "toc", entries: EpubTocEntry[]): void;
   /** Current chapter href on each relocate, for active-row highlight. */
   (e: "chapter", href: string): void;
+  /** 3.3: approximate share of the book read (0..1), by spine position. */
+  (e: "progress", fraction: number): void;
   /** Cover-image blob URL once the book metadata resolves, so the
    *  info-rail can show the book's cover art (empty if the epub has none). */
   (e: "cover", url: string): void;
@@ -410,10 +413,26 @@ const captureRendition = (r: Rendition) => {
     /* older epubjs without coverUrl — ignore */
   }
 
-  r.on("relocated", (loc: { start?: { href?: string } }) => {
-    const href = loc?.start?.href;
-    if (href) emit("chapter", href);
-  });
+  r.on(
+    "relocated",
+    (loc: {
+      start?: {
+        href?: string;
+        index?: number;
+        displayed?: { page?: number; total?: number };
+      };
+      atEnd?: boolean;
+    }) => {
+      const href = loc?.start?.href;
+      if (href) emit("chapter", href);
+      const f = spineFraction(
+        loc,
+        (r.book?.spine as unknown as { length?: number } | undefined)?.length ??
+          0
+      );
+      if (f !== null) emit("progress", f);
+    }
+  );
   // Re-apply theme each time a new chapter renders — `override` rules
   // need to be present BEFORE the iframe paints, but a brand-new view
   // can be created when the user turns pages. Also re-attach our
