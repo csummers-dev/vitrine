@@ -103,6 +103,7 @@ type Server struct {
 	AuthHook                 string  `json:"authHook"`
 	TokenExpirationTime      string  `json:"tokenExpirationTime"`
 	SearchIndexMaxAge        string  `json:"searchIndexMaxAge"`
+	FileWatching             string  `json:"fileWatching"`
 	UnzipEnabled             bool    `json:"unzipEnabled"`
 	MaxZipFileSize           int64   `json:"maxZipFileSize"`
 	MaxZipFileEntries        int     `json:"maxZipFileEntries"`

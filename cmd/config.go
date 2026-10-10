@@ -226,6 +226,7 @@ func printSettings(ser *settings.Server, set *settings.Settings, auther auth.Aut
 	fmt.Fprintf(w, "\tTLS Key:\t%s\n", ser.TLSKey)
 	fmt.Fprintf(w, "\tToken Expiration Time:\t%s\n", ser.TokenExpirationTime)
 	fmt.Fprintf(w, "\tSearch Index Max Age:\t%s\n", ser.SearchIndexMaxAge)
+	fmt.Fprintf(w, "\tFile Watching:\t%s\n", ser.FileWatching)
 	fmt.Fprintf(w, "\tExec Enabled:\t%t\n", ser.EnableExec)
 	fmt.Fprintf(w, "\tThumbnails Enabled:\t%t\n", ser.EnableThumbnails)
 	fmt.Fprintf(w, "\tResize Preview:\t%t\n", ser.ResizePreview)
@@ -299,6 +300,8 @@ func getSettings(flags *pflag.FlagSet, set *settings.Settings, ser *settings.Ser
 			ser.TokenExpirationTime, err = flags.GetString(flag.Name)
 		case "searchIndexMaxAge":
 			ser.SearchIndexMaxAge, err = flags.GetString(flag.Name)
+		case "fileWatching":
+			ser.FileWatching, err = flags.GetString(flag.Name)
 		case "disableThumbnails":
 			ser.EnableThumbnails, err = flags.GetBool(flag.Name)
 			ser.EnableThumbnails = !ser.EnableThumbnails

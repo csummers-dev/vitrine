@@ -193,6 +193,22 @@ type SettingsChanged struct {
 
 func (SettingsChanged) Type() string { return "settings.changed" }
 
+// FilesChanged reports that entries in Dir changed on disk, whoever changed
+// them: vitrine itself, a downloader, an SMB client or the host shell. It comes
+// from the file watcher (package fswatch), one event per affected user, with
+// Dir relative to that user's scope. Names lists the changed entries; empty
+// means "refresh the whole folder" (e.g. a polled change).
+//
+// This is a high-volume signal, so the audit log ignores it and webhooks
+// don't send it.
+type FilesChanged struct {
+	Base
+	Dir   string   `json:"dir"`
+	Names []string `json:"names,omitempty"`
+}
+
+func (FilesChanged) Type() string { return "files.changed" }
+
 // ── Subscriber registry ─────────────────────────────────────────────
 
 var (

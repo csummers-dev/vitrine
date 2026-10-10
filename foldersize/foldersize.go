@@ -169,6 +169,15 @@ func (c *Cache) onEvent(e events.Event) {
 		// A copy leaves its source in place, so only the destination's ancestors
 		// grew.
 		c.invalidate(v.UserID, v.To)
+	case events.FilesChanged:
+		// A change inside Dir alters Dir's size and every ancestor's; with
+		// names, each changed subfolder's own cached size goes too.
+		if len(v.Names) == 0 {
+			c.invalidate(v.UserID, v.Dir)
+		}
+		for _, n := range v.Names {
+			c.invalidate(v.UserID, path.Join(v.Dir, n))
+		}
 	}
 }
 

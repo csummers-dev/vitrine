@@ -120,3 +120,33 @@ func TestStaleMtimeRecomputes(t *testing.T) {
 		t.Errorf("stale mtime should recompute to 5, got %d", got)
 	}
 }
+
+func TestWatcherChangeInvalidatesFolderAndAncestors(t *testing.T) {
+	c := New()
+	defer c.Close()
+	fs := afero.NewMemMapFs()
+	seed(t, fs, "/tv/show/s01/e01.mkv", "12345")
+	for _, p := range []string{"/tv/show/s01", "/tv/show", "/tv", "/"} {
+		if _, _, err := c.Size(3, fs, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// A named change in /tv/show drops the named subfolder, the folder and
+	// every ancestor.
+	events.Publish(events.FilesChanged{Base: events.NewBase(3, ""), Dir: "/tv/show", Names: []string{"s01"}})
+	for _, p := range []string{"/tv/show/s01", "/tv/show", "/tv", "/"} {
+		if _, ok := c.lru.Get(cacheKey(3, p)); ok {
+			t.Errorf("%s should be invalidated", p)
+		}
+	}
+
+	// An unnamed (polled) change drops the folder and its ancestors.
+	if _, _, err := c.Size(3, fs, "/tv/show"); err != nil {
+		t.Fatal(err)
+	}
+	events.Publish(events.FilesChanged{Base: events.NewBase(3, ""), Dir: "/tv/show"})
+	if _, ok := c.lru.Get(cacheKey(3, "/tv/show")); ok {
+		t.Error("/tv/show should be invalidated by an unnamed change")
+	}
+}

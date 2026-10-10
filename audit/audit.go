@@ -161,6 +161,11 @@ func (l *Log) Attach(subscribe func(func(events.Event)) (unsubscribe func())) fu
 		panic("audit: Log.Attach called twice on the same Log")
 	}
 	return subscribe(func(e events.Event) {
+		// Watcher-detected changes are high volume and carry no actor; they
+		// would drown the log of who did what.
+		if _, ok := e.(events.FilesChanged); ok {
+			return
+		}
 		// Best-effort: on persistence failure, log but don't propagate —
 		// the file op that triggered the event must not fail just
 		// because audit ingest hit an error. The events package wraps

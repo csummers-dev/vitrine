@@ -59,6 +59,10 @@ const (
 	DefaultMaxAge = 10 * time.Minute
 )
 
+// incrementalMaxNames is the largest named change applied in place; bigger
+// bursts get one debounced full rebuild instead.
+const incrementalMaxNames = 100
+
 // errIndexTooBig stops the build walk once the entry cap is exceeded.
 var errIndexTooBig = errors.New("searchindex: tree exceeds the index cap")
 
@@ -258,6 +262,14 @@ func (ix *Index) getMaxAge() time.Duration {
 }
 
 func (ix *Index) onEvent(e events.Event) {
+	// Watcher-reported changes that name their entries are applied in place,
+	// so a busy library (a download landing every few seconds) doesn't
+	// trigger a full re-walk each time. Unnamed or very large changes fall
+	// through to the debounced full rebuild below.
+	if fc, isFC := e.(events.FilesChanged); isFC && len(fc.Names) > 0 && len(fc.Names) <= incrementalMaxNames {
+		go ix.applyIncremental(fc.UserID, fc.Dir, fc.Names)
+		return
+	}
 	uid, ok := userOf(e)
 	if !ok {
 		return
@@ -316,7 +328,77 @@ func userOf(e events.Event) (uint, bool) {
 		return v.UserID, true
 	case events.FileCopied:
 		return v.UserID, true
+	case events.FilesChanged:
+		return v.UserID, true
 	default:
 		return 0, false
+	}
+}
+
+// applyIncremental updates userID's ready index for entries named in dir:
+// existing entries are (re)added, with a new folder's whole subtree, and
+// missing ones are removed along with everything below them. Filesystem reads
+// happen outside the shard lock.
+func (ix *Index) applyIncremental(userID uint, dir string, names []string) {
+	s := ix.shardFor(userID, false)
+	if s == nil {
+		return
+	}
+	s.mu.RLock()
+	fs, ready, oversized := s.fs, s.ready, s.oversized
+	s.mu.RUnlock()
+	if fs == nil || !ready || oversized {
+		return // not built yet (the next search builds fresh) or on the live walk
+	}
+
+	add := map[string]bool{}
+	var remove []string
+	for _, name := range names {
+		p := path.Join("/", dir, name)
+		if p == "/" || name == trash.Dirname {
+			continue
+		}
+		info, err := fs.Stat(p)
+		if err != nil {
+			remove = append(remove, p)
+			continue
+		}
+		add[p] = info.IsDir()
+		if !info.IsDir() {
+			continue
+		}
+		_ = afero.Walk(fs, p, func(sub string, f os.FileInfo, _ error) error {
+			if f == nil || sub == p {
+				return nil
+			}
+			if f.IsDir() && f.Name() == trash.Dirname {
+				return filepath.SkipDir
+			}
+			add[path.Join("/", filepath.ToSlash(sub))] = f.IsDir()
+			return nil
+		})
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !s.ready || s.entries == nil {
+		return
+	}
+	for _, p := range remove {
+		delete(s.entries, p)
+		prefix := p + "/"
+		for k := range s.entries {
+			if strings.HasPrefix(k, prefix) {
+				delete(s.entries, k)
+			}
+		}
+	}
+	for p, isDir := range add {
+		s.entries[p] = isDir
+	}
+	if len(s.entries) > ix.maxEntries {
+		s.entries = nil
+		s.ready = false
+		s.oversized = true
 	}
 }

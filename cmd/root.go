@@ -28,6 +28,7 @@ import (
 	"github.com/csummers-dev/vitrine/v4/diskcache"
 	"github.com/csummers-dev/vitrine/v4/events"
 	"github.com/csummers-dev/vitrine/v4/frontend"
+	"github.com/csummers-dev/vitrine/v4/fswatch"
 	fbhttp "github.com/csummers-dev/vitrine/v4/http"
 	"github.com/csummers-dev/vitrine/v4/img"
 	"github.com/csummers-dev/vitrine/v4/jobstore"
@@ -115,6 +116,7 @@ func addServerFlags(flags *pflag.FlagSet) {
 	flags.String("socket", "", "socket to listen to (cannot be used with address, port, cert nor key flags)")
 	flags.StringP("baseURL", "b", "", "base url")
 	flags.String("tokenExpirationTime", "2h", "user session timeout")
+	flags.String("fileWatching", "auto", "detect file changes made outside vitrine: auto (OS notifications, falling back to polling), poll (check folders every minute; use for network mounts) or off")
 	flags.String("searchIndexMaxAge", "10m", "rebuild a search index in the background once it is older than this, to pick up changes made outside vitrine (0 disables)")
 	flags.Bool("disableThumbnails", false, "disable image thumbnails")
 	flags.Bool("disablePreviewResize", false, "disable resize of image previews")
@@ -285,6 +287,28 @@ user created with the credentials from options "username" and "password".`,
 			return err
 		}
 		server.Root = root
+
+		// File watcher (4.0 Phase 2): notices changes made outside vitrine
+		// (downloaders, SMB, the host shell) and publishes them on the events
+		// bus as events.FilesChanged, so search, folder sizes and open
+		// browsers stay current. Arms in the background.
+		watchMode, err := fswatch.ParseMode(server.FileWatching)
+		if err != nil {
+			return err
+		}
+		watcher, err := fswatch.New(fswatch.Options{
+			Root:       server.Root,
+			Mode:       watchMode,
+			NewBackend: fswatch.NewFsnotifyBackend,
+			OnChange:   newWatchPublisher(st.Users, server.Root).OnChange,
+			Logf:       log.Printf,
+		})
+		if err != nil {
+			return err
+		}
+		watcher.Start()
+		defer watcher.Close()
+		log.Printf("File watching: %s", watchMode)
 
 		// Age-based trash auto-purge (settings.TrashRetentionDays; 0 = off).
 		// Runs at startup and every 6h; the setting is re-read each tick so an
@@ -460,6 +484,10 @@ func getServerSettings(v *viper.Viper, st *storage.Storage) (*settings.Server, e
 		server.SearchIndexMaxAge = v.GetString("searchIndexMaxAge")
 	}
 
+	if v.IsSet("fileWatching") {
+		server.FileWatching = v.GetString("fileWatching")
+	}
+
 	if v.IsSet("disableThumbnails") {
 		server.EnableThumbnails = !v.GetBool("disableThumbnails")
 	}
@@ -627,6 +655,7 @@ func quickSetup(v *viper.Viper, s *storage.Storage) error {
 		Root:                  v.GetString("root"),
 		TokenExpirationTime:   v.GetString("tokenExpirationTime"),
 		SearchIndexMaxAge:     v.GetString("searchIndexMaxAge"),
+		FileWatching:          v.GetString("fileWatching"),
 		EnableThumbnails:      !v.GetBool("disableThumbnails"),
 		ResizePreview:         !v.GetBool("disablePreviewResize"),
 		EnableExec:            !v.GetBool("disableExec"),
