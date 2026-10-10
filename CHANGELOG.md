@@ -41,6 +41,10 @@ All notable changes to **vitrine**.
   `govulncheck`, `pnpm audit --prod` and a Trivy image scan, then publishes
   the multi-arch image and a GitHub Release with this changelog's notes.
   Pre-release tags publish `:rc` only, never `:latest`.
+- **Security: Go toolchain 1.26.9** (was 1.25.13). Go 1.25 no longer
+  receives security fixes; 1.26.9 closes the standard-library issues
+  govulncheck reports (including GO-2026-6617, an HTTP/2 server crash, and
+  GO-2026-6599/6600 in html/template). Toolchain bump only.
 - **Go module path is now `github.com/csummers-dev/vitrine/v4`**, matching
   the major version. Only matters if you build from source with custom
   `-ldflags`.

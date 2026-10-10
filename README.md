@@ -46,7 +46,7 @@ Self-hosted file management.
 - **Mobile upload / pull-to-refresh** — Upload from your camera roll; pull to refresh.
 
 [![Version](https://img.shields.io/badge/version-3.1.1-6e72d9?style=flat-square)](#)
-[![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
+[![Go](https://img.shields.io/badge/Go-1.26-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
 [![Vue](https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js&logoColor=white)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square)](LICENSE)
@@ -258,7 +258,7 @@ Search answers from an in-memory index that updates as changes are reported. As 
 
 | Layer | Choice |
 | --- | --- |
-| Backend | **Go 1.25** |
+| Backend | **Go 1.26** |
 | DB | **Storm v3 / bbolt** |
 | Frontend | **Vue 3 + TypeScript** |
 | State | **Pinia** |
