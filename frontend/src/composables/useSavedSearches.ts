@@ -24,10 +24,10 @@ export const SAVED_SEARCH_MAX = 50;
 
 /** Starting points offered when saving and in the empty search box. */
 export const SEARCH_EXAMPLES: Array<{ label: string; query: string }> = [
-  { label: "Photos from the last month", query: "type:image added:30d" },
+  { label: "Untagged FLAC", query: "ext:flac is:untagged" },
+  { label: "PDFs added this week", query: "type:pdf added:7d" },
   { label: "Videos over 4 GB", query: "type:video size:>4GB" },
-  { label: "Anything new this week", query: "added:7d" },
-  { label: "PDFs tagged work", query: "type:pdf tag:work" },
+  { label: "Photos from the last month", query: "type:image added:30d" },
 ];
 
 /** Drop malformed entries (hand-edited or from an older client). */

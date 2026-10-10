@@ -27,6 +27,7 @@ import (
 //	type=<kind>  image | video | audio | pdf | text | archive (4.0 5.3)
 //	minSize=<n>, maxSize=<n>  inclusive size bounds in bytes (5.3)
 //	newer=<unix> modified at or after this time, in seconds (5.3)
+//	untagged=1   only entries with no tags at all (5.3)
 //
 // Returns a flat JSON array of `RecursiveEntry`. Path is taken from
 // `r.URL.Path` after the route's prefix strip — the search is rooted
@@ -71,6 +72,9 @@ var searchRecursiveHandler = withUser(func(w http.ResponseWriter, r *http.Reques
 			tagIDs = append(tagIDs, id)
 		}
 	}
+
+	// Without a tags store nothing is tagged, so "untagged" filters nothing.
+	untagged := r.URL.Query().Get("untagged") == "1" && d.tagsStore != nil
 
 	if len(tagIDs) > 0 && d.tagsStore == nil {
 		return http.StatusServiceUnavailable, errors.New("search: tags store not initialized")
@@ -118,7 +122,7 @@ var searchRecursiveHandler = withUser(func(w http.ResponseWriter, r *http.Reques
 
 	// Second pass: tag intersection. Single batched lookup avoids the
 	// per-file DB round-trip an inline TagsForFile would cost.
-	if len(tagIDs) > 0 {
+	if len(tagIDs) > 0 || untagged {
 		paths := make([]string, len(candidates))
 		for i, c := range candidates {
 			paths[i] = c.Path
@@ -130,6 +134,9 @@ var searchRecursiveHandler = withUser(func(w http.ResponseWriter, r *http.Reques
 
 		filtered := candidates[:0]
 		for _, c := range candidates {
+			if untagged && len(tagsByPath[c.Path]) > 0 {
+				continue
+			}
 			if hasAllTagIDs(tagsByPath[c.Path], tagIDs) {
 				filtered = append(filtered, c)
 			}

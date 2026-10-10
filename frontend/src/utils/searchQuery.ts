@@ -21,6 +21,7 @@
  *                            weeks (h, d, w, m = 30 days, y = 365 days).
  *                            The server only knows the modified time, so
  *                            "added" means "new or changed".
+ *   is:untagged            → untagged = true (no tags at all)
  *
  * Keys are case-insensitive (`TAG:foo` works). Empty values are
  * silently ignored (`tag:` parses to no tag, not a "" tag).
@@ -56,6 +57,8 @@ export interface ParsedQuery {
   maxSize?: number;
   /** Modified within this many milliseconds of now. Unset when absent. */
   withinMs?: number;
+  /** `is:untagged`: only entries with no tags. Unset when absent. */
+  untagged?: true;
 }
 
 export type SearchKind =
@@ -136,7 +139,8 @@ export function hasStructuredFilters(p: ParsedQuery): boolean {
     p.type !== undefined ||
     p.minSize !== undefined ||
     p.maxSize !== undefined ||
-    p.withinMs !== undefined
+    p.withinMs !== undefined ||
+    p.untagged === true
   );
 }
 
@@ -243,6 +247,10 @@ export function parseQuery(input: string): ParsedQuery {
       case "type":
       case "kind":
       case "is": {
+        if (tok.key === "is" && tok.value.toLowerCase() === "untagged") {
+          out.untagged = true;
+          break;
+        }
         const kind = KIND_ALIASES[tok.value.toLowerCase()];
         if (kind) out.type = kind;
         else textParts.push(`${tok.key}:${tok.value}`);
@@ -306,6 +314,7 @@ export function buildSearchParams(
     params.set("minSize", String(parsed.minSize));
   if (parsed.maxSize !== undefined)
     params.set("maxSize", String(parsed.maxSize));
+  if (parsed.untagged) params.set("untagged", "1");
   if (parsed.withinMs !== undefined) {
     // Resolved at request time, so a saved "added:7d" stays a rolling week.
     params.set("newer", String(Math.floor((now - parsed.withinMs) / 1000)));
@@ -365,6 +374,7 @@ export function describeQuery(p: ParsedQuery): string {
     parts.push(`at most ${shortSize(p.maxSize)}`);
   if (p.withinMs !== undefined)
     parts.push(`new or changed in ${ageLabel(p.withinMs)}`);
+  if (p.untagged) parts.push("untagged");
   if (p.tags.length > 0)
     parts.push(`tagged ${p.tags.map((t) => `“${t}”`).join(" and ")}`);
   if (p.q) parts.push(`name contains “${p.q}”`);

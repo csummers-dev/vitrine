@@ -185,6 +185,8 @@ describe("kind, size and age filters (4.0 5.3)", () => {
     expect(hasStructuredFilters(parseQuery("holiday"))).toBe(false);
     expect(hasStructuredFilters(parseQuery("added:1d"))).toBe(true);
     expect(hasStructuredFilters(parseQuery("size:<1k"))).toBe(true);
+    expect(hasStructuredFilters(parseQuery("is:untagged"))).toBe(true);
+    expect(buildSearchParams(parseQuery("is:untagged"), {})).toBe("untagged=1");
   });
 
   it("resolves the age against now, so saved searches roll forward", () => {
@@ -213,6 +215,9 @@ describe("describeQuery", () => {
       ".pdf files · 1 MB to 1.5 GB"
     );
     expect(describeQuery(parseQuery(""))).toBe("");
+    expect(describeQuery(parseQuery("ext:flac is:untagged"))).toBe(
+      ".flac files · untagged"
+    );
     expect(shortSize(1536)).toBe("1.5 KB");
   });
 });
