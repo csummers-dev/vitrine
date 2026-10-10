@@ -62,6 +62,47 @@
               @keydown.esc.prevent="cancelFolderRename"
               @blur="onFolderRenameBlur"
             />
+            <div
+              v-else-if="savedSearch"
+              class="fb-hero__crumbs saved-search-head"
+              data-testid="saved-search-head"
+            >
+              <Icon
+                name="folder-search"
+                :size="15"
+                class="saved-search-head__icon"
+              />
+              <span class="saved-search-head__name">{{
+                savedSearch.name
+              }}</span>
+              <span class="fb-hero__count">{{ savedSearchCountLabel }}</span>
+              <code
+                class="saved-search-head__query"
+                :title="`Searching ${savedSearchFolderLabel} for: ${savedSearch.query}`"
+                >{{ savedSearch.query }}</code
+              >
+              <span class="saved-search-head__in"
+                >in {{ savedSearchFolderLabel }}</span
+              >
+              <button
+                type="button"
+                class="saved-search-head__btn"
+                title="Edit saved search"
+                aria-label="Edit saved search"
+                @click="editSavedSearch"
+              >
+                <Icon name="pencil" :size="13" />
+              </button>
+              <button
+                type="button"
+                class="saved-search-head__btn"
+                :title="`Close and open ${savedSearchFolderLabel}`"
+                aria-label="Close saved search"
+                @click="closeSavedSearch"
+              >
+                <Icon name="x" :size="13" />
+              </button>
+            </div>
             <div v-else class="fb-hero__crumbs">
               <breadcrumbs base="/files" />
               <button
@@ -479,6 +520,22 @@
               @contextmenu="onListingContextMenu"
             >
               <EmptyState
+                v-if="savedSearch"
+                icon="search-x"
+                title="No matches yet"
+                :hint="`Nothing in ${savedSearchFolderLabel} matches “${savedSearch.query}”. This updates as files are added or changed.`"
+              >
+                <button
+                  type="button"
+                  class="empty-cta"
+                  @click="editSavedSearch"
+                >
+                  <Icon name="pencil" :size="13" />
+                  <span>Edit search</span>
+                </button>
+              </EmptyState>
+              <EmptyState
+                v-else
                 icon="folder-open"
                 :title="
                   folderTitle ? `${folderTitle} is empty` : t('files.lonely')
@@ -1061,6 +1118,11 @@ import ImageHoverPreview from "@/components/files/ImageHoverPreview.vue";
 import InlineNewItem from "@/components/files/InlineNewItem.vue";
 import ListingSkeleton from "@/components/files/ListingSkeleton.vue";
 import EmptyState from "@/components/EmptyState.vue";
+import {
+  folderLabel,
+  useSavedSearches,
+  useSaveSearchDialog,
+} from "@/composables/useSavedSearches";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import MoveCopyPanel from "@/components/files/MoveCopyPanel.vue";
 import BulkRenamePanel from "@/components/files/BulkRenamePanel.vue";
@@ -1111,6 +1173,7 @@ const toggleSplit = () => {
 useLiveListing({
   currentDir: () =>
     fileStore.isListing ? (fileStore.req?.path ?? null) : null,
+  currentTree: () => !!fileStore.req?.savedSearch,
   paneBDir: () =>
     splitActive.value ? dirFromFilesUrl(panes.secondaryPath) : null,
   refreshCurrent: () => {
@@ -1467,6 +1530,40 @@ onBeforeUnmount(() => dragSelect.cleanup());
 // right-click rename. Falls back to the default at the root.
 const { rootLabel } = useRootLabel();
 
+// ── Saved search (4.0 5.3): this listing shows a search's results ─────────
+const savedSearch = computed(() => fileStore.req?.savedSearch ?? null);
+const savedSearchList = useSavedSearches();
+const saveSearchDialog = useSaveSearchDialog();
+const savedSearchFolderLabel = computed(() =>
+  savedSearch.value
+    ? folderLabel(
+        savedSearch.value.folder,
+        rootLabel.value || t("sidebar.myFiles")
+      )
+    : ""
+);
+const savedSearchCountLabel = computed(() => {
+  const s = savedSearch.value;
+  const shown = fileStore.req?.items.length ?? 0;
+  if (s && s.total > shown) {
+    return `first ${shown.toLocaleString()} of ${s.total.toLocaleString()}`;
+  }
+  return folderCountLabel.value;
+});
+const editSavedSearch = () => {
+  const s = savedSearch.value && savedSearchList.get(savedSearch.value.id);
+  if (s) saveSearchDialog.openEdit(s);
+};
+const deleteSavedSearch = () => {
+  const s = savedSearch.value;
+  if (!s) return;
+  savedSearchList.remove(s.id);
+  closeSavedSearch();
+};
+const closeSavedSearch = () => {
+  if (fileStore.req) void router.push(fileStore.req.url);
+};
+
 const folderTitle = computed(() => {
   if (!fileStore.req) return "";
   return fileStore.req.name || rootLabel.value || t("sidebar.myFiles");
@@ -1696,7 +1793,8 @@ const revealInVirtualList = (): boolean => {
 
 const headerButtons = computed(() => {
   return {
-    upload: authStore.user?.perm.create,
+    // Nothing can be created "in" a saved search's results (5.3).
+    upload: authStore.user?.perm.create && !savedSearch.value,
     download: authStore.user?.perm.download,
     shell: authStore.user?.perm.execute && enableExec,
     delete: fileStore.selectedCount > 0 && authStore.user?.perm.delete,
@@ -2464,7 +2562,7 @@ const hideSectionMore = () => {
 // items gated off by permissions — TS narrows the result back to the
 // non-null MenuItem[] via the explicit return type.
 const sectionMoreItems = computed<MenuItem[]>(() => {
-  const canCreate = !!authStore.user?.perm.create;
+  const canCreate = !!authStore.user?.perm.create && !savedSearch.value;
   const items: (MenuItem | null)[] = [
     canCreate
       ? {
@@ -2484,7 +2582,17 @@ const sectionMoreItems = computed<MenuItem[]>(() => {
     // Hidden at the storage root since you can't rename "/". Also hidden while
     // split: the inline rename input lives in the hero, which is swapped for the
     // compact header in split view, so there'd be nowhere to type (silent no-op).
-    canRenameCurrentFolder.value && !splitActive.value
+    savedSearch.value
+      ? { label: "Edit saved search…", icon: "pencil", action: editSavedSearch }
+      : null,
+    savedSearch.value
+      ? {
+          label: "Delete saved search",
+          icon: "trash-2",
+          action: deleteSavedSearch,
+        }
+      : null,
+    canRenameCurrentFolder.value && !splitActive.value && !savedSearch.value
       ? {
           label: "Rename folder",
           icon: "pencil",
@@ -2494,7 +2602,7 @@ const sectionMoreItems = computed<MenuItem[]>(() => {
     // Edit the sidebar Favorites alias for the CURRENT folder — only when it's
     // pinned (the title is meaningless otherwise). Sidebar-only; the real
     // folder is untouched.
-    currentFolderFavorited.value
+    currentFolderFavorited.value && !savedSearch.value
       ? {
           label: "Favorites display title…",
           icon: "star",
@@ -2762,7 +2870,7 @@ const {
   backgroundItems: () =>
     buildBackgroundMenu(
       {
-        canCreate: !!authStore.user?.perm.create,
+        canCreate: !!authStore.user?.perm.create && !savedSearch.value,
         clipboardHasItems: clipboardStore.items.length > 0,
         audioCount: folderAudio.value.length,
         imageCount: folderImages.value.length,
@@ -3274,6 +3382,64 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   content: "·";
   margin: 0 6px 0 2px;
   color: var(--color-ink-3, #82828c);
+}
+/* Saved search (5.3): name · count · query · folder, in place of the crumbs. */
+.saved-search-head {
+  gap: 6px;
+  min-width: 0;
+}
+.saved-search-head__icon {
+  flex: none;
+  color: var(--color-accent, #6e72d9);
+}
+.saved-search-head__name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-ink-1, #18181b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.saved-search-head__query {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 280px;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: var(--color-elevated, #f4f4f5);
+  border: 1px solid var(--color-line, #ececec);
+  font-size: 11.5px;
+  color: var(--color-ink-2, #52525b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.saved-search-head__in {
+  flex: none;
+  font-size: 12px;
+  color: var(--color-ink-3, #82828c);
+  white-space: nowrap;
+}
+.saved-search-head__btn {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--color-ink-2, #52525b);
+}
+.saved-search-head__btn:hover {
+  background: var(--color-elevated, #f4f4f5);
+  color: var(--color-ink-1, #18181b);
+}
+@media (max-width: 640px) {
+  .saved-search-head__query,
+  .saved-search-head__in {
+    display: none;
+  }
 }
 /* Inline rename input swaps in for the crumb row when renaming the folder. */
 .fb-hero__lead .folder-rename-input {

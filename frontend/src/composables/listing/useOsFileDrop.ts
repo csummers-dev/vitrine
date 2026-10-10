@@ -124,6 +124,9 @@ export function useOsFileDrop(deps: OsFileDropDeps) {
       resolveRowDropMode(el, event.clientX, event.clientY) === "into"
         ? el.dataset.dropUrl
         : undefined;
+    // Saved-search results (5.3) aren't a folder to upload into; only a drop
+    // onto one of the folders it found counts.
+    if (!intoFolderUrl && !inPaneB && fileStore.req.savedSearch) return;
     if (intoFolderUrl) {
       path = intoFolderUrl;
 

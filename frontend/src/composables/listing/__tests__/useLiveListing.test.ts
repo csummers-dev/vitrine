@@ -28,7 +28,11 @@ class Src implements EventSourceLike {
 }
 
 let src: Src;
-function setup(current: string | null, paneB: string | null = null) {
+function setup(
+  current: string | null,
+  paneB: string | null = null,
+  tree = false
+) {
   const stream = new EventStream({
     url: "/s",
     createSource: () => (src = new Src()),
@@ -41,6 +45,7 @@ function setup(current: string | null, paneB: string | null = null) {
   const deps = {
     currentDir: () => current,
     paneBDir: () => paneB,
+    currentTree: () => tree,
     refreshCurrent: vi.fn(),
     refreshPaneB: vi.fn(),
     stream,
@@ -89,6 +94,22 @@ describe("useLiveListing", () => {
     src.emit("/Movies/Extras", ["y.mkv"]);
     vi.advanceTimersByTime(1000);
     expect(deps.refreshCurrent).not.toHaveBeenCalled();
+  });
+
+  it("watches the whole tree for a saved search", () => {
+    const { deps } = setup("/Photos", null, true);
+    src.emit("/Photos/2026/Trip", ["a.jpg"]);
+    vi.advanceTimersByTime(LIVE_REFRESH_DEBOUNCE_MS);
+    expect(deps.refreshCurrent).toHaveBeenCalledTimes(1);
+    src.emit("/Photoshop", ["b.psd"]); // a sibling, not inside
+    src.emit("/Music");
+    vi.advanceTimersByTime(1000);
+    expect(deps.refreshCurrent).toHaveBeenCalledTimes(1);
+
+    const rooted = setup("/", null, true);
+    src.emit("/Anything/deep");
+    vi.advanceTimersByTime(LIVE_REFRESH_DEBOUNCE_MS);
+    expect(rooted.deps.refreshCurrent).toHaveBeenCalledTimes(1);
   });
 
   it("refreshes the second pane in split view", () => {

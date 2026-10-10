@@ -19,6 +19,9 @@ export interface LiveListingDeps {
   currentDir: () => string | null;
   /** Folder shown in the second pane when split view is open, or null. */
   paneBDir: () => string | null;
+  /** True when the main pane shows a whole tree (a saved search's results),
+   *  so a change in any folder under `currentDir` refreshes it. */
+  currentTree?: () => boolean;
   refreshCurrent: () => void;
   refreshPaneB: () => void;
   stream?: EventStream;
@@ -28,6 +31,11 @@ export interface LiveListingDeps {
 export function normalizeDir(dir: string): string {
   const trimmed = ("/" + dir).replace(/\/+/g, "/").replace(/\/$/, "");
   return trimmed === "" ? "/" : trimmed;
+}
+
+/** True when `dir` is `root` or a folder inside it (both normalized). */
+export function isWithin(dir: string, root: string): boolean {
+  return root === "/" || dir === root || dir.startsWith(root + "/");
 }
 
 /** A pane's route URL ("/files/My%20Movies/") as a scope-relative folder. */
@@ -57,7 +65,11 @@ export function useLiveListing(deps: LiveListingDeps) {
   const onChange = ({ dir }: { dir: string }) => {
     const changed = normalizeDir(dir);
     const current = deps.currentDir();
-    if (current !== null && normalizeDir(current) === changed) {
+    const root = current === null ? null : normalizeDir(current);
+    if (
+      root !== null &&
+      (deps.currentTree?.() ? isWithin(changed, root) : root === changed)
+    ) {
       schedule("a", deps.refreshCurrent);
     }
     const paneB = deps.paneBDir();

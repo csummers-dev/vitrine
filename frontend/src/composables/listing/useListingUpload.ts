@@ -138,6 +138,7 @@ export function useListingUpload(deps: ListingUploadDeps) {
   const onPasteUpload = async (event: ClipboardEvent) => {
     if (layoutStore.currentPrompt !== null) return;
     if (!authStore.user?.perm.create) return;
+    if (fileStore.req?.savedSearch) return; // results aren't a folder
     if (clipboardStore.key !== "") return; // internal clipboard wins
     const target = event.target as HTMLElement | null;
     const tag = target?.tagName?.toLowerCase();

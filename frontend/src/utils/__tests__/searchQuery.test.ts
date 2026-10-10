@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { parseQuery, buildSearchParams } from "@/utils/searchQuery";
+import {
+  parseQuery,
+  buildSearchParams,
+  hasStructuredFilters,
+  parseAge,
+  parseSize,
+  describeQuery,
+  shortSize,
+} from "@/utils/searchQuery";
 
 describe("parseQuery", () => {
   it("returns empty defaults for empty input", () => {
@@ -81,9 +89,9 @@ describe("parseQuery", () => {
   });
 
   it("preserves unknown prefixes as free text", () => {
-    // Forward-compatible: future filters (size:, before:) added later
+    // Forward-compatible: future filters (color:, before:) added later
     // shouldn't silently disappear when used against an older client.
-    expect(parseQuery("size:>1mb hello").q).toBe("size:>1mb hello");
+    expect(parseQuery("color:red hello").q).toBe("color:red hello");
   });
 
   it("handles a realistic smart-folder query", () => {
@@ -139,5 +147,72 @@ describe("buildSearchParams", () => {
       {}
     );
     expect(params).toContain("q=hello+%26+world");
+  });
+});
+
+describe("kind, size and age filters (4.0 5.3)", () => {
+  const GB = 1024 ** 3;
+  const DAY = 86_400_000;
+
+  it("parses type, size bounds and age", () => {
+    expect(
+      parseQuery("type:videos size:>4GB size:<10gb added:7d trip")
+    ).toEqual({
+      tags: [],
+      ext: "",
+      q: "trip",
+      type: "video",
+      minSize: 4 * GB,
+      maxSize: 10 * GB,
+      withinMs: 7 * DAY,
+    });
+    expect(parseQuery("is:photo modified:2w").type).toBe("image");
+    expect(parseQuery("modified:2w").withinMs).toBe(14 * DAY);
+    expect(parseQuery("size:1.5mb").minSize).toBe(Math.round(1.5 * 1024 ** 2));
+  });
+
+  it("keeps values it can't read as free text", () => {
+    expect(parseQuery("type:spreadsheet size:huge added:soon")).toEqual({
+      tags: [],
+      ext: "",
+      q: "type:spreadsheet size:huge added:soon",
+    });
+    expect(parseSize("4 parsecs")).toBeNull();
+    expect(parseAge("0d")).toBeNull();
+  });
+
+  it("only treats real filters as structured", () => {
+    expect(hasStructuredFilters(parseQuery("holiday"))).toBe(false);
+    expect(hasStructuredFilters(parseQuery("added:1d"))).toBe(true);
+    expect(hasStructuredFilters(parseQuery("size:<1k"))).toBe(true);
+  });
+
+  it("resolves the age against now, so saved searches roll forward", () => {
+    const now = Date.UTC(2026, 9, 10);
+    const params = new URLSearchParams(
+      buildSearchParams(parseQuery("type:image added:7d size:>1k"), {}, now)
+    );
+    expect(params.get("type")).toBe("image");
+    expect(params.get("minSize")).toBe("1024");
+    expect(params.get("newer")).toBe(String((now - 7 * DAY) / 1000));
+    expect(params.has("maxSize")).toBe(false);
+  });
+});
+
+describe("describeQuery", () => {
+  it("reads a query back in plain words", () => {
+    expect(
+      describeQuery(parseQuery("type:video size:>4GB added:1w tag:family trip"))
+    ).toBe(
+      "Videos · at least 4 GB · new or changed in the last week · tagged “family” · name contains “trip”"
+    );
+    expect(describeQuery(parseQuery("added:30d"))).toBe(
+      "New or changed in the last month"
+    );
+    expect(describeQuery(parseQuery("ext:pdf size:>1mb size:<1.5gb"))).toBe(
+      ".pdf files · 1 MB to 1.5 GB"
+    );
+    expect(describeQuery(parseQuery(""))).toBe("");
+    expect(shortSize(1536)).toBe("1.5 KB");
   });
 });

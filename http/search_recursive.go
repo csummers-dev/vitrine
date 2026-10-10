@@ -24,6 +24,9 @@ import (
 //	tag=<id>     file must have THIS tag (repeatable; multiple
 //	             tag= params require the file to have EVERY tag —
 //	             intersection, not union)
+//	type=<kind>  image | video | audio | pdf | text | archive (4.0 5.3)
+//	minSize=<n>, maxSize=<n>  inclusive size bounds in bytes (5.3)
+//	newer=<unix> modified at or after this time, in seconds (5.3)
 //
 // Returns a flat JSON array of `RecursiveEntry`. Path is taken from
 // `r.URL.Path` after the route's prefix strip — the search is rooted
@@ -56,8 +59,7 @@ var searchRecursiveHandler = withUser(func(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Parse + normalize filters once, outside the walk loop.
-	q := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("q")))
-	ext := strings.ToLower(strings.TrimPrefix(strings.TrimSpace(r.URL.Query().Get("ext")), "."))
+	filter := parseSearchFilter(r.URL.Query())
 
 	// Tag filter is a uint64 set (repeatable param). Bad values are
 	// silently skipped — a typo'd tag ID shouldn't 500 the whole
@@ -93,21 +95,10 @@ var searchRecursiveHandler = withUser(func(w http.ResponseWriter, r *http.Reques
 			return nil
 		}
 
-		// Extension filter implicitly excludes directories (folders
-		// don't have extensions in the user-facing sense). Tag-only
-		// queries (no ext, no q) still let directories through — folders
-		// are taggable too.
-		if ext != "" {
-			if fi.IsDir() {
-				return nil
-			}
-			fileExt := strings.ToLower(strings.TrimPrefix(filepath.Ext(fi.Name()), "."))
-			if fileExt != ext {
-				return nil
-			}
-		}
-
-		if q != "" && !strings.Contains(strings.ToLower(fi.Name()), q) {
+		// Extension, kind and size filters exclude directories (folders
+		// don't have those in the user-facing sense). Tag-only queries still
+		// let directories through — folders are taggable too.
+		if !filter.match(fi.Name(), fi.IsDir(), fi.Size(), fi.ModTime()) {
 			return nil
 		}
 
@@ -117,6 +108,7 @@ var searchRecursiveHandler = withUser(func(w http.ResponseWriter, r *http.Reques
 			Size:    fi.Size(),
 			ModTime: fi.ModTime(),
 			IsDir:   fi.IsDir(),
+			Type:    listingType(fi.Name(), fi.IsDir()),
 		})
 		return nil
 	})

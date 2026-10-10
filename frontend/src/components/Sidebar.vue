@@ -279,6 +279,59 @@
           </ul>
         </nav>
 
+        <!-- Saved searches (4.0 5.3): queries that open as live listings. -->
+        <nav
+          v-if="isLoggedIn && savedSearchList.length > 0 && !collapsed"
+          class="px-2 pt-4 max-md:hidden"
+          data-testid="saved-searches"
+        >
+          <div class="px-2 pb-1.5 flex items-center justify-between gap-2">
+            <button
+              type="button"
+              class="flex items-center gap-1 text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] hover:text-ink-2 transition"
+              :aria-expanded="!isSectionCollapsed('saved')"
+              @click="toggleSection('saved')"
+            >
+              <Icon
+                name="chevron-down"
+                :size="11"
+                :stroke-width="2.4"
+                class="transition-transform shrink-0"
+                :class="isSectionCollapsed('saved') ? '-rotate-90' : ''"
+              />
+              <span>Saved searches</span>
+            </button>
+          </div>
+          <ul
+            v-show="!isSectionCollapsed('saved')"
+            class="list-none m-0 p-0 space-y-0.5"
+          >
+            <li
+              v-for="s in savedSearchList"
+              :key="s.id"
+              @contextmenu="onSavedSearchContextMenu(s, $event)"
+            >
+              <router-link
+                :to="savedSearchUrl(s)"
+                class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] hover:bg-hover transition"
+                :class="
+                  $route.query.saved === s.id
+                    ? 'bg-hover text-ink-1 font-medium'
+                    : 'text-ink-2'
+                "
+                :title="`${s.query} — in ${s.folder}`"
+              >
+                <Icon
+                  name="folder-search"
+                  :size="12"
+                  class="text-[var(--color-ink-3)] shrink-0"
+                />
+                <span class="truncate">{{ s.name }}</span>
+              </router-link>
+            </li>
+          </ul>
+        </nav>
+
         <!-- Continue (4.0 3.3): started-but-unfinished books, comics and
              videos, newest first, with a thin progress bar. -->
         <nav
@@ -565,6 +618,7 @@ import {
 import { useBrandLogo } from "@/composables/useBrandLogo";
 import { profileAvatarUrl } from "@/composables/useProfileAvatar";
 import { files as api } from "@/api";
+import { useRouter } from "vue-router";
 import Icon from "@/components/Icon.vue";
 import BrandName from "@/components/BrandName.vue";
 import UndoToast from "@/components/UndoToast.vue";
@@ -574,6 +628,11 @@ import { usePreferences } from "@/composables/usePreferences";
 import { displayName } from "@/utils/filename";
 import { useRecents } from "@/composables/useRecents";
 import { useContinueShelf, SHELF_ICONS } from "@/composables/useContinueShelf";
+import {
+  savedSearchUrl,
+  useSavedSearches,
+  useSaveSearchDialog,
+} from "@/composables/useSavedSearches";
 import { useFavorites } from "@/composables/useFavorites";
 import { useFavoriteTitleDialog } from "@/composables/useFavoriteTitleDialog";
 import { useRootLabel } from "@/composables/useRootLabel";
@@ -748,6 +807,41 @@ export default {
           action: () => {
             hideSidebarMenu();
             continueShelf.remove(c);
+          },
+        },
+      ]);
+    };
+    // Saved searches (5.3): Open · Edit · Delete.
+    const savedSearches = useSavedSearches();
+    const router = useRouter();
+    const saveSearchDialog = useSaveSearchDialog();
+    const onSavedSearchContextMenu = (s, event) => {
+      openSidebarMenu(event, [
+        {
+          label: "Open",
+          icon: "external-link",
+          action: () => {
+            hideSidebarMenu();
+            // Results open in the main pane (pane B only shows folders).
+            void router.push(savedSearchUrl(s));
+          },
+        },
+        {
+          label: "Edit…",
+          icon: "pencil",
+          action: () => {
+            hideSidebarMenu();
+            saveSearchDialog.openEdit(s);
+          },
+        },
+        { type: "separator" },
+        {
+          label: "Delete saved search",
+          icon: "trash-2",
+          destructive: true,
+          action: () => {
+            hideSidebarMenu();
+            savedSearches.remove(s.id);
           },
         },
       ]);
@@ -1013,6 +1107,9 @@ export default {
       onFavoriteContextMenu,
       onRecentContextMenu,
       onContinueContextMenu,
+      onSavedSearchContextMenu,
+      savedSearchList: savedSearches.list,
+      savedSearchUrl,
       continueShelf,
       continueTitle,
       SHELF_ICONS,

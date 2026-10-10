@@ -61,6 +61,10 @@ import { brand } from "../utils/constants";
 import { useShortcutsOverlay } from "@/composables/useShortcutsOverlay";
 import { useFavorites } from "@/composables/useFavorites";
 import { useRootLabel } from "@/composables/useRootLabel";
+import { useSavedSearches } from "@/composables/useSavedSearches";
+import { runSavedSearch } from "@/utils/savedSearchListing";
+import { useTagsStore } from "@/stores/tags";
+import { useAuthStore } from "@/stores/auth";
 
 const Editor = defineAsyncComponent(() => import("@/views/files/Editor.vue"));
 const Preview = defineAsyncComponent(() => import("@/views/files/Preview.vue"));
@@ -74,6 +78,30 @@ const { reload } = storeToRefs(fileStore);
 const route = useRoute();
 const router = useRouter();
 const favorites = useFavorites();
+const savedSearches = useSavedSearches();
+const tagsStore = useTagsStore();
+const authStore = useAuthStore();
+
+/** `?saved=<id>`: this folder URL shows a saved search's results (5.3). */
+const savedSearchId = computed(() =>
+  typeof route.query.saved === "string" ? route.query.saved : ""
+);
+
+/** Fetch the listing for the current route: the folder itself, or the
+ *  results of the saved search named in `?saved=`. */
+const fetchListing = async (url: string, signal: AbortSignal) => {
+  if (!savedSearchId.value) return api.fetch(url, signal);
+  const saved = savedSearches.get(savedSearchId.value);
+  if (!saved) {
+    throw new StatusError("This saved search was deleted.", 404);
+  }
+  await tagsStore.ensureLoaded();
+  return runSavedSearch(saved, {
+    nameToId: tagsStore.nameToId,
+    sorting: authStore.user?.sorting ?? { by: "name", asc: true },
+    signal,
+  });
+};
 const { rootLabel } = useRootLabel();
 
 const { t } = useI18n({});
@@ -291,7 +319,7 @@ const fetchData = async (opts: { silent?: boolean } = {}) => {
   fetchDataController.abort();
   fetchDataController = new AbortController();
   try {
-    const res = await api.fetch(url, fetchDataController.signal);
+    const res = await fetchListing(url, fetchDataController.signal);
     // A newer fetchData superseded this one — it now owns the view.
     if (seq !== fetchSeq) return;
     // For a silent reload the old rows stayed up the whole time; clear the

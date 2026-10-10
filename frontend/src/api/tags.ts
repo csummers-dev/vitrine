@@ -126,11 +126,12 @@ export async function applyBatch(
  *  walk; params come from parseQuery + buildSearchParams. */
 export async function searchRecursive(
   path: string,
-  searchParams: string
+  searchParams: string,
+  signal?: AbortSignal
 ): Promise<RecursiveEntry[]> {
   const apiPath = removePrefix(path) || "/";
   const url = `/api/search/recursive${apiPath}${searchParams ? `?${searchParams}` : ""}`;
-  return fetchJSON<RecursiveEntry[]>(url, {});
+  return fetchJSON<RecursiveEntry[]>(url, signal ? { signal } : {});
 }
 
 /**

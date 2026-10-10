@@ -525,6 +525,8 @@ type RecursiveEntry struct {
 	Size    int64     `json:"size"`
 	ModTime time.Time `json:"modified"`
 	IsDir   bool      `json:"isDir"`
+	// Type is set by the search endpoint only (listing file type).
+	Type string `json:"type,omitempty"`
 }
 
 // resourceGetRecursiveHandler returns a flat list of every file and directory

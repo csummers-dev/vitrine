@@ -27,7 +27,11 @@
  */
 import { search as streamingSearch, tags as tagsApi } from "@/api";
 import type { SearchHit } from "@/api/tags";
-import { parseQuery, buildSearchParams } from "@/utils/searchQuery";
+import {
+  parseQuery,
+  buildSearchParams,
+  hasStructuredFilters,
+} from "@/utils/searchQuery";
 import { useTagsStore } from "@/stores/tags";
 import urlUtil from "@/utils/url";
 
@@ -52,7 +56,7 @@ export async function searchSmart(
   onResult: (hit: SearchHit) => void
 ): Promise<void> {
   const parsed = parseQuery(input);
-  const hasFilters = parsed.tags.length > 0 || parsed.ext !== "";
+  const hasFilters = hasStructuredFilters(parsed);
 
   if (!hasFilters) {
     // Pure free text → existing streaming path. The streaming

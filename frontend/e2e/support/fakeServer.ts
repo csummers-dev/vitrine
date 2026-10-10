@@ -684,6 +684,42 @@ export class FakeServer {
         body: this.binary.get(target) ?? e.content ?? "",
       });
     }
+    // Structured search (saved searches, 4.0 5.3): q, type, size and age.
+    if (api.startsWith("/search/recursive")) {
+      const root = norm(
+        decodeURIComponent(api.slice("/search/recursive".length)) || "/"
+      );
+      const minSize = query.minSize ? Number(query.minSize) : -1;
+      const maxSize = query.maxSize ? Number(query.maxSize) : -1;
+      const newer = query.newer ? Number(query.newer) * 1000 : 0;
+      const filesOnly = !!(
+        query.type ||
+        query.ext ||
+        query.minSize ||
+        query.maxSize
+      );
+      const hits = [...this.fs.keys()]
+        .filter((p) => p !== root && (root === "/" || p.startsWith(root + "/")))
+        .map((p) => this.item(p))
+        .filter(
+          (i) =>
+            !(filesOnly && i.isDir) &&
+            (!query.type || i.type === query.type) &&
+            (minSize < 0 || i.size >= minSize) &&
+            (maxSize < 0 || i.size <= maxSize) &&
+            (!newer || Date.parse(i.modified) >= newer) &&
+            (!query.q || i.name.toLowerCase().includes(query.q.toLowerCase()))
+        )
+        .map((i) => ({
+          path: i.path,
+          name: i.name,
+          size: i.size,
+          modified: i.modified,
+          isDir: i.isDir,
+          type: i.type,
+        }));
+      return json(hits);
+    }
     if (api.startsWith("/search")) return text("", 200);
 
     this.unhandled.push(`${method} ${api}`);

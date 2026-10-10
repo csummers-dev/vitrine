@@ -422,6 +422,62 @@ html[dir="rtl"] #search #result ul > * {
   font-size: 12.5px;
 }
 
+/* Saved searches (4.0 5.3): tips while empty, and the save row. */
+#search .search-tips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  padding: 8px;
+}
+
+#search .search-tips__title {
+  font-size: 11.5px;
+  color: var(--color-ink-3, #a1a1aa);
+  margin-right: 2px;
+}
+
+#search .search-tips__example {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface, #fff);
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: var(--color-ink-2, #52525b);
+}
+
+#search .search-tips__example:hover {
+  border-color: var(--color-accent, #6e72d9);
+  color: var(--color-ink-1, #18181b);
+}
+
+#search .search-save {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 4px;
+  padding: 7px 8px;
+  border-top: 1px solid var(--color-line, #ececec);
+  border-radius: 0 0 var(--radius-md, 8px) var(--radius-md, 8px);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--color-accent, #6e72d9);
+  text-align: left;
+}
+
+#search .search-save:hover {
+  background: var(--color-elevated, #f4f4f5);
+}
+
+#search .search-save__hint {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-ink-3, #a1a1aa);
+}
+
 #search .boxes {
   border: 1px solid var(--borderPrimary);
   border-radius: var(--radius-md);

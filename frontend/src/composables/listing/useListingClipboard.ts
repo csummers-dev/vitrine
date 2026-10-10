@@ -52,7 +52,8 @@ export function useListingClipboard(deps: ListingClipboardDeps) {
     clipboardStore.$patch({
       key: mode,
       items,
-      path: deps.routePath(),
+      // Saved-search hits come from many folders, so there's no single source.
+      path: fileStore.req.savedSearch ? "" : deps.routePath(),
     });
   };
 
@@ -72,6 +73,8 @@ export function useListingClipboard(deps: ListingClipboardDeps) {
    */
   const paste = async (dest?: string) => {
     if (clipboardStore.items.length === 0) return;
+    // Nowhere to paste "into" a saved search's results (5.3).
+    if (dest === undefined && fileStore.req?.savedSearch) return;
 
     const rawDest = dest ?? deps.routePath();
     const path = rawDest.endsWith("/") ? rawDest : rawDest + "/";

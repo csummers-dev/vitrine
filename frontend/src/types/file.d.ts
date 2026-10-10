@@ -14,6 +14,15 @@ interface ResourceBase {
 }
 
 interface Resource extends ResourceBase {
+  /** Set when this "folder" is a saved search's results (4.0 5.3). */
+  savedSearch?: {
+    id: string;
+    name: string;
+    query: string;
+    folder: string;
+    /** Every hit, including any beyond the listed cap. */
+    total: number;
+  };
   /** Public shares (4.0 4.2): downloads left on a download-limited link. */
   downloadsLeft?: number;
   items: ResourceItem[];
@@ -99,6 +108,8 @@ interface RecursiveEntry {
   size: number;
   modified: string;
   isDir: boolean;
+  /** Listing file type; set by /api/search/recursive (4.0 5.3). */
+  type?: ResourceType;
 }
 
 /**

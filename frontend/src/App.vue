@@ -7,6 +7,8 @@
          the always-present sidebar context menu (and the file listing). Driven
          by the useFavoriteTitleDialog singleton; renders its own modal scrim. -->
     <FavoriteTitleDialog v-if="isLoggedIn" />
+    <!-- Save / edit a saved search (4.0 5.3). -->
+    <SaveSearchDialog v-if="isLoggedIn" />
     <!-- Files-root ("My files") label editor, opened from the sidebar
          quick-link's right-click menu via the useRootLabel singleton. -->
     <RootLabelDialog v-if="isLoggedIn" />
@@ -34,6 +36,7 @@ import CommandPalette from "@/components/CommandPalette.vue";
 import ShortcutsOverlay from "@/components/ShortcutsOverlay.vue";
 import OfflineBanner from "@/components/OfflineBanner.vue";
 import FavoriteTitleDialog from "@/components/files/FavoriteTitleDialog.vue";
+import SaveSearchDialog from "@/components/files/SaveSearchDialog.vue";
 import RootLabelDialog from "@/components/files/RootLabelDialog.vue";
 import ArchivePasswordPrompt from "@/components/files/ArchivePasswordPrompt.vue";
 

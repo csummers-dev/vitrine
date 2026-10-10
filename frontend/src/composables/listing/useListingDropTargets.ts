@@ -34,7 +34,7 @@ export function useListingDropTargets(deps: ListingDropTargetsDeps) {
 
   /** Parent folder URL relative to the current route, or null at root. */
   const parentFolderUrl = computed<string | null>(() => {
-    if (!fileStore.req?.isDir) return null;
+    if (!fileStore.req?.isDir || fileStore.req.savedSearch) return null;
     const here = fileStore.req.url; // ends with "/"
     // Strip trailing slash, then drop the last segment.
     const trimmed = here.endsWith("/") ? here.slice(0, -1) : here;
@@ -165,7 +165,10 @@ export function useListingDropTargets(deps: ListingDropTargetsDeps) {
   // `currentFolderUrl` — the current folder's url (trailing "/" like the
   // ListingItem rows, so a conflict prompt's `to` matches the breadcrumb).
   // Destination for an "alongside" drop (below) and for the touch drop path.
-  const currentFolderUrl = computed<string>(() => fileStore.req?.url ?? "");
+  // A saved search's results aren't a folder: nothing drops "alongside".
+  const currentFolderUrl = computed<string>(() =>
+    fileStore.req?.savedSearch ? "" : (fileStore.req?.url ?? "")
+  );
 
   // Alongside drop on any row → move into the CURRENT folder via the shared
   // useDropTarget.performDrop (target-agnostic; it just takes a destination

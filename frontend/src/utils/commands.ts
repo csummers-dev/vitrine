@@ -23,6 +23,11 @@ import { isExtractable } from "@/utils/archive";
 import { useBulkRename } from "@/composables/useBulkRename";
 import { useShortcutsOverlay } from "@/composables/useShortcutsOverlay";
 import { usePanesStore } from "@/stores/panes";
+import {
+  savedSearchUrl,
+  useSavedSearches,
+  useSaveSearchDialog,
+} from "@/composables/useSavedSearches";
 
 export type CommandGroup =
   | "quickActions"
@@ -372,6 +377,35 @@ export function buildStaticCommands(ctx: CommandContext): Command[] {
         keywords: ["pane", "focus", "active", "switch", "other"],
         run: () =>
           panesStore.setActive(panesStore.activePane === "a" ? "b" : "a"),
+      });
+    }
+  }
+
+  // ── Saved searches (4.0 5.3) ───────────────────────────────────────────
+  if (user) {
+    const saveDialog = useSaveSearchDialog();
+    cmds.push({
+      id: "action.newSavedSearch",
+      group: "actions",
+      label: "New saved search…",
+      icon: "folder-search",
+      keywords: ["smart folder", "save search", "filter"],
+      run: () => {
+        const req = fileStore.req;
+        const folder =
+          req?.savedSearch?.folder ?? (req?.isDir ? req.path : "/");
+        saveDialog.openNew("", folder);
+      },
+    });
+    for (const s of useSavedSearches().list.value) {
+      cmds.push({
+        id: `nav.saved.${s.id}`,
+        group: "navigation",
+        label: s.name,
+        hint: "Saved search",
+        icon: "folder-search",
+        keywords: [s.query, "saved search", "smart folder"],
+        run: () => void router.push(savedSearchUrl(s)),
       });
     }
   }

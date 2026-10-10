@@ -40,12 +40,30 @@
     </div>
 
     <div
-      v-show="active && (results.length > 0 || showEmptyState)"
+      v-show="active && (results.length > 0 || showEmptyState || showTips)"
       id="result"
       ref="result"
     >
+      <!-- Nothing typed yet: what the search box understands (4.0 5.3). -->
+      <div v-if="showTips" class="search-tips" data-testid="search-tips">
+        <span class="search-tips__title">Try</span>
+        <button
+          v-for="ex in SEARCH_EXAMPLES"
+          :key="ex.query"
+          type="button"
+          class="search-tips__example"
+          :title="ex.label"
+          @mousedown.prevent
+          @click="prompt = ex.query"
+        >
+          {{ ex.query }}
+        </button>
+      </div>
       <!-- Empty state: query typed, no matches, not still searching -->
-      <div v-if="results.length === 0 && showEmptyState" class="search-empty">
+      <div
+        v-else-if="results.length === 0 && showEmptyState"
+        class="search-empty"
+      >
         <Icon name="search-x" :size="18" :stroke-width="1.4" />
         <span>No results for &ldquo;{{ prompt }}&rdquo;</span>
       </div>
@@ -63,6 +81,18 @@
           </router-link>
         </li>
       </ul>
+      <button
+        v-if="canSave"
+        type="button"
+        class="search-save"
+        data-testid="search-save"
+        @mousedown.prevent
+        @click="saveSearch"
+      >
+        <Icon name="folder-search" :size="14" />
+        <span>Save this search</span>
+        <span class="search-save__hint">keeps it in the sidebar</span>
+      </button>
     </div>
   </div>
 </template>
@@ -80,6 +110,11 @@ import { computed, inject, onMounted, ref, watch, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
 import { storeToRefs } from "pinia";
 import { StatusError } from "@/api/utils";
+import {
+  SEARCH_EXAMPLES,
+  useSaveSearchDialog,
+} from "@/composables/useSavedSearches";
+import { dirFromFilesUrl } from "@/composables/listing/useLiveListing";
 
 const layoutStore = useLayoutStore();
 const fileStore = useFileStore();
@@ -166,6 +201,28 @@ const showEmptyState = computed(
   () => prompt.value.trim().length >= 2 && !ongoing.value
 );
 
+// Saved searches (4.0 5.3): tips while the box is empty, and a "Save this
+// search" row once there's a query.
+const saveDialog = useSaveSearchDialog();
+const showTips = computed(() => prompt.value.trim() === "");
+const canSave = computed(() => prompt.value.trim().length >= SEARCH_MIN_CHARS);
+
+const searchBase = (): string => {
+  let path = route.path;
+  if (!fileStore.isListing) {
+    path = url.removeLastDir(path) + "/";
+  }
+  return path;
+};
+
+const saveSearch = () => {
+  const query = prompt.value.trim();
+  const folder =
+    fileStore.req?.savedSearch?.folder ?? dirFromFilesUrl(searchBase()) ?? "/";
+  layoutStore.closeHovers();
+  saveDialog.openNew(query, folder);
+};
+
 // Click-outside-to-close: when the search overlay is active and the user
 // clicks anywhere outside the #search root, dismiss it. Critical at narrow
 // widths where the input renders as a floating overlay over the header.
@@ -224,10 +281,7 @@ const abortLastSearch = () => {
 const runSearch = async () => {
   if (prompt.value.trim() === "") return;
 
-  let path = route.path;
-  if (!fileStore.isListing) {
-    path = url.removeLastDir(path) + "/";
-  }
+  const path = searchBase();
 
   ongoing.value = true;
   try {
