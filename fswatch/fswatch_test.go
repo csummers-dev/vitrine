@@ -124,9 +124,18 @@ func start(t *testing.T, root string, b *fakeBackend, opts ...func(*Options)) (*
 }
 
 func TestParseMode(t *testing.T) {
-	for in, want := range map[string]Mode{"": ModeAuto, "AUTO": ModeAuto, " poll ": ModePoll, "off": ModeOff} {
-		if got, err := ParseMode(in); err != nil || got != want {
-			t.Errorf("ParseMode(%q) = %q, %v; want %q", in, got, err, want)
+	cases := []struct {
+		in   string
+		want Mode
+	}{
+		{"", ModeAuto},
+		{"AUTO", ModeAuto},
+		{" poll ", ModePoll}, // surrounding whitespace is trimmed
+		{"off", ModeOff},
+	}
+	for _, c := range cases {
+		if got, err := ParseMode(c.in); err != nil || got != c.want {
+			t.Errorf("ParseMode(%q) = %q, %v; want %q", c.in, got, err, c.want)
 		}
 	}
 	if _, err := ParseMode("sometimes"); err == nil {
