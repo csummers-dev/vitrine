@@ -92,6 +92,24 @@
               <Icon name="user" :size="11" />
               {{ link.username }}
             </span>
+            <span
+              v-if="link.maxDownloads"
+              class="shares-meta-chip"
+              :class="{ 'shares-meta-chip--done': api.isExhausted(link) }"
+            >
+              <Icon name="ticket" :size="11" />
+              {{
+                api.isExhausted(link)
+                  ? "Used up"
+                  : link.maxDownloads === 1
+                    ? "One-time"
+                    : `Limit ${link.maxDownloads}`
+              }}
+            </span>
+          </div>
+          <!-- 4.2: usage, live over the event stream. -->
+          <div class="shares-card__usage" data-testid="share-usage">
+            {{ api.usageSummary(link, humanTime) }}
           </div>
         </li>
       </ul>
@@ -111,6 +129,7 @@ import dayjs from "dayjs";
 import SettingsPage from "@/components/settings/SettingsPage.vue";
 import SettingsSection from "@/components/settings/SettingsSection.vue";
 import Icon from "@/components/Icon.vue";
+import { useServerEvents } from "@/composables/useServerEvents";
 
 const $showError = inject<IToastError>("$showError")!;
 const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
@@ -120,6 +139,15 @@ const authStore = useAuthStore();
 const layoutStore = useLayoutStore();
 
 const links = ref<Share[]>([]);
+
+useServerEvents("share.accessed", (u) => {
+  const l = links.value.find((x) => x.hash === u.hash);
+  if (l) {
+    l.views = u.views;
+    l.downloads = u.downloads;
+    l.lastAccessAt = u.lastAccessAt;
+  }
+});
 
 const sectionDescription = computed(() =>
   links.value.length === 0
@@ -311,6 +339,17 @@ const buildLink = (share: Share) => api.getShareURL(share);
   color: var(--color-ink-2, #52525b);
   font-size: 11px;
   font-weight: 500;
+}
+
+.shares-meta-chip--done {
+  background: var(--status-danger-soft, #fee2e2);
+  color: var(--status-danger, #b91c1c);
+}
+
+.shares-card__usage {
+  font-size: 11px;
+  color: var(--color-ink-3, #a1a1aa);
+  font-variant-numeric: tabular-nums;
 }
 
 .shares-meta-chip :deep(svg) {

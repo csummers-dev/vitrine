@@ -31,7 +31,12 @@ export interface ServerEventMap {
   /** A background transfer job made progress or settled. */
   "job.progress": { id: string; status: string; filesDone: number };
   /** A public share link was opened or downloaded. */
-  "share.accessed": { hash: string; views: number; downloads: number };
+  "share.accessed": {
+    hash: string;
+    views: number;
+    downloads: number;
+    lastAccessAt: number;
+  };
 }
 
 export type ServerEventType = keyof ServerEventMap;

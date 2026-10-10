@@ -62,6 +62,23 @@
                 <Icon name="lock" :size="10" />
                 Password
               </span>
+              <span
+                v-if="link.maxDownloads"
+                class="share-card__badge"
+                :class="{ 'share-card__badge--done': isExhausted(link) }"
+              >
+                <Icon name="ticket" :size="10" />
+                {{
+                  isExhausted(link)
+                    ? "Used up"
+                    : link.maxDownloads === 1
+                      ? "One-time"
+                      : `${link.maxDownloads} downloads`
+                }}
+              </span>
+            </div>
+            <div class="share-card__usage" data-testid="share-usage">
+              {{ usageSummary(link, humanTime) }}
             </div>
           </li>
         </ul>
@@ -91,6 +108,26 @@
             </select>
           </div>
           <div class="share-field__hint">Leave 0 for a permanent link.</div>
+        </div>
+        <div class="share-field">
+          <label class="share-field__label" for="share-limit">
+            Download limit
+          </label>
+          <select
+            id="share-limit"
+            v-model.number="maxDownloads"
+            class="share-input share-input--select"
+          >
+            <option :value="0">Unlimited</option>
+            <option :value="1">One-time link</option>
+            <option :value="5">5 downloads</option>
+            <option :value="10">10 downloads</option>
+            <option :value="25">25 downloads</option>
+          </select>
+          <div class="share-field__hint">
+            The link stops working once it has been downloaded this many times.
+            Previews count too.
+          </div>
         </div>
         <div class="share-field">
           <label class="share-field__label">
@@ -151,6 +188,8 @@ import { copy as copyToClip } from "@/utils/clipboard";
 import dayjs from "dayjs";
 import SlideOver from "@/components/SlideOver.vue";
 import Icon from "@/components/Icon.vue";
+import { useServerEvents } from "@/composables/useServerEvents";
+import { isExhausted, usageSummary } from "@/api/share";
 
 // The backend's /api/share endpoint returns an array of shares — the API
 // helper in share.ts is typed as `Share` (singular), so we widen here.
@@ -181,6 +220,17 @@ const loading = ref<boolean>(false);
 const time = ref<number>(0);
 const unit = ref<"seconds" | "minutes" | "hours" | "days">("hours");
 const password = ref<string>("");
+const maxDownloads = ref<number>(0);
+
+// 4.2: usage counts update live while the panel is open.
+useServerEvents("share.accessed", (u) => {
+  const l = links.value.find((x) => x.hash === u.hash);
+  if (l) {
+    l.views = u.views;
+    l.downloads = u.downloads;
+    l.lastAccessAt = u.lastAccessAt;
+  }
+});
 
 const targetUrl = computed<string>(() => {
   if (props.override) return props.override.url;
@@ -250,14 +300,22 @@ const onCreate = async () => {
           targetUrl.value,
           password.value,
           String(time.value),
-          unit.value
+          unit.value,
+          maxDownloads.value
         )
-      : shareApi.create(targetUrl.value, password.value))) as ShareLink;
+      : shareApi.create(
+          targetUrl.value,
+          password.value,
+          "",
+          "hours",
+          maxDownloads.value
+        ))) as ShareLink;
     links.value.push(res);
     sortLinks();
     time.value = 0;
     unit.value = "hours";
     password.value = "";
+    maxDownloads.value = 0;
     $showSuccess("Share link created");
   } catch (e) {
     if (e instanceof Error) $showError(e);
@@ -462,6 +520,17 @@ watch(
   background: var(--color-elevated, #f4f4f5);
   color: var(--color-ink-2, #52525b);
   font-weight: 500;
+}
+
+.share-card__badge--done {
+  background: var(--status-danger-soft, #fee2e2);
+  color: var(--status-danger, #b91c1c);
+}
+.share-card__usage {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--color-ink-3, #a1a1aa);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Create form */

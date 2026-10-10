@@ -164,6 +164,22 @@ type ShareRevoked struct {
 
 func (ShareRevoked) Type() string { return "share.revoked" }
 
+// ShareAccessed reports new usage counts for a share link (4.0 Phase 4.2):
+// published at most about once a second per link, after the counts are
+// saved. UserID is the link's owner, so open tabs can update live. The
+// audit log ignores it (the counts live on the link) and webhooks don't
+// send it.
+type ShareAccessed struct {
+	Base
+	Path         string `json:"path"`
+	ShareID      string `json:"shareId"`
+	Views        int64  `json:"views"`
+	Downloads    int64  `json:"downloads"`
+	LastAccessAt int64  `json:"lastAccessAt"`
+}
+
+func (ShareAccessed) Type() string { return "share.accessed" }
+
 // UserLoggedIn fires after a successful login.
 type UserLoggedIn struct {
 	Base

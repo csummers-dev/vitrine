@@ -163,6 +163,10 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 		token = base64.URLEncoding.EncodeToString(tokenBuffer)
 	}
 
+	if body.MaxDownloads < 0 || body.MaxDownloads > maxShareDownloads {
+		return http.StatusBadRequest, fmt.Errorf("maxDownloads must be between 0 and %d", maxShareDownloads)
+	}
+
 	s = &share.Link{
 		Path:         r.URL.Path,
 		Hash:         str,
@@ -170,6 +174,7 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 		UserID:       d.user.ID,
 		PasswordHash: string(hash),
 		Token:        token,
+		MaxDownloads: body.MaxDownloads,
 	}
 
 	if err := d.store.Share.Save(s); err != nil {
@@ -185,6 +190,9 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 
 	return renderJSON(w, r, s)
 })
+
+// maxShareDownloads caps a link's download limit.
+const maxShareDownloads = 1_000_000
 
 func getSharePasswordHash(body share.CreateBody) (data []byte, statuscode int, err error) {
 	if body.Password == "" {

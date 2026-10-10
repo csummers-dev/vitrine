@@ -29,6 +29,13 @@ interface Share {
   userID?: number;
   token?: string;
   username?: string;
+  /** 4.0 4.2: usage. */
+  views?: number;
+  downloads?: number;
+  /** Unix seconds of the last view or download. */
+  lastAccessAt?: number;
+  /** > 0: the link ends after this many downloads (1 = one-time). */
+  maxDownloads?: number;
 }
 
 interface SearchParams {

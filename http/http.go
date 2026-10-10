@@ -1,6 +1,7 @@
 package fbhttp
 
 import (
+	"context"
 	"io/fs"
 	"log"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 	"github.com/csummers-dev/vitrine/v4/jobstore"
 	"github.com/csummers-dev/vitrine/v4/searchindex"
 	"github.com/csummers-dev/vitrine/v4/settings"
+	"github.com/csummers-dev/vitrine/v4/share"
 	"github.com/csummers-dev/vitrine/v4/storage"
 	"github.com/csummers-dev/vitrine/v4/tags"
 	"github.com/csummers-dev/vitrine/v4/trash"
@@ -209,6 +211,23 @@ func NewHandler(
 	streams = hub
 	streamsMu.Unlock()
 	api.Handle("/events/stream", monkey(eventsStreamHandler(hub), "")).Methods("GET")
+
+	// Share usage counts (4.0 Phase 4.2), written once a second.
+	counter := share.NewCounter(store.Share, func(l *share.Link) {
+		events.Publish(events.ShareAccessed{
+			Base:         events.NewBase(l.UserID, ""),
+			Path:         l.Path,
+			ShareID:      l.Hash,
+			Views:        l.Views,
+			Downloads:    l.Downloads,
+			LastAccessAt: l.LastAccessAt,
+		})
+	})
+	counterCtx, stopCounter := context.WithCancel(context.Background())
+	shareCounterMu.Lock()
+	shareCounter, shareCounterStop = counter, stopCounter
+	shareCounterMu.Unlock()
+	go counter.Run(counterCtx, log.Printf)
 
 	searchIndex := searchindex.New()
 	// Backstop for changes made outside vitrine (downloaders, SMB, the host

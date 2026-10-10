@@ -31,6 +31,9 @@ type streamMessage struct {
 	event string
 	dir   string
 	names []string
+	// data, when set, is the JSON payload of a non-file event (dir and
+	// names are then unused and no path check applies).
+	data any
 }
 
 type streamClient struct {
@@ -149,6 +152,13 @@ func (h *streamHub) onEvent(e events.Event) {
 		h.sendPath(v.UserID, v.To)
 	case events.FileCopied:
 		h.sendPath(v.UserID, v.To)
+	case events.ShareAccessed:
+		h.send(v.UserID, streamMessage{event: "share.accessed", data: shareAccessedPayload{
+			Hash:         v.ShareID,
+			Views:        v.Views,
+			Downloads:    v.Downloads,
+			LastAccessAt: v.LastAccessAt,
+		}})
 	}
 }
 
@@ -160,9 +170,19 @@ func (h *streamHub) sendPath(userID uint, p string) {
 	h.send(userID, streamMessage{event: "files.changed", dir: path.Dir(p), names: []string{path.Base(p)}})
 }
 
+type shareAccessedPayload struct {
+	Hash         string `json:"hash"`
+	Views        int64  `json:"views"`
+	Downloads    int64  `json:"downloads"`
+	LastAccessAt int64  `json:"lastAccessAt"`
+}
+
 // visible filters a change down to what this user may see. It returns false
 // when nothing visible is left.
 func visible(m streamMessage, check func(string) bool) (streamMessage, bool) {
+	if m.data != nil {
+		return m, true
+	}
 	if m.dir != "/" && !check(m.dir) {
 		return m, false
 	}
@@ -183,10 +203,14 @@ func visible(m streamMessage, check func(string) bool) (streamMessage, bool) {
 }
 
 func writeSSE(w http.ResponseWriter, m streamMessage) error {
-	payload, err := json.Marshal(struct {
+	var body any = struct {
 		Dir   string   `json:"dir"`
 		Names []string `json:"names"`
-	}{m.dir, m.names})
+	}{m.dir, m.names}
+	if m.data != nil {
+		body = m.data
+	}
+	payload, err := json.Marshal(body)
 	if err != nil {
 		return err
 	}

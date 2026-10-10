@@ -171,3 +171,34 @@ func waitFor(t *testing.T, cond func() bool) {
 	}
 	t.Fatal("condition not met before deadline")
 }
+
+func TestStreamHubSendsShareAccessToTheOwner(t *testing.T) {
+	bus := &fakeBus{}
+	h := newStreamHub(bus.subscribe)
+	owner := &streamClient{userID: 3, ch: make(chan streamMessage, 4)}
+	other := &streamClient{userID: 4, ch: make(chan streamMessage, 4)}
+	h.add(owner)
+	h.add(other)
+
+	bus.publish(events.ShareAccessed{Base: events.NewBase(3, ""), ShareID: "abc", Views: 7, Downloads: 2, LastAccessAt: 99})
+
+	got := <-owner.ch
+	if got.event != "share.accessed" {
+		t.Fatalf("event = %q", got.event)
+	}
+	// Share messages skip the path check.
+	if _, ok := visible(got, func(string) bool { return false }); !ok {
+		t.Error("share.accessed should not be filtered by path rules")
+	}
+	rec := httptest.NewRecorder()
+	if err := writeSSE(rec, got); err != nil {
+		t.Fatal(err)
+	}
+	want := "event: share.accessed\ndata: {\"hash\":\"abc\",\"views\":7,\"downloads\":2,\"lastAccessAt\":99}\n\n"
+	if rec.Body.String() != want {
+		t.Errorf("SSE = %q, want %q", rec.Body.String(), want)
+	}
+	if len(other.ch) != 0 {
+		t.Error("only the owner gets share usage")
+	}
+}

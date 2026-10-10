@@ -79,6 +79,25 @@
       </form>
     </div>
 
+    <!-- 410: expired, or a download-limited link that's used up (4.2) -->
+    <div
+      v-else-if="error?.status === 410"
+      class="share__gate"
+      data-testid="share-gone"
+    >
+      <div class="share__gate-mesh" aria-hidden="true"></div>
+      <div class="share__gate-card">
+        <div class="share__gate-icon">
+          <Icon name="link-2-off" :size="18" :stroke-width="1.6" />
+        </div>
+        <div class="share__gate-eyebrow">Share</div>
+        <h1 class="share__gate-title">This link is no longer available</h1>
+        <p class="share__gate-message">
+          It has reached its download limit. Ask whoever sent it for a new link.
+        </p>
+      </div>
+    </div>
+
     <!-- Other errors → reuse the redesigned Errors page -->
     <errors v-else-if="error" :errorCode="error.status" :showHeader="false" />
 
@@ -106,6 +125,18 @@
             </div>
           </dl>
 
+          <p
+            v-if="limited"
+            class="share__info-limit"
+            data-testid="share-downloads-left"
+          >
+            <Icon name="ticket" :size="12" />
+            {{
+              req.downloadsLeft === 1
+                ? "This link can be downloaded once more. After that it stops working."
+                : `This link can be downloaded ${req.downloadsLeft} more times.`
+            }}
+          </p>
           <div class="share__info-actions">
             <a
               :href="link"
@@ -117,7 +148,7 @@
               <span>{{ t("buttons.download") }}</span>
             </a>
             <a
-              v-if="!req.isDir"
+              v-if="!req.isDir && !limited"
               :href="inlineLink"
               target="_blank"
               rel="noopener"
@@ -129,9 +160,12 @@
           </div>
 
           <!-- Inline preview when a single file is selected/displayed -->
+          <!-- No previews on download-limited links: they would use up a
+               download. -->
           <div
             v-if="
               !req.isDir &&
+              !limited &&
               (req.type === 'image' ||
                 req.type === 'video' ||
                 req.type === 'audio')
@@ -300,6 +334,8 @@ const iconColorClass = computed(() =>
 );
 
 const link = computed(() => (req.value ? api.getDownloadURL(req.value) : ""));
+// 4.2: a download-limited link (the server sends what's left).
+const limited = computed(() => req.value?.downloadsLeft !== undefined);
 const raw = computed(() => {
   if (!req.value) return "";
   // For single-file shares, the file itself is the resource; for folders,
@@ -308,10 +344,13 @@ const raw = computed(() => {
     const sel = req.value.items[fileStore.selected[0]];
     if (!sel) return "";
     return createURL(`api/public/dl/${hash.value}${sel.path}`, {
+      inline: "true",
       token: token.value,
     });
   }
+  // inline: previews don't count as downloads (4.2).
   return createURL(`api/public/dl/${hash.value}${req.value.path ?? ""}`, {
+    inline: "true",
     token: token.value,
   });
 });
@@ -778,6 +817,23 @@ html.dark .share__gate-mesh {
   height: 34px;
   justify-content: center;
   font-size: 13px;
+}
+
+.share__info-limit {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--color-elevated, #f4f4f5);
+  color: var(--color-ink-2, #52525b);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.share__info-limit :deep(svg) {
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .share__info-preview {

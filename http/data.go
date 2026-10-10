@@ -10,6 +10,7 @@ import (
 	"github.com/csummers-dev/vitrine/v4/rules"
 	"github.com/csummers-dev/vitrine/v4/runner"
 	"github.com/csummers-dev/vitrine/v4/settings"
+	"github.com/csummers-dev/vitrine/v4/share"
 	"github.com/csummers-dev/vitrine/v4/storage"
 	"github.com/csummers-dev/vitrine/v4/tags"
 	"github.com/csummers-dev/vitrine/v4/trash"
@@ -27,6 +28,8 @@ type data struct {
 	trashStore *trash.Store // optional; nil makes every delete permanent (503 on /api/trash)
 	user       *users.User
 	raw        interface{}
+	// shareLink is the public share being served (public handlers only).
+	shareLink *share.Link
 }
 
 // Check implements rules.Checker.

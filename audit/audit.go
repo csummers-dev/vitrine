@@ -163,7 +163,9 @@ func (l *Log) Attach(subscribe func(func(events.Event)) (unsubscribe func())) fu
 	return subscribe(func(e events.Event) {
 		// Watcher-detected changes are high volume and carry no actor; they
 		// would drown the log of who did what.
-		if _, ok := e.(events.FilesChanged); ok {
+		switch e.(type) {
+		case events.FilesChanged, events.ShareAccessed:
+			// Share usage is counted on the link itself.
 			return
 		}
 		// Best-effort: on persistence failure, log but don't propagate —

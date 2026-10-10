@@ -14,6 +14,8 @@ interface ResourceBase {
 }
 
 interface Resource extends ResourceBase {
+  /** Public shares (4.0 4.2): downloads left on a download-limited link. */
+  downloadsLeft?: number;
   items: ResourceItem[];
   numDirs: number;
   numFiles: number;

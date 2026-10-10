@@ -1,13 +1,16 @@
 package fbhttp
 
 import (
+	"context"
 	"crypto/subtle"
 	"errors"
 	"net/http"
 	"net/url"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/spf13/afero"
 	"golang.org/x/crypto/bcrypt"
@@ -28,6 +31,12 @@ var withHashFile = func(fn handleFunc) handleFunc {
 		if status != 0 || err != nil {
 			return status, err
 		}
+
+		// A download-limited link that has been used up is gone (4.2).
+		if link.Exhausted() {
+			return http.StatusGone, nil
+		}
+		d.shareLink = link
 
 		user, err := d.store.Users.Get(d.server.Root, link.UserID)
 		if err != nil {
@@ -109,6 +118,15 @@ func ifPathWithName(r *http.Request) (id, filePath string) {
 var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 	file := d.raw.(*files.FileInfo)
 
+	// Opening the share counts as a view; browsing into its subfolders
+	// doesn't.
+	if _, sub := ifPathWithName(r); sub == "/" && shareCounter != nil {
+		shareCounter.View(d.shareLink.Hash)
+	}
+	if l := d.shareLink; l.MaxDownloads > 0 {
+		w.Header().Set("X-Share-Downloads-Left", strconv.FormatInt(l.MaxDownloads-l.Downloads, 10))
+	}
+
 	if file.IsDir {
 		file.Sorting = files.Sorting{By: "name", Asc: false}
 		file.ApplySort()
@@ -120,12 +138,70 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 
 var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 	file := d.raw.(*files.FileInfo)
+
+	if status, err := countShareDownload(r, d.shareLink); status != 0 || err != nil {
+		return status, err
+	}
 	if !file.IsDir {
 		return rawFileHandler(w, r, file)
 	}
 
 	return rawDirHandler(w, r, d, file)
 })
+
+// shareCounter records views and downloads of public shares; set by
+// NewHandler. ShutdownShareCounter stops it and writes what's pending.
+var (
+	shareCounter     *share.Counter
+	shareCounterStop context.CancelFunc
+	shareCounterMu   sync.Mutex
+)
+
+// ShutdownShareCounter writes buffered share counts. Register it with
+// http.Server.RegisterOnShutdown.
+func ShutdownShareCounter() {
+	shareCounterMu.Lock()
+	c, stop := shareCounter, shareCounterStop
+	shareCounterMu.Unlock()
+	if stop != nil {
+		stop()
+	}
+	if c != nil {
+		_ = c.Flush()
+	}
+}
+
+// isCountedDownload reports whether a request to an unlimited link is a
+// download: not an inline preview, and not a later chunk of a ranged read.
+func isCountedDownload(r *http.Request) bool {
+	if r.URL.Query().Get("inline") == "true" {
+		return false
+	}
+	rg := r.Header.Get("Range")
+	return rg == "" || strings.HasPrefix(rg, "bytes=0-")
+}
+
+// countShareDownload records a download. A download-limited link counts
+// every request, previews and range requests included, so the limit can't
+// be sidestepped; when it is used up the answer is 410 Gone.
+func countShareDownload(r *http.Request, l *share.Link) (int, error) {
+	if shareCounter == nil || l == nil {
+		return 0, nil
+	}
+	if l.MaxDownloads <= 0 {
+		if isCountedDownload(r) {
+			shareCounter.Download(l.Hash)
+		}
+		return 0, nil
+	}
+	if _, err := shareCounter.TakeDownload(l.Hash); err != nil {
+		if errors.Is(err, share.ErrExhausted) {
+			return http.StatusGone, nil
+		}
+		return errToStatus(err), err
+	}
+	return 0, nil
+}
 
 func authenticateShareRequest(r *http.Request, l *share.Link) (int, error) {
 	if l.PasswordHash == "" {

@@ -14,6 +14,8 @@ export async function fetch(url: string, password: string = "") {
 
   const data = (await res.json()) as Resource;
   data.url = `/share${url}`;
+  const left = res.headers.get("X-Share-Downloads-Left");
+  if (left !== null && left !== "") data.downloadsLeft = Number(left);
 
   if (data.isDir) {
     if (!data.url.endsWith("/")) data.url += "/";

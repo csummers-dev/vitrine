@@ -163,6 +163,18 @@ export class FakeServer {
     subtree: [string, FakeEntry][];
   }[] = [];
 
+  /** Share links (4.2 usage counts and download limits included). */
+  readonly shares: {
+    hash: string;
+    path: string;
+    expire: number;
+    userID: number;
+    views: number;
+    downloads: number;
+    lastAccessAt?: number;
+    maxDownloads?: number;
+  }[] = [];
+
   /** The user's preferences: served in the token, updated by PUT /users. */
   preferences: Record<string, unknown> = {};
 
@@ -488,7 +500,69 @@ export class FakeServer {
       const job = this.jobs.find((j) => j.id === api.slice("/jobs/".length));
       return job ? json(job) : text("404 Not Found", 404);
     }
-    if (api === "/shares") return json([]);
+    if (api === "/shares") return json(this.shares);
+    if (api.startsWith("/share/")) {
+      const rest = api.slice("/share".length);
+      if (method === "DELETE") {
+        const i = this.shares.findIndex((x) => x.hash === rest.slice(1));
+        if (i >= 0) this.shares.splice(i, 1);
+        return text("", 200);
+      }
+      const p = norm(rest);
+      if (method === "POST") {
+        const body = JSON.parse(req.postData() || "{}") as {
+          maxDownloads?: number;
+        };
+        const link = {
+          hash: `h${this.shares.length + 1}`,
+          path: p,
+          expire: 0,
+          userID: 1,
+          views: 0,
+          downloads: 0,
+          maxDownloads: body.maxDownloads || undefined,
+        };
+        this.shares.push(link);
+        return json(link);
+      }
+      return json(this.shares.filter((x) => x.path === p));
+    }
+    // Public share pages (no auth).
+    const pub = /^\/public\/(share|dl)\/([^/]+)(\/.*)?$/.exec(api);
+    if (pub) {
+      const [, kind, hash, sub = ""] = pub;
+      const link = this.shares.find((x) => x.hash === hash);
+      if (!link) return text("404 Not Found", 404);
+      const limited = (link.maxDownloads ?? 0) > 0;
+      if (limited && link.downloads >= link.maxDownloads!)
+        return text("410 Gone", 410);
+      const target = norm(link.path + sub);
+      const e = this.fs.get(target);
+      if (!e) return text("404 Not Found", 404);
+      link.lastAccessAt = Math.floor(Date.now() / 1000);
+      if (kind === "share") {
+        if (sub === "" || sub === "/") link.views++;
+        const body = e.isDir ? this.listing(target) : this.item(target);
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          headers: limited
+            ? {
+                "X-Share-Downloads-Left": String(
+                  link.maxDownloads! - link.downloads
+                ),
+              }
+            : {},
+          body: JSON.stringify({ ...body, hash }),
+        });
+      }
+      if (limited || query.inline !== "true") link.downloads++;
+      return route.fulfill({
+        status: 200,
+        contentType: "application/octet-stream",
+        body: this.binary.get(target) ?? e.content ?? "",
+      });
+    }
     if (api.startsWith("/search")) return text("", 200);
 
     this.unhandled.push(`${method} ${api}`);
