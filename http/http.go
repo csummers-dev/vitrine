@@ -162,6 +162,12 @@ func NewHandler(
 		Handler(monkey(usageTreeHandler(newUsageTreeCache(events.Subscribe)), "/api/usage/tree")).Methods("GET")
 	api.PathPrefix("/usage").Handler(monkey(diskUsage, "/api/usage")).Methods("GET")
 
+	// Duplicate finder (4.0 5.2): one background scan per user.
+	dupeScans := newDupeScanManager()
+	api.Handle("/dupes/scan", monkey(dupesStartHandler(dupeScans), "")).Methods("POST")
+	api.Handle("/dupes/scan", monkey(dupesGetHandler(dupeScans), "")).Methods("GET")
+	api.Handle("/dupes/scan", monkey(dupesStopHandler(dupeScans), "")).Methods("DELETE")
+
 	// Tags CRUD (v1.3 S2). All scoped to authenticated user.
 	api.Handle("/tags", monkey(tagsListHandler, "")).Methods("GET")
 	api.Handle("/tags", monkey(tagsCreateHandler, "")).Methods("POST")

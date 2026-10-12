@@ -181,6 +181,12 @@ export class FakeServer {
   /** Webhook endpoints (secrets kept here, never returned). */
   readonly webhooks: Record<string, unknown>[] = [];
 
+  /** The duplicate scan in progress (4.0 5.2). */
+  dupeScan: {
+    opts: { path?: string; minSize?: number; [k: string]: unknown };
+    polls: number;
+  } | null = null;
+
   /** Two-factor state for the signed-in user. */
   readonly twoFactor = { enabled: false };
 
@@ -461,6 +467,68 @@ export class FakeServer {
       });
     }
     if (api.startsWith("/folder-size")) return json({ size: 0, count: 0 });
+    // Duplicate finder (4.0 5.2): groups files by content. A new scan
+    // reports "running" once, so the client's polling is exercised.
+    if (api === "/dupes/scan") {
+      if (method === "DELETE") {
+        this.dupeScan = null;
+        return text("", 204);
+      }
+      if (method === "POST") {
+        const opts = JSON.parse(req.postData() ?? "{}");
+        this.dupeScan = { opts, polls: 0 };
+      }
+      if (!this.dupeScan) return text("404 Not Found", 404);
+      const { opts } = this.dupeScan;
+      const done = method === "GET" && this.dupeScan.polls++ > 0;
+      const root = norm(opts.path || "/");
+      const byContent = new Map<string, string[]>();
+      for (const [p, e] of this.fs) {
+        if (e.isDir || !(root === "/" || p.startsWith(root + "/"))) continue;
+        if ((e.content ?? "").length < (opts.minSize ?? 1)) continue;
+        const k = e.content ?? "";
+        byContent.set(k, [...(byContent.get(k) ?? []), p]);
+      }
+      const groups = [...byContent.entries()]
+        .filter(([, ps]) => ps.length > 1)
+        .map(([content, ps]) => ({
+          size: content.length,
+          hash: String(content.length) + ps[0],
+          files: ps.sort().map((p) => ({
+            path: p,
+            name: baseName(p),
+            modified: this.fs.get(p)!.modified,
+          })),
+        }))
+        .sort(
+          (a, b) =>
+            b.size * (b.files.length - 1) - a.size * (a.files.length - 1)
+        );
+      return json({
+        id: "scan1",
+        path: root,
+        options: { includeHidden: false, exclude: [], ...opts },
+        status: done ? "done" : "running",
+        progress: {
+          phase: done ? "done" : "hashing",
+          filesSeen: 10,
+          candidates: 4,
+          hashed: done ? 4 : 2,
+          bytesRead: 1000,
+        },
+        startedAt: new Date().toISOString(),
+        result: done
+          ? {
+              groups,
+              reclaimable: groups.reduce(
+                (n, g) => n + g.size * (g.files.length - 1),
+                0
+              ),
+              filesSeen: 10,
+            }
+          : undefined,
+      });
+    }
     // Storage view (4.0 5.1): size tree two levels deep + largest files.
     if (api.startsWith("/usage/tree")) {
       const root = norm(

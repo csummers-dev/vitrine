@@ -59,6 +59,16 @@
             />
           </div>
         </div>
+        <router-link
+          class="storage-btn"
+          :to="{
+            path: '/duplicates',
+            query: currentPath === '/' ? {} : { path: currentPath },
+          }"
+        >
+          <Icon name="copy" :size="14" />
+          <span class="max-md:hidden">Find duplicates</span>
+        </router-link>
         <button
           type="button"
           class="storage-btn"

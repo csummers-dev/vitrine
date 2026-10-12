@@ -16,6 +16,7 @@ const Login = () => import("@/views/Login.vue");
 const Share = () => import("@/views/Share.vue");
 const Trash = () => import("@/views/Trash.vue");
 const Storage = () => import("@/views/Storage.vue");
+const Duplicates = () => import("@/views/Duplicates.vue");
 const Settings = () => import("@/views/Settings.vue");
 const ProfileSettings = () => import("@/views/settings/Profile.vue");
 const Shares = () => import("@/views/settings/Shares.vue");
@@ -108,6 +109,21 @@ const routes = [
         path: "",
         name: "Storage",
         component: Storage,
+      },
+    ],
+  },
+  {
+    // Duplicate finder (4.0 Phase 5.2).
+    path: "/duplicates",
+    component: Layout,
+    meta: {
+      requiresAuth: true,
+    },
+    children: [
+      {
+        path: "",
+        name: "Duplicates",
+        component: Duplicates,
       },
     ],
   },

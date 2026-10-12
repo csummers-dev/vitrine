@@ -433,6 +433,19 @@ export function buildStaticCommands(ctx: CommandContext): Command[] {
     },
   });
   cmds.push({
+    id: "nav.duplicates",
+    group: "navigation",
+    label: "Find duplicates",
+    hint: "Same content, any name",
+    icon: "copy",
+    keywords: ["duplicate", "dupes", "copies", "free space", "dedupe"],
+    run: () => {
+      const req = fileStore.req;
+      const path = req?.isDir && req.path !== "/" ? req.path : "";
+      void router.push({ path: "/duplicates", query: path ? { path } : {} });
+    },
+  });
+  cmds.push({
     id: "nav.accountSettings",
     group: "navigation",
     label: "Account settings",

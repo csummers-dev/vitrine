@@ -26,6 +26,7 @@ import (
 	"github.com/csummers-dev/vitrine/v4/audit"
 	"github.com/csummers-dev/vitrine/v4/auth"
 	"github.com/csummers-dev/vitrine/v4/diskcache"
+	"github.com/csummers-dev/vitrine/v4/dupes"
 	"github.com/csummers-dev/vitrine/v4/events"
 	"github.com/csummers-dev/vitrine/v4/frontend"
 	"github.com/csummers-dev/vitrine/v4/fswatch"
@@ -290,6 +291,19 @@ user created with the credentials from options "username" and "password".`,
 		}
 		defer jobStore.Close()
 		log.Println("Jobs store: " + jobsPath)
+
+		// Duplicate-finder hash cache (4.0 Phase 5.2). Sibling bolt DB, so
+		// re-scans of an unchanged library read almost nothing.
+		hashesPath := dbBase + "-hashes.db"
+		hashStore, err := dupes.OpenHashStore(hashesPath)
+		if err != nil {
+			return fmt.Errorf("dupes: open hash store: %w", err)
+		}
+		defer hashStore.Close()
+		unsubscribeHashes := hashStore.Attach(events.Subscribe)
+		defer unsubscribeHashes()
+		fbhttp.SetDupeHashStore(hashStore)
+		log.Println("Hash cache: " + hashesPath)
 
 		server, err := getServerSettings(v, st.Storage)
 		if err != nil {
