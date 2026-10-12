@@ -139,6 +139,31 @@
           }}</span>
         </button>
 
+        <!-- Storage (4.0 5.1): what uses space. -->
+        <button
+          @click="toStorage"
+          :class="[
+            'w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition text-left max-md:w-10 max-md:h-10 max-md:p-0 max-md:justify-center max-md:gap-0 s-rail-btn',
+            storageNavActive
+              ? 'bg-selected text-accent-ink font-medium'
+              : 'hover:bg-hover text-ink-2',
+          ]"
+          title="Storage"
+          aria-label="Storage"
+        >
+          <Icon
+            name="chart-pie"
+            :size="14"
+            class="shrink-0"
+            :class="
+              storageNavActive
+                ? 'text-[var(--color-accent-ink)]'
+                : 'text-[var(--color-ink-2)]'
+            "
+          />
+          <span class="flex-1 max-md:hidden s-hide">Storage</span>
+        </button>
+
         <!-- Settings is reachable by clicking the username row below (which
              routes to Profile/Settings), so a separate nav item here was a
              duplicate of the same destination. -->
@@ -1135,6 +1160,9 @@ export default {
     trashNavActive() {
       return this.$route.path.startsWith("/trash");
     },
+    storageNavActive() {
+      return this.$route.path.startsWith("/storage");
+    },
     signup: () => signup,
     hideLoginButton: () => hideLoginButton,
     version: () => version,
@@ -1217,6 +1245,17 @@ export default {
     },
     toTrash() {
       this.$router.push({ path: "/trash" });
+      this.closeHovers();
+    },
+    toStorage() {
+      // Open on the folder being browsed, so "what's big here?" is one click.
+      const p = this.$route.path.startsWith("/files")
+        ? decodeURIComponent(this.$route.path.slice("/files".length)).replace(
+            /\/$/,
+            ""
+          )
+        : "";
+      this.$router.push({ path: "/storage", query: p ? { path: p } : {} });
       this.closeHovers();
     },
     toAccountSettings() {

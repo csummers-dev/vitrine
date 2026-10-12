@@ -15,6 +15,7 @@ import Errors from "@/views/Errors.vue";
 const Login = () => import("@/views/Login.vue");
 const Share = () => import("@/views/Share.vue");
 const Trash = () => import("@/views/Trash.vue");
+const Storage = () => import("@/views/Storage.vue");
 const Settings = () => import("@/views/Settings.vue");
 const ProfileSettings = () => import("@/views/settings/Profile.vue");
 const Shares = () => import("@/views/settings/Shares.vue");
@@ -92,6 +93,21 @@ const routes = [
         path: "",
         name: "Trash",
         component: Trash,
+      },
+    ],
+  },
+  {
+    // Storage: what uses space (4.0 Phase 5.1).
+    path: "/storage",
+    component: Layout,
+    meta: {
+      requiresAuth: true,
+    },
+    children: [
+      {
+        path: "",
+        name: "Storage",
+        component: Storage,
       },
     ],
   },

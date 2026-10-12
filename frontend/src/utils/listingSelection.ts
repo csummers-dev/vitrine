@@ -18,8 +18,8 @@
  *      folder we just came from.
  *   4. otherwise → nothing.
  *
- * Returns row indices into `items`. Empty before the first load (`oldPath` is
- * `null`) or for a non-directory listing.
+ * Returns row indices into `items`. Empty for a non-directory listing, and on
+ * the first load (`oldPath` is `null`) unless the preselect queue matches.
  */
 
 export interface SelectableItem {
@@ -54,9 +54,10 @@ const indicesOf = (items: SelectableItem[], paths: string[]): number[] => {
 export function resolveListingSelection(args: ResolveSelectionArgs): number[] {
   const { oldPath, newPath, isDir, items, preselect, priorSelection } = args;
 
-  // No selection before the first listing, or on a non-directory view.
-  if (!isDir || oldPath === null) return [];
+  if (!isDir) return [];
 
+  // The preselect queue applies on a first load too: the Storage view's
+  // "show in files" (4.0 5.1) opens the listing fresh with a file to select.
   if (preselect.length > 0) {
     const hits = indicesOf(items, preselect);
     // At least one queued item is here → that's the intended post-action
@@ -65,6 +66,9 @@ export function resolveListingSelection(args: ResolveSelectionArgs): number[] {
     // existing selection rather than clearing it.
     if (hits.length > 0) return hits;
   }
+
+  // Otherwise nothing is selected before the first listing.
+  if (oldPath === null) return [];
 
   // Same-folder refresh: keep the user's selection.
   if (oldPath === newPath) {

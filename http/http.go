@@ -156,6 +156,10 @@ func NewHandler(
 	// .avi, …) are remuxed/transcoded to a cached, seekable MP4.
 	api.PathPrefix("/transcode").Handler(monkey(transcodeHandler(), "/api/transcode")).Methods("GET")
 
+	// Storage view (4.0 5.1): the size tree must register before /usage,
+	// whose prefix would otherwise swallow it.
+	api.PathPrefix("/usage/tree").
+		Handler(monkey(usageTreeHandler(newUsageTreeCache(events.Subscribe)), "/api/usage/tree")).Methods("GET")
 	api.PathPrefix("/usage").Handler(monkey(diskUsage, "/api/usage")).Methods("GET")
 
 	// Tags CRUD (v1.3 S2). All scoped to authenticated user.

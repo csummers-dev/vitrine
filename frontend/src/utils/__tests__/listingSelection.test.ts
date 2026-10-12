@@ -11,10 +11,23 @@ describe("resolveListingSelection", () => {
         newPath: "/A/",
         isDir: true,
         items: items("/A/x"),
+        preselect: [],
+        priorSelection: ["/A/x"],
+      })
+    ).toEqual([]);
+  });
+
+  it("applies the preselect queue on a first load", () => {
+    expect(
+      resolveListingSelection({
+        oldPath: null,
+        newPath: "/A/",
+        isDir: true,
+        items: items("/A/w", "/A/x"),
         preselect: ["/A/x"],
         priorSelection: [],
       })
-    ).toEqual([]);
+    ).toEqual([1]);
   });
 
   it("selects nothing for a non-directory listing", () => {

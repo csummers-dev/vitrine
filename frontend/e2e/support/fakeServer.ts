@@ -461,6 +461,62 @@ export class FakeServer {
       });
     }
     if (api.startsWith("/folder-size")) return json({ size: 0, count: 0 });
+    // Storage view (4.0 5.1): size tree two levels deep + largest files.
+    if (api.startsWith("/usage/tree")) {
+      const root = norm(
+        decodeURIComponent(api.slice("/usage/tree".length)) || "/"
+      );
+      if (!this.fs.get(root)?.isDir) return text("404 Not Found", 404);
+      const depth = Number(query.depth ?? 2);
+      const inside = (p: string, dir: string) =>
+        dir === "/" ? p !== "/" : p.startsWith(dir + "/");
+      const filesUnder = (dir: string) =>
+        [...this.fs.keys()]
+          .filter((p) => inside(p, dir) && !this.fs.get(p)!.isDir)
+          .map((p) => this.item(p));
+      const node = (p: string, level: number): Record<string, unknown> => {
+        const it = this.item(p);
+        if (!it.isDir)
+          return {
+            name: it.name,
+            path: p,
+            size: it.size,
+            files: 1,
+            isDir: false,
+            kind: it.type === "blob" ? undefined : it.type,
+          };
+        const fs = filesUnder(p);
+        return {
+          name: it.name,
+          path: p,
+          size: fs.reduce((n, f) => n + f.size, 0),
+          files: fs.length,
+          isDir: true,
+          children:
+            level < depth
+              ? this.children(p)
+                  .map((c) => node(c, level + 1))
+                  .sort((a, b) => (b.size as number) - (a.size as number))
+              : undefined,
+        };
+      };
+      const largest = filesUnder(root)
+        .sort((a, b) => b.size - a.size)
+        .slice(0, 50)
+        .map((f) => ({
+          path: f.path,
+          name: f.name,
+          size: f.size,
+          modified: f.modified,
+          kind: f.type === "blob" ? undefined : f.type,
+        }));
+      return json({
+        root: node(root, 0),
+        largest,
+        computedAt: new Date().toISOString(),
+        disk: { total: 1e12, used: 2.5e11 },
+      });
+    }
     if (api.startsWith("/usage")) return json({ total: 1e12, used: 2.5e11 });
     if (api === "/tags") return json([]);
     if (api.startsWith("/files-tags")) return json([]);

@@ -420,6 +420,19 @@ export function buildStaticCommands(ctx: CommandContext): Command[] {
     run: () => void router.push("/files/"),
   });
   cmds.push({
+    id: "nav.storage",
+    group: "navigation",
+    label: "Storage",
+    hint: "What uses space",
+    icon: "chart-pie",
+    keywords: ["disk", "usage", "space", "treemap", "largest", "big files"],
+    run: () => {
+      const req = fileStore.req;
+      const path = req?.isDir && req.path !== "/" ? req.path : "";
+      void router.push({ path: "/storage", query: path ? { path } : {} });
+    },
+  });
+  cmds.push({
     id: "nav.accountSettings",
     group: "navigation",
     label: "Account settings",
