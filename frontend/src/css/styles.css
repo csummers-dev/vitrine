@@ -275,11 +275,11 @@ html[dir="rtl"] .card.floating .card-content .file-list {
 }
 
 .Vue-Toastification__toast {
-  border-radius: 10px !important;
+  border-radius: var(--radius-md) !important;
   min-height: 0 !important;
-  padding: 10px 12px !important;
+  padding: 10px var(--space-3) !important;
   font-family: var(--font-sans) !important;
-  font-size: 13px !important;
+  font-size: var(--type-ui) !important;
   line-height: 1.4 !important;
   box-shadow: var(--shadow-2) !important;
   margin-bottom: 10px !important;
@@ -301,6 +301,7 @@ html[dir="rtl"] .card.floating .card-content .file-list {
 
 .Vue-Toastification__toast--info {
   background: var(--color-accent) !important;
+  color: var(--color-on-accent) !important;
 }
 
 .Vue-Toastification__toast--warning {
@@ -311,11 +312,8 @@ html[dir="rtl"] .card.floating .card-content .file-list {
   background: var(--color-inverse-surface) !important;
 }
 
-/* Delete / Undo toast — dusty clay (v2.7 palette) so a destructive-but-
-   reversible action reads distinctly from neutral toasts (it used to share
-   the grey `default` skin). The body is forced to allow its child to shrink
-   so a long file name wraps inside the toast instead of widening it
-   off-screen (UndoToast caps the name at two lines). */
+/* Undo toast: the neutral inverse surface. The body may shrink so a long
+   file name wraps (UndoToast caps it at two lines). */
 .Vue-Toastification__toast.toast--undo {
   background: var(--color-inverse-surface) !important;
 }
@@ -347,7 +345,7 @@ html[dir="rtl"] .card.floating .card-content .file-list {
   padding: 0 0 0 8px !important;
   align-self: center !important;
   flex-shrink: 0;
-  transition: opacity 0.1s ease !important;
+  transition: opacity var(--dur-fast) var(--ease) !important;
 }
 
 .Vue-Toastification__close-button:hover {

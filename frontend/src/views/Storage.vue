@@ -133,7 +133,7 @@
               v-else-if="tree && !loading"
               icon="folder-open"
               title="Nothing stored here"
-              message="This folder has no files yet."
+              hint="This folder has no files yet."
             />
             <div v-if="loading && !tree" class="storage-map__loading">
               <Icon name="loader-circle" :size="18" class="storage-spin" />

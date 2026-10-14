@@ -38,6 +38,20 @@ const sizes = {
   fonts: sum(files.filter((f) => /\.woff2?$/.test(f))),
 };
 
+// Development-only pages must never ship (the /dev/ui component gallery).
+const devLeaks = files.filter(
+  (f) =>
+    /UiGallery/.test(f) ||
+    (/\.m?js$/.test(f) &&
+      readFileSync(join(assets, f), "utf8").includes("ui-gallery"))
+);
+if (devLeaks.length) {
+  console.error(
+    `Development-only code in the production build: ${devLeaks.join(", ")}`
+  );
+  process.exit(1);
+}
+
 const kb = (n) => `${(n / 1024).toFixed(1)} KiB`;
 if (process.argv.includes("--update")) {
   writeFileSync(

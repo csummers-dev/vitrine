@@ -34,7 +34,7 @@ const clicked = () => {
   align-items: center;
   gap: 10px;
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--type-ui);
   font-weight: 500;
   line-height: 1.4;
   color: inherit;
@@ -54,15 +54,19 @@ const clicked = () => {
   border: 1px solid var(--media-ink-2);
   color: inherit;
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--type-small);
   font-weight: 600;
   padding: 4px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background-color var(--dur-base) ease;
+  transition: background-color var(--dur-fast) var(--ease);
 }
 
 .ct__action:hover {
   background: var(--media-hover);
+}
+.ct__action:focus-visible {
+  outline: 2px solid var(--media-ink);
+  outline-offset: 2px;
 }
 </style>

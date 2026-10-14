@@ -1,10 +1,19 @@
 <template>
   <div class="settings-row" :class="{ 'is-stacked': stacked }">
     <div class="settings-row__label">
-      <label v-if="label" class="settings-row__title" :for="htmlFor">
+      <label
+        v-if="label"
+        :id="labelId"
+        class="settings-row__title"
+        :for="htmlFor ?? ctx.controlId.value"
+      >
         {{ label }}
       </label>
-      <p v-if="description" class="settings-row__description">
+      <p
+        v-if="description"
+        :id="descriptionId"
+        class="settings-row__description"
+      >
         {{ description }}
       </p>
       <slot name="extra" />
@@ -16,7 +25,10 @@
 </template>
 
 <script setup lang="ts">
-withDefaults(
+import { useId } from "vue";
+import { provideFieldContext } from "@/components/ui/fieldContext";
+
+const props = withDefaults(
   defineProps<{
     label?: string;
     description?: string;
@@ -29,6 +41,16 @@ withDefaults(
   }>(),
   { stacked: false }
 );
+
+// The control inside (UiToggle, UiSelect, UiTextField) is named by this
+// row's label and described by its description.
+const base = `sr-${useId()}`;
+const labelId = `${base}-label`;
+const descriptionId = `${base}-desc`;
+const ctx = provideFieldContext({
+  labelId: props.label ? labelId : "",
+  descriptionId: props.description ? descriptionId : null,
+});
 </script>
 
 <style scoped>

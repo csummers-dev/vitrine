@@ -1,4 +1,10 @@
-import { nextTick, watch, type Ref } from "vue";
+import {
+  getCurrentScope,
+  nextTick,
+  onScopeDispose,
+  watch,
+  type Ref,
+} from "vue";
 
 /**
  * Focus trap + focus restoration for modal-style overlays.
@@ -125,4 +131,10 @@ export function useFocusTrap(
     },
     { immediate: true }
   );
+
+  // A component that unmounts while still active (a v-if'd dialog) never
+  // flips isActive, so release the trap and return focus on dispose too.
+  if (getCurrentScope()) onScopeDispose(deactivate);
+
+  return { activate, deactivate };
 }

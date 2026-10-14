@@ -128,7 +128,7 @@ import { useI18n } from "vue-i18n";
 
 import SettingsSection from "@/components/settings/SettingsSection.vue";
 import SettingsRow from "@/components/settings/SettingsRow.vue";
-import Toggle from "@/components/settings/Toggle.vue";
+import Toggle from "@/components/ui/UiToggle.vue";
 import Rules from "./Rules.vue";
 import Commands from "./Commands.vue";
 import { enableExec } from "@/utils/constants";

@@ -309,7 +309,7 @@ import { inputOf, type WebhookEndpoint } from "@/api/webhooks";
 import SettingsPage from "@/components/settings/SettingsPage.vue";
 import SettingsSection from "@/components/settings/SettingsSection.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
-import Toggle from "@/components/settings/Toggle.vue";
+import Toggle from "@/components/ui/UiToggle.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import Icon from "@/components/Icon.vue";
 

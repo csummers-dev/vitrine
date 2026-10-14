@@ -25,7 +25,7 @@ const KINDS = {
   hex: /#[0-9a-fA-F]{3,8}\b/g,
   colorFn: /\b(?:rgba?|hsla?)\(/g,
   radius: /border(?:-[a-z]+)*-radius\s*:\s*[^;}]*\d+px/g,
-  shadow: /box-shadow\s*:\s*(?!none\b|var\()[^;}]+/g,
+  shadow: /box-shadow\s*:(?!\s*(?:none\b|var\())[^;}]+/g,
 };
 
 function* walk(dir) {

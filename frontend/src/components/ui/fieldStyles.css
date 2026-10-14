@@ -1,0 +1,49 @@
+/* Shared look for text fields and selects (imported by their <style>). */
+.ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.ui-field__label {
+  font-size: var(--type-body);
+  font-weight: 600;
+  color: var(--color-ink-1);
+}
+.ui-field__control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-raised);
+  color: var(--color-ink-1);
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+.ui-field__control:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: var(--focus-halo);
+}
+.ui-field.is-invalid .ui-field__control {
+  border-color: var(--status-danger-fill);
+}
+.ui-field.is-invalid .ui-field__control:focus-within {
+  box-shadow: var(--focus-halo-danger);
+}
+.ui-field.is-disabled .ui-field__control {
+  background: var(--color-elevated);
+  color: var(--color-ink-3);
+}
+.ui-field__hint {
+  font-size: var(--type-small);
+  line-height: var(--type-small-lh);
+  color: var(--color-ink-3);
+}
+.ui-field__error {
+  font-size: var(--type-small);
+  line-height: var(--type-small-lh);
+  color: var(--status-danger);
+}

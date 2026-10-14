@@ -326,8 +326,8 @@ import { authMethod, noAuth } from "@/utils/constants";
 import SettingsPage from "@/components/settings/SettingsPage.vue";
 import SettingsSection from "@/components/settings/SettingsSection.vue";
 import SettingsRow from "@/components/settings/SettingsRow.vue";
-import Toggle from "@/components/settings/Toggle.vue";
-import SegmentedControl from "@/components/SegmentedControl.vue";
+import Toggle from "@/components/ui/UiToggle.vue";
+import SegmentedControl from "@/components/ui/UiSegmented.vue";
 import Icon from "@/components/Icon.vue";
 import {
   useThemePreference,

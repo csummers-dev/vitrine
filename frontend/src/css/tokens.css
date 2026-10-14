@@ -20,7 +20,7 @@
                          #ffffff → #fbfbfc   /  #16161d → #1c1f23
    --color-panel   (new) details rail, side sections   #f7f8f9 / #202328
    --color-raised  (new) controls on a panel (selected nav, segmented thumb,
-                         list cards)                     #ffffff / #2a2e34
+                         list cards)                     #ffffff / #31363d
    --color-elevated      hover fills, chips, inputs, segmented track
                          #e8e7ee → #e6e8ec   /  #202029 → #2a2e34
    --color-ink-1..4      text: primary, secondary, meta, placeholder
@@ -154,6 +154,9 @@
      background (3:1 against the surface it sits on). */
   --focus-ring:
     0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-accent-ink);
+  /* Text fields show focus as a soft halo round their own border. */
+  --focus-halo: 0 0 0 3px var(--color-accent-ring);
+  --focus-halo-danger: 0 0 0 3px var(--status-danger-ring);
 }
 
 /* ── Overlays and media ──────────────────────────────────────────────────
@@ -339,7 +342,7 @@
   --accent-grad: #12805c;
   --accent-strong: #0e6448;
   --accent-ink-light: #0f6e4f;
-  --accent-ink-dark: #6cb09a;
+  --accent-ink-dark: #7ab8a4;
   --accent-rgb: 18 128 92;
   --color-on-accent: #ffffff;
 
@@ -360,7 +363,7 @@ html.dark {
   --color-canvas: #16181b;
   --color-surface: #1c1f23;
   --color-panel: #202328;
-  --color-raised: #2a2e34;
+  --color-raised: #31363d;
   --color-elevated: #2a2e34;
 
   --color-ink-1: #eef0f2;

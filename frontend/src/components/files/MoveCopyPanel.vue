@@ -95,7 +95,7 @@ import * as upload from "@/utils/upload";
 import { startTransfer, buildMoveCopyItems } from "@/utils/transfers";
 import SlideOver from "@/components/SlideOver.vue";
 import FolderPicker from "@/components/files/FolderPicker.vue";
-import Toggle from "@/components/settings/Toggle.vue";
+import Toggle from "@/components/ui/UiToggle.vue";
 import Icon from "@/components/Icon.vue";
 
 type MoveCopyItem = {

@@ -239,6 +239,17 @@ const routes = [
       showHeader: true,
     },
   },
+  // Component gallery (Phase 6): development builds only; the import is
+  // dropped from production bundles because the branch is statically false.
+  ...(import.meta.env.DEV
+    ? [
+        {
+          path: "/dev/ui",
+          name: "UiGallery",
+          component: () => import("@/views/dev/UiGallery.vue"),
+        },
+      ]
+    : []),
   {
     path: "/:catchAll(.*)*",
     redirect: (to: RouteLocation) => {

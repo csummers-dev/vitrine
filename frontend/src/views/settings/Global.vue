@@ -299,7 +299,7 @@ import { enableExec } from "@/utils/constants";
 import SettingsPage from "@/components/settings/SettingsPage.vue";
 import SettingsSection from "@/components/settings/SettingsSection.vue";
 import SettingsRow from "@/components/settings/SettingsRow.vue";
-import Toggle from "@/components/settings/Toggle.vue";
+import Toggle from "@/components/ui/UiToggle.vue";
 import Rules from "@/components/settings/Rules.vue";
 import UserForm from "@/components/settings/UserForm.vue";
 import Icon from "@/components/Icon.vue";

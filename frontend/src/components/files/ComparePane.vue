@@ -157,7 +157,7 @@
         v-else-if="listRows.length === 0 && !inlineNewKindB"
         icon="folder-open"
         title="Empty folder"
-        message="This folder has no items."
+        hint="This folder has no items."
       />
 
       <div v-else class="fb-listing list compare-listing">

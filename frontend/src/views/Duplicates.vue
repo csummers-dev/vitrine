@@ -227,7 +227,7 @@
           v-else-if="!scan"
           icon="copy"
           title="Find duplicate files"
-          message="Pick a folder and start a scan. Files are compared by content, not name; only files that share a size are read, so big libraries scan quickly. Anything you delete goes to the trash."
+          hint="Pick a folder and start a scan. Files are compared by content, not name; only files that share a size are read, so big libraries scan quickly. Anything you delete goes to the trash."
         />
       </div>
 

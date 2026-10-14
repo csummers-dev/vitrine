@@ -61,7 +61,7 @@
           v-else-if="entries.length === 0"
           icon="trash-2"
           title="Trash is empty"
-          message="Deleted files and folders land here. You can put them back where they came from, or remove them for good."
+          hint="Deleted files and folders land here. You can put them back where they came from, or remove them for good."
         />
 
         <!-- List. -->

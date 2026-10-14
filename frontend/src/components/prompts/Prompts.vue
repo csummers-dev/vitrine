@@ -1,5 +1,5 @@
 <template>
-  <base-modal v-if="modal != null" :prompt="currentPromptName" @closed="close">
+  <base-modal v-if="modal != null" @closed="close">
     <keep-alive>
       <component :is="modal" />
     </keep-alive>

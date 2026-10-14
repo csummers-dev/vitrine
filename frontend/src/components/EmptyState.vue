@@ -28,6 +28,9 @@ const props = withDefaults(
     tone?: "muted" | "info" | "danger" | "warn";
     /** Tighter vertical padding. Use inside small surfaces (dropdowns, etc.) */
     compact?: boolean;
+    /** Not a prop: the helper text is `hint`. Typed `never` so passing
+     *  `message` (which used to be silently dropped) fails the type check. */
+    message?: never;
   }>(),
   { tone: "muted", compact: false }
 );
@@ -54,7 +57,7 @@ const toneClass = computed(() => `is-${props.tone}`);
 .empty-state__icon {
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -65,20 +68,12 @@ const toneClass = computed(() => `is-${props.tone}`);
 .empty-state.is-compact .empty-state__icon {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 
 .empty-state__icon.is-muted {
-  /* Subtle accent-tinted chip (a faint lilac → surface sheen) with the icon
-     in the accent color — warmer + more on-brand than a flat gray block,
-     matching the app's accent-gradient treatment elsewhere. */
-  background: linear-gradient(
-    140deg,
-    var(--color-accent-soft) 0%,
-    var(--color-elevated) 100%
-  );
+  background: var(--color-accent-soft);
   color: var(--color-accent-ink);
-  box-shadow: inset 0 0 0 1px var(--color-accent-soft);
 }
 
 .empty-state__icon.is-info {
@@ -96,26 +91,15 @@ const toneClass = computed(() => `is-${props.tone}`);
   color: var(--status-warning);
 }
 
-/* Dark-mode tinting for status chips */
-html.dark .empty-state__icon.is-danger {
-  background: var(--status-danger-soft);
-  color: var(--status-danger);
-}
-
-html.dark .empty-state__icon.is-warn {
-  background: var(--status-warning-soft);
-  color: var(--status-warning);
-}
-
 .empty-state__title {
-  font-size: 13.5px;
+  font-size: var(--type-ui);
   font-weight: 600;
   color: var(--color-ink-1);
   letter-spacing: -0.005em;
 }
 
 .empty-state__hint {
-  font-size: 12px;
+  font-size: var(--type-body);
   color: var(--color-ink-3);
   max-width: 320px;
   line-height: 1.45;

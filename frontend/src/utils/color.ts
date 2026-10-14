@@ -121,7 +121,7 @@ export function ensureContrast(
 /** The surfaces accent text and fills sit on (kept in step with tokens.css). */
 export const ACCENT_SURFACES = {
   light: ["#fbfbfc", "#f7f8f9", "#eceef1", "#ffffff"],
-  dark: ["#1c1f23", "#202328", "#16181b", "#2a2e34"],
+  dark: ["#1c1f23", "#202328", "#16181b", "#31363d"],
 } as const;
 
 export interface DerivedAccent {

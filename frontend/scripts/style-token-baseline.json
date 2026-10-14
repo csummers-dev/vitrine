@@ -1,8 +1,8 @@
 {
   "note": "Allowed raw style literals per file. Only ever lower these (Phase 6).",
   "totals": {
-    "radius": 342,
-    "shadow": 143,
+    "radius": 332,
+    "shadow": 65,
     "hex": 9,
     "colorFn": 20
   },
@@ -12,30 +12,13 @@
       "shadow": 1
     },
     "src/components/CommandPalette.vue": {
-      "radius": 5,
-      "shadow": 1
+      "radius": 5
     },
     "src/components/ConfirmDialog.vue": {
-      "radius": 3,
-      "shadow": 1
-    },
-    "src/components/ContextMenu.vue": {
-      "radius": 2,
-      "shadow": 2
-    },
-    "src/components/CustomToast.vue": {
-      "radius": 1
-    },
-    "src/components/Drawer.vue": {
-      "shadow": 2
-    },
-    "src/components/EmptyState.vue": {
-      "radius": 2,
-      "shadow": 1
+      "radius": 3
     },
     "src/components/files/AlbumHeader.vue": {
-      "radius": 2,
-      "shadow": 1
+      "radius": 2
     },
     "src/components/files/ArchivePasswordPrompt.vue": {
       "radius": 2,
@@ -47,25 +30,24 @@
     },
     "src/components/files/AudioViewer.vue": {
       "radius": 13,
-      "shadow": 2
+      "shadow": 1
     },
     "src/components/files/BulkRenamePanel.vue": {
       "radius": 8,
-      "shadow": 2
+      "shadow": 1
     },
     "src/components/files/ComicViewer.vue": {
       "radius": 3
     },
     "src/components/files/ComparePane.vue": {
       "radius": 5,
-      "shadow": 3
+      "shadow": 2
     },
     "src/components/files/CsvViewer.vue": {
       "radius": 6
     },
     "src/components/files/DropBox.vue": {
-      "radius": 6,
-      "shadow": 1
+      "radius": 6
     },
     "src/components/files/EpubViewer.vue": {
       "hex": 9,
@@ -86,14 +68,10 @@
     },
     "src/components/files/ImageEditor.vue": {
       "radius": 8,
-      "shadow": 4
-    },
-    "src/components/files/ImageHoverPreview.vue": {
-      "radius": 2,
       "shadow": 2
     },
-    "src/components/files/ImageViewer.vue": {
-      "shadow": 1
+    "src/components/files/ImageHoverPreview.vue": {
+      "radius": 2
     },
     "src/components/files/InfoPane.vue": {
       "radius": 3
@@ -102,8 +80,7 @@
       "radius": 1
     },
     "src/components/files/MiniPlayer.vue": {
-      "radius": 3,
-      "shadow": 1
+      "radius": 3
     },
     "src/components/files/MoveCopyPanel.vue": {
       "radius": 3
@@ -113,23 +90,19 @@
     },
     "src/components/files/PdfViewer.vue": {
       "radius": 2,
-      "shadow": 2
+      "shadow": 1
     },
     "src/components/files/PhotoMap.vue": {
-      "radius": 5,
-      "shadow": 2
+      "radius": 5
     },
     "src/components/files/PreviewInfoRail.vue": {
-      "radius": 3,
-      "shadow": 1
+      "radius": 3
     },
     "src/components/files/PreviewShell.vue": {
-      "radius": 4,
-      "shadow": 1
+      "radius": 4
     },
     "src/components/files/QuickPeek.vue": {
-      "radius": 3,
-      "shadow": 1
+      "radius": 3
     },
     "src/components/files/RootLabelDialog.vue": {
       "shadow": 1
@@ -153,51 +126,36 @@
       "radius": 4
     },
     "src/components/files/TextViewer.vue": {
-      "radius": 3,
-      "shadow": 1
+      "radius": 3
     },
     "src/components/files/TransferDock.vue": {
-      "radius": 6,
-      "shadow": 2
+      "radius": 6
     },
     "src/components/files/VideoViewer.vue": {
-      "radius": 3,
-      "shadow": 2
-    },
-    "src/components/OfflineBanner.vue": {
-      "shadow": 1
+      "radius": 3
     },
     "src/components/prompts/CurrentPassword.vue": {
       "radius": 4,
-      "shadow": 4
+      "shadow": 3
     },
     "src/components/prompts/Download.vue": {
-      "radius": 3,
-      "shadow": 1
+      "radius": 3
     },
     "src/components/prompts/Info.vue": {
-      "radius": 5,
-      "shadow": 1
+      "radius": 5
     },
     "src/components/prompts/ResolveConflict.vue": {
-      "radius": 7,
-      "shadow": 1
+      "radius": 7
     },
     "src/components/prompts/Upload.vue": {
-      "radius": 4,
-      "shadow": 1
+      "radius": 4
     },
     "src/components/prompts/UploadFiles.vue": {
-      "radius": 8,
-      "shadow": 2
-    },
-    "src/components/SegmentedControl.vue": {
-      "radius": 2,
-      "shadow": 1
+      "radius": 8
     },
     "src/components/settings/AvatarCropper.vue": {
       "radius": 2,
-      "shadow": 2
+      "shadow": 1
     },
     "src/components/settings/Commands.vue": {
       "radius": 1
@@ -213,10 +171,6 @@
     "src/components/settings/SettingsSection.vue": {
       "radius": 1
     },
-    "src/components/settings/Toggle.vue": {
-      "radius": 1,
-      "shadow": 1
-    },
     "src/components/settings/TwoFactorSettings.vue": {
       "radius": 3
     },
@@ -226,7 +180,7 @@
     },
     "src/components/ShortcutsOverlay.vue": {
       "radius": 4,
-      "shadow": 2
+      "shadow": 1
     },
     "src/components/Sidebar.vue": {
       "radius": 1,
@@ -234,27 +188,19 @@
     },
     "src/components/SidebarDrawer.vue": {
       "radius": 12,
-      "shadow": 2
-    },
-    "src/components/Skeleton.vue": {
-      "radius": 1
+      "shadow": 1
     },
     "src/components/SlideOver.vue": {
-      "radius": 1,
-      "shadow": 1
+      "radius": 1
     },
     "src/components/TagColorPicker.vue": {
-      "radius": 1,
-      "shadow": 1
+      "radius": 1
     },
     "src/components/UndoToast.vue": {
       "radius": 2
     },
     "src/css/_buttons.css": {
       "shadow": 2
-    },
-    "src/css/_share.css": {
-      "shadow": 1
     },
     "src/css/_shell.css": {
       "shadow": 1
@@ -263,24 +209,20 @@
       "radius": 1,
       "shadow": 1
     },
-    "src/css/context-menu.css": {
-      "shadow": 1
-    },
     "src/css/dashboard.css": {
-      "radius": 1,
-      "shadow": 1
+      "radius": 1
     },
     "src/css/header.css": {
       "radius": 1,
-      "shadow": 2
+      "shadow": 1
     },
     "src/css/listing.css": {
       "radius": 3,
-      "shadow": 19
+      "shadow": 7
     },
     "src/css/styles.css": {
-      "radius": 2,
-      "shadow": 6
+      "radius": 1,
+      "shadow": 2
     },
     "src/css/upload-files.css": {
       "radius": 1
@@ -293,28 +235,24 @@
       "radius": 8
     },
     "src/views/Errors.vue": {
-      "radius": 3,
-      "shadow": 1
+      "radius": 3
     },
     "src/views/files/Editor.vue": {
-      "radius": 2,
-      "shadow": 1
+      "radius": 2
     },
     "src/views/files/FileListing.vue": {
       "radius": 11,
-      "shadow": 7
+      "shadow": 6
     },
     "src/views/files/Preview.vue": {
-      "radius": 13,
-      "shadow": 3
+      "radius": 13
     },
     "src/views/Login.vue": {
       "radius": 9,
-      "shadow": 6
+      "shadow": 3
     },
     "src/views/Settings.vue": {
-      "radius": 2,
-      "shadow": 1
+      "radius": 2
     },
     "src/views/settings/Audit.vue": {
       "radius": 5
@@ -325,7 +263,7 @@
     },
     "src/views/settings/Profile.vue": {
       "radius": 4,
-      "shadow": 5
+      "shadow": 4
     },
     "src/views/settings/Sessions.vue": {
       "radius": 1
@@ -338,15 +276,14 @@
       "radius": 2
     },
     "src/views/settings/Users.vue": {
-      "radius": 5,
-      "shadow": 1
+      "radius": 5
     },
     "src/views/settings/Webhooks.vue": {
       "radius": 6
     },
     "src/views/Share.vue": {
       "radius": 15,
-      "shadow": 4
+      "shadow": 2
     },
     "src/views/Storage.vue": {
       "radius": 7,
