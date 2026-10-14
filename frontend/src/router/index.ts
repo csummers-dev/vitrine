@@ -1,4 +1,5 @@
 import type { RouteLocation } from "vue-router";
+import { twoFactorSetupRedirect } from "@/composables/useTwoFactorPrompt";
 import { createRouter, createWebHistory } from "vue-router";
 // Eager: the authed shell + the landing file listing (needed for first paint),
 // and Errors (also imported by Files.vue for its inline error state, so it's in
@@ -17,6 +18,7 @@ const Share = () => import("@/views/Share.vue");
 const Trash = () => import("@/views/Trash.vue");
 const Storage = () => import("@/views/Storage.vue");
 const Duplicates = () => import("@/views/Duplicates.vue");
+const TwoFactorSetup = () => import("@/views/TwoFactorSetup.vue");
 const Settings = () => import("@/views/Settings.vue");
 const ProfileSettings = () => import("@/views/settings/Profile.vue");
 const Shares = () => import("@/views/settings/Shares.vue");
@@ -111,6 +113,15 @@ const routes = [
         component: Storage,
       },
     ],
+  },
+  {
+    // Admins asked to set up two-factor sign-in (4.0 lockout protection).
+    path: "/setup-2fa",
+    name: "TwoFactorSetup",
+    component: TwoFactorSetup,
+    meta: {
+      requiresAuth: true,
+    },
   },
   {
     // Duplicate finder (4.0 Phase 5.2).
@@ -321,11 +332,22 @@ router.beforeResolve(async (to, from) => {
       };
     }
 
-    if (to.matched.some((record) => record.meta.requiresAdmin)) {
+    const requiresAdmin = to.matched.some(
+      (record) => record.meta.requiresAdmin
+    );
+    if (requiresAdmin) {
       if (authStore.user === null || !authStore.user.perm.admin) {
         return { path: "/403" };
       }
     }
+
+    // Admins without a second factor, when the server requires one.
+    const setup = twoFactorSetupRedirect(authStore.user, {
+      name: to.name,
+      fullPath: to.fullPath,
+      requiresAdmin,
+    });
+    if (setup) return setup;
   }
 
   // Implicit `return undefined` proceeds with navigation.

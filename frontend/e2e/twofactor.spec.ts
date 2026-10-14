@@ -36,3 +36,41 @@ test("sets up two-factor sign-in and uses it to log in", async ({
   await app.getByRole("button", { name: "Sign In", exact: true }).click();
   await app.waitForURL(/\/files\//);
 });
+
+// 4.0 lockout protection: "require two-factor for admins".
+test("an admin without two-factor is asked to set it up", async ({
+  app,
+  fake,
+}) => {
+  test.slow();
+  fake.requireAdminTwoFactor = true;
+  const signIn = async () => {
+    await app.evaluate(() => localStorage.setItem("jwt", ""));
+    await app.goto("/login");
+    await app.getByLabel("Username", { exact: true }).fill("admin");
+    await app
+      .getByLabel("Password", { exact: true })
+      .fill("correct-horse-battery");
+    await app.getByRole("button", { name: "Sign In", exact: true }).click();
+  };
+
+  await signIn();
+  const setup = app.getByTestId("two-factor-setup");
+  await expect(setup).toBeVisible();
+  await expect(app).toHaveURL(/\/setup-2fa/);
+
+  // Skipping keeps files usable, but admin pages send them back.
+  await setup.getByRole("button", { name: "Not now, go to my files" }).click();
+  await app.waitForURL(/\/files\//);
+  await app.goto("/settings/global");
+  await expect(setup).toBeVisible();
+
+  // Setting it up clears the requirement and continues.
+  const box = setup.getByTestId("two-factor");
+  await box.getByRole("button", { name: "Set up" }).click();
+  await box.getByLabel("Authentication code").fill("123456");
+  await box.getByRole("button", { name: "Turn on" }).click();
+  await box.getByRole("button", { name: "I've saved them" }).click();
+  await app.waitForURL(/\/settings\/global/);
+  await expect(setup).toHaveCount(0);
+});

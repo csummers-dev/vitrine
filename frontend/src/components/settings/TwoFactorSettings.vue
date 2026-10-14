@@ -145,6 +145,9 @@
 
 <script setup lang="ts">
 import { computed, inject, onMounted, ref } from "vue";
+
+/** Fires once two-factor sign-in is on and the recovery codes are saved. */
+const emit = defineEmits<{ (e: "done"): void }>();
 import QrcodeVue from "qrcode.vue";
 import SettingsSection from "@/components/settings/SettingsSection.vue";
 import SettingsRow from "@/components/settings/SettingsRow.vue";
@@ -249,6 +252,7 @@ const downloadCodes = () => {
 
 const doneCodes = () => {
   recoveryCodes.value = null;
+  if (st.value?.enabled) emit("done");
 };
 </script>
 

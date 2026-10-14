@@ -29,6 +29,9 @@ interface IUser {
    * persistence and reactive reads.
    */
   preferences?: Record<string, unknown>;
+  /** An admin who must set up two-factor sign-in before admin pages work
+   *  (the server's "require two-factor for admins" setting). */
+  twoFactorSetupRequired?: boolean;
 }
 
 type ViewModeType = "list" | "mosaic" | "mosaic gallery";

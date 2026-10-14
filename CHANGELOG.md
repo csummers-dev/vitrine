@@ -35,6 +35,10 @@ All notable changes to **vitrine**.
   disabling, resets and recovery-code use are recorded in the audit log.
   Secrets are encrypted with a new key file beside the database,
   `<database name>-2fa.key`: back it up with the database.
+  Admins can require it for admin accounts (Settings → Global, or
+  `--requireAdminTwoFactor`); an admin without it is asked to set it up
+  and admin pages stay locked until they do. `vitrine users reset-2fa
+  <user>` recovers a locked-out account from the command line.
 - **File requests (upload-only links).** A folder can be shared as *Upload
   only*: visitors drop files in without seeing the folder's contents. Limits
   for file size, total size and file types, an optional subfolder per

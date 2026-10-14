@@ -63,10 +63,13 @@ function b64url(obj: unknown): string {
 }
 
 /** An unsigned JWT the frontend can decode (it never verifies signatures). */
-export function makeToken(preferences: Record<string, unknown> = {}): string {
+export function makeToken(
+  preferences: Record<string, unknown> = {},
+  extra: Record<string, unknown> = {}
+): string {
   const now = Math.floor(Date.now() / 1000);
   const payload = {
-    user: { ...USER, preferences },
+    user: { ...USER, preferences, ...extra },
     iat: now,
     exp: now + 2 * 60 * 60,
   };
@@ -190,6 +193,16 @@ export class FakeServer {
   /** Two-factor state for the signed-in user. */
   readonly twoFactor = { enabled: false };
 
+  /** "Require two-factor for admins": tokens flag the admin until enrolled. */
+  requireAdminTwoFactor = false;
+
+  private token(): string {
+    return makeToken(this.preferences, {
+      twoFactorSetupRequired:
+        this.requireAdminTwoFactor && !this.twoFactor.enabled,
+    });
+  }
+
   /** The user's preferences: served in the token, updated by PUT /users. */
   preferences: Record<string, unknown> = {};
 
@@ -292,7 +305,7 @@ export class FakeServer {
     if (api === "/login/2fa") {
       const b = JSON.parse(req.postData() || "{}");
       return b.challenge === "c1" && b.code === "123456"
-        ? text(makeToken(this.preferences))
+        ? text(this.token())
         : text("403 Forbidden", 403);
     }
     if (api === "/2fa" && method === "GET")
@@ -318,8 +331,7 @@ export class FakeServer {
       this.twoFactor.enabled = false;
       return text("", 200);
     }
-    if (api === "/login" || api === "/renew")
-      return text(makeToken(this.preferences));
+    if (api === "/login" || api === "/renew") return text(this.token());
 
     if (api.startsWith("/resources/recursive")) return json([]);
 

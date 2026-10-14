@@ -2,6 +2,7 @@ package fbhttp
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/csummers-dev/vitrine/v4/rules"
@@ -24,6 +25,7 @@ type settingsData struct {
 	Commands              map[string][]string   `json:"commands"`
 	UploadSharesEnabled   bool                  `json:"uploadSharesEnabled"`
 	UploadConcurrencyMax  uint                  `json:"uploadConcurrencyMax"`
+	RequireAdminTwoFactor bool                  `json:"requireAdminTwoFactor"`
 }
 
 var settingsGetHandler = withAdmin(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
@@ -43,6 +45,7 @@ var settingsGetHandler = withAdmin(func(w http.ResponseWriter, r *http.Request, 
 		Commands:              d.settings.Commands,
 		UploadSharesEnabled:   d.settings.UploadSharesEnabled,
 		UploadConcurrencyMax:  d.settings.UploadConcurrencyMax,
+		RequireAdminTwoFactor: d.settings.RequireAdminTwoFactor,
 	}
 
 	return renderJSON(w, r, data)
@@ -69,6 +72,13 @@ var settingsPutHandler = withAdmin(func(_ http.ResponseWriter, r *http.Request, 
 	d.settings.HideLoginButton = req.HideLoginButton
 	d.settings.UploadSharesEnabled = req.UploadSharesEnabled
 	d.settings.UploadConcurrencyMax = min(req.UploadConcurrencyMax, 10)
+	// Turning the requirement on while your own account has no second
+	// factor would lock you out of these settings on the next request.
+	if req.RequireAdminTwoFactor && !d.settings.RequireAdminTwoFactor &&
+		twoFactorPolicyApplies(d) && !d.store.TwoFactor.Enabled(d.user.ID) {
+		return http.StatusConflict, errors.New("set up two-factor sign-in for your own account first")
+	}
+	d.settings.RequireAdminTwoFactor = req.RequireAdminTwoFactor
 
 	err = d.store.Settings.Save(d.settings)
 	return errToStatus(err), err

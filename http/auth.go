@@ -37,6 +37,9 @@ type userInfo struct {
 	DateFormat            bool                       `json:"dateFormat"`
 	Username              string                     `json:"username"`
 	Preferences           map[string]json.RawMessage `json:"preferences"`
+	// TwoFactorSetupRequired: an admin who must set up two-factor
+	// sign-in before admin features work (settings.RequireAdminTwoFactor).
+	TwoFactorSetupRequired bool `json:"twoFactorSetupRequired,omitempty"`
 }
 
 type authToken struct {
@@ -133,6 +136,9 @@ func withAdmin(fn handleFunc) handleFunc {
 	return withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 		if !d.user.Perm.Admin {
 			return http.StatusForbidden, nil
+		}
+		if adminNeedsTwoFactor(d, d.user) {
+			return http.StatusForbidden, errors.New("admin: two-factor sign-in must be set up first")
 		}
 
 		return fn(w, r, d)
@@ -261,6 +267,7 @@ func renewHandler(tokenExpireTime time.Duration) handleFunc {
 
 func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.User, tokenExpirationTime time.Duration) (int, error) {
 	claims := tokenClaims(user, tokenExpirationTime)
+	claims.User.TwoFactorSetupRequired = adminNeedsTwoFactor(d, user)
 
 	signed, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(d.settings.Key)
 	if err != nil {
@@ -296,4 +303,19 @@ func tokenClaims(user *users.User, tokenExpirationTime time.Duration) *authToken
 			Issuer:    "File Browser",
 		},
 	}
+}
+
+// twoFactorPolicyApplies reports whether "require two-factor for admins"
+// covers this server's sign-ins: password sign-in only, since SSO and proxy
+// set-ups leave second factors to the identity provider.
+func twoFactorPolicyApplies(d *data) bool {
+	return d.settings.AuthMethod == fbAuth.MethodJSONAuth && d.store.TwoFactor != nil
+}
+
+// adminNeedsTwoFactor reports whether user is an admin who must set up
+// two-factor sign-in before admin features work. They can still sign in,
+// use their files and set it up; only admin endpoints refuse them.
+func adminNeedsTwoFactor(d *data, user *users.User) bool {
+	return d.settings.RequireAdminTwoFactor && user.Perm.Admin &&
+		twoFactorPolicyApplies(d) && !d.store.TwoFactor.Enabled(user.ID)
 }

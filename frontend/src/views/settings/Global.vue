@@ -53,6 +53,17 @@
           />
         </SettingsRow>
         <SettingsRow
+          label="Require two-factor sign-in for admins"
+          description="Admins who sign in with a password must set up two-factor sign-in before admin pages work. Turn it on after setting it up for your own account. If an admin gets stuck: vitrine users reset-2fa <name>."
+        >
+          <Toggle
+            :model-value="!!settings.requireAdminTwoFactor"
+            @update:model-value="
+              (v: boolean) => settings && (settings.requireAdminTwoFactor = v)
+            "
+          />
+        </SettingsRow>
+        <SettingsRow
           :label="t('settings.createUserDir')"
           description="When a user is created, automatically generate their home directory under the base path."
         >

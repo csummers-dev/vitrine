@@ -246,6 +246,10 @@ Search answers from an in-memory index that updates as changes are reported. As 
 
 Each user can turn on two-factor sign-in under Settings → Profile: scan the QR code with an authenticator app (1Password, Aegis, Google Authenticator…), confirm a code, and save the ten recovery codes, each of which works once. Signing in then asks for a code after the password; failed codes count toward the same lockout as wrong passwords. An admin can reset a user's second factor from the user's page in Settings → Users.
 
+Admins can make it mandatory for themselves under Settings → Global → *Require two-factor sign-in for admins* (or `vitrine config set --requireAdminTwoFactor`). An admin without a second factor can still sign in and use their files, but is asked to set one up and admin pages stay locked until they do. You can only turn the requirement on once your own account has two-factor sign-in.
+
+**If an admin is locked out** (lost phone and recovery codes, or a lost key file), stop vitrine and run `vitrine users reset-2fa <username>`; they can then sign in with the password and set it up again. `vitrine config set --requireAdminTwoFactor=false` turns the requirement off from the command line.
+
 It applies to password sign-in; with proxy or hook authentication, use your identity provider's own second factor. The secrets are encrypted with a key stored beside the database as `<database name>-2fa.key` (for example `vitrine-2fa.key`). **Back it up with the database**: without it, users with two-factor sign-in can't log in until an admin resets them.
 
 #### Single sign-on (OpenID Connect)

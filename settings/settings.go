@@ -82,6 +82,11 @@ type Settings struct {
 	// Phase 4.1). Off by default: they let anyone with a link write to
 	// the server. Turning it off again stops existing ones accepting files.
 	UploadSharesEnabled bool `json:"uploadSharesEnabled"`
+	// RequireAdminTwoFactor makes admins who sign in with a password set
+	// up two-factor sign-in before they can use admin features (4.0).
+	// Recover with "vitrine users reset-2fa" or "config set
+	// --requireAdminTwoFactor=false" if an admin is stuck.
+	RequireAdminTwoFactor bool `json:"requireAdminTwoFactor"`
 	// UploadConcurrencyMax caps how many files one user uploads at once
 	// (4.0 Phase 5.4); 0 means the built-in maximum of 10.
 	UploadConcurrencyMax uint `json:"uploadConcurrencyMax"`
