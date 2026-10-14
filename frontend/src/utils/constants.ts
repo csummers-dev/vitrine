@@ -51,7 +51,8 @@ const unzipEnabled: boolean = window.FileBrowser.UnzipEnabled ?? true;
 // 4.0 3.6: the photo map (off with --mapTiles=off).
 const mapEnabled: boolean = window.FileBrowser.MapEnabled ?? false;
 // 4.0 4.1: drop-box shares (admins can turn them off in Global settings).
-const uploadSharesEnabled: boolean = window.FileBrowser.UploadShares ?? true;
+// 4.0 4.1: drop-box links are off until an admin allows them.
+const uploadSharesEnabled: boolean = window.FileBrowser.UploadShares ?? false;
 // 4.0 4.5: OpenID Connect single sign-on.
 const ssoName: string = window.FileBrowser.SSOName ?? "";
 const passwordLogin: boolean = window.FileBrowser.PasswordLogin ?? true;

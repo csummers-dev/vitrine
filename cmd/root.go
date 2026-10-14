@@ -119,7 +119,7 @@ func addServerFlags(flags *pflag.FlagSet) {
 	flags.StringP("baseURL", "b", "", "base url")
 	flags.String("tokenExpirationTime", "2h", "user session timeout")
 	flags.String("fileWatching", "auto", "detect file changes made outside vitrine: auto (OS notifications, falling back to polling), poll (check folders every minute; use for network mounts) or off")
-	flags.String("mapTiles", settings.DefaultMapTiles, "tile URL template for the photo map ({z}, {x}, {y}); vitrine fetches and caches the tiles itself. \"off\" turns the map off")
+	flags.String("mapTiles", "", "tile source for the photo map, off when empty: a URL template with {z}, {x} and {y}, or \"osm\" for OpenStreetMap's public tiles; vitrine fetches and caches the tiles itself")
 	flags.String("searchIndexMaxAge", "10m", "rebuild a search index in the background once it is older than this, to pick up changes made outside vitrine (0 disables)")
 	flags.Bool("disableThumbnails", false, "disable image thumbnails")
 	flags.Bool("disablePreviewResize", false, "disable resize of image previews")

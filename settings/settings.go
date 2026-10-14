@@ -78,10 +78,10 @@ type Settings struct {
 	// doubles I/O, so it's an explicit admin opt-in. Existing databases unmarshal
 	// to false.
 	VerifyTransfers bool `json:"verifyTransfers"`
-	// UploadSharesDisabled turns off drop-box (upload) share links
-	// server-wide (4.0 Phase 4.1): none can be created and existing ones
-	// stop accepting files.
-	UploadSharesDisabled bool `json:"uploadSharesDisabled"`
+	// UploadSharesEnabled allows drop-box (upload) share links (4.0
+	// Phase 4.1). Off by default: they let anyone with a link write to
+	// the server. Turning it off again stops existing ones accepting files.
+	UploadSharesEnabled bool `json:"uploadSharesEnabled"`
 	// UploadConcurrencyMax caps how many files one user uploads at once
 	// (4.0 Phase 5.4); 0 means the built-in maximum of 10.
 	UploadConcurrencyMax uint `json:"uploadConcurrencyMax"`
@@ -167,18 +167,20 @@ func GenerateKey() ([]byte, error) {
 	return b, nil
 }
 
-// DefaultMapTiles is the photo map's tile source (OpenStreetMap). The server
-// fetches and caches tiles itself, so browsers never contact it directly.
+// DefaultMapTiles is OpenStreetMap's public tile source, chosen with
+// --mapTiles=osm. The server fetches and caches tiles itself, so browsers
+// never contact it directly.
 const DefaultMapTiles = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
 
 // MapTileURL is the tile URL template for the photo map, or "" when the map
-// is turned off ("off"). Empty (older configs) means the default.
+// is off. It's off unless the admin picks a source ("osm" or a URL), since
+// tile requests reveal roughly where photos were taken.
 func (s *Server) MapTileURL() string {
 	switch strings.ToLower(strings.TrimSpace(s.MapTiles)) {
-	case "":
+	case "", "off", "none", "false":
+		return "" // off unless the admin picks a tile source
+	case "osm", "openstreetmap":
 		return DefaultMapTiles
-	case "off", "none", "false":
-		return ""
 	}
 	return strings.TrimSpace(s.MapTiles)
 }

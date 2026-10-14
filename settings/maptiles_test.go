@@ -4,7 +4,9 @@ import "testing"
 
 func TestMapTileURL(t *testing.T) {
 	cases := []struct{ in, want string }{
-		{"", DefaultMapTiles},
+		{"", ""},
+		{"osm", DefaultMapTiles},
+		{" OpenStreetMap ", DefaultMapTiles},
 		{"off", ""},
 		{" OFF ", ""},
 		{"none", ""},

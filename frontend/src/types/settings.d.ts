@@ -3,7 +3,7 @@ interface ISettings {
   createUserDir: boolean;
   hideLoginButton: boolean;
   /** 4.1: drop-box shares turned off server-wide. */
-  uploadSharesDisabled?: boolean;
+  uploadSharesEnabled?: boolean;
   /** 5.4: most files a user may upload at once (0 = no cap beyond 10). */
   uploadConcurrencyMax?: number;
   rememberLastPage: boolean;

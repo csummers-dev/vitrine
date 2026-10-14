@@ -43,12 +43,12 @@
         </SettingsRow>
         <SettingsRow
           label="Allow upload-only share links"
-          description="Let users turn a folder into a file request that anyone with the link can upload to. Turning this off stops existing ones from accepting files."
+          description="Let users turn a folder into a file request that anyone with the link can upload to. Off by default. Turning it off stops existing ones from accepting files."
         >
           <Toggle
-            :model-value="!settings.uploadSharesDisabled"
+            :model-value="!!settings.uploadSharesEnabled"
             @update:model-value="
-              (v: boolean) => settings && (settings.uploadSharesDisabled = !v)
+              (v: boolean) => settings && (settings.uploadSharesEnabled = v)
             "
           />
         </SettingsRow>

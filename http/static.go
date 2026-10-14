@@ -65,7 +65,7 @@ func handleWithStaticData(w http.ResponseWriter, _ *http.Request, d *data, fSys 
 		"UnzipEnabled":     d.server.UnzipEnabled,
 		// 4.0 3.6: the photo map needs a tile source (--mapTiles).
 		"MapEnabled":   d.server.MapTileURL() != "",
-		"UploadShares": !d.settings.UploadSharesDisabled,
+		"UploadShares": d.settings.UploadSharesEnabled,
 		// 5.4: admin cap on simultaneous uploads (0 = no cap beyond 10).
 		"UploadConcurrencyMax": d.settings.UploadConcurrencyMax,
 		"MapAttribution":       mapAttribution(d.server.MapTileURL()),

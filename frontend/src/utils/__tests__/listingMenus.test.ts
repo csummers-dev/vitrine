@@ -302,6 +302,23 @@ describe("buildBackgroundMenu", () => {
     expect(
       labels(buildBackgroundMenu({ ...base, imageCount: 2 }, a))
     ).not.toContain("Photo map");
+    // While it's off, an admin is told how to turn it on.
+    const setup = vi.fn();
+    const off = buildBackgroundMenu(
+      { ...base, imageCount: 2, isAdmin: true },
+      { ...a, photoMapSetup: setup }
+    );
+    expect(labels(off)).toContain("Photo map (off)");
+    off.find((i) => i.label === "Photo map (off)")!.action!();
+    expect(setup).toHaveBeenCalled();
+    expect(
+      labels(
+        buildBackgroundMenu(
+          { ...base, imageCount: 2 },
+          { ...a, photoMapSetup: setup }
+        )
+      )
+    ).not.toContain("Photo map (off)");
     expect(labels(buildBackgroundMenu(base, a))).toEqual([
       "Sort by…",
       "Refresh",

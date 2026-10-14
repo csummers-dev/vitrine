@@ -2875,6 +2875,7 @@ const {
         audioCount: folderAudio.value.length,
         imageCount: folderImages.value.length,
         mapEnabled,
+        isAdmin: !!authStore.user?.perm.admin,
         t,
       },
       backgroundMenuActions
@@ -2912,6 +2913,10 @@ const backgroundMenuActions = {
     slideshow: () => startSlideshow(),
     photoMap: () =>
       photoMap.open(folderImages.value, fileStore.req?.name || "My files"),
+    photoMapSetup: () =>
+      $showSuccess(
+        "The photo map is off. Start vitrine with --mapTiles=osm for OpenStreetMap's tiles, or a self-hosted tile URL."
+      ),
     prompt: (name: string) => layoutStore.showHover(name),
     upload: () => uploadFunc(),
     paste: () => void paste(),

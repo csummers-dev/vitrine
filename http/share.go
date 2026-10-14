@@ -171,7 +171,7 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 	switch {
 	case body.Mode != share.ModeDownload && !upload:
 		return http.StatusBadRequest, fmt.Errorf("unknown share mode %q", body.Mode)
-	case upload && d.settings.UploadSharesDisabled:
+	case upload && !d.settings.UploadSharesEnabled:
 		return http.StatusForbidden, nil
 	case upload && !d.user.Perm.Create:
 		return http.StatusForbidden, nil

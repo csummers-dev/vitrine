@@ -39,7 +39,8 @@ All notable changes to **vitrine**.
   only*: visitors drop files in without seeing the folder's contents. Limits
   for file size, total size and file types, an optional subfolder per
   sender, no overwrites (" (2)" suffixes), per-IP and per-link rate limits,
-  throttled passwords, and an admin switch in Settings → Global. Uploads
+  throttled passwords. Off until an admin turns them on in Settings →
+  Global. Uploads
   appear live in the owner's listing and are recorded in the audit log as
   `share.uploaded`.
 - **Share usage and one-time links.** Share links count views and
@@ -68,8 +69,8 @@ All notable changes to **vitrine**.
 - **Photo map.** See a folder's photos on a map, from their EXIF GPS
   positions; nearby photos group together, and a group can play as a
   slideshow. Tiles come through vitrine and are cached on the server
-  (OpenStreetMap by default); `--mapTiles` / `VITRINE_MAP_TILES` picks
-  another source or `off` removes the map.
+  (off until `--mapTiles` / `VITRINE_MAP_TILES` names a source: `osm` for
+  OpenStreetMap's public tiles, or your own `{z}/{x}/{y}` URL).
 - **Pick up where you left off.** Videos of five minutes or more resume at
   the last position, with a *Start over* button. A video counts as watched at
   98%; tiles show a watched tick or a progress bar, and the right-click menu

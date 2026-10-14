@@ -131,7 +131,7 @@ func withUploadShareInfo(next handleFunc) handleFunc {
 		if sub != "/" {
 			return http.StatusNotFound, nil
 		}
-		if d.settings.UploadSharesDisabled {
+		if !d.settings.UploadSharesEnabled {
 			return http.StatusForbidden, nil
 		}
 		if shareCounter != nil {
@@ -178,7 +178,7 @@ var publicUploadHandler = func(w http.ResponseWriter, r *http.Request, d *data) 
 	if err != nil || !link.IsUpload() {
 		return http.StatusNotFound, nil
 	}
-	if d.settings.UploadSharesDisabled {
+	if !d.settings.UploadSharesEnabled {
 		return http.StatusForbidden, nil
 	}
 	if status, err := authenticateShareRequest(r, link); status != 0 || err != nil {

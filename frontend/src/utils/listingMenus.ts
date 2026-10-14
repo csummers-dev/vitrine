@@ -300,6 +300,8 @@ export interface BackgroundMenuContext {
   audioCount?: number;
   imageCount?: number;
   mapEnabled?: boolean;
+  /** An admin sees how to turn the map on while it's off. */
+  isAdmin?: boolean;
   t: (key: string) => string;
 }
 
@@ -308,6 +310,8 @@ export interface BackgroundMenuActions {
   playAll?: () => void;
   slideshow?: () => void;
   photoMap?: () => void;
+  /** Explains how to turn the photo map on (admins, map off). */
+  photoMapSetup?: () => void;
   prompt: (name: string) => void;
   upload: () => void;
   paste: () => void;
@@ -370,6 +374,17 @@ export function buildBackgroundMenu(
       label: "Photo map",
       icon: "map",
       action: () => act.photoMap!(),
+    });
+  } else if (
+    (ctx.imageCount ?? 0) > 0 &&
+    !ctx.mapEnabled &&
+    ctx.isAdmin &&
+    act.photoMapSetup
+  ) {
+    media.push({
+      label: "Photo map (off)",
+      icon: "map",
+      action: () => act.photoMapSetup!(),
     });
   }
   if (media.length > 0) {

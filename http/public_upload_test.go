@@ -36,7 +36,7 @@ func newDropBox(t *testing.T, link *share.Link, perm users.Permissions) (*storag
 	if err := st.Users.Save(&users.User{Username: "owner", Password: "pw", Perm: perm}); err != nil {
 		t.Fatal(err)
 	}
-	if err := st.Settings.Save(&settings.Settings{Key: []byte("key"), FileMode: 0o640, DirMode: 0o750}); err != nil {
+	if err := st.Settings.Save(&settings.Settings{Key: []byte("key"), FileMode: 0o640, DirMode: 0o750, UploadSharesEnabled: true}); err != nil {
 		t.Fatal(err)
 	}
 	fs := afero.NewMemMapFs()
@@ -139,6 +139,18 @@ func TestPublicUploadPerUploaderFolderAndInfo(t *testing.T) {
 func TestPublicUploadNeedsOwnerCreatePermission(t *testing.T) {
 	link := &share.Link{Hash: "box", UserID: 1, Path: "/box", Mode: share.ModeUpload}
 	st, _ := newDropBox(t, link, users.Permissions{Share: true})
+	if code := serve(st, publicUploadHandler, uploadReq("box", "name=a.txt", "x")).Code; code != http.StatusForbidden {
+		t.Errorf("status %d, want 403", code)
+	}
+}
+
+func TestPublicUploadOffByDefault(t *testing.T) {
+	link := &share.Link{Hash: "box", UserID: 1, Path: "/box", Mode: share.ModeUpload}
+	st, _ := newDropBox(t, link, users.Permissions{Share: true, Create: true})
+	// Settings as a fresh install has them: drop-box links not switched on.
+	if err := st.Settings.Save(&settings.Settings{Key: []byte("key"), FileMode: 0o640, DirMode: 0o750}); err != nil {
+		t.Fatal(err)
+	}
 	if code := serve(st, publicUploadHandler, uploadReq("box", "name=a.txt", "x")).Code; code != http.StatusForbidden {
 		t.Errorf("status %d, want 403", code)
 	}
