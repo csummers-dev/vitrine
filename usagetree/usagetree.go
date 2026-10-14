@@ -221,7 +221,8 @@ func finish(n *Node, maxChildren int) {
 		other.Name = plural(len(rest), "more item", "more items")
 		children := make([]*Node, 0, maxChildren)
 		children = append(children, keep...)
-		n.Children = append(children, other)
+		children = append(children, other)
+		n.Children = children
 	}
 }
 
