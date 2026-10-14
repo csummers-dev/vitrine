@@ -58,6 +58,48 @@ The full per-file list is `frontend/scripts/style-token-baseline.json`.
 | Pages | login, share (public), trash, storage, duplicates, two-factor setup, errors |
 | Settings | profile, shares, sessions, global, users, user, audit, webhooks |
 
+## States to check
+
+Every screen and overlay with the states it must be checked in. "Shot" marks states the screenshot suite already covers (`e2e/visual/screens.spec.ts`); later steps add shots as they restyle each screen and tick the "Done" column.
+
+### Pages
+
+| Screen | States | Shot | Done |
+|---|---|---|---|
+| Login | password, code step, SSO button, error, throttled | password | |
+| Files | List, Icons, Gallery | List, Icons | |
+| Files | empty folder, loading, error, 403, broken favorite | | |
+| Files | split view, saved search, drag over, selection | | |
+| Files | inline rename, new folder | | |
+| Preview | image, video, audio, PDF, EPUB, comic, CSV, text, editor | | |
+| Trash | empty, with items | empty | |
+| Storage | treemap, largest files, loading | treemap | |
+| Duplicates | idle, scanning, results, none found | | |
+| Recent | list, empty (if Decision 1) | | |
+| Settings | Profile, Shares, Sessions, Global, Users, User, Audit, Webhooks | Profile, Global | |
+| Two-factor set-up | required by admin policy | yes | |
+| Public share | folder, file, password, limited, gone | | |
+| Drop-box page | upload, done, closed | | |
+| Errors | 404, 403, 500, offline | | |
+
+### Overlays
+
+| Overlay | Shot | Done |
+|---|---|---|
+| Command palette | | |
+| Search dropdown | | |
+| Context menus (row, background) | row | |
+| Toasts, undo toast | | |
+| Prompts: Delete, Replace, Resolve conflict, Upload, Info, Download, Current password, Discard changes, Share delete, Delete user | | |
+| Panels: Share, Move/Copy, Extract, Bulk rename, Tag picker, Audio tags, Folder picker, Save search, Favorite title, Root label | | |
+| Transfer dock | | |
+| Mini player | | |
+| Slideshow | | |
+| Photo map | | |
+| Quick peek | | |
+| Shortcuts overlay | | |
+| Offline banner | | |
+
 ## Known issues to fix in Phase 6
 
 - Storage treemap and photo map labels overlap at small block sizes.
