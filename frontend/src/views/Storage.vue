@@ -4,13 +4,11 @@
        keyboard and screen-reader equivalent. -->
   <div class="fb-columns flex-1 flex min-h-0 overflow-hidden">
     <div class="fb-primary flex-1 flex flex-col min-w-0 min-h-0">
-      <div class="storage-hero">
-        <div class="min-w-0 flex-1">
-          <div
-            class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] mb-1"
-          >
-            Storage
-          </div>
+      <UiPageHeader
+        eyebrow="Storage"
+        :meta-attrs="{ 'data-testid': 'storage-summary' }"
+      >
+        <template #breadcrumb>
           <nav class="storage-crumbs" aria-label="Folder">
             <template v-for="(c, i) in crumbs" :key="c.path">
               <span v-if="i > 0" class="storage-crumbs__sep" aria-hidden="true"
@@ -27,63 +25,53 @@
               </button>
             </template>
           </nav>
-          <div
-            class="mt-1 text-[13px] text-ink-3 tabular"
-            data-testid="storage-summary"
-          >
-            <template v-if="loading && !tree">Measuring…</template>
-            <template v-else-if="tree">
-              {{ humanSize(tree.root.size) }} in
-              {{ tree.root.files.toLocaleString() }}
-              {{ tree.root.files === 1 ? "file" : "files" }}
-              <template v-if="tree.disk && tree.disk.total > 0">
-                <span class="storage-dot">·</span>
-                {{ humanSize(tree.disk.total - tree.disk.used) }} free of
-                {{ humanSize(tree.disk.total) }} on this drive
-              </template>
+        </template>
+        <template #meta>
+          <template v-if="loading && !tree">Measuring…</template>
+          <template v-else-if="tree">
+            {{ humanSize(tree.root.size) }} in
+            {{ tree.root.files.toLocaleString() }}
+            {{ tree.root.files === 1 ? "file" : "files" }}
+            <template v-if="tree.disk && tree.disk.total > 0">
+              <span class="storage-dot">·</span>
+              {{ humanSize(tree.disk.total - tree.disk.used) }} free of
+              {{ humanSize(tree.disk.total) }} on this drive
             </template>
-          </div>
-          <div
-            v-if="tree?.disk && tree.disk.total > 0"
-            class="storage-disk"
-            role="img"
-            :aria-label="`This folder uses ${pct(tree.root.size, tree.disk.total)} of the drive; ${pct(tree.disk.used, tree.disk.total)} is used in all`"
-          >
-            <span
-              class="storage-disk__used"
-              :style="{ width: pct(tree.disk.used, tree.disk.total) }"
-            />
-            <span
-              class="storage-disk__here"
-              :style="{ width: pct(tree.root.size, tree.disk.total) }"
-            />
-          </div>
-        </div>
-        <router-link
-          class="storage-btn"
-          :to="{
-            path: '/duplicates',
-            query: currentPath === '/' ? {} : { path: currentPath },
-          }"
+          </template>
+        </template>
+        <div
+          v-if="tree?.disk && tree.disk.total > 0"
+          class="storage-disk"
+          role="img"
+          :aria-label="`This folder uses ${pct(tree.root.size, tree.disk.total)} of the drive; ${pct(tree.disk.used, tree.disk.total)} is used in all`"
         >
-          <Icon name="copy" :size="14" />
-          <span class="max-md:hidden">Find duplicates</span>
-        </router-link>
-        <button
-          type="button"
-          class="storage-btn"
-          :disabled="loading"
-          title="Measure again"
-          @click="load(true)"
-        >
-          <Icon
-            name="rotate-ccw"
-            :size="14"
-            :class="{ 'storage-spin': loading }"
+          <span
+            class="storage-disk__used"
+            :style="{ width: pct(tree.disk.used, tree.disk.total) }"
           />
-          <span class="max-md:hidden">Refresh</span>
-        </button>
-      </div>
+          <span
+            class="storage-disk__here"
+            :style="{ width: pct(tree.root.size, tree.disk.total) }"
+          />
+        </div>
+        <template #actions>
+          <UiButton
+            icon="copy"
+            :to="{
+              path: '/duplicates',
+              query: currentPath === '/' ? {} : { path: currentPath },
+            }"
+            >Find duplicates</UiButton
+          >
+          <UiButton
+            icon="rotate-ccw"
+            :loading="loading"
+            title="Measure again"
+            @click="load(true)"
+            >Refresh</UiButton
+          >
+        </template>
+      </UiPageHeader>
 
       <div class="storage-body">
         <section class="storage-map-wrap" aria-label="Treemap">
@@ -194,6 +182,8 @@
 </template>
 
 <script setup lang="ts">
+import UiButton from "@/components/ui/UiButton.vue";
+import UiPageHeader from "@/components/ui/UiPageHeader.vue";
 import {
   computed,
   inject,
@@ -500,18 +490,6 @@ const menuItems = computed<MenuItem[]>(() => {
 </script>
 
 <style scoped>
-.storage-hero {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px 20px 12px;
-  flex-shrink: 0;
-}
-@media (max-width: 768px) {
-  .storage-hero {
-    padding: 12px 16px 10px;
-  }
-}
 .storage-crumbs {
   display: flex;
   flex-wrap: wrap;
@@ -520,12 +498,22 @@ const menuItems = computed<MenuItem[]>(() => {
   min-width: 0;
 }
 .storage-crumbs__btn {
-  font-size: 20px;
-  font-weight: 600;
-  line-height: 1.2;
+  font-size: var(--type-display);
+  font-weight: 700;
+  line-height: var(--type-display-lh);
   color: var(--color-ink-3);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 0 3px;
+}
+.storage-crumbs__btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+@media (max-width: 767px) {
+  .storage-crumbs__btn {
+    font-size: var(--type-title);
+    line-height: var(--type-title-lh);
+  }
 }
 .storage-crumbs__btn:hover {
   color: var(--color-ink-1);
@@ -536,7 +524,7 @@ const menuItems = computed<MenuItem[]>(() => {
 }
 .storage-crumbs__sep {
   color: var(--color-ink-3);
-  font-size: 18px;
+  font-size: var(--type-title);
 }
 .storage-dot {
   margin: 0 3px;
@@ -547,36 +535,21 @@ const menuItems = computed<MenuItem[]>(() => {
   margin-top: 8px;
   height: 6px;
   max-width: 420px;
-  border-radius: 999px;
-  background: var(--color-line);
+  border-radius: var(--radius-full);
+  background: var(--color-elevated);
   overflow: hidden;
 }
 .storage-disk__used,
 .storage-disk__here {
   position: absolute;
   inset: 0 auto 0 0;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
 }
 .storage-disk__used {
   background: color-mix(in srgb, var(--color-ink-3) 45%, transparent);
 }
 .storage-disk__here {
   background: var(--color-accent);
-}
-.storage-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 11px;
-  border-radius: 8px;
-  border: 1px solid var(--color-line);
-  background: var(--color-surface);
-  color: var(--color-ink-2);
-  font-size: 13px;
-}
-.storage-btn:hover:not(:disabled) {
-  background: var(--color-elevated);
 }
 .storage-spin {
   animation: storage-spin 0.9s linear infinite;

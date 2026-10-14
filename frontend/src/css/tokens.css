@@ -101,19 +101,19 @@
   --tag-color-lilac-bg: rgba(106, 111, 192, 0.13);
   --tag-color-lilac-fg: #545aae;
   --tag-color-blue-bg: rgba(90, 127, 184, 0.13);
-  --tag-color-blue-fg: #47699c;
+  --tag-color-blue-fg: #436393;
   --tag-color-green-bg: rgba(93, 138, 94, 0.13);
-  --tag-color-green-fg: #487349;
+  --tag-color-green-fg: #426a43;
   --tag-color-amber-bg: rgba(160, 125, 63, 0.15);
-  --tag-color-amber-fg: #7f622e;
+  --tag-color-amber-fg: #775c2b;
   --tag-color-red-bg: rgba(176, 96, 96, 0.13);
-  --tag-color-red-fg: #a05252;
+  --tag-color-red-fg: #934b4b;
   --tag-color-pink-bg: rgba(168, 93, 118, 0.13);
-  --tag-color-pink-fg: #97536a;
+  --tag-color-pink-fg: #8b4c62;
   --tag-color-slate-bg: rgba(110, 108, 122, 0.14);
   --tag-color-slate-fg: #5d5b68;
   --tag-color-teal-bg: rgba(63, 133, 120, 0.13);
-  --tag-color-teal-fg: #337368;
+  --tag-color-teal-fg: #2f6a60;
 }
 
 /* ── Scales ──────────────────────────────────────────────────────────────
@@ -388,7 +388,7 @@ html.dark {
   --c-amber: #e4aa52;
   --c-rose: #ee8f84;
 
-  --status-danger: #f19a8e;
+  --status-danger: #f19c90;
   --status-danger-fill: #b73a2e;
   --status-danger-fill-strong: #cc4a3c;
   --status-danger-soft: rgba(241, 120, 104, 0.16);
@@ -443,13 +443,13 @@ html.dark {
   --tag-color-amber-bg: rgba(190, 160, 100, 0.2);
   --tag-color-amber-fg: #d4bb85;
   --tag-color-red-bg: rgba(200, 130, 130, 0.2);
-  --tag-color-red-fg: #d8a3a3;
+  --tag-color-red-fg: #dcacac;
   --tag-color-pink-bg: rgba(205, 140, 165, 0.2);
-  --tag-color-pink-fg: #d9a8ba;
+  --tag-color-pink-fg: #dcafc0;
   --tag-color-slate-bg: rgba(160, 158, 175, 0.2);
-  --tag-color-slate-fg: #b8b6c4;
+  --tag-color-slate-fg: #bcbac8;
   --tag-color-teal-bg: rgba(110, 175, 160, 0.2);
-  --tag-color-teal-fg: #93c4ba;
+  --tag-color-teal-fg: #95c5bb;
 
   /* Native controls (scrollbars, date pickers) follow the theme. */
   color-scheme: dark;

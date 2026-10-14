@@ -29,26 +29,15 @@
         </div>
       </div>
       <div class="confirm-prompt__actions">
-        <button
-          type="button"
-          class="confirm-prompt__btn confirm-prompt__btn--ghost"
-          @click="dialog.close"
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          class="confirm-prompt__btn confirm-prompt__btn--primary"
-          @click="save"
-        >
-          Save
-        </button>
+        <UiButton size="sm" @click="dialog.close"> Cancel </UiButton>
+        <UiButton variant="primary" size="sm" @click="save"> Save </UiButton>
       </div>
     </div>
   </BaseModal>
 </template>
 
 <script setup lang="ts">
+import UiButton from "@/components/ui/UiButton.vue";
 /**
  * FavoriteTitleDialog — edits the custom sidebar display name for a pinned
  * folder. Opened from the row right-click menu and the section ⋯ menu via the

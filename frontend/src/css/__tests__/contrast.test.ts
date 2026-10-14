@@ -112,13 +112,14 @@ for (const t of ["light", "dark"] as Theme[]) {
     });
 
     it("kind labels are 4.5:1 on their tints", () => {
-      for (const k of KINDS) {
-        const bg = on(t, `--tint-${k}-bg`, "--color-surface");
-        expect(
-          contrast(tok(t, `--tint-${k}-fg`), bg),
-          k
-        ).toBeGreaterThanOrEqual(4.5);
-      }
+      for (const k of KINDS)
+        for (const s of SURFACES) {
+          const bg = on(t, `--tint-${k}-bg`, s);
+          expect(
+            contrast(tok(t, `--tint-${k}-fg`), bg),
+            `${k} over ${s}`
+          ).toBeGreaterThanOrEqual(4.5);
+        }
     });
 
     it("kind solids (treemap, dots) are 3:1 against the surface", () => {
@@ -134,13 +135,14 @@ for (const t of ["light", "dark"] as Theme[]) {
     });
 
     it("tag labels are 4.5:1 on their chips", () => {
-      for (const c of TAGS) {
-        const bg = on(t, `--tag-color-${c}-bg`, "--color-surface");
-        expect(
-          contrast(tok(t, `--tag-color-${c}-fg`), bg),
-          c
-        ).toBeGreaterThanOrEqual(4.5);
-      }
+      for (const c of TAGS)
+        for (const s of SURFACES) {
+          const bg = on(t, `--tag-color-${c}-bg`, s);
+          expect(
+            contrast(tok(t, `--tag-color-${c}-fg`), bg),
+            c
+          ).toBeGreaterThanOrEqual(4.5);
+        }
     });
 
     it("status text is 4.5:1 on surfaces and on its own wash", () => {
@@ -151,10 +153,13 @@ for (const t of ["light", "dark"] as Theme[]) {
             contrast(fg, tok(t, s)),
             `${k} on ${s}`
           ).toBeGreaterThanOrEqual(4.5);
-        const wash = on(t, `--status-${k}-soft`, "--color-surface");
-        expect(contrast(fg, wash), `${k} on its wash`).toBeGreaterThanOrEqual(
-          4.5
-        );
+        for (const s of SURFACES) {
+          const wash = on(t, `--status-${k}-soft`, s);
+          expect(
+            contrast(fg, wash),
+            `${k} on its wash over ${s}`
+          ).toBeGreaterThanOrEqual(4.5);
+        }
       }
     });
 

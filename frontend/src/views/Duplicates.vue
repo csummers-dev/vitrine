@@ -2,169 +2,128 @@
   <!-- Duplicate finder (4.0 Phase 5.2). -->
   <div class="fb-columns flex-1 flex min-h-0 overflow-hidden">
     <div class="fb-primary flex-1 flex flex-col min-w-0 min-h-0">
-      <div class="dupes-hero">
-        <div class="min-w-0 flex-1">
-          <div
-            class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] mb-1"
+      <UiPageHeader
+        eyebrow="Library tools"
+        title="Duplicates"
+        :meta-attrs="{ 'data-testid': 'dupes-summary' }"
+      >
+        <template #meta>
+          <template v-if="!scan">Find files with identical content.</template>
+          <template v-else-if="running">{{ progressText }}</template>
+          <template v-else-if="scan.status === 'failed'"
+            >The scan failed: {{ scan.error }}</template
           >
-            Library tools
-          </div>
-          <h1
-            class="text-[22px] font-semibold leading-tight text-ink-1 max-md:text-[18px]"
+          <template v-else-if="scan.status === 'canceled'"
+            >The scan was canceled.</template
           >
-            Duplicates
-          </h1>
-          <div
-            class="mt-1 text-[13px] text-ink-3 tabular"
-            data-testid="dupes-summary"
+          <template v-else-if="groups.length === 0"
+            >No duplicates in {{ folderName(scan.path) }} ({{
+              (scan.result?.filesSeen ?? 0).toLocaleString()
+            }}
+            files checked).</template
           >
-            <template v-if="!scan">Find files with identical content.</template>
-            <template v-else-if="running">{{ progressText }}</template>
-            <template v-else-if="scan.status === 'failed'"
-              >The scan failed: {{ scan.error }}</template
-            >
-            <template v-else-if="scan.status === 'canceled'"
-              >The scan was canceled.</template
-            >
-            <template v-else-if="groups.length === 0"
-              >No duplicates in {{ folderName(scan.path) }} ({{
-                (scan.result?.filesSeen ?? 0).toLocaleString()
-              }}
-              files checked).</template
-            >
-            <template v-else>
-              {{ groups.length.toLocaleString() }}
-              {{ groups.length === 1 ? "group" : "groups" }} in
-              {{ folderName(scan.path) }} · {{ humanSize(reclaimable) }} can be
-              freed
-            </template>
-          </div>
-        </div>
-      </div>
+          <template v-else>
+            {{ groups.length.toLocaleString() }}
+            {{ groups.length === 1 ? "group" : "groups" }} in
+            {{ folderName(scan.path) }} · {{ humanSize(reclaimable) }} can be
+            freed
+          </template>
+        </template>
+      </UiPageHeader>
 
       <div class="flex-1 min-h-0 overflow-y-auto px-5 pb-8 max-md:px-3">
         <!-- Scan settings -->
         <form class="dupes-form" @submit.prevent="start">
-          <label class="dupes-field">
-            <span>Folder</span>
-            <input
-              v-model="form.path"
-              type="text"
-              spellcheck="false"
-              autocomplete="off"
-              :disabled="running"
-            />
-          </label>
-          <label class="dupes-field dupes-field--narrow">
-            <span>Smallest file</span>
-            <select v-model.number="form.minSize" :disabled="running">
-              <option v-for="o in MIN_SIZES" :key="o.value" :value="o.value">
-                {{ o.label }}
-              </option>
-            </select>
-          </label>
-          <label class="dupes-field dupes-field--wide">
-            <span>Skip folders (one per line)</span>
-            <textarea
-              v-model="form.exclude"
-              rows="2"
-              spellcheck="false"
-              placeholder="/Backups/old"
-              :disabled="running"
-            />
-          </label>
-          <label class="dupes-check">
-            <input
-              v-model="form.includeHidden"
-              type="checkbox"
-              :disabled="running"
-            />
-            <span>Include hidden files</span>
-          </label>
+          <UiTextField
+            v-model="form.path"
+            class="dupes-form__path"
+            label="Folder"
+            mono
+            spellcheck="false"
+            autocomplete="off"
+            :disabled="running"
+          />
+          <UiSelect
+            v-model="form.minSize"
+            class="dupes-form__size"
+            label="Smallest file"
+            :options="MIN_SIZES"
+            :disabled="running"
+          />
+          <UiTextField
+            v-model="form.exclude"
+            class="dupes-form__exclude"
+            label="Skip folders (one per line)"
+            mono
+            :rows="2"
+            spellcheck="false"
+            placeholder="/Backups/old"
+            :disabled="running"
+          />
+          <UiCheckbox
+            v-model="form.includeHidden"
+            label="Include hidden files"
+            :disabled="running"
+          />
           <div class="dupes-form__actions">
-            <button
-              v-if="running"
-              type="button"
-              class="dupes-btn"
-              @click="cancel"
-            >
-              Cancel scan
-            </button>
-            <button v-else type="submit" class="dupes-btn dupes-btn--primary">
-              <Icon name="search" :size="14" />
+            <UiButton v-if="running" @click="cancel">Cancel scan</UiButton>
+            <UiButton v-else type="submit" variant="primary" icon="search">
               {{ scan ? "Scan again" : "Find duplicates" }}
-            </button>
+            </UiButton>
           </div>
-          <div
+          <UiProgress
             v-if="running"
-            class="dupes-progress"
-            role="progressbar"
-            :aria-valuenow="progressPct ?? undefined"
-            aria-valuemin="0"
-            aria-valuemax="100"
-            :aria-label="progressText"
-          >
-            <span
-              class="dupes-progress__bar"
-              :class="{ 'is-indeterminate': progressPct === null }"
-              :style="
-                progressPct === null ? undefined : { width: `${progressPct}%` }
-              "
-            />
-          </div>
+            class="dupes-form__progress"
+            :value="progressPct ?? undefined"
+            :label="progressText"
+          />
         </form>
 
         <!-- Results -->
         <template v-if="groups.length > 0">
           <div class="dupes-toolbar" role="toolbar" aria-label="Selection">
             <span class="dupes-toolbar__label">Select all but</span>
-            <button type="button" class="dupes-chip" @click="apply('newest')">
-              the newest
-            </button>
-            <button type="button" class="dupes-chip" @click="apply('oldest')">
-              the oldest
-            </button>
+            <UiButton size="sm" @click="apply('newest')">the newest</UiButton>
+            <UiButton size="sm" @click="apply('oldest')">the oldest</UiButton>
             <span class="dupes-toolbar__label">or keep copies in</span>
-            <input
+            <UiTextField
               v-model="keepFolder"
-              class="dupes-chip-input"
-              type="text"
-              placeholder="/Music"
+              class="dupes-toolbar__folder"
               aria-label="Folder to keep copies in"
+              placeholder="/Music"
+              mono
               @keydown.enter.prevent="apply('folder')"
             />
-            <button
-              type="button"
-              class="dupes-chip"
+            <UiButton
+              size="sm"
               :disabled="!keepFolder.trim()"
               @click="apply('folder')"
+              >Apply</UiButton
             >
-              Apply
-            </button>
-            <button
+            <UiButton
               v-if="selected.size > 0"
-              type="button"
-              class="dupes-chip"
+              size="sm"
+              variant="ghost"
               @click="selected = new Set()"
+              >Clear</UiButton
             >
-              Clear
-            </button>
             <span class="flex-1" />
-            <button
+            <UiButton
               v-if="canDelete"
-              type="button"
-              class="dupes-btn dupes-btn--danger"
-              :disabled="selected.size === 0 || deleting"
+              variant="danger"
+              icon="trash-2"
+              :disabled="selected.size === 0"
+              disabled-reason="Select the copies to remove first"
+              :loading="deleting"
               data-testid="dupes-trash"
               @click="confirmOpen = true"
             >
-              <Icon name="trash-2" :size="14" />
               <template v-if="selected.size === 0">Move to trash</template>
               <template v-else>
                 Move {{ selected.size }} to trash ·
                 {{ humanSize(selectedSize) }}
               </template>
-            </button>
+            </UiButton>
           </div>
 
           <ul class="dupes-groups" data-testid="dupes-groups">
@@ -177,50 +136,45 @@
               </div>
               <ul class="dupes-files">
                 <li v-for="f in g.files" :key="f.path" class="dupes-file">
-                  <label
+                  <UiCheckbox
                     class="dupes-file__pick"
+                    :model-value="selected.has(f.path)"
+                    :disabled="!canDelete || !canSelect(g, selected, f.path)"
+                    :aria-label="`Delete ${f.path}`"
                     :title="
                       canSelect(g, selected, f.path)
                         ? ''
                         : 'Keep at least one copy'
                     "
+                    @update:model-value="toggle(g, f.path)"
                   >
-                    <input
-                      type="checkbox"
-                      :checked="selected.has(f.path)"
-                      :disabled="!canDelete || !canSelect(g, selected, f.path)"
-                      :aria-label="`Delete ${f.path}`"
-                      @change="toggle(g, f.path)"
-                    />
                     <span class="dupes-file__text">
                       <span class="dupes-file__name">{{ f.name }}</span>
                       <span class="dupes-file__dir">{{ dirOf(f.path) }}</span>
                     </span>
-                  </label>
+                  </UiCheckbox>
                   <span class="dupes-file__date" :title="f.modified">{{
                     since(f.modified)
                   }}</span>
-                  <button
-                    type="button"
-                    class="dupes-file__show"
+                  <UiButton
+                    size="sm"
+                    variant="ghost"
                     :aria-label="`Show ${f.path} in files`"
                     @click="reveal(f.path)"
+                    >Show</UiButton
                   >
-                    Show
-                  </button>
                 </li>
               </ul>
             </li>
           </ul>
-          <button
+          <UiButton
             v-if="shownGroups.length < groups.length"
-            type="button"
             class="dupes-more"
             @click="limit += 200"
           >
             Show {{ Math.min(200, groups.length - shownGroups.length) }} more
             groups
-          </button>
+          </UiButton>
         </template>
 
         <EmptyState
@@ -249,9 +203,14 @@
 import { computed, inject, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import Icon from "@/components/Icon.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import UiButton from "@/components/ui/UiButton.vue";
+import UiCheckbox from "@/components/ui/UiCheckbox.vue";
+import UiPageHeader from "@/components/ui/UiPageHeader.vue";
+import UiProgress from "@/components/ui/UiProgress.vue";
+import UiSelect from "@/components/ui/UiSelect.vue";
+import UiTextField from "@/components/ui/UiTextField.vue";
 import { files as filesApi } from "@/api";
 import {
   getScan,
@@ -460,124 +419,30 @@ const trashSelected = async () => {
 </script>
 
 <style scoped>
-.dupes-hero {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 20px 12px;
-  flex-shrink: 0;
-}
-@media (max-width: 768px) {
-  .dupes-hero {
-    padding: 12px 16px 10px;
-  }
-}
 .dupes-form {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: 10px 14px;
-  padding: 14px;
-  margin-bottom: 16px;
-  border: 1px solid var(--color-line);
-  border-radius: 10px;
-  background: var(--color-canvas);
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-panel);
 }
-.dupes-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-ink-2);
+.dupes-form__path {
   flex: 1 1 220px;
 }
-.dupes-field--narrow {
-  flex: 0 0 140px;
+.dupes-form__size {
+  flex: 0 0 150px;
 }
-.dupes-field--wide {
+.dupes-form__exclude {
   flex: 1 1 260px;
-}
-.dupes-field input,
-.dupes-field select,
-.dupes-field textarea,
-.dupes-chip-input {
-  font: inherit;
-  font-weight: 400;
-  font-size: 13px;
-  padding: 6px 9px;
-  border-radius: 7px;
-  border: 1px solid var(--color-line);
-  background: var(--color-surface);
-  color: var(--color-ink-1);
-}
-.dupes-field textarea {
-  resize: vertical;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
-}
-.dupes-check {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--color-ink-2);
-  padding-bottom: 7px;
 }
 .dupes-form__actions {
   margin-left: auto;
 }
-.dupes-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 13px;
-  border-radius: 8px;
-  border: 1px solid var(--color-line);
-  background: var(--color-surface);
-  color: var(--color-ink-1);
-  font-size: 13px;
-  font-weight: 600;
-}
-.dupes-btn:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-.dupes-btn--primary {
-  background: var(--color-accent);
-  border-color: transparent;
-  color: var(--color-on-accent);
-}
-.dupes-btn--danger {
-  border-color: color-mix(in srgb, var(--c-rose) 30%, transparent);
-  background: color-mix(in srgb, var(--c-rose) 8%, transparent);
-  color: var(--c-rose);
-}
-.dupes-progress {
+.dupes-form__progress {
   flex-basis: 100%;
-  height: 4px;
-  border-radius: 999px;
-  background: var(--color-line);
-  overflow: hidden;
-}
-.dupes-progress__bar {
-  display: block;
-  height: 100%;
-  background: var(--color-accent);
-  transition: width 0.3s ease;
-}
-.dupes-progress__bar.is-indeterminate {
-  width: 30%;
-  animation: dupes-slide 1.2s ease-in-out infinite;
-}
-@keyframes dupes-slide {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(340%);
-  }
 }
 .dupes-toolbar {
   display: flex;
@@ -587,29 +452,11 @@ const trashSelected = async () => {
   margin-bottom: 10px;
 }
 .dupes-toolbar__label {
-  font-size: 12.5px;
+  font-size: var(--type-body);
   color: var(--color-ink-3);
 }
-.dupes-chip {
-  padding: 3px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--color-line);
-  background: var(--color-surface);
-  font-size: 12.5px;
-  color: var(--color-ink-2);
-}
-.dupes-chip:hover:not(:disabled) {
-  border-color: var(--color-accent);
-  color: var(--color-ink-1);
-}
-.dupes-chip:disabled {
-  opacity: 0.5;
-}
-.dupes-chip-input {
-  width: 140px;
-  padding: 3px 9px;
-  font-size: 12.5px;
-  border-radius: 999px;
+.dupes-toolbar__folder {
+  width: 160px;
 }
 .dupes-groups {
   list-style: none;
@@ -621,14 +468,14 @@ const trashSelected = async () => {
 }
 .dupes-group {
   border: 1px solid var(--color-line);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 .dupes-group__head {
-  padding: 7px 12px;
-  font-size: 12.5px;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--type-body);
   color: var(--color-ink-3);
-  background: var(--color-canvas);
+  background: var(--color-panel);
   border-bottom: 1px solid var(--color-line);
 }
 .dupes-group__size {
@@ -656,10 +503,6 @@ const trashSelected = async () => {
 .dupes-file__pick {
   flex: 1;
   min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
 }
 .dupes-file__text {
   min-width: 0;
@@ -667,14 +510,14 @@ const trashSelected = async () => {
   flex-direction: column;
 }
 .dupes-file__name {
-  font-size: 13px;
+  font-size: var(--type-ui);
   color: var(--color-ink-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .dupes-file__dir {
-  font-size: 11.5px;
+  font-size: var(--type-caption);
   color: var(--color-ink-3);
   white-space: nowrap;
   overflow: hidden;
@@ -682,22 +525,10 @@ const trashSelected = async () => {
 }
 .dupes-file__date {
   flex: none;
-  font-size: 12px;
+  font-size: var(--type-small);
   color: var(--color-ink-3);
 }
-.dupes-file__show {
-  flex: none;
-  font-size: 12px;
-  color: var(--color-accent-ink);
-  padding: 2px 6px;
-  border-radius: 6px;
-}
-.dupes-file__show:hover {
-  background: var(--color-elevated);
-}
 .dupes-more {
-  margin-top: 10px;
-  font-size: 13px;
-  color: var(--color-accent-ink);
+  margin-top: var(--space-3);
 }
 </style>

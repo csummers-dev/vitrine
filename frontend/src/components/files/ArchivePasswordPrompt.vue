@@ -47,27 +47,24 @@
       </div>
 
       <div class="confirm-prompt__actions">
-        <button
-          type="button"
-          class="confirm-prompt__btn confirm-prompt__btn--ghost"
-          @click="ap.cancel"
-        >
+        <UiButton size="sm" @click="ap.cancel">
           {{ t("buttons.cancel") }}
-        </button>
-        <button
-          type="button"
-          class="confirm-prompt__btn confirm-prompt__btn--primary"
+        </UiButton>
+        <UiButton
+          variant="primary"
+          size="sm"
           :disabled="!value"
           @click="submit"
         >
           {{ t("prompts.archivePassword.unlock") }}
-        </button>
+        </UiButton>
       </div>
     </div>
   </BaseModal>
 </template>
 
 <script setup lang="ts">
+import UiButton from "@/components/ui/UiButton.vue";
 /**
  * ArchivePasswordPrompt — the one password dialog for extracting
  * password-protected archives. Mounted once in App.vue; driven by the

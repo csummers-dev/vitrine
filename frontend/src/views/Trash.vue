@@ -6,42 +6,21 @@
        as the files view (v2.7 panel shell). -->
   <div class="fb-columns flex-1 flex min-h-0 overflow-hidden">
     <div class="fb-primary flex-1 flex flex-col min-w-0 min-h-0">
-      <!-- ── Hero (matches .fb-hero metrics) ───────────────────────── -->
-      <div class="trash-hero">
-        <div class="min-w-0">
-          <div
-            class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] mb-1"
+      <UiPageHeader eyebrow="Recycle bin" title="Trash">
+        <template #meta>
+          <template v-if="loading">Loading…</template>
+          <template v-else-if="entries.length === 0"
+            >Nothing here right now</template
           >
-            Recycle bin
-          </div>
-          <h1
-            class="text-[22px] font-semibold leading-tight text-ink-1 max-md:text-[18px]"
-          >
-            Trash
-          </h1>
-          <div class="mt-1 text-[13px] text-ink-3 tabular max-md:text-[12px]">
-            <template v-if="loading">Loading…</template>
-            <template v-else-if="entries.length === 0"
-              >Nothing here right now</template
-            >
-            <template v-else>
-              {{ entries.length }} item{{ entries.length === 1 ? "" : "s" }}
-              <span class="trash-dot">·</span>
-              {{ humanSize(totalSize) }}
-            </template>
-          </div>
-        </div>
-
-        <button
-          v-if="entries.length > 0 && canDelete"
-          type="button"
-          class="trash-empty-btn"
-          @click="confirmEmpty"
-        >
-          <Icon name="trash-2" :size="14" :stroke-width="1.9" />
-          <span class="max-md:hidden">Empty trash</span>
-        </button>
-      </div>
+          <template v-else>
+            {{ entries.length }} item{{ entries.length === 1 ? "" : "s" }} ·
+            {{ humanSize(totalSize) }}
+          </template>
+        </template>
+        <template v-if="entries.length > 0 && canDelete" #actions>
+          <UiButton icon="trash-2" @click="confirmEmpty">Empty trash</UiButton>
+        </template>
+      </UiPageHeader>
 
       <!-- ── Scrolling content ─────────────────────────────────────── -->
       <div class="flex-1 min-h-0 overflow-y-auto px-5 pb-8 max-md:px-3">
@@ -89,28 +68,25 @@
             </div>
 
             <div class="trash-actions">
-              <button
+              <UiButton
                 v-if="canCreate"
-                type="button"
-                class="trash-act trash-act--restore"
+                size="sm"
+                icon="undo-2"
                 title="Restore to original location"
                 aria-label="Restore to original location"
                 @click="restore(e)"
+                >Restore</UiButton
               >
-                <Icon name="undo-2" :size="14" :stroke-width="1.9" />
-                <span class="trash-act__label">Restore</span>
-              </button>
-              <button
+              <UiButton
                 v-if="canDelete"
-                type="button"
-                class="trash-act trash-act--forever"
+                size="sm"
+                variant="ghost"
+                icon="trash-2"
                 title="Delete forever"
                 aria-label="Delete forever"
                 @click="confirmForever(e)"
+                >Delete</UiButton
               >
-                <Icon name="trash-2" :size="14" :stroke-width="1.9" />
-                <span class="trash-act__label">Delete</span>
-              </button>
             </div>
           </li>
         </ul>
@@ -136,6 +112,8 @@ import Icon from "@/components/Icon.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import Skeleton from "@/components/Skeleton.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import UiButton from "@/components/ui/UiButton.vue";
+import UiPageHeader from "@/components/ui/UiPageHeader.vue";
 import { trash as trashApi } from "@/api";
 import { StatusError } from "@/api/utils";
 import type { TrashEntry } from "@/api/trash";
@@ -255,61 +233,10 @@ const onConfirm = async () => {
 </script>
 
 <style scoped>
-/* Hero — same rhythm as FileListing's .fb-hero (16px 20px 12px, title left,
-   actions right) so the page header lines up with the rest of the app. */
-.trash-hero {
-  display: flex;
-  /* Center the "Empty trash" button beside the title (it used to be pushed to
-     the far right by a flex-1 on the title block, where top-right toasts
-     covered it and blocked the click). */
-  align-items: center;
-  gap: 12px;
-  padding: 16px 20px 12px;
-  flex-shrink: 0;
-}
-@media (max-width: 768px) {
-  .trash-hero {
-    padding: 12px 16px 10px;
-  }
-}
-
+/* Decorative separator in the meta line. */
 .trash-dot {
   margin: 0 1px;
   opacity: 0.55;
-}
-
-/* Empty-trash: a rose-tinted danger action sized like the hero toolbar buttons
-   (uses the app's defined --c-rose token, light/dark aware). */
-.trash-empty-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  height: 32px;
-  padding: 0 13px;
-  margin-top: 2px;
-  flex-shrink: 0;
-  border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--c-rose) 30%, transparent);
-  background: color-mix(in srgb, var(--c-rose) 8%, transparent);
-  color: var(--c-rose);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background-color 0.12s ease,
-    border-color 0.12s ease;
-}
-.trash-empty-btn:hover {
-  background: color-mix(in srgb, var(--c-rose) 15%, transparent);
-  border-color: color-mix(in srgb, var(--c-rose) 50%, transparent);
-}
-@media (max-width: 768px) {
-  .trash-empty-btn {
-    width: 32px;
-    padding: 0;
-    justify-content: center;
-  }
 }
 
 /* ── Rows — flat, full-width, hover bg (matches the list view's .item rows;
@@ -377,36 +304,6 @@ const onConfirm = async () => {
   opacity: 1;
 }
 
-.trash-act {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 11px;
-  border-radius: 8px;
-  border: 1px solid var(--color-line);
-  background: var(--color-surface);
-  color: var(--color-ink-2);
-  font: inherit;
-  font-size: 12px;
-  font-weight: 550;
-  cursor: pointer;
-  transition:
-    background-color 0.12s ease,
-    border-color 0.12s ease,
-    color 0.12s ease;
-}
-.trash-act--restore:hover {
-  border-color: color-mix(in srgb, var(--c-green) 45%, transparent);
-  background: color-mix(in srgb, var(--c-green) 10%, transparent);
-  color: var(--c-green);
-}
-.trash-act--forever:hover {
-  border-color: color-mix(in srgb, var(--c-rose) 45%, transparent);
-  background: color-mix(in srgb, var(--c-rose) 9%, transparent);
-  color: var(--c-rose);
-}
-
 @media (hover: none) {
   .trash-actions {
     opacity: 1;
@@ -416,13 +313,8 @@ const onConfirm = async () => {
   .trash-actions {
     opacity: 1;
   }
-  .trash-act__label {
+  .trash-actions :deep(.ui-btn__label) {
     display: none;
-  }
-  .trash-act {
-    width: 32px;
-    justify-content: center;
-    padding: 0;
   }
 }
 </style>

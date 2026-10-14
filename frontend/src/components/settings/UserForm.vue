@@ -302,43 +302,6 @@ watch(createUserDirData, () => {
   gap: 20px;
 }
 
-.settings-input {
-  width: 100%;
-  height: 34px;
-  padding: 0 10px;
-  border: 1px solid var(--color-line);
-  border-radius: 6px;
-  background: var(--color-surface);
-  font: inherit;
-  font-size: 13px;
-  color: var(--color-ink-1);
-  outline: none;
-  transition:
-    border-color 0.1s ease,
-    box-shadow 0.1s ease;
-}
-
-.settings-input:focus {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-ring);
-}
-
-.settings-input:disabled {
-  background: var(--color-canvas);
-  color: var(--color-ink-3);
-  cursor: not-allowed;
-}
-
-.settings-input.is-error {
-  border-color: var(--status-danger-fill);
-  box-shadow: 0 0 0 3px var(--status-danger-soft);
-}
-
-.settings-input.is-error:focus {
-  border-color: var(--status-danger-fill);
-  box-shadow: 0 0 0 3px var(--status-danger-soft);
-}
-
 .settings-helper {
   margin: 4px 0 0;
   font-size: 11.5px;

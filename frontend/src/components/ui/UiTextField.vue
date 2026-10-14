@@ -14,12 +14,19 @@
         class="ui-text__icon"
         aria-hidden="true"
       />
-      <input
+      <component
+        :is="rows ? 'textarea' : 'input'"
         :id="inputId"
         ref="input"
         class="ui-text__input"
-        :class="{ 'is-mono': mono, 'has-icon': !!icon, 'has-clear': showClear }"
-        :type="type"
+        :class="{
+          'is-mono': mono,
+          'has-icon': !!icon,
+          'has-clear': showClear,
+          'is-multiline': !!rows,
+        }"
+        :type="rows ? undefined : type"
+        :rows="rows"
         :value="modelValue"
         :placeholder="placeholder"
         :disabled="disabled"
@@ -59,7 +66,8 @@
 /**
  * Labelled text input. The hint and error are linked with aria-describedby;
  * an error also sets aria-invalid. `clearable` adds a clear button (search
- * fields), and Escape clears too. `mono` is for paths, codes and sizes.
+ * fields), and Escape clears too. `mono` is for paths, codes and sizes;
+ * `rows` makes it a multi-line textarea.
  */
 import { computed, ref } from "vue";
 import Icon from "@/components/Icon.vue";
@@ -95,6 +103,8 @@ const props = withDefaults(
       | "url"
       | "tel";
     id?: string;
+    /** A multi-line field (textarea) with this many rows. */
+    rows?: number;
   }>(),
   { type: "text", clearLabel: "Clear" }
 );
@@ -104,7 +114,7 @@ const emit = defineEmits<{
   (e: "clear"): void;
 }>();
 
-const input = ref<HTMLInputElement | null>(null);
+const input = ref<HTMLInputElement | HTMLTextAreaElement | null>(null);
 const { inputId, hintId, errorId, describedBy } = useFieldIds(
   () => props.id,
   () => props.hint,
@@ -144,6 +154,12 @@ defineExpose({ focus: () => input.value?.focus(), input });
   font-family: inherit;
   font-size: var(--type-ui);
   outline: none;
+}
+.ui-text__input.is-multiline {
+  height: auto;
+  padding: var(--space-2) var(--space-3);
+  line-height: var(--type-ui-lh);
+  resize: vertical;
 }
 .ui-text__input::placeholder {
   color: var(--color-ink-4);

@@ -86,26 +86,22 @@
         </div>
       </div>
       <div class="confirm-prompt__actions">
-        <button
-          type="button"
-          class="confirm-prompt__btn confirm-prompt__btn--ghost"
-          @click="dialog.close"
-        >
-          Cancel
-        </button>
-        <button
+        <UiButton size="sm" @click="dialog.close"> Cancel </UiButton>
+        <UiButton
+          variant="primary"
+          size="sm"
           type="submit"
-          class="confirm-prompt__btn confirm-prompt__btn--primary"
           :disabled="!query.trim()"
         >
           Save
-        </button>
+        </UiButton>
       </div>
     </form>
   </BaseModal>
 </template>
 
 <script setup lang="ts">
+import UiButton from "@/components/ui/UiButton.vue";
 /**
  * Save / edit a saved search (4.0 Phase 5.3). Opened from the search box,
  * the command palette, the sidebar and the results header through

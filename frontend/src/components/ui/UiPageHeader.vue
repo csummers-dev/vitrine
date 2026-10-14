@@ -11,6 +11,7 @@
       >
         <slot name="meta">{{ meta }}</slot>
       </div>
+      <slot />
     </div>
     <div v-if="$slots.actions" class="ui-page-header__actions">
       <slot name="actions" />
@@ -22,7 +23,8 @@
 /**
  * Page heading for full-page views (Trash, Storage, Duplicates…): an
  * eyebrow, the title (or a breadcrumb in its place), a meta line and an
- * actions slot. At phone width the actions wrap under the title.
+ * actions slot; anything in the default slot goes under the meta line.
+ * At phone width the actions wrap under the title.
  */
 defineProps<{
   eyebrow?: string;

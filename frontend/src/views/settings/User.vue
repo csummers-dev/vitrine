@@ -23,13 +23,7 @@
     >
       <Icon name="shield-check" :size="14" />
       <span>Two-factor sign-in is on for this user.</span>
-      <button
-        type="button"
-        class="user-edit__btn"
-        @click="confirmReset2fa = true"
-      >
-        Reset
-      </button>
+      <UiButton size="sm" @click="confirmReset2fa = true">Reset</UiButton>
     </div>
     <ConfirmDialog
       :open="confirmReset2fa"
@@ -44,36 +38,30 @@
 
     <!-- Sticky bottom action bar. Stays visible while editing long forms. -->
     <div v-if="user" class="user-edit__actions">
-      <button
+      <UiButton
         v-if="!isNew"
-        type="button"
-        class="user-edit__btn user-edit__btn--danger"
+        variant="ghost"
+        icon="trash-2"
         @click="deletePrompt"
+        >{{ t("buttons.delete") }}</UiButton
       >
-        <Icon name="trash-2" :size="13" />
-        {{ t("buttons.delete") }}
-      </button>
       <div class="user-edit__spacer"></div>
-      <router-link
-        to="/settings/users"
-        class="user-edit__btn user-edit__btn--ghost"
-      >
-        {{ t("buttons.cancel") }}
-      </router-link>
-      <button
-        type="button"
-        class="user-edit__btn user-edit__btn--primary"
+      <UiButton variant="ghost" to="/settings/users">{{
+        t("buttons.cancel")
+      }}</UiButton>
+      <UiButton
+        variant="primary"
         :disabled="isNew && !canCreate"
-        :title="isNew && !canCreate ? createDisabledReason : ''"
+        :disabled-reason="createDisabledReason"
         @click="save"
+        >{{ isNew ? "Create user" : t("buttons.save") }}</UiButton
       >
-        {{ isNew ? "Create user" : t("buttons.save") }}
-      </button>
     </div>
   </SettingsPage>
 </template>
 
 <script setup lang="ts">
+import UiButton from "@/components/ui/UiButton.vue";
 import { computed, inject, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
@@ -336,69 +324,6 @@ const send = async (currentPassword: string) => {
 
 .user-edit__spacer {
   flex: 1;
-}
-
-.user-edit__btn {
-  height: 32px;
-  padding: 0 14px;
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  border: 1px solid transparent;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  text-decoration: none;
-  transition:
-    background-color 0.1s ease,
-    border-color 0.1s ease,
-    color 0.1s ease;
-}
-
-.user-edit__btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring);
-  outline-offset: 1px;
-}
-
-.user-edit__btn--ghost {
-  background: var(--color-surface);
-  border-color: var(--color-line);
-  color: var(--color-ink-2);
-}
-
-.user-edit__btn--ghost:hover {
-  background: var(--color-elevated);
-  color: var(--color-ink-1);
-}
-
-.user-edit__btn--primary {
-  background: var(--accent-gradient);
-  border-color: var(--color-accent);
-  color: var(--color-on-accent);
-}
-
-.user-edit__btn--primary:hover:not(:disabled) {
-  background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong);
-}
-
-/* Disabled state — applies to any variant so the user gets a visual cue
-   when validation isn't passing (e.g. empty username, short password). */
-.user-edit__btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.user-edit__btn--danger {
-  background: var(--color-surface);
-  border-color: var(--status-danger-ring);
-  color: var(--status-danger);
-}
-
-.user-edit__btn--danger:hover {
-  background: var(--status-danger-soft);
 }
 
 @media (max-width: 540px) {

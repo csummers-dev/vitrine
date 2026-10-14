@@ -23,22 +23,21 @@
           }}</span>
         </div>
         <div class="avatar-actions">
-          <button
-            type="button"
-            class="avatar-btn avatar-btn--primary"
+          <UiButton
+            size="sm"
+            variant="primary"
+            icon="upload"
             @click="pickAvatar"
           >
-            <Icon name="upload" :size="14" />
-            <span>{{ hasAvatar ? "Change photo" : "Upload photo" }}</span>
-          </button>
-          <button
+            {{ hasAvatar ? "Change photo" : "Upload photo" }}
+          </UiButton>
+          <UiButton
             v-if="hasAvatar"
-            type="button"
-            class="avatar-btn avatar-btn--ghost"
+            size="sm"
+            variant="ghost"
             @click="removeAvatar"
+            >Remove</UiButton
           >
-            Remove
-          </button>
           <p class="avatar-hint">JPG, PNG, GIF, or WebP.</p>
         </div>
       </div>
@@ -139,16 +138,13 @@
         label="Files uploaded at once"
         description="More is faster on a fast connection; fewer is gentler on a small NAS or a slow link."
       >
-        <select
-          v-model.number="uploadLimit"
-          class="settings-input settings-input--compact"
-          aria-label="Files uploaded at once"
-          @change="onUploadLimitChange"
-        >
-          <option v-for="n in uploadLimitChoices" :key="n" :value="n">
-            {{ n }}
-          </option>
-        </select>
+        <UiSelect
+          v-model="uploadLimit"
+          :options="
+            uploadLimitChoices.map((n) => ({ value: n, label: String(n) }))
+          "
+          @update:model-value="onUploadLimitChange"
+        />
       </SettingsRow>
       <!-- 4.0 3.2: folder tiles show poster/folder/cover art. -->
       <SettingsRow
@@ -281,13 +277,12 @@
         </SettingsRow>
 
         <template #footer>
-          <button
+          <UiButton
             type="submit"
-            class="settings-btn settings-btn--primary"
+            variant="primary"
             :disabled="!canSubmitPassword"
+            >{{ t("buttons.update") }}</UiButton
           >
-            {{ t("buttons.update") }}
-          </button>
         </template>
       </SettingsSection>
     </form>
@@ -316,6 +311,8 @@
 </template>
 
 <script setup lang="ts">
+import UiButton from "@/components/ui/UiButton.vue";
+import UiSelect from "@/components/ui/UiSelect.vue";
 import { computed, inject, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useAuthStore } from "@/stores/auth";
@@ -657,39 +654,7 @@ const updatePassword = async () => {
   align-items: center;
   gap: 8px;
 }
-.avatar-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 12px;
-  border-radius: 8px;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition:
-    background-color var(--dur-base) ease,
-    border-color var(--dur-base) ease,
-    color var(--dur-base) ease;
-}
-.avatar-btn--primary {
-  background: var(--accent-gradient);
-  border: 1px solid var(--color-accent);
-  color: var(--color-on-accent);
-}
-.avatar-btn--primary:hover {
-  background: var(--accent-gradient-strong);
-}
-.avatar-btn--ghost {
-  background: transparent;
-  border: 1px solid var(--color-line-strong);
-  color: var(--color-ink-2);
-}
-.avatar-btn--ghost:hover {
-  background: var(--color-hover);
-  color: var(--color-ink-1);
-}
+
 .avatar-hint {
   width: 100%;
   margin: 2px 0 0;
@@ -700,35 +665,6 @@ const updatePassword = async () => {
   display: none;
 }
 
-.settings-input {
-  width: 100%;
-  height: 34px;
-  padding: 0 10px;
-  border: 1px solid var(--color-line);
-  border-radius: 6px;
-  background: var(--color-surface);
-  font: inherit;
-  font-size: 13px;
-  color: var(--color-ink-1);
-  outline: none;
-  transition:
-    border-color 0.1s ease,
-    box-shadow 0.1s ease;
-}
-
-.settings-input:focus {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-ring);
-}
-
-.settings-input.is-ok {
-  border-color: var(--status-success);
-}
-
-.settings-input.is-error {
-  border-color: var(--status-danger-fill);
-}
-
 .settings-helper {
   margin: 4px 0 0;
   font-size: 11.5px;
@@ -736,47 +672,6 @@ const updatePassword = async () => {
 
 .settings-helper--error {
   color: var(--status-danger);
-}
-
-.settings-input--compact {
-  width: auto;
-  min-width: 72px;
-}
-
-.settings-btn {
-  height: 32px;
-  padding: 0 14px;
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition:
-    background-color 0.1s ease,
-    border-color 0.1s ease,
-    color 0.1s ease;
-}
-
-.settings-btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring);
-  outline-offset: 1px;
-}
-
-.settings-btn--primary {
-  background: var(--accent-gradient);
-  border-color: var(--color-accent);
-  color: var(--color-on-accent);
-}
-
-.settings-btn--primary:hover:not(:disabled) {
-  background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong);
-}
-
-.settings-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* ── Save-state pill (fixed bottom-right) ───────────────────────────── */

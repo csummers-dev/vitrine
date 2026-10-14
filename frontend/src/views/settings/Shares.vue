@@ -42,24 +42,18 @@
               </a>
             </div>
             <div class="shares-card__actions">
-              <button
-                type="button"
-                class="shares-icon-btn"
-                title="Copy link"
-                aria-label="Copy link"
+              <UiIconButton
+                icon="clipboard"
+                label="Copy link"
+                size="sm"
                 @click="copyToClipboard(buildLink(link))"
-              >
-                <Icon name="clipboard" :size="13" />
-              </button>
-              <button
-                type="button"
-                class="shares-icon-btn shares-icon-btn--danger"
-                title="Revoke"
-                aria-label="Revoke"
+              />
+              <UiIconButton
+                icon="trash-2"
+                label="Revoke"
+                size="sm"
                 @click="deleteLink(link)"
-              >
-                <Icon name="trash-2" :size="13" />
-              </button>
+              />
             </div>
           </div>
 
@@ -122,6 +116,7 @@
 </template>
 
 <script setup lang="ts">
+import UiIconButton from "@/components/ui/UiIconButton.vue";
 import { computed, inject, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useAuthStore } from "@/stores/auth";
@@ -279,34 +274,6 @@ const buildLink = (share: Share) => api.getShareURL(share);
   display: flex;
   gap: 4px;
   flex-shrink: 0;
-}
-
-.shares-icon-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  border: 1px solid var(--color-line);
-  background: var(--color-surface);
-  color: var(--color-ink-2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition:
-    background-color 0.1s ease,
-    color 0.1s ease,
-    border-color 0.1s ease;
-}
-
-.shares-icon-btn:hover:not(:disabled) {
-  background: var(--color-elevated);
-  color: var(--color-ink-1);
-}
-
-.shares-icon-btn--danger:hover:not(:disabled) {
-  background: var(--status-danger-soft);
-  color: var(--status-danger);
-  border-color: var(--status-danger-ring);
 }
 
 .shares-card__url {

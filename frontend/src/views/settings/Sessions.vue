@@ -22,19 +22,9 @@
       description="Signs out every other device where you're logged in — handy after a password change or using a shared computer. This device stays signed in."
     >
       <template #footer>
-        <button
-          type="button"
-          class="session-danger-btn"
-          :disabled="busy"
-          @click="confirmOpen = true"
+        <UiButton icon="log-out" :loading="busy" @click="confirmOpen = true"
+          >Sign out all other sessions</UiButton
         >
-          <Icon
-            :name="busy ? 'loader-circle' : 'log-out'"
-            :size="14"
-            :class="{ 'session-spin': busy }"
-          />
-          Sign out all other sessions
-        </button>
       </template>
     </SettingsSection>
 
@@ -52,6 +42,7 @@
 </template>
 
 <script setup lang="ts">
+import UiButton from "@/components/ui/UiButton.vue";
 /**
  * Settings → Sessions (v1.3 S8-3). "Sign out everywhere" — the JWT is
  * stateless, so this device decodes its own token for the current-session
@@ -67,7 +58,6 @@ import SettingsPage from "@/components/settings/SettingsPage.vue";
 import SettingsSection from "@/components/settings/SettingsSection.vue";
 import SettingsRow from "@/components/settings/SettingsRow.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
-import Icon from "@/components/Icon.vue";
 
 const authStore = useAuthStore();
 const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
@@ -114,48 +104,5 @@ const doRevoke = async () => {
   font-size: 13px;
   color: var(--color-ink-1);
   font-variant-numeric: tabular-nums;
-}
-
-.session-danger-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  height: 36px;
-  padding: 0 16px;
-  border-radius: 8px;
-  border: 1px solid var(--color-line);
-  background: var(--color-surface);
-  color: var(--status-danger);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition:
-    background-color var(--dur-base) ease,
-    border-color var(--dur-base) ease;
-}
-.session-danger-btn:hover:not(:disabled) {
-  background: var(--status-danger-soft);
-  border-color: var(--status-danger-ring);
-}
-.session-danger-btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-html.dark .session-danger-btn {
-  color: var(--status-danger);
-}
-
-.session-spin {
-  animation: session-spin 0.9s linear infinite;
-}
-@keyframes session-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .session-spin {
-    animation: none;
-  }
 }
 </style>

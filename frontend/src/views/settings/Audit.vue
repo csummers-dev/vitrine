@@ -69,15 +69,14 @@
         />
       </label>
 
-      <button
+      <UiButton
         v-if="hasActiveFilters"
-        type="button"
-        class="audit-clear"
+        size="sm"
+        variant="ghost"
+        icon="x"
         @click="clearFilters"
+        >Clear</UiButton
       >
-        <Icon name="x" :size="13" />
-        Clear
-      </button>
     </div>
 
     <!-- ── Body ─────────────────────────────────────────────────────── -->
@@ -92,10 +91,7 @@
       :hint="error"
       tone="danger"
     >
-      <button type="button" class="audit-retry" @click="reload">
-        <Icon name="rotate-ccw" :size="13" />
-        Try again
-      </button>
+      <UiButton size="sm" icon="rotate-ccw" @click="reload">Try again</UiButton>
     </EmptyState>
 
     <EmptyState
@@ -147,24 +143,20 @@
           {{ rangeStart }}–{{ rangeEnd }} of {{ total }}
         </span>
         <div class="audit-pager__btns">
-          <button
-            type="button"
-            class="audit-pager__btn"
+          <UiButton
+            size="sm"
+            icon="chevron-left"
             :disabled="offset === 0"
             @click="prevPage"
+            >Previous</UiButton
           >
-            <Icon name="chevron-left" :size="14" />
-            Previous
-          </button>
-          <button
-            type="button"
-            class="audit-pager__btn"
+          <UiButton
+            size="sm"
+            icon-after="chevron-right"
             :disabled="offset + pageSize >= total"
             @click="nextPage"
+            >Next</UiButton
           >
-            Next
-            <Icon name="chevron-right" :size="14" />
-          </button>
         </div>
       </div>
     </template>
@@ -172,6 +164,7 @@
 </template>
 
 <script setup lang="ts">
+import UiButton from "@/components/ui/UiButton.vue";
 /**
  * Settings → Audit (v1.3 S8-1). Admin-only read view over the S1-5 audit
  * log via GET /api/audit. Filter by action / user / date range / path;
@@ -341,27 +334,6 @@ onMounted(load);
   min-width: 160px;
 }
 
-.audit-clear {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 34px;
-  padding: 0 12px;
-  border: 1px solid var(--color-line);
-  border-radius: 8px;
-  background: var(--color-surface);
-  color: var(--color-ink-2);
-  font-size: 12.5px;
-  cursor: pointer;
-  transition:
-    background-color var(--dur-base) ease,
-    border-color var(--dur-base) ease;
-}
-.audit-clear:hover {
-  background: var(--color-elevated);
-  color: var(--color-ink-1);
-}
-
 .audit-state {
   display: flex;
   justify-content: center;
@@ -465,51 +437,9 @@ onMounted(load);
   color: var(--color-ink-3);
   font-variant-numeric: tabular-nums;
 }
+
 .audit-pager__btns {
   display: flex;
-  gap: 8px;
-}
-.audit-pager__btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 32px;
-  padding: 0 12px;
-  border: 1px solid var(--color-line);
-  border-radius: 8px;
-  background: var(--color-surface);
-  color: var(--color-ink-2);
-  font-size: 12.5px;
-  cursor: pointer;
-  transition:
-    background-color var(--dur-base) ease,
-    border-color var(--dur-base) ease;
-}
-.audit-pager__btn:hover:not(:disabled) {
-  background: var(--color-elevated);
-  color: var(--color-ink-1);
-}
-.audit-pager__btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.audit-retry {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 14px;
-  border: 1px solid var(--color-line);
-  border-radius: 7px;
-  background: var(--color-surface);
-  color: var(--color-ink-1);
-  font-size: 12.5px;
-  font-weight: 500;
-  cursor: pointer;
-}
-.audit-retry:hover {
-  border-color: var(--color-accent);
-  color: var(--color-accent-ink);
+  gap: var(--space-2);
 }
 </style>

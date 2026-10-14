@@ -1,0 +1,59 @@
+/* Plain inputs in settings forms (.settings-input), styled like the shared
+   UiTextField so a form reads as one family while callers move over. */
+.settings-input {
+  width: 100%;
+  height: 36px;
+  padding: 0 var(--space-3);
+  box-sizing: border-box;
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-raised);
+  font: inherit;
+  font-size: var(--type-ui);
+  color: var(--color-ink-1);
+  outline: none;
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+select.settings-input {
+  width: auto;
+  padding-right: var(--space-6);
+}
+textarea.settings-input {
+  height: auto;
+  padding: var(--space-2) var(--space-3);
+  line-height: var(--type-ui-lh);
+}
+.settings-input::placeholder {
+  color: var(--color-ink-4);
+}
+.settings-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: var(--focus-halo);
+}
+.settings-input:disabled {
+  background: var(--color-elevated);
+  color: var(--color-ink-3);
+  cursor: not-allowed;
+}
+.settings-input.is-ok {
+  border-color: var(--status-success);
+}
+.settings-input.is-error {
+  border-color: var(--status-danger-fill);
+}
+.settings-input.is-error:focus {
+  box-shadow: var(--focus-halo-danger);
+}
+.settings-input--num {
+  width: 110px;
+}
+.settings-input--compact {
+  width: auto;
+  min-width: 72px;
+}
+.settings-input--mono {
+  font-family: var(--font-mono);
+  font-size: var(--type-body);
+}

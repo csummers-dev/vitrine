@@ -39,17 +39,12 @@
       </div>
     </div>
     <div class="cpw__actions">
-      <button
-        type="button"
-        class="cpw__btn cpw__btn--ghost"
-        :disabled="submitting"
-        @click="cancel"
-      >
+      <UiButton size="sm" :disabled="submitting" @click="cancel">
         {{ t("buttons.cancel") }}
-      </button>
-      <button
-        type="button"
-        class="cpw__btn cpw__btn--primary"
+      </UiButton>
+      <UiButton
+        variant="primary"
+        size="sm"
         :disabled="password === '' || submitting"
         @click="submit"
       >
@@ -60,12 +55,13 @@
           class="cpw__spin"
         />
         <span>{{ submitting ? "Verifying…" : t("buttons.ok") }}</span>
-      </button>
+      </UiButton>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import UiButton from "@/components/ui/UiButton.vue";
 import { nextTick, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useLayoutStore } from "@/stores/layout";
@@ -236,56 +232,6 @@ const cancel = () => {
   padding: 12px 14px;
   border-top: 1px solid var(--color-line);
   background: var(--color-canvas);
-}
-
-.cpw__btn {
-  height: 30px;
-  padding: 0 12px;
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  border: 1px solid transparent;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition:
-    background-color 0.1s ease,
-    border-color 0.1s ease,
-    color 0.1s ease;
-}
-
-.cpw__btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring);
-  outline-offset: 1px;
-}
-
-.cpw__btn--ghost {
-  background: var(--color-surface);
-  border-color: var(--color-line);
-  color: var(--color-ink-2);
-}
-
-.cpw__btn--ghost:hover:not(:disabled) {
-  background: var(--color-elevated);
-  color: var(--color-ink-1);
-}
-
-.cpw__btn--primary {
-  background: var(--accent-gradient);
-  border-color: var(--color-accent);
-  color: var(--color-on-accent);
-}
-
-.cpw__btn--primary:hover:not(:disabled) {
-  background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong);
-}
-
-.cpw__btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .cpw__spin {

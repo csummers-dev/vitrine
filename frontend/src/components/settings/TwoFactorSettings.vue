@@ -11,14 +11,9 @@
       label="Off"
       description="Anyone with your password can sign in."
     >
-      <button
-        type="button"
-        class="tf-btn tf-btn--primary"
-        :disabled="busy"
-        @click="startSetup"
-      >
+      <UiButton variant="primary" :disabled="busy" @click="startSetup">
         Set up
-      </button>
+      </UiButton>
     </SettingsRow>
 
     <!-- Setup: scan, then confirm a code -->
@@ -48,16 +43,14 @@
             class="tf-input tf-code"
             aria-label="Authentication code"
           />
-          <button
+          <UiButton
+            variant="primary"
             type="submit"
-            class="tf-btn tf-btn--primary"
             :disabled="busy || code.length < 6"
           >
             Turn on
-          </button>
-          <button type="button" class="tf-btn" @click="cancelSetup">
-            Cancel
-          </button>
+          </UiButton>
+          <UiButton @click="cancelSetup"> Cancel </UiButton>
         </form>
       </SettingsRow>
     </template>
@@ -69,22 +62,16 @@
         :description="`${st.recoveryCodesLeft} recovery code${st.recoveryCodesLeft === 1 ? '' : 's'} left.`"
       >
         <div class="tf-actions">
-          <button
-            type="button"
-            class="tf-btn"
-            :disabled="busy"
-            @click="askPassword('codes')"
-          >
+          <UiButton :disabled="busy" @click="askPassword('codes')">
             New recovery codes
-          </button>
-          <button
-            type="button"
-            class="tf-btn tf-btn--danger"
+          </UiButton>
+          <UiButton
+            variant="danger"
             :disabled="busy"
             @click="askPassword('disable')"
           >
             Turn off
-          </button>
+          </UiButton>
         </div>
       </SettingsRow>
       <SettingsRow
@@ -104,16 +91,10 @@
             class="tf-input"
             aria-label="Current password"
           />
-          <button
-            type="submit"
-            class="tf-btn tf-btn--primary"
-            :disabled="busy || !pw"
-          >
+          <UiButton variant="primary" type="submit" :disabled="busy || !pw">
             Confirm
-          </button>
-          <button type="button" class="tf-btn" @click="pending = null">
-            Cancel
-          </button>
+          </UiButton>
+          <UiButton @click="pending = null"> Cancel </UiButton>
         </form>
       </SettingsRow>
     </template>
@@ -131,19 +112,18 @@
         </li>
       </ol>
       <div class="tf-actions">
-        <button type="button" class="tf-btn" @click="copyCodes">Copy</button>
-        <button type="button" class="tf-btn" @click="downloadCodes">
-          Download
-        </button>
-        <button type="button" class="tf-btn tf-btn--primary" @click="doneCodes">
+        <UiButton @click="copyCodes">Copy</UiButton>
+        <UiButton @click="downloadCodes"> Download </UiButton>
+        <UiButton variant="primary" @click="doneCodes">
           I've saved them
-        </button>
+        </UiButton>
       </div>
     </SettingsRow>
   </SettingsSection>
 </template>
 
 <script setup lang="ts">
+import UiButton from "@/components/ui/UiButton.vue";
 import { computed, inject, onMounted, ref } from "vue";
 
 /** Fires once two-factor sign-in is on and the recovery codes are saved. */
@@ -271,36 +251,7 @@ const doneCodes = () => {
 .tf-input:focus {
   border-color: var(--color-accent);
 }
-.tf-btn {
-  height: 32px;
-  padding: 0 14px;
-  border-radius: 6px;
-  border: 1px solid var(--color-line);
-  background: var(--color-surface);
-  color: var(--color-ink-1);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-}
-.tf-btn:hover:not(:disabled) {
-  background: var(--color-elevated);
-}
-.tf-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.tf-btn--primary {
-  background: var(--accent-gradient);
-  border-color: var(--color-accent);
-  color: var(--color-on-accent);
-}
-.tf-btn--primary:hover:not(:disabled) {
-  background: var(--accent-gradient-strong);
-}
-.tf-btn--danger {
-  color: var(--status-danger);
-}
+
 .tf-scan {
   display: flex;
   gap: 16px;

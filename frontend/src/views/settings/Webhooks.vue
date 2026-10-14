@@ -137,17 +137,12 @@
                 ? "Deliveries are signed (X-Vitrine-Signature)."
                 : "Deliveries are not signed."
             }}</span>
-            <button type="button" class="wh-btn" @click="makeSecret">
+            <UiButton @click="makeSecret">
               {{ editor.hasSecret ? "Rotate" : "Generate" }}
-            </button>
-            <button
-              v-if="editor.hasSecret"
-              type="button"
-              class="wh-btn"
-              @click="dropSecret"
-            >
+            </UiButton>
+            <UiButton v-if="editor.hasSecret" @click="dropSecret">
               Remove
-            </button>
+            </UiButton>
           </div>
           <div v-if="newSecret" class="wh-secret-new">
             <input
@@ -165,17 +160,14 @@
         </div>
 
         <div class="wh-editor-actions">
-          <button type="button" class="wh-btn" @click="cancelEdit">
-            Cancel
-          </button>
-          <button
-            type="button"
-            class="wh-btn wh-btn--primary"
+          <UiButton @click="cancelEdit"> Cancel </UiButton>
+          <UiButton
+            variant="primary"
             :disabled="!validUrl(editor.url) || saving"
             @click="save"
           >
             {{ editor.id ? "Save changes" : "Create endpoint" }}
-          </button>
+          </UiButton>
         </div>
       </div>
 
@@ -191,7 +183,7 @@
         :hint="error"
         tone="danger"
       >
-        <button type="button" class="wh-btn" @click="load">Try again</button>
+        <UiButton @click="load">Try again</UiButton>
       </EmptyState>
 
       <EmptyState
@@ -246,38 +238,21 @@
               :model-value="ep.enabled"
               @update:model-value="(v: boolean) => toggleEnabled(ep, v)"
             />
-            <button
-              type="button"
-              class="wh-icon-btn"
-              :disabled="testingId === ep.id"
+            <UiButton
+              size="sm"
+              icon="send"
+              :loading="testingId === ep.id"
               title="Send test payload"
               aria-label="Send test payload"
               @click="runTest(ep)"
+              >Test</UiButton
             >
-              <Icon
-                :name="testingId === ep.id ? 'loader-circle' : 'send'"
-                :size="14"
-                :class="{ 'wh-spin': testingId === ep.id }"
-              />
-            </button>
-            <button
-              type="button"
-              class="wh-icon-btn"
-              title="Edit"
-              aria-label="Edit"
-              @click="openEdit(ep)"
-            >
-              <Icon name="pencil" :size="14" />
-            </button>
-            <button
-              type="button"
-              class="wh-icon-btn wh-icon-btn--danger"
-              title="Delete"
-              aria-label="Delete"
+            <UiIconButton icon="pencil" label="Edit" @click="openEdit(ep)" />
+            <UiIconButton
+              icon="trash-2"
+              label="Delete"
               @click="askDelete(ep)"
-            >
-              <Icon name="trash-2" :size="14" />
-            </button>
+            />
           </div>
         </li>
       </ul>
@@ -297,6 +272,8 @@
 </template>
 
 <script setup lang="ts">
+import UiIconButton from "@/components/ui/UiIconButton.vue";
+import UiButton from "@/components/ui/UiButton.vue";
 /**
  * Settings → Webhooks (v1.3 S8-2). Admin-only management of the
  * admin-global webhook endpoints: add/edit/delete, per-endpoint event
@@ -651,36 +628,6 @@ load();
   gap: 8px;
 }
 
-.wh-btn {
-  height: 32px;
-  padding: 0 14px;
-  border-radius: 7px;
-  border: 1px solid var(--color-line);
-  background: var(--color-surface);
-  color: var(--color-ink-2);
-  font-size: 12.5px;
-  font-weight: 500;
-  cursor: pointer;
-  transition:
-    background-color var(--dur-base) ease,
-    border-color var(--dur-base) ease;
-}
-.wh-btn:hover:not(:disabled) {
-  background: var(--color-elevated);
-}
-.wh-btn--primary {
-  background: var(--accent-gradient);
-  border-color: var(--color-accent);
-  color: var(--color-on-accent);
-}
-.wh-btn--primary:hover:not(:disabled) {
-  background: var(--accent-gradient-strong);
-}
-.wh-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 /* States */
 .wh-state {
   display: flex;
@@ -688,6 +635,7 @@ load();
   padding: 32px 0;
   color: var(--color-ink-3);
 }
+
 .wh-spin {
   animation: wh-spin 0.9s linear infinite;
 }
@@ -763,33 +711,5 @@ load();
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
-}
-.wh-icon-btn {
-  width: 30px;
-  height: 30px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--color-line);
-  border-radius: 7px;
-  background: var(--color-surface);
-  color: var(--color-ink-2);
-  cursor: pointer;
-  transition:
-    background-color var(--dur-base) ease,
-    border-color var(--dur-base) ease,
-    color var(--dur-base) ease;
-}
-.wh-icon-btn:hover:not(:disabled) {
-  background: var(--color-elevated);
-  color: var(--color-ink-1);
-}
-.wh-icon-btn--danger:hover:not(:disabled) {
-  border-color: var(--status-danger-ring);
-  color: var(--status-danger);
-}
-.wh-icon-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 </style>

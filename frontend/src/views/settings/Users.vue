@@ -15,13 +15,13 @@
       :has-rows="false"
     >
       <template #headerRight>
-        <router-link
+        <UiButton
+          variant="primary"
+          size="sm"
+          icon="plus"
           to="/settings/users/new"
-          class="users-btn users-btn--primary"
+          >New user</UiButton
         >
-          <Icon name="plus" :size="13" />
-          New user
-        </router-link>
       </template>
 
       <!-- Empty state -->
@@ -30,13 +30,14 @@
           <Icon name="users" :size="20" :stroke-width="1.4" />
         </div>
         <div class="users-empty__title">No users yet</div>
-        <router-link
+        <UiButton
+          class="users-empty__cta"
+          variant="primary"
+          size="sm"
+          icon="plus"
           to="/settings/users/new"
-          class="users-btn users-btn--primary users-empty__cta"
+          >Create the first user</UiButton
         >
-          <Icon name="plus" :size="13" />
-          Create the first user
-        </router-link>
       </div>
 
       <!-- User list — two-row card so the identity line doesn't compete
@@ -104,6 +105,7 @@
 </template>
 
 <script setup lang="ts">
+import UiButton from "@/components/ui/UiButton.vue";
 import { onMounted, ref } from "vue";
 import { useLayoutStore } from "@/stores/layout";
 import { users as api } from "@/api";
@@ -180,36 +182,6 @@ const summaryPerms = (user: IUser) => {
 </script>
 
 <style scoped>
-/* ── Buttons ─────────────────────────────────────────────────────────── */
-.users-btn {
-  height: 30px;
-  padding: 0 12px;
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 12.5px;
-  font-weight: 500;
-  cursor: pointer;
-  border: 1px solid transparent;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  text-decoration: none;
-  transition:
-    background-color 0.1s ease,
-    border-color 0.1s ease;
-}
-
-.users-btn--primary {
-  background: var(--accent-gradient);
-  border-color: var(--color-accent);
-  color: var(--color-on-accent);
-}
-
-.users-btn--primary:hover {
-  background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong);
-}
-
 /* ── User list ───────────────────────────────────────────────────────── */
 .users-list {
   list-style: none;

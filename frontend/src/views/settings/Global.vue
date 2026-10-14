@@ -27,19 +27,13 @@
           label="Most files a user uploads at once"
           description="Caps each user's own setting (1–10), so one person can't saturate the server."
         >
-          <select
-            :value="settings.uploadConcurrencyMax || 10"
-            class="settings-input"
-            aria-label="Most files a user uploads at once"
-            @change="
-              settings &&
-              (settings.uploadConcurrencyMax = Number(
-                ($event.target as HTMLSelectElement).value
-              ))
+          <UiSelect
+            :model-value="settings.uploadConcurrencyMax || 10"
+            :options="UPLOAD_CAPS"
+            @update:model-value="
+              (v) => settings && (settings.uploadConcurrencyMax = v)
             "
-          >
-            <option v-for="n in 10" :key="n" :value="n">{{ n }}</option>
-          </select>
+          />
         </SettingsRow>
         <SettingsRow
           label="Allow upload-only share links"
@@ -278,18 +272,16 @@
     <!-- ── Sticky save bar ─────────────────────────────────────────── -->
     <div v-if="settings" class="global-actions">
       <div class="global-actions__hint">Changes apply to all users.</div>
-      <button
-        type="button"
-        class="global-actions__btn global-actions__btn--primary"
-        @click="save"
-      >
-        {{ t("buttons.update") }}
-      </button>
+      <UiButton variant="primary" @click="save">{{
+        t("buttons.update")
+      }}</UiButton>
     </div>
   </SettingsPage>
 </template>
 
 <script setup lang="ts">
+import UiButton from "@/components/ui/UiButton.vue";
+import UiSelect from "@/components/ui/UiSelect.vue";
 import { computed, inject, onBeforeUnmount, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { settings as api } from "@/api";
@@ -304,6 +296,10 @@ import Rules from "@/components/settings/Rules.vue";
 import UserForm from "@/components/settings/UserForm.vue";
 import Icon from "@/components/Icon.vue";
 
+const UPLOAD_CAPS = Array.from({ length: 10 }, (_, i) => ({
+  value: i + 1,
+  label: String(i + 1),
+}));
 const { t } = useI18n();
 const layoutStore = useLayoutStore();
 const $showError = inject<IToastError>("$showError")!;
@@ -438,36 +434,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.settings-input {
-  width: 100%;
-  height: 34px;
-  padding: 0 10px;
-  border: 1px solid var(--color-line);
-  border-radius: 6px;
-  background: var(--color-surface);
-  font: inherit;
-  font-size: 13px;
-  color: var(--color-ink-1);
-  outline: none;
-  transition:
-    border-color 0.1s ease,
-    box-shadow 0.1s ease;
-}
-
-.settings-input:focus {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-ring);
-}
-
-.settings-input--num {
-  width: 110px;
-}
-
-.settings-input--mono {
-  font-family: var(--font-mono);
-  font-size: 12.5px;
-}
-
 /* See note in Profile.vue — let global .fb-select chrome win. */
 .settings-select {
   width: 100%;
@@ -602,31 +568,6 @@ onBeforeUnmount(() => {
   flex: 1;
   font-size: 11.5px;
   color: var(--color-ink-3);
-}
-
-.global-actions__btn {
-  height: 32px;
-  padding: 0 14px;
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition:
-    background-color 0.1s ease,
-    border-color 0.1s ease;
-}
-
-.global-actions__btn--primary {
-  background: var(--accent-gradient);
-  border-color: var(--color-accent);
-  color: var(--color-on-accent);
-}
-
-.global-actions__btn--primary:hover {
-  background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong);
 }
 
 @media (max-width: 540px) {

@@ -23,27 +23,22 @@
         </div>
       </div>
       <div class="confirm-prompt__actions">
-        <button
-          type="button"
-          class="confirm-prompt__btn confirm-prompt__btn--ghost"
-          @click="emit('cancel')"
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          class="confirm-prompt__btn confirm-prompt__btn--primary"
+        <UiButton size="sm" @click="emit('cancel')"> Cancel </UiButton>
+        <UiButton
+          variant="primary"
+          size="sm"
           :disabled="!value.trim()"
           @click="submit"
         >
           {{ confirmLabel }}
-        </button>
+        </UiButton>
       </div>
     </div>
   </BaseModal>
 </template>
 
 <script setup lang="ts">
+import UiButton from "@/components/ui/UiButton.vue";
 /**
  * PaneNamePrompt — a small controlled name-input modal (new folder / new file /
  * rename) used by the second pane, which has its own action surface rather than

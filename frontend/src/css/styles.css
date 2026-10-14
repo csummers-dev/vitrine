@@ -3,8 +3,8 @@
 @import "vue-toastification/dist/index.css" layer(components);
 @import "./tokens.css";
 @import "./_variables.css";
-@import "./_buttons.css";
 @import "./_inputs.css";
+@import "./_forms.css";
 @import "./_shell.css";
 @import "./_share.css";
 @import "./fonts.css";
@@ -587,61 +587,6 @@ html.dark .confirm-prompt__icon.is-warn {
   padding: 12px 14px;
   border-top: 1px solid var(--color-line);
   background: var(--color-canvas);
-}
-
-.confirm-prompt__btn {
-  height: 30px;
-  padding: 0 12px;
-  border-radius: var(--radius-sm);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition:
-    background-color 0.1s ease,
-    border-color 0.1s ease,
-    color 0.1s ease;
-}
-
-.confirm-prompt__btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring);
-  outline-offset: 1px;
-}
-
-.confirm-prompt__btn--ghost {
-  background: var(--color-surface);
-  border-color: var(--color-line);
-  color: var(--color-ink-2);
-}
-.confirm-prompt__btn--ghost:hover {
-  background: var(--color-elevated);
-  color: var(--color-ink-1);
-}
-
-.confirm-prompt__btn--primary {
-  background: var(--accent-gradient);
-  border-color: var(--color-accent);
-  color: var(--color-on-accent);
-}
-.confirm-prompt__btn--primary:hover {
-  background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong);
-}
-
-.confirm-prompt__btn--danger {
-  background: var(--status-danger-fill);
-  border-color: var(--status-danger-fill);
-  color: white;
-}
-.confirm-prompt__btn--danger:hover {
-  background: var(--status-danger-fill-strong);
-  border-color: var(--status-danger-fill-strong);
-}
-
-.confirm-prompt__btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* ── Mobile toast positioning (Stage 11f) ───────────────────────────────

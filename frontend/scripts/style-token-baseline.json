@@ -1,8 +1,8 @@
 {
   "note": "Allowed raw style literals per file. Only ever lower these (Phase 6).",
   "totals": {
-    "radius": 332,
-    "shadow": 65,
+    "radius": 301,
+    "shadow": 58,
     "hex": 9,
     "colorFn": 20
   },
@@ -135,7 +135,7 @@
       "radius": 3
     },
     "src/components/prompts/CurrentPassword.vue": {
-      "radius": 4,
+      "radius": 3,
       "shadow": 3
     },
     "src/components/prompts/Download.vue": {
@@ -172,11 +172,10 @@
       "radius": 1
     },
     "src/components/settings/TwoFactorSettings.vue": {
-      "radius": 3
+      "radius": 2
     },
     "src/components/settings/UserForm.vue": {
-      "radius": 2,
-      "shadow": 3
+      "radius": 1
     },
     "src/components/ShortcutsOverlay.vue": {
       "radius": 4,
@@ -198,9 +197,6 @@
     },
     "src/components/UndoToast.vue": {
       "radius": 2
-    },
-    "src/css/_buttons.css": {
-      "shadow": 2
     },
     "src/css/_shell.css": {
       "shadow": 1
@@ -231,9 +227,6 @@
       "colorFn": 16,
       "shadow": 1
     },
-    "src/views/Duplicates.vue": {
-      "radius": 8
-    },
     "src/views/Errors.vue": {
       "radius": 3
     },
@@ -255,42 +248,38 @@
       "radius": 2
     },
     "src/views/settings/Audit.vue": {
-      "radius": 5
+      "radius": 2
     },
     "src/views/settings/Global.vue": {
-      "radius": 5,
-      "shadow": 1
+      "radius": 3
     },
     "src/views/settings/Profile.vue": {
-      "radius": 4,
-      "shadow": 4
-    },
-    "src/views/settings/Sessions.vue": {
-      "radius": 1
+      "radius": 1,
+      "shadow": 3
     },
     "src/views/settings/Shares.vue": {
-      "radius": 5,
+      "radius": 4,
       "shadow": 1
     },
     "src/views/settings/User.vue": {
-      "radius": 2
+      "radius": 1
     },
     "src/views/settings/Users.vue": {
-      "radius": 5
+      "radius": 4
     },
     "src/views/settings/Webhooks.vue": {
-      "radius": 6
+      "radius": 4
     },
     "src/views/Share.vue": {
       "radius": 15,
       "shadow": 2
     },
     "src/views/Storage.vue": {
-      "radius": 7,
+      "radius": 3,
       "shadow": 1
     },
     "src/views/Trash.vue": {
-      "radius": 4
+      "radius": 2
     },
     "src/views/TwoFactorSetup.vue": {
       "radius": 1

@@ -29,26 +29,15 @@
         </div>
       </div>
       <div class="confirm-prompt__actions">
-        <button
-          type="button"
-          class="confirm-prompt__btn confirm-prompt__btn--ghost"
-          @click="root.closeDialog"
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          class="confirm-prompt__btn confirm-prompt__btn--primary"
-          @click="save"
-        >
-          Save
-        </button>
+        <UiButton size="sm" @click="root.closeDialog"> Cancel </UiButton>
+        <UiButton variant="primary" size="sm" @click="save"> Save </UiButton>
       </div>
     </div>
   </BaseModal>
 </template>
 
 <script setup lang="ts">
+import UiButton from "@/components/ui/UiButton.vue";
 /**
  * RootLabelDialog — edits the custom label for the files root ("My files").
  * Opened from the sidebar quick-link's right-click menu via the useRootLabel

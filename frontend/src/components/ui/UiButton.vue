@@ -1,5 +1,24 @@
 <template>
+  <RouterLink
+    v-if="to !== undefined"
+    :to="to"
+    class="ui-btn"
+    :class="[`ui-btn--${variant}`, `ui-btn--${size}`, { 'is-block': block }]"
+    :title="title"
+  >
+    <span class="ui-btn__content">
+      <Icon v-if="icon" :name="icon" :size="iconSize" :stroke-width="1.8" />
+      <span v-if="$slots.default" class="ui-btn__label"><slot /></span>
+      <Icon
+        v-if="iconAfter"
+        :name="iconAfter"
+        :size="iconSize"
+        :stroke-width="1.8"
+      />
+    </span>
+  </RouterLink>
   <button
+    v-else
     :type="type"
     class="ui-btn"
     :class="[
@@ -32,9 +51,11 @@
  * (raised, bordered), ghost (text only) and danger. While `loading`, the
  * label stays in place (the width doesn't jump), a spinner sits over it and
  * the button is busy and disabled. A disabled button can say why in
- * `disabledReason`, shown as its tooltip.
+ * `disabledReason`, shown as its tooltip. With `to` it is a router link
+ * that looks like a button.
  */
 import { computed } from "vue";
+import type { RouteLocationRaw } from "vue-router";
 import Icon from "@/components/Icon.vue";
 
 const props = withDefaults(
@@ -50,6 +71,8 @@ const props = withDefaults(
     title?: string;
     /** Full width. */
     block?: boolean;
+    /** Renders a router link styled as a button. */
+    to?: RouteLocationRaw;
   }>(),
   { variant: "secondary", size: "md", type: "button" }
 );
@@ -73,6 +96,8 @@ const iconSize = computed(() => (props.size === "sm" ? 14 : 16));
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
+  text-decoration: none;
+  box-sizing: border-box;
   cursor: pointer;
   user-select: none;
   transition:
@@ -99,7 +124,8 @@ const iconSize = computed(() => (props.size === "sm" ? 14 : 16));
   background: var(--color-accent);
   color: var(--color-on-accent);
 }
-.ui-btn--primary:hover:not(:disabled) {
+.ui-btn--primary:hover:not(:disabled),
+a.ui-btn--primary:hover {
   background: var(--color-accent-strong);
 }
 

@@ -12,33 +12,30 @@
       </div>
     </div>
     <div class="confirm-prompt__actions">
-      <button
-        type="button"
-        class="confirm-prompt__btn confirm-prompt__btn--ghost"
-        @click="layoutStore.closeHovers"
-      >
+      <UiButton size="sm" @click="layoutStore.closeHovers">
         {{ $t("buttons.cancel") }}
-      </button>
-      <button
+      </UiButton>
+      <UiButton
+        variant="danger"
+        size="sm"
         id="focus-prompt"
-        type="button"
-        class="confirm-prompt__btn confirm-prompt__btn--danger"
         @click="layoutStore.currentPrompt?.confirm?.($event)"
       >
         {{ $t("buttons.discardChanges") }}
-      </button>
-      <button
-        type="button"
-        class="confirm-prompt__btn confirm-prompt__btn--primary"
+      </UiButton>
+      <UiButton
+        variant="primary"
+        size="sm"
         @click="layoutStore.currentPrompt?.saveAction?.()"
       >
         {{ $t("buttons.saveChanges") }}
-      </button>
+      </UiButton>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import UiButton from "@/components/ui/UiButton.vue";
 import { useLayoutStore } from "@/stores/layout";
 import Icon from "@/components/Icon.vue";
 

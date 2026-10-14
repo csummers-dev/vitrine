@@ -1,38 +1,35 @@
 <template>
-  <div class="card floating">
-    <div class="card-content">
-      <p v-if="!this.isListing || selectedCount === 1">
-        {{ $t("prompts.deleteMessageSingle") }}
-      </p>
-      <p v-else>
-        {{ $t("prompts.deleteMessageMultiple", { count: selectedCount }) }}
-      </p>
+  <div class="confirm-prompt" @click.stop>
+    <div class="confirm-prompt__body">
+      <div class="confirm-prompt__icon is-danger">
+        <Icon name="trash-2" :size="18" :stroke-width="1.6" />
+      </div>
+      <div class="confirm-prompt__text">
+        <h2 class="confirm-prompt__title">{{ $t("buttons.delete") }}</h2>
+        <p class="confirm-prompt__message">
+          <template v-if="!isListing || selectedCount === 1">
+            {{ $t("prompts.deleteMessageSingle") }}
+          </template>
+          <template v-else>
+            {{ $t("prompts.deleteMessageMultiple", { count: selectedCount }) }}
+          </template>
+        </p>
+      </div>
     </div>
-    <div class="card-action">
-      <button
-        @click="closeHovers"
-        class="button button--flat button--grey"
-        :aria-label="$t('buttons.cancel')"
-        :title="$t('buttons.cancel')"
-        tabindex="2"
-      >
-        {{ $t("buttons.cancel") }}
-      </button>
-      <button
-        id="focus-prompt"
-        @click="submit"
-        class="button button--flat button--red"
-        :aria-label="$t('buttons.delete')"
-        :title="$t('buttons.delete')"
-        tabindex="1"
-      >
-        {{ $t("buttons.delete") }}
-      </button>
+    <div class="confirm-prompt__actions">
+      <UiButton size="sm" @click="closeHovers">{{
+        $t("buttons.cancel")
+      }}</UiButton>
+      <UiButton id="focus-prompt" size="sm" variant="danger" @click="submit">{{
+        $t("buttons.delete")
+      }}</UiButton>
     </div>
   </div>
 </template>
 
 <script>
+import Icon from "@/components/Icon.vue";
+import UiButton from "@/components/ui/UiButton.vue";
 import { mapActions, mapState, mapWritableState } from "pinia";
 import { files as api } from "@/api";
 import buttons from "@/utils/buttons";
@@ -41,6 +38,7 @@ import { useLayoutStore } from "@/stores/layout";
 
 export default {
   name: "delete",
+  components: { Icon, UiButton },
   inject: ["$showError"],
   computed: {
     ...mapState(useFileStore, [
