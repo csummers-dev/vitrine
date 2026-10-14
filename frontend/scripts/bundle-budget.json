@@ -1,7 +1,7 @@
 {
   "note": "gzip bytes; a group may grow 2% before the check fails",
-  "initial": 347110,
-  "js": 1415009,
-  "css": 110329,
-  "fonts": 408150
+  "initial": 366395,
+  "js": 1415072,
+  "css": 109227,
+  "fonts": 219912
 }

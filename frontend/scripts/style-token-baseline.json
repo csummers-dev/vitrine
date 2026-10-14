@@ -1,8 +1,8 @@
 {
   "note": "Allowed raw style literals per file. Only ever lower these (Phase 6).",
   "totals": {
-    "hex": 1505,
-    "colorFn": 461,
+    "hex": 1494,
+    "colorFn": 426,
     "radius": 385,
     "shadow": 145
   },
@@ -398,10 +398,6 @@
       "colorFn": 2,
       "shadow": 1
     },
-    "src/css/_variables.css": {
-      "hex": 11,
-      "colorFn": 31
-    },
     "src/css/base.css": {
       "hex": 2,
       "radius": 1,
@@ -439,7 +435,7 @@
     },
     "src/css/styles.css": {
       "hex": 36,
-      "colorFn": 14,
+      "colorFn": 10,
       "radius": 3,
       "shadow": 6
     },

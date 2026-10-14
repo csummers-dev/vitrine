@@ -29,7 +29,6 @@ import { useAuthStore } from "@/stores/auth";
 import { useCommandPalette } from "@/composables/useCommandPalette";
 import { installShortcuts } from "@/composables/useShortcuts";
 import { useThemeBootstrap } from "@/composables/useThemePreference";
-import { useBackgroundGradientBootstrap } from "@/composables/useBackgroundGradient";
 import { useAccentColorBootstrap } from "@/composables/useAccentColor";
 import { useProfileAvatarBootstrap } from "@/composables/useProfileAvatar";
 import CommandPalette from "@/components/CommandPalette.vue";
@@ -53,7 +52,6 @@ useThemeBootstrap();
 // translucent sidebar). Sets data-attributes on <html>; styles.css does the
 // rest. Per-user, prefs bag — defaults match the CSS defaults (subtle +
 // translucent) so the common case has no flash before this runs.
-useBackgroundGradientBootstrap();
 
 // Apply the user's saved accent hue (Calm Minimal). Writes the accent source
 // vars on <html>; tokens.css derives the rest. Default Violet matches the CSS.

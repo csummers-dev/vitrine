@@ -1,62 +1,39 @@
 :root {
-  /* Legacy palette (pre-redesign Material values), still consumed by a few
-     older surfaces (boot spinner, legacy .button, share view, shell, CSV /
-     epub viewers). v2.7 dusty pass: the values now RESOLVE to the live
-     tokens — blue follows the accent picker, red follows the status danger
-     tokens — so no legacy surface can render the old saturated palette. */
-  --blue: var(--color-accent, #6e72d9);
-  --dark-blue: var(--color-accent-strong, #575cc7);
-  --red: var(--status-danger-fill, #ad5560);
-  --dark-red: var(--status-danger-fill-strong, #97434d);
-  --moon-grey: #f2f2f2;
+  /* Legacy names (pre-redesign), still read by a few older surfaces (boot
+     spinner, legacy .button, share view, shell, CSV and EPUB viewers). They
+     all resolve to the live tokens in tokens.css, light and dark alike. */
+  --blue: var(--color-accent);
+  --dark-blue: var(--color-accent-strong);
+  --red: var(--status-danger-fill);
+  --dark-red: var(--status-danger-fill-strong);
+  --moon-grey: var(--color-elevated);
 
-  --icon-red: #b5525e;
-  --icon-orange: #bd7f63;
-  --icon-yellow: #b08434;
-  --icon-green: #74a075;
-  --icon-blue: var(--color-accent, #6e72d9);
-  --icon-violet: #9180c9;
+  --icon-red: var(--kind-pdf-solid);
+  --icon-orange: var(--kind-archive-solid);
+  --icon-yellow: var(--kind-audio-solid);
+  --icon-green: var(--kind-image-solid);
+  --icon-blue: var(--color-accent);
+  --icon-violet: var(--kind-video-solid);
 
-  --input-red: var(--status-danger-soft, rgba(176, 96, 96, 0.1));
-  --input-green: var(--status-success-soft, rgba(93, 138, 94, 0.14));
+  --input-red: var(--status-danger-soft);
+  --input-green: var(--status-success-soft);
 
-  --item-selected: white;
+  --item-selected: var(--color-raised);
 
-  --action: rgb(84, 110, 122);
+  --action: var(--color-ink-2);
 
-  --background: rgb(250, 250, 250);
-  --surfacePrimary: rgb(255, 255, 255);
-  --surfaceSecondary: rgb(230, 230, 230);
-  --divider: rgba(0, 0, 0, 0.05);
+  --background: var(--color-canvas);
+  --surfacePrimary: var(--color-surface);
+  --surfaceSecondary: var(--color-elevated);
+  --divider: var(--color-line);
   --iconPrimary: var(--icon-blue);
-  --iconSecondary: rgb(255, 255, 255);
-  --iconTertiary: rgb(204, 204, 204);
-  --textPrimary: rgb(111, 111, 111);
-  --textSecondary: rgb(51, 51, 51);
-  --hover: rgba(0, 0, 0, 0.1);
-  --borderPrimary: rgba(0, 0, 0, 0.1);
-  --borderSecondary: rgba(0, 0, 0, 0.2);
-  --dividerPrimary: rgba(255, 255, 255, 0.4);
-  --dividerSecondary: rgba(255, 255, 255, 0.9);
-}
-
-:root.dark {
-  /* --input-red / --input-green need no dark overrides anymore — they
-     resolve to the status -soft tokens, which flip under html.dark. */
-  --action: rgb(255, 255, 255);
-
-  --background: rgb(20, 29, 36);
-  --surfacePrimary: rgb(32, 41, 47);
-  --surfaceSecondary: rgb(58, 65, 71);
-  --textPrimary: rgba(255, 255, 255, 0.6);
-  --textSecondary: rgba(255, 255, 255, 0.87);
-  --divider: rgba(255, 255, 255, 0.12);
-  --iconPrimary: rgb(255, 255, 255);
-  --iconSecondary: rgb(255, 255, 255);
-  --iconTertiary: rgb(255, 255, 255);
-  --hover: rgba(255, 255, 255, 0.1);
-  --borderPrimary: rgba(255, 255, 255, 0.05);
-  --borderSecondary: rgba(255, 255, 255, 0.15);
-  --dividerPrimary: rgba(30, 30, 30, 0.4);
-  --dividerSecondary: rgba(30, 30, 30, 0.6);
+  --iconSecondary: var(--color-on-accent);
+  --iconTertiary: var(--color-ink-4);
+  --textPrimary: var(--color-ink-3);
+  --textSecondary: var(--color-ink-1);
+  --hover: var(--color-hover);
+  --borderPrimary: var(--color-line);
+  --borderSecondary: var(--color-line-strong);
+  --dividerPrimary: var(--color-line);
+  --dividerSecondary: var(--color-line-strong);
 }

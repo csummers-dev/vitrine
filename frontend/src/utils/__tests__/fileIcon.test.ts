@@ -75,7 +75,7 @@ describe("fileIconColor", () => {
     );
   });
 
-  it("colors archives orange (locks the archive palette)", () => {
+  it("colors archives with the archive kind", () => {
     // backup.tar.gz resolves on the trailing .gz, which is also an archive ext.
     for (const name of [
       "a.zip",
@@ -85,39 +85,25 @@ describe("fileIconColor", () => {
       "a.tgz",
       "backup.tar.gz",
     ]) {
-      expect(fileIconColor({ name }), name).toBe(
-        "bg-orange-500/15 text-orange-700 dark:text-orange-300"
-      );
+      expect(fileIconColor({ name }), name).toBe("kind-archive");
     }
   });
 
   it("uses the type color when the extension is unknown", () => {
     expect(fileIconColor({ name: "x.unknownext", type: "image" })).toBe(
-      "bg-pink-500/15 text-pink-700 dark:text-pink-300"
+      "kind-image"
     );
   });
 
   it("colors media files by their inferred type when no type is given", () => {
-    expect(fileIconColor({ name: "IHYPH.jpg" })).toBe(
-      "bg-pink-500/15 text-pink-700 dark:text-pink-300"
-    );
-    expect(fileIconColor({ name: "07 TV OFF.m4a" })).toBe(
-      "bg-yellow-500/15 text-yellow-700 dark:text-yellow-300"
-    );
-    expect(fileIconColor({ name: "clip.mp4" })).toBe(
-      "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300"
-    );
-    expect(fileIconColor({ name: "doc.pdf" })).toBe(
-      "bg-rose-500/15 text-rose-700 dark:text-rose-300"
-    );
+    expect(fileIconColor({ name: "IHYPH.jpg" })).toBe("kind-image");
+    expect(fileIconColor({ name: "07 TV OFF.m4a" })).toBe("kind-audio");
+    expect(fileIconColor({ name: "clip.mp4" })).toBe("kind-video");
+    expect(fileIconColor({ name: "doc.pdf" })).toBe("kind-pdf");
   });
 
   it("falls back to the default color when nothing matches", () => {
-    expect(fileIconColor({})).toBe(
-      "bg-zinc-500/15 text-zinc-700 dark:text-zinc-300"
-    );
-    expect(fileIconColor({ name: "mystery.qqq" })).toBe(
-      "bg-zinc-500/15 text-zinc-700 dark:text-zinc-300"
-    );
+    expect(fileIconColor({})).toBe("kind-other");
+    expect(fileIconColor({ name: "mystery.qqq" })).toBe("kind-other");
   });
 });

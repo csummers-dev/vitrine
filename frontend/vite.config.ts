@@ -1,5 +1,5 @@
 import path from "node:path";
-import { defineConfig, createLogger } from "vite";
+import { defineConfig, createLogger, type Plugin } from "vite";
 import vue from "@vitejs/plugin-vue";
 import VueI18nPlugin from "@intlify/unplugin-vue-i18n/vite";
 import { compression } from "vite-plugin-compression2";
@@ -13,8 +13,38 @@ import tailwindcss from "@tailwindcss/vite";
 // dropping it halves build artifacts and removes the loader/polyfill detection
 // with no runtime change for any current browser. Re-add it only if you need to
 // support browsers without native ES modules / dynamic import.
+/** Preloads the interface font's Latin file so first paint uses Figtree
+ *  (Phase 6, 1.5). The file name is hashed, so it's found in the bundle. */
+const fontPreload: Plugin = {
+  name: "vitrine-font-preload",
+  apply: "build",
+  transformIndexHtml: {
+    order: "post",
+    handler(_html, ctx) {
+      const file = Object.keys(ctx.bundle ?? {}).find((f) =>
+        /figtree-latin-wght-normal.*\.woff2$/.test(f)
+      );
+      if (!file) return [];
+      return [
+        {
+          tag: "link",
+          attrs: {
+            rel: "preload",
+            as: "font",
+            type: "font/woff2",
+            crossorigin: "",
+            href: `[{[ .StaticURL ]}]/${file}`,
+          },
+          injectTo: "head",
+        },
+      ];
+    },
+  },
+};
+
 const plugins = [
   vue(),
+  fontPreload,
   tailwindcss(),
   VueI18nPlugin({
     include: [path.resolve(__dirname, "./src/i18n/**/*.json")],

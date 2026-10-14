@@ -179,10 +179,11 @@
       </SettingsRow>
 
       <!-- Accent color (Calm Minimal): the single highlight hue, applied live
-           across the app + the ambient wash. Six presets; default Violet. -->
+           across the app. Green is the default; the admin's branding colour
+           applies when the user hasn't picked one. -->
       <SettingsRow
         label="Accent color"
-        description="The single highlight color used across the app — navigation, buttons, focus, and the background wash."
+        description="The single highlight color used across the app — navigation, buttons, focus and selection."
       >
         <div
           class="accent-swatches"
@@ -230,24 +231,6 @@
             />
           </button>
         </div>
-      </SettingsRow>
-
-      <!-- Ambient accent wash behind the app shell (per-user; "Off" disables). -->
-      <SettingsRow
-        label="Background gradient"
-        description="A faint wash of your accent color behind the app. Syncs to your account."
-      >
-        <SegmentedControl
-          v-model="bgIntensity"
-          :options="bgIntensityOptions"
-          aria-label="Background gradient intensity"
-        />
-      </SettingsRow>
-      <SettingsRow
-        label="Translucent surfaces"
-        description="Let the background gradient glow through panels, toolbars, and the sidebar."
-      >
-        <Toggle v-model="bgTranslucent" />
       </SettingsRow>
     </SettingsSection>
 
@@ -352,10 +335,10 @@ import {
 } from "@/composables/useThemePreference";
 import { usePreferences } from "@/composables/usePreferences";
 import {
-  useBackgroundGradient,
-  type BgIntensity,
-} from "@/composables/useBackgroundGradient";
-import { useAccentColor } from "@/composables/useAccentColor";
+  useAccentColor,
+  brandingAccent,
+  DEFAULT_ACCENT,
+} from "@/composables/useAccentColor";
 import { useProfileAvatar } from "@/composables/useProfileAvatar";
 import AvatarCropper from "@/components/settings/AvatarCropper.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
@@ -501,25 +484,15 @@ const themeOptions: { value: ThemePreference; label: string; icon: string }[] =
     { value: "system", label: "System", icon: "monitor" },
   ];
 
-// Ambient accent-mesh app background (per-user; same gradient as the login
-// screen). Singleton composable shared with the app-wide bootstrap; the
-// computed setters persist to the prefs bag + apply live.
-const bg = useBackgroundGradient();
-const bgIntensityOptions = bg.intensities;
-const bgIntensity = computed<BgIntensity>({
-  get: () => bg.intensity.value,
-  set: (v) => bg.setIntensity(v),
-});
-const bgTranslucent = computed<boolean>({
-  get: () => bg.translucent.value,
-  set: (v) => bg.setTranslucent(v),
-});
-
 // Accent color (Calm Minimal). Singleton composable shared with the app-wide
 // bootstrap; setAccent persists to the prefs bag + recolors the UI live.
 const accentColor = useAccentColor();
 const accentPresets = accentColor.presets;
-const accent = accentColor.accent;
+// The swatch shown as chosen: the user's pick, else Green unless the
+// admin's branding colour is in effect (then none is ticked).
+const accent = computed(
+  () => accentColor.accent.value ?? (brandingAccent() ? null : DEFAULT_ACCENT)
+);
 const setAccent = accentColor.setAccent;
 
 // ── Password (explicit save) ─────────────────────────────────────────

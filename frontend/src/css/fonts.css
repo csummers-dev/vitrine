@@ -1,3 +1,7 @@
-@import "@fontsource-variable/inter/index.css";
+/* Figtree (variable weight) for the interface, JetBrains Mono for sizes,
+   paths and codes. Fontsource declares Latin and Latin Extended with
+   unicode-range, so browsers fetch only the Latin file unless a name needs
+   more; the Latin file is preloaded (vite.config.ts fontPreload). */
+@import "@fontsource-variable/figtree/wght.css";
 @import "@fontsource/jetbrains-mono/400.css";
 @import "@fontsource/jetbrains-mono/500.css";

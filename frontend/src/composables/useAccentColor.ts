@@ -1,23 +1,25 @@
 import { onMounted, ref, watch, type Ref } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { usePreferences } from "@/composables/usePreferences";
+import { deriveAccent, parseColor, toHex } from "@/utils/color";
 
 /**
- * useAccentColor — per-user accent hue (Calm Minimal redesign, Stage 0).
+ * useAccentColor — the one highlight colour (active nav, primary actions,
+ * focus, selection, progress).
  *
- * The accent is the ONE color the UI leans on (active nav, primary actions,
- * focus, selection, progress, the ambient wash). Seven presets; the choice is
- * persisted to the prefs bag (cross-device + optimistic) exactly like
- * useBackgroundGradient / useThemePreference.
+ * Which colour applies, in order:
+ *   1. the preset the user picked in Profile (`accent.color` preference);
+ *   2. the admin's branding colour (Settings → Global → Branding), if set;
+ *   3. Green, the 4.0 default.
  *
- * Applied at runtime by writing five SOURCE custom properties on <html>
- * (`--accent`, `--accent-grad`, `--accent-strong`, `--accent-ink-dark`,
- * `--accent-rgb`) plus `--color-on-accent`; tokens.css DERIVES every
- * `--color-accent*` (and the theme-dependent tints) from those, so a single
- * picker recolors the whole app. The CSS defaults (= Iris) match
- * DEFAULT_ACCENT, so the common case paints correctly before init() runs.
+ * Every shade is derived from the one base colour (utils/color deriveAccent),
+ * so presets and any branding colour meet WCAG AA as text, on their tints
+ * and under their on-accent label. Applied by writing SOURCE custom
+ * properties on <html>; tokens.css derives every `--color-accent*` from them.
+ * The CSS defaults are the Green preset, so first paint is right.
  */
 export type AccentName =
+  | "green"
   | "iris"
   | "indigo"
   | "violet"
@@ -29,79 +31,106 @@ export type AccentName =
 export interface AccentPreset {
   name: AccentName;
   label: string;
-  /** Swatch + primary (`--color-accent`). */
+  /** Swatch and solid fill (`--color-accent`). */
   value: string;
-  /** Lighter gradient end-stop (storage bar, accent-filled sheen). */
-  grad: string;
-  /** Deeper hover / border (`--color-accent-strong`). */
+  /** Hover / pressed fill (`--color-accent-strong`). */
   strong: string;
-  /** Light tint used as accent-colored TEXT on the dark canvas. */
+  /** Accent as text on light surfaces. */
+  inkLight: string;
+  /** Accent as text on dark surfaces. */
   inkDark: string;
-  /** Space-separated RGB channel for `rgb(var(--accent-rgb) / a)` tints. */
+  /** Channels for `rgb(var(--accent-rgb) / a)` tints. */
   rgb: string;
-  /** Foreground on a SOLID accent fill — white for dark hues, near-black for
-   *  the light ones (cyan/amber) so on-accent text stays AA-legible. */
+  /** Label colour on the solid fill. */
   on: string;
 }
 
-export const ACCENT_PRESETS: AccentPreset[] = [
-  { name: "iris", label: "Iris", value: "#6e72d9", grad: "#9095e6", strong: "#575cc7", inkDark: "#c3c7f4", rgb: "110 114 217", on: "#ffffff" }, // prettier-ignore
-  { name: "indigo", label: "Indigo", value: "#6366f1", grad: "#818cf8", strong: "#4f46e5", inkDark: "#c7ccfb", rgb: "99 102 241", on: "#ffffff" }, // prettier-ignore
-  { name: "violet", label: "Violet", value: "#8b5cf6", grad: "#a78bfa", strong: "#7c3aed", inkDark: "#d6c8fb", rgb: "139 92 246", on: "#ffffff" }, // prettier-ignore
-  { name: "blue", label: "Blue", value: "#3b82f6", grad: "#60a5fa", strong: "#2563eb", inkDark: "#bfdbfe", rgb: "59 130 246", on: "#ffffff" }, // prettier-ignore
-  { name: "cyan", label: "Cyan", value: "#22b8d4", grad: "#4dd2e8", strong: "#0e7e98", inkDark: "#a8e7f4", rgb: "34 184 212", on: "#06323b" }, // prettier-ignore
-  { name: "emerald", label: "Emerald", value: "#10b981", grad: "#34d399", strong: "#0a9468", inkDark: "#a3ead0", rgb: "16 185 129", on: "#ffffff" }, // prettier-ignore
-  { name: "amber", label: "Amber", value: "#f59e0b", grad: "#fbbf24", strong: "#d97706", inkDark: "#f3cf92", rgb: "245 158 11", on: "#3d2a04" }, // prettier-ignore
+const BASES: [AccentName, string, string][] = [
+  ["green", "Green", "#12805c"],
+  ["iris", "Iris", "#6e72d9"],
+  ["indigo", "Indigo", "#6366f1"],
+  ["violet", "Violet", "#8b5cf6"],
+  ["blue", "Blue", "#2f6fd6"],
+  ["cyan", "Cyan", "#22b8d4"],
+  ["emerald", "Emerald", "#10b981"],
+  ["amber", "Amber", "#f59e0b"],
 ];
 
-/** Dusty Minimal (v2.7) default. Matches the CSS source-var defaults in
- *  tokens.css — a muted iris: the violet family pulled back from the
- *  saturation ceiling so the whole UI reads calmer. */
-const DEFAULT_ACCENT: AccentName = "iris";
+export const ACCENT_PRESETS: AccentPreset[] = BASES.map(
+  ([name, label, base]) => ({
+    name,
+    label,
+    ...deriveAccent(base),
+  })
+);
+
+export const DEFAULT_ACCENT: AccentName = "green";
 const PREF_ACCENT = "accent.color";
 
 const presetFor = (name: AccentName): AccentPreset =>
   ACCENT_PRESETS.find((p) => p.name === name) ?? ACCENT_PRESETS[0];
 
-const apply = (name: AccentName) => {
+/** The admin branding colour as an accent, or null when unset or invalid. */
+export function brandingAccent(
+  raw: unknown = window.FileBrowser?.Color
+): AccentPreset | null {
+  if (typeof raw !== "string" || !raw.trim()) return null;
+  const c = parseColor(raw);
+  if (!c) return null;
+  return { name: "green", label: "Branding", ...deriveAccent(toHex(c)) };
+}
+
+/** The accent to apply for a stored preference (precedence above). */
+export function resolveAccent(
+  pref: unknown,
+  branding: AccentPreset | null = brandingAccent()
+): AccentPreset {
+  if (isAccent(pref)) return presetFor(pref);
+  return branding ?? presetFor(DEFAULT_ACCENT);
+}
+
+const apply = (p: AccentPreset, tag: string) => {
   if (typeof document === "undefined") return;
-  const p = presetFor(name);
-  const s = document.documentElement.style;
+  const root = document.documentElement;
+  const s = root.style;
   s.setProperty("--accent", p.value);
-  s.setProperty("--accent-grad", p.grad);
+  s.setProperty("--accent-grad", p.value);
   s.setProperty("--accent-strong", p.strong);
+  s.setProperty("--accent-ink-light", p.inkLight);
   s.setProperty("--accent-ink-dark", p.inkDark);
   s.setProperty("--accent-rgb", p.rgb);
   s.setProperty("--color-on-accent", p.on);
-  document.documentElement.dataset.accent = name;
+  root.dataset.accent = tag;
 };
 
 const isAccent = (v: unknown): v is AccentName =>
   typeof v === "string" && ACCENT_PRESETS.some((p) => p.name === v);
 
-// Singleton so the Profile picker + the bootstrap share one source of truth
-// without a Pinia store (mirrors useBackgroundGradient / useThemePreference).
-const accent: Ref<AccentName> = ref<AccentName>(DEFAULT_ACCENT);
+// Singleton so the Profile picker and the bootstrap share one state.
+// `accent` is the user's own pick, or null when they never picked one.
+const accent: Ref<AccentName | null> = ref<AccentName | null>(null);
 let inited = false;
 
 export function useAccentColor() {
   const prefs = usePreferences();
   const authStore = useAuthStore();
 
-  /** Read pref → state → DOM. */
   const read = () => {
-    const raw = prefs.get<string>(PREF_ACCENT, DEFAULT_ACCENT);
-    accent.value = isAccent(raw) ? raw : DEFAULT_ACCENT;
-    apply(accent.value);
+    const raw = prefs.get<string | null>(PREF_ACCENT, null);
+    accent.value = isAccent(raw) ? raw : null;
+    const branding = brandingAccent();
+    apply(
+      resolveAccent(raw, branding),
+      accent.value ?? (branding ? "branding" : DEFAULT_ACCENT)
+    );
   };
 
   const setAccent = (next: AccentName) => {
     accent.value = next;
-    apply(next);
+    apply(presetFor(next), next);
     void prefs.set(PREF_ACCENT, next);
   };
 
-  /** First-run: read the stored pref + apply it. */
   const init = () => {
     if (inited) return;
     inited = true;
@@ -120,7 +149,7 @@ export function useAccentColor() {
   return { accent, presets: ACCENT_PRESETS, setAccent, init };
 }
 
-/** Mount-time bootstrap for App.vue (mirrors useBackgroundGradientBootstrap). */
+/** Mount-time bootstrap for App.vue. */
 export function useAccentColorBootstrap() {
   const { init } = useAccentColor();
   onMounted(init);
