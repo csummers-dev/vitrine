@@ -35,7 +35,7 @@ describe("useListingViewMode", () => {
     expect(v.viewModeLabel.value).toBe("List");
     await v.setView("mosaic");
     expect(v.viewMode.value).toBe("mosaic");
-    expect(v.viewModeLabel.value).toBe("Grid");
+    expect(v.viewModeLabel.value).toBe("Icons");
     expect(deps.onLayoutChange).toHaveBeenCalledTimes(1);
     await new Promise((r) => setTimeout(r, 0));
     expect(update).toHaveBeenCalledWith({ id: 3, viewMode: "mosaic" }, [

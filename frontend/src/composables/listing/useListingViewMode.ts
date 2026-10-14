@@ -8,6 +8,27 @@ import { users } from "@/api";
 import type { MenuItem } from "@/components/ContextMenu.vue";
 import { useAuthStore } from "@/stores/auth";
 import { useLayoutStore } from "@/stores/layout";
+import { usePreferences } from "@/composables/usePreferences";
+
+/** Preference holding each folder's own view (Decision 3). */
+export const VIEW_BY_FOLDER_PREF = "view.mode.byFolder";
+/** Folders remembered; the least recently set drop off. */
+export const VIEW_BY_FOLDER_MAX = 500;
+
+/** Records `mode` for `folder`, newest last, capped at VIEW_BY_FOLDER_MAX. */
+export function rememberFolderView(
+  map: Record<string, string>,
+  folder: string,
+  mode: string,
+  max = VIEW_BY_FOLDER_MAX
+): Record<string, string> {
+  const next = { ...map };
+  delete next[folder];
+  next[folder] = mode;
+  const keys = Object.keys(next);
+  for (const k of keys.slice(0, Math.max(0, keys.length - max))) delete next[k];
+  return next;
+}
 
 export interface ListingViewModeDeps {
   split: {
@@ -19,11 +40,28 @@ export interface ListingViewModeDeps {
   onLayoutChange: () => void;
   /** Re-measure the grid once the new layout has rendered. */
   onViewModeRendered: () => void;
+  /**
+   * The folder on screen. When given, a switch is remembered for that folder
+   * only (preferences), and folders never switched use the account default.
+   * Without it the switch changes the account default (older callers).
+   */
+  folder?: () => string;
 }
 
 export function useListingViewMode(deps: ListingViewModeDeps) {
   const authStore = useAuthStore();
   const layoutStore = useLayoutStore();
+  const prefs = usePreferences();
+
+  const folderViews = () =>
+    prefs.get<Record<string, string>>(VIEW_BY_FOLDER_PREF, {}) ?? {};
+  const isMode = (m: unknown): m is ViewModeType =>
+    m === "list" || m === "mosaic" || m === "mosaic gallery";
+  /** The view for the folder on screen: its own, else the account's. */
+  const resolved = (): ViewModeType => {
+    const own = deps.folder ? folderViews()[deps.folder()] : undefined;
+    return isMode(own) ? own : (authStore.user?.viewMode ?? "list");
+  };
 
   // View mode (list / grid / gallery) is a single PER-USER account preference,
   // persisted server-side via `users.update` and mirrored locally through
@@ -48,18 +86,30 @@ export function useListingViewMode(deps: ListingViewModeDeps) {
     layoutStore.closeHovers();
     viewMode.value = mode as ViewModeType; // optimistic — show immediately
     deps.onLayoutChange();
-    void persistViewMode(mode as ViewModeType);
+    if (deps.folder) {
+      void prefs.set(
+        VIEW_BY_FOLDER_PREF,
+        rememberFolderView(folderViews(), deps.folder(), mode)
+      );
+    } else {
+      void persistViewMode(mode as ViewModeType);
+    }
   };
 
-  // Source of truth for the active layout. Seeded from the account default and
-  // kept in sync if that default changes elsewhere (command palette, Profile, or
-  // another tab via the auth store).
-  const viewMode = ref<ViewModeType>(authStore.user?.viewMode ?? "list");
+  // Source of truth for the active layout: the folder's own view, else the
+  // account default; follows navigation and changes made elsewhere
+  // (command palette, Profile, another tab).
+  const viewMode = ref<ViewModeType>(resolved());
 
   watch(
-    () => authStore.user?.viewMode,
-    (mode) => {
-      if (mode && mode !== viewMode.value) viewMode.value = mode;
+    () => [
+      authStore.user?.viewMode,
+      deps.folder?.(),
+      deps.folder ? folderViews()[deps.folder()] : undefined,
+    ],
+    () => {
+      const mode = resolved();
+      if (mode !== viewMode.value) viewMode.value = mode;
     }
   );
 
@@ -77,7 +127,7 @@ export function useListingViewMode(deps: ListingViewModeDeps) {
   // conventions as the Sort popover; a check marks the active choice.
   const VIEW_OPTIONS = [
     { key: "list", label: "List", icon: "list" },
-    { key: "mosaic", label: "Grid", icon: "layout-grid" },
+    { key: "mosaic", label: "Icons", icon: "layout-grid" },
     { key: "mosaic gallery", label: "Gallery", icon: "image" },
   ] as const;
 

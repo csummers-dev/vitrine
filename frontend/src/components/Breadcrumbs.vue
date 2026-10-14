@@ -2,7 +2,7 @@
   <nav
     ref="navEl"
     class="breadcrumbs-nav flex items-center gap-0.5 text-[13px] min-w-0 text-ink-2"
-    :class="{ 'breadcrumbs-nav--drag': isDragActive }"
+    :class="{ 'breadcrumbs-nav--drag': isDragActive, 'is-title': title }"
     :aria-label="t('files.home')"
   >
     <component
@@ -144,6 +144,8 @@ watch(
 const props = defineProps<{
   base: string;
   noLink?: boolean;
+  /** The current folder is the page title (the files header). */
+  title?: boolean;
 }>();
 
 const items = computed(() => {
@@ -433,6 +435,13 @@ onBeforeUnmount(() => {
 .breadcrumb-link--current {
   flex-shrink: 0;
   min-width: 0;
+}
+
+/* As the page title, the current folder reads as one. */
+.breadcrumbs-nav.is-title .breadcrumb-link--current {
+  font-size: var(--type-title);
+  line-height: var(--type-title-lh);
+  font-weight: 700;
 }
 
 .breadcrumb-link.is-drop-target {

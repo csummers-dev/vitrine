@@ -98,13 +98,26 @@ test.describe("sorting and layout", () => {
     ).toBe(true);
   });
 
-  test("the View menu switches to the grid layout", async ({ app }) => {
-    await app.getByRole("button", { name: /View options/ }).click();
-    await app.getByRole("menuitem", { name: "Grid", exact: true }).click();
-    await expect(
-      app.getByRole("button", { name: "View options — current: Grid" })
-    ).toBeVisible();
+  test("the View switch changes the layout for this folder only", async ({
+    app,
+    fake,
+  }) => {
+    const view = app.getByRole("radiogroup", { name: "View" });
+    await expect(view.getByRole("radio", { name: "List" })).toBeChecked();
+    await view.getByRole("radio", { name: "Icons" }).click();
+    await expect(view.getByRole("radio", { name: "Icons" })).toBeChecked();
     await expect(row(app, "readme.md")).toBeVisible();
+    await expect
+      .poll(() => fake.preferences["view.mode.byFolder"])
+      .toEqual({ "/files/": "mosaic" });
+
+    // Another folder keeps the account default (List)…
+    await row(app, "Documents").dblclick();
+    await expect(app).toHaveURL(/\/files\/Documents\/$/);
+    await expect(view.getByRole("radio", { name: "List" })).toBeChecked();
+    // …and coming back restores this folder's own view.
+    await app.goBack();
+    await expect(view.getByRole("radio", { name: "Icons" })).toBeChecked();
   });
 });
 
@@ -132,7 +145,7 @@ test.describe("drag and drop", () => {
   });
 
   test("split view: Parent folder is disabled at the root", async ({ app }) => {
-    await app.getByRole("button", { name: /View options/ }).click();
+    await app.getByRole("button", { name: "More", exact: true }).click();
     await app
       .getByRole("menuitem", { name: "Split view", exact: true })
       .click();

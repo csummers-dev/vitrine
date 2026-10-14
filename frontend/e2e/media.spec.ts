@@ -1,8 +1,10 @@
 import { test, expect, row } from "./support/test";
 
 async function gridView(app: import("@playwright/test").Page) {
-  await app.getByRole("button", { name: /View options/ }).click();
-  await app.getByRole("menuitem", { name: "Grid", exact: true }).click();
+  await app
+    .getByRole("radiogroup", { name: "View" })
+    .getByRole("radio", { name: "Icons" })
+    .click();
 }
 
 // 4.0 Phase 3.2: folder tiles show cover art found inside the folder.

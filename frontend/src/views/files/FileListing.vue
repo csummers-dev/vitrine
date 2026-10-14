@@ -36,6 +36,25 @@
           >
             <Icon name="menu" :size="18" />
           </button>
+          <div class="fb-hero__nav" role="group" aria-label="History">
+            <UiIconButton
+              icon="chevron-left"
+              label="Back"
+              tooltip="Back (Alt+←)"
+              size="sm"
+              :disabled="!navHistory.canBack.value"
+              @click="navHistory.back"
+            />
+            <UiIconButton
+              icon="chevron-right"
+              label="Forward"
+              tooltip="Forward (Alt+→)"
+              size="sm"
+              class="max-md:hidden"
+              :disabled="!navHistory.canForward.value"
+              @click="navHistory.forward"
+            />
+          </div>
 
           <!-- Hero lead (Calm Minimal #1 + #3): the breadcrumb is now the
                primary location nav — its last crumb is the current folder — with
@@ -104,7 +123,7 @@
               </button>
             </div>
             <div v-else class="fb-hero__crumbs">
-              <breadcrumbs base="/files" />
+              <breadcrumbs base="/files" title />
               <button
                 v-if="fileStore.req?.isDir && currentFolderPath"
                 type="button"
@@ -146,50 +165,36 @@
             <!-- Control cluster — single adaptive row. Share + Download collapse
                  into the ⋯ More menu to save space (V2-J). -->
             <div class="fb-hero__cluster">
-              <!-- One consolidated View control (v2.7.2 header declutter):
-                   the 3-button layout switcher + the split toggle collapse
-                   into a single popover. The trigger wears the ACTIVE mode's
-                   icon so the current layout stays glanceable; the menu holds
-                   List / Grid / Gallery plus Split view. -->
-              <button
-                class="h-7 w-7 rounded-md border border-line bg-surface hover:bg-elevated inline-flex items-center justify-center transition"
-                @click.stop="openViewMenu"
-                :title="`View: ${viewModeLabel}`"
-                :aria-label="`View options — current: ${viewModeLabel}`"
-                aria-haspopup="menu"
-              >
-                <Icon
-                  :name="viewModeIcon"
-                  :size="14"
-                  class="text-[var(--color-ink-2)]"
-                />
-              </button>
+              <!-- View: List / Icons / Gallery (Decision 2–3); each folder
+                   remembers its own. Split view lives in the More menu. -->
+              <UiSegmented
+                class="fb-hero__views"
+                :model-value="viewMode"
+                :options="viewOptions"
+                aria-label="View"
+                icon-only
+                size="sm"
+                @update:model-value="(m) => void setView(m)"
+              />
               <!-- One consolidated Sort control: opens a popover with the sort
                    field, direction (Ascending/Descending), and the secondary
                    "Then by" criterion — replacing the former two-button field +
                    direction pair. Icon-only at all widths; the active field +
                    direction stay legible via the title tooltip. -->
-              <button
-                class="h-7 w-7 rounded-md border border-line bg-surface hover:bg-elevated inline-flex items-center justify-center transition"
+              <UiIconButton
+                icon="arrow-up-down"
+                size="sm"
+                :label="`Sort: ${sortLabel}, ${sortDirLabel}`"
+                :tooltip="`Sort: ${sortLabel} · ${sortDirLabel}`"
                 @click.stop="openSortMenu"
-                :title="`Sort: ${sortLabel} · ${sortDirLabel}`"
-                :aria-label="`Sort: ${sortLabel}, ${sortDirLabel}`"
-              >
-                <Icon
-                  name="arrow-up-down"
-                  :size="14"
-                  class="text-[var(--color-ink-2)]"
-                />
-              </button>
-              <button
+              />
+              <UiIconButton
                 v-if="headerButtons.upload && isTouchDevice"
-                class="h-7 w-7 rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 inline-flex items-center justify-center transition"
+                icon="image-plus"
+                size="sm"
+                label="Add photos or videos"
                 @click="photoInput?.click()"
-                title="Add photos or videos"
-                aria-label="Add photos or videos"
-              >
-                <Icon name="image-plus" :size="14" />
-              </button>
+              />
               <input
                 ref="photoInput"
                 style="display: none"
@@ -198,25 +203,22 @@
                 multiple
                 @change="uploadInput($event)"
               />
-              <!-- Icon-only at all widths (label dropped to save header room;
-                   the gradient fill keeps it reading as the primary action). -->
-              <button
+              <!-- Upload: the primary action. On phones it moves into More. -->
+              <UiButton
                 v-if="headerButtons.upload"
-                class="h-7 w-7 rounded-md btn-accent-gradient text-white flex items-center justify-center shadow-sm transition"
+                class="fb-hero__upload max-md:hidden"
+                variant="primary"
+                size="sm"
+                icon="upload"
                 @click="uploadFunc"
-                :title="t('buttons.upload')"
-                :aria-label="t('buttons.upload')"
+                >{{ t("buttons.upload") }}</UiButton
               >
-                <Icon name="upload" :size="14" />
-              </button>
-              <button
-                class="w-7 h-7 rounded-md border border-line bg-surface hover:bg-elevated text-ink-2 flex items-center justify-center transition"
-                title="More"
-                aria-label="More"
+              <UiIconButton
+                icon="ellipsis"
+                size="sm"
+                label="More"
                 @click.stop="showSectionMore"
-              >
-                <Icon name="ellipsis" :size="14" />
-              </button>
+              />
             </div>
             <!-- Search sits directly beneath the toolbar cluster (single-pane —
                  the whole hero is gated !splitActive). On its own line it expands
@@ -1072,6 +1074,10 @@ import { useListingDelete } from "@/composables/listing/useListingDelete";
 import { useListingPanels } from "@/composables/listing/useListingPanels";
 import { useListingSort } from "@/composables/listing/useListingSort";
 import { useListingViewMode } from "@/composables/listing/useListingViewMode";
+import { useNavHistory } from "@/composables/useNavHistory";
+import UiButton from "@/components/ui/UiButton.vue";
+import UiIconButton from "@/components/ui/UiIconButton.vue";
+import UiSegmented from "@/components/ui/UiSegmented.vue";
 import { useListingUpload } from "@/composables/listing/useListingUpload";
 import { useListingContextMenu } from "@/composables/listing/useListingContextMenu";
 import { useListingDropTargets } from "@/composables/listing/useListingDropTargets";
@@ -1192,15 +1198,17 @@ const { startUpload, uploadFunc, uploadInput, onPasteUpload } =
 
 // ── View mode (list / grid / gallery) + the View popover ────────────────
 // See composables/listing/useListingViewMode.
+// (Its own handle on the route: `route` is declared further down.)
+const viewRoute = useRoute();
 const {
   viewMode,
+  setView,
+  VIEW_OPTIONS,
   viewMenuShow,
   viewMenuPos,
-  viewModeIcon,
-  viewModeLabel,
-  openViewMenu,
   viewMenuItems,
 } = useListingViewMode({
+  folder: () => viewRoute.path,
   split: {
     available: splitAvailable,
     active: splitActive,
@@ -1215,6 +1223,13 @@ const {
     listingGrid.update();
   },
 });
+const viewOptions = VIEW_OPTIONS.map((o) => ({
+  value: o.key as ViewModeType,
+  label: o.label,
+  icon: o.icon,
+}));
+const navHistory = useNavHistory();
+
 // Interacting with the primary column makes pane A the active pane again (the
 // mirror of ComparePane's pointerdown), so global surfaces target it. No-op
 // when not split. Capture-phase so it fires before row handlers stop it.
@@ -2564,6 +2579,14 @@ const hideSectionMore = () => {
 const sectionMoreItems = computed<MenuItem[]>(() => {
   const canCreate = !!authStore.user?.perm.create && !savedSearch.value;
   const items: (MenuItem | null)[] = [
+    // Phones: the header has no room for the Upload button.
+    headerButtons.value.upload && width.value < 768
+      ? {
+          label: t("buttons.upload"),
+          icon: "upload",
+          action: uploadFunc,
+        }
+      : null,
     canCreate
       ? {
           label: t("sidebar.newFolder"),
@@ -2576,6 +2599,13 @@ const sectionMoreItems = computed<MenuItem[]>(() => {
           label: t("sidebar.newFile"),
           icon: "file-plus",
           action: () => layoutStore.showHover("newFile"),
+        }
+      : null,
+    splitAvailable.value
+      ? {
+          label: splitActive.value ? "Close split view" : "Split view",
+          icon: "columns-2",
+          action: toggleSplit,
         }
       : null,
     // Rename the CURRENTLY VIEWED folder (not selected items).
@@ -3337,6 +3367,13 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   min-width: 0;
   flex-shrink: 1;
 }
+.fb-hero__nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  height: 30px;
+}
 .fb-hero__menu {
   width: 32px;
   height: 32px;
@@ -3370,6 +3407,7 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
 .fb-hero__crumbs {
   display: flex;
   align-items: center;
+  min-height: 30px;
   gap: 4px;
   min-width: 0;
   width: 100%;
@@ -3378,7 +3416,7 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
    is the hover tooltip. A leading middot separates it from the star. */
 .fb-hero__count {
   flex: none;
-  font-size: 12px;
+  font-size: var(--type-body);
   color: var(--color-ink-3);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;

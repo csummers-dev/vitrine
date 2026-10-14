@@ -8,6 +8,7 @@ import type {
 } from "vue-toastification/dist/types/types";
 import createPinia from "@/stores";
 import router from "@/router";
+import { installNavHistory } from "@/composables/useNavHistory";
 import i18n from "@/i18n";
 import App from "@/App.vue";
 import CustomToast from "@/components/CustomToast.vue";
@@ -55,6 +56,8 @@ app.use(Toast, {
 app.use(i18n);
 app.use(pinia);
 app.use(router);
+// In-app Back / Forward (Phase 6, 3.3) — must see the first navigation.
+installNavHistory(router);
 
 // provide v-focus for components
 app.directive("focus", {
