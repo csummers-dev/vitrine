@@ -1,0 +1,7 @@
+{
+  "note": "gzip bytes; a group may grow 2% before the check fails",
+  "initial": 347110,
+  "js": 1415009,
+  "css": 110329,
+  "fonts": 408150
+}

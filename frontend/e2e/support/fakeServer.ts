@@ -65,9 +65,10 @@ function b64url(obj: unknown): string {
 /** An unsigned JWT the frontend can decode (it never verifies signatures). */
 export function makeToken(
   preferences: Record<string, unknown> = {},
-  extra: Record<string, unknown> = {}
+  extra: Record<string, unknown> = {},
+  nowMs: number = Date.now()
 ): string {
-  const now = Math.floor(Date.now() / 1000);
+  const now = Math.floor(nowMs / 1000);
   const payload = {
     user: { ...USER, preferences, ...extra },
     iat: now,
@@ -196,11 +197,28 @@ export class FakeServer {
   /** "Require two-factor for admins": tokens flag the admin until enrolled. */
   requireAdminTwoFactor = false;
 
+  /** Fixed time for tokens (visual tests freeze the page clock too). */
+  clock: number | null = null;
+
+  /** Fields to override on the signed-in user (e.g. `viewMode`). */
+  user: Record<string, unknown> = {};
+
   private token(): string {
-    return makeToken(this.preferences, {
-      twoFactorSetupRequired:
-        this.requireAdminTwoFactor && !this.twoFactor.enabled,
-    });
+    return makeToken(
+      this.preferences,
+      {
+        ...this.user,
+        twoFactorSetupRequired:
+          this.requireAdminTwoFactor && !this.twoFactor.enabled,
+      },
+      this.clock ?? Date.now()
+    );
+  }
+
+  /** Sets a path's modified time (visual tests want varied, fixed dates). */
+  setModified(path: string, iso: string): void {
+    const e = this.fs.get(norm(path));
+    if (e) e.modified = iso;
   }
 
   /** The user's preferences: served in the token, updated by PUT /users. */

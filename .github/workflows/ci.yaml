@@ -26,6 +26,7 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm run lint
           pnpm run typecheck
+          pnpm run check:tokens
 
   test-frontend:
     name: Test Frontend
@@ -70,6 +71,67 @@ jobs:
           name: playwright-traces
           path: frontend/test-results/
           retention-days: 7
+
+  # Screenshot comparison (Phase 6). Runs in the Playwright image so pixels
+  # match the committed baselines; skipped until baselines exist (make them
+  # with the "Update screenshots" workflow).
+  visual-frontend:
+    name: UI screenshots (Playwright)
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.0-noble
+    steps:
+      - uses: actions/checkout@v6
+      - id: baselines
+        run: |
+          if ls frontend/e2e/visual/__screenshots__/*.png >/dev/null 2>&1; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No screenshot baselines yet; skipping."
+          fi
+      - if: steps.baselines.outputs.present == 'true'
+        uses: pnpm/action-setup@v6
+        with:
+          package_json_file: "frontend/package.json"
+      - if: steps.baselines.outputs.present == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+          cache: "pnpm"
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
+      - if: steps.baselines.outputs.present == 'true'
+        working-directory: frontend
+        env:
+          HOME: /root
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run e2e:visual
+      - name: Upload diffs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-diffs
+          path: frontend/test-results/
+          retention-days: 7
+
+  bundle-frontend:
+    name: Bundle size
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: "frontend/package.json"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+          cache: "pnpm"
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
+      - working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec vite build
+          pnpm run check:bundle
 
   lint-backend:
     name: Lint Backend

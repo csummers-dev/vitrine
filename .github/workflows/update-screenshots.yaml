@@ -1,0 +1,36 @@
+name: Update screenshots
+
+# Regenerates the Phase 6 screenshot baselines in the Playwright image (the
+# only place they are made, so CI compares like with like). Run it from the
+# Actions tab on a branch, download the "screenshots" artifact and commit its
+# PNGs to frontend/e2e/visual/__screenshots__/.
+on:
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.0-noble
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: "frontend/package.json"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+          cache: "pnpm"
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
+      - working-directory: frontend
+        env:
+          HOME: /root
+        run: |
+          pnpm install --frozen-lockfile
+          rm -rf e2e/visual/__screenshots__
+          pnpm run e2e:visual --update-snapshots
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: frontend/e2e/visual/__screenshots__/
+          retention-days: 14

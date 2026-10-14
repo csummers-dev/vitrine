@@ -42,6 +42,7 @@ default.nix
 Dockerfile.dev
 
 docs/*.md
+!docs/ui-inventory.md
 mockups/
 
 # RC / docker image tarballs (output of rc-build.sh, e.g. `docker save`)

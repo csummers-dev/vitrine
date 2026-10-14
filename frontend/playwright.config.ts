@@ -18,20 +18,46 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["github"], ["list"]] : "list",
   timeout: 30_000,
-  expect: { timeout: 7_000 },
+  expect: {
+    timeout: 7_000,
+    toHaveScreenshot: {
+      animations: "disabled",
+      caret: "hide",
+      maxDiffPixelRatio: 0.002,
+      stylePath: "./e2e/visual/screenshot.css",
+    },
+  },
   use: {
     baseURL: `http://localhost:${PORT}`,
     trace: "retain-on-failure",
     launchOptions: { executablePath },
   },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"] } },
+    {
+      name: "desktop",
+      use: { ...devices["Desktop Chrome"] },
+      testIgnore: /visual\//,
+    },
     {
       name: "mobile",
       use: { ...devices["Pixel 7"] },
       grep: /@mobile/,
+      testIgnore: /visual\//,
+    },
+    // Screenshot baselines (Phase 6). Pixels differ between machines, so
+    // baselines are only made and checked in the Playwright Docker image:
+    // `pnpm run e2e:visual` there, or the "Update screenshots" workflow.
+    {
+      name: "visual",
+      testMatch: /visual\/.*\.spec\.ts$/,
+      use: {
+        ...devices["Desktop Chrome"],
+        deviceScaleFactor: 1,
+        contextOptions: { reducedMotion: "reduce" },
+      },
     },
   ],
+  snapshotPathTemplate: "{testDir}/visual/__screenshots__/{arg}{ext}",
   webServer: {
     command: `pnpm exec vite dev --port ${PORT} --strictPort`,
     url: `http://localhost:${PORT}`,
