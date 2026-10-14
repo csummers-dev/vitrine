@@ -235,7 +235,7 @@ var userTwoFactorHandler = withAdmin(func(w http.ResponseWriter, r *http.Request
 
 // beginTwoFactorLogin answers the password step for a user with a second
 // factor: 202 and a challenge instead of a token.
-func beginTwoFactorLogin(w http.ResponseWriter, r *http.Request, d *data, user *users.User) (int, error) {
+func beginTwoFactorLogin(w http.ResponseWriter, d *data, user *users.User) (int, error) {
 	challenge, err := twofactor.IssueChallenge(d.settings.Key, user.ID, time.Now())
 	if err != nil {
 		return http.StatusInternalServerError, err

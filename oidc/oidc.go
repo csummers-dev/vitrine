@@ -9,7 +9,6 @@ package oidc
 
 import (
 	"context"
-	"crypto/ecdh"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -359,17 +358,14 @@ func (k jwk) publicKey() (any, error) {
 		}
 		return &rsa.PublicKey{N: n, E: int(e.Int64())}, nil
 	case "EC":
-		var (
-			curve elliptic.Curve
-			ec    ecdh.Curve
-		)
+		var curve elliptic.Curve
 		switch k.Crv {
 		case "P-256":
-			curve, ec = elliptic.P256(), ecdh.P256()
+			curve = elliptic.P256()
 		case "P-384":
-			curve, ec = elliptic.P384(), ecdh.P384()
+			curve = elliptic.P384()
 		case "P-521":
-			curve, ec = elliptic.P521(), ecdh.P521()
+			curve = elliptic.P521()
 		default:
 			return nil, fmt.Errorf("unsupported curve %q", k.Crv)
 		}
@@ -381,7 +377,6 @@ func (k jwk) publicKey() (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		// crypto/ecdh rejects points that aren't on the curve.
 		size := (curve.Params().BitSize + 7) / 8
 		if len(x.Bytes()) > size || len(y.Bytes()) > size {
 			return nil, errors.New("EC coordinates too large")
@@ -390,10 +385,12 @@ func (k jwk) publicKey() (any, error) {
 		point[0] = 4
 		x.FillBytes(point[1 : 1+size])
 		y.FillBytes(point[1+size:])
-		if _, err := ec.NewPublicKey(point); err != nil {
+		// Rejects points that aren't on the curve.
+		pub, err := ecdsa.ParseUncompressedPublicKey(curve, point)
+		if err != nil {
 			return nil, fmt.Errorf("bad EC key: %w", err)
 		}
-		return &ecdsa.PublicKey{Curve: curve, X: x, Y: y}, nil
+		return pub, nil
 	}
 	return nil, fmt.Errorf("unsupported key type %q", k.Kty)
 }

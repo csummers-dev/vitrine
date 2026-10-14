@@ -219,7 +219,9 @@ func finish(n *Node, maxChildren int) {
 			other.Files += c.Files
 		}
 		other.Name = plural(len(rest), "more item", "more items")
-		n.Children = append(keep[:len(keep):len(keep)], other)
+		children := make([]*Node, 0, maxChildren)
+		children = append(children, keep...)
+		n.Children = append(children, other)
 	}
 }
 

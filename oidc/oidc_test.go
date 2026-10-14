@@ -20,7 +20,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-type fakeIdP struct {
+type fakeIDP struct {
 	t      *testing.T
 	srv    *httptest.Server
 	mu     sync.Mutex
@@ -31,7 +31,7 @@ type fakeIdP struct {
 	claims jwt.MapClaims
 }
 
-func newFakeIdP(t *testing.T) *fakeIdP {
+func newFakeIDP(t *testing.T) *fakeIDP {
 	t.Helper()
 	rk, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -41,7 +41,7 @@ func newFakeIdP(t *testing.T) *fakeIdP {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f := &fakeIdP{t: t, rsa: rk, kid: "k1", ec: ek, codes: map[string]string{}}
+	f := &fakeIDP{t: t, rsa: rk, kid: "k1", ec: ek, codes: map[string]string{}}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, _ *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]string{
@@ -87,7 +87,7 @@ func newFakeIdP(t *testing.T) *fakeIdP {
 	return f
 }
 
-func (f *fakeIdP) sign(c jwt.MapClaims, alg string) string {
+func (f *fakeIDP) sign(c jwt.MapClaims, alg string) string {
 	var tok *jwt.Token
 	var key any
 	if alg == "ES256" {
@@ -108,7 +108,7 @@ func (f *fakeIdP) sign(c jwt.MapClaims, alg string) string {
 	return s
 }
 
-func (f *fakeIdP) baseClaims(nonce string) jwt.MapClaims {
+func (f *fakeIDP) baseClaims(nonce string) jwt.MapClaims {
 	now := time.Now()
 	return jwt.MapClaims{
 		"iss": f.srv.URL, "aud": "vitrine", "sub": "u1", "nonce": nonce,
@@ -118,7 +118,7 @@ func (f *fakeIdP) baseClaims(nonce string) jwt.MapClaims {
 }
 
 func TestFlowAndVerify(t *testing.T) {
-	idp := newFakeIdP(t)
+	idp := newFakeIDP(t)
 	p := NewProvider(Config{Issuer: idp.srv.URL, ClientID: "vitrine", ClientSecret: "s3cret"}, nil)
 	ctx := context.Background()
 
@@ -165,7 +165,7 @@ func TestFlowAndVerify(t *testing.T) {
 }
 
 func TestVerifyRejects(t *testing.T) {
-	idp := newFakeIdP(t)
+	idp := newFakeIDP(t)
 	p := NewProvider(Config{Issuer: idp.srv.URL, ClientID: "vitrine"}, nil)
 	ctx := context.Background()
 	mod := func(f func(jwt.MapClaims)) string {
@@ -207,7 +207,7 @@ func TestVerifyRejects(t *testing.T) {
 }
 
 func TestKeyRotation(t *testing.T) {
-	idp := newFakeIdP(t)
+	idp := newFakeIDP(t)
 	p := NewProvider(Config{Issuer: idp.srv.URL, ClientID: "vitrine"}, nil)
 	clock := time.Now()
 	p.now = func() time.Time { return clock }
@@ -233,7 +233,7 @@ func TestKeyRotation(t *testing.T) {
 }
 
 func TestDiscoveryIssuerMismatch(t *testing.T) {
-	idp := newFakeIdP(t)
+	idp := newFakeIDP(t)
 	p := NewProvider(Config{Issuer: idp.srv.URL + "/", ClientID: "vitrine"}, nil)
 	if _, err := p.Discover(context.Background()); err == nil {
 		t.Error("issuer mismatch accepted")

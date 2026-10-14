@@ -166,7 +166,7 @@ func loginHandler(tokenExpireTime time.Duration) handleFunc {
 		// 4.4: a second factor turns this into the first of two steps. The
 		// throttle record stays until the code step succeeds.
 		if twoFactorApplies(d) && d.store.TwoFactor.Enabled(user.ID) {
-			return beginTwoFactorLogin(w, r, d, user)
+			return beginTwoFactorLogin(w, d, user)
 		}
 
 		loginThrottler.succeed(key)
