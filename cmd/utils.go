@@ -188,6 +188,13 @@ func withViperAndStore(fn func(cmd *cobra.Command, args []string, v *viper.Viper
 			return err
 		}
 
+		// Upgrade an older database before anything reads it (4.0 Phase
+		// 7.2). The original is backed up first; a failure stops here
+		// with the backup's path in the message.
+		if _, err := bolt.Migrate(db, path, bolt.Migrations, log.Printf); err != nil {
+			return err
+		}
+
 		store := &store{
 			Storage:         storage,
 			databaseExisted: exists,

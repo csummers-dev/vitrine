@@ -10,6 +10,17 @@ All notable changes to **vitrine**.
 > with a message naming the replacement (`--baseURL`, `--cacheDir`,
 > `--tokenExpirationTime`, `VITRINE_BASE_URL`). Compose files using the
 > documented settings are unaffected.
+>
+> The first 4.0 start upgrades the database. It copies it first, beside
+> the original, as `vitrine.db.pre-4.0.bak` (named after your database),
+> logs each step, and stops with the backup's path if a step fails. The
+> upgrade can run again safely. **There is no going back in place:** to
+> return to 3.x, stop vitrine and restore that backup. Don't point 3.x at a
+> 4.0 database: it doesn't know about upload-only links or two-factor
+> sign-in, so it would serve file-request folders as ordinary shares and
+> skip second factors. New files to back up with the database:
+> `vitrine-2fa.key` (two-factor secrets) and `vitrine-hashes.db` (only a
+> cache; safe to lose).
 
 - **Live updates.** vitrine now watches the folders it serves. Files added,
   renamed or removed by anything — a downloader, an SMB copy, the host shell,

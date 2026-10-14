@@ -187,6 +187,12 @@ services:
       retries: 3
 ```
 
+#### Upgrading from 3.x
+
+Pull the 4.0 image and start it as usual. On the first start vitrine copies the database to `/database/vitrine.db.pre-4.0.bak`, then upgrades it in place and logs each step; if a step fails, startup stops and the message names the backup. To go back to 3.x, stop the container, put the backup back as `vitrine.db` and start the 3.x image. Don't run 3.x against a database 4.0 has used: it would treat upload-only links as ordinary shares.
+
+Back up `vitrine-2fa.key` with the database (two-factor secrets); `vitrine-hashes.db` is only the duplicate finder's cache.
+
 #### Permissions
 
 On startup the container reads `PUID`/`PGID`, fixes the ownership of its own data to match, then **drops to that unprivileged user** to run the app — so vitrine never runs as root, and you never have to `chown` your media or juggle a `user:` line. Just point it at whoever owns your files:
