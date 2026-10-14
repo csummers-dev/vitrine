@@ -612,7 +612,7 @@ const iconColorClass = computed(() =>
         type: item.value.type,
         name: item.value.name,
       })
-    : "bg-zinc-100 text-zinc-600"
+    : "kind-other"
 );
 
 const hasThumbnail = computed(() => {
@@ -990,27 +990,23 @@ onUnmounted(() => {
    hardcoded amber-500 base + white glyph — Calm Minimal). */
 .ip-summary__icon--folder {
   background-color: var(--color-accent);
-  background-image: linear-gradient(
-    140deg,
-    rgba(255, 255, 255, 0.22),
-    rgba(255, 255, 255, 0) 60%
-  );
+  background-image: none;
   color: var(--color-on-accent);
 }
 .ip-summary__icon--accent {
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.12));
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
 }
 .ip-summary__title {
   font-size: 14.5px;
   font-weight: 600;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   word-break: break-word;
   line-height: 1.3;
 }
 .ip-summary__meta {
   font-size: 12px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   margin-top: 2px;
   font-variant-numeric: tabular-nums;
 }
@@ -1018,7 +1014,7 @@ onUnmounted(() => {
   width: 100%;
   margin: 16px 0 0;
   padding-top: 14px;
-  border-top: 1px solid var(--color-line, #ececec);
+  border-top: 1px solid var(--color-line);
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -1031,10 +1027,10 @@ onUnmounted(() => {
   font-size: 12px;
 }
 .ip-summary__prop dt {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 .ip-summary__prop dd {
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   margin: 0;
   min-width: 0;
 }
@@ -1045,7 +1041,7 @@ onUnmounted(() => {
   gap: 3px;
 }
 .ip-summary__path {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 11px;
   line-height: 1.4;
   word-break: break-all;
@@ -1053,7 +1049,7 @@ onUnmounted(() => {
 }
 .ip-summary__hint {
   font-size: 11.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   line-height: 1.45;
   margin: 16px 0 0;
 }
@@ -1078,11 +1074,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-image: linear-gradient(
-    140deg,
-    rgba(255, 255, 255, 0.3),
-    rgba(255, 255, 255, 0) 60%
-  );
+  background-image: none;
 }
 
 /* File name wraps at the <wbr> separators first, only breaking a long
@@ -1093,37 +1085,8 @@ onUnmounted(() => {
 }
 
 .preview-mesh {
-  /* Calm Minimal: a single faint accent wash over the surface (was a
-     pink/amber/indigo three-color mesh). Follows the accent picker. */
-  background:
-    radial-gradient(
-      at 25% 18%,
-      rgb(var(--accent-rgb) / 0.1) 0%,
-      transparent 55%
-    ),
-    radial-gradient(
-      at 80% 78%,
-      rgb(var(--accent-rgb) / 0.06) 0%,
-      transparent 55%
-    ),
-    var(--color-surface, #ffffff);
-}
-
-/* Dark-mode: bump alpha so the radial blobs still read against the dark
-   surface, and let the surface token drive the base color. */
-html.dark .preview-mesh {
-  background:
-    radial-gradient(
-      at 25% 18%,
-      rgb(var(--accent-rgb) / 0.16) 0%,
-      transparent 58%
-    ),
-    radial-gradient(
-      at 80% 78%,
-      rgb(var(--accent-rgb) / 0.1) 0%,
-      transparent 58%
-    ),
-    var(--color-surface);
+  /* Flat panel behind the file preview (Soft native has no washes). */
+  background: var(--color-panel);
 }
 
 .info-action {
@@ -1133,10 +1096,10 @@ html.dark .preview-mesh {
   align-items: center;
   gap: 4px;
   padding: 8px 4px;
-  border-radius: var(--radius-md, 8px);
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-2, #52525b);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
@@ -1181,7 +1144,7 @@ html.dark .preview-mesh {
 /* Calm Minimal: resting action icons are muted ink (chrome), not per-action
    hues. Lucide svg draws with currentColor. */
 .info-action :deep(svg) {
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 
 /* Hover tints the tile with the single accent (was the per-action hue).
@@ -1189,7 +1152,7 @@ html.dark .preview-mesh {
 .info-action:hover {
   background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
   border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-line));
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 /* Delete: turn the label red on hover too, for an unmistakable danger cue. */
 .info-action--danger:hover {
@@ -1208,7 +1171,7 @@ html.dark .preview-mesh {
   border: 1px solid transparent;
   border-radius: 4px;
   background: transparent;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-size: 10.5px;
   font-weight: 600;
   text-transform: uppercase;
@@ -1220,12 +1183,12 @@ html.dark .preview-mesh {
     border-color var(--dur-base) ease;
 }
 .info-pane__copy-path:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
-  border-color: var(--color-line, #ececec);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
+  border-color: var(--color-line);
 }
 .info-pane__copy-path:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 
@@ -1242,9 +1205,9 @@ html.dark .preview-mesh {
   font: inherit;
   font-size: 11px;
   font-weight: 500;
-  color: var(--color-ink-2, #52525b);
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
+  color: var(--color-ink-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
   cursor: pointer;
   transition:
     background-color 0.1s ease,
@@ -1252,12 +1215,12 @@ html.dark .preview-mesh {
     border-color 0.1s ease;
 }
 .info-pane__manage-tags:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-accent, #6e72d9);
-  border-color: var(--color-line-strong, #d4d4d8);
+  background: var(--color-elevated);
+  color: var(--color-accent-ink);
+  border-color: var(--color-line-strong);
 }
 .info-pane__manage-tags:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 
@@ -1269,15 +1232,15 @@ html.dark .preview-mesh {
 
 .info-pane__tag-empty {
   font-size: 12px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-style: italic;
 }
 /* Activate when the path is freshly in the clipboard. Subtle accent
    wash + matching ink so the flash reads as "yes, it happened". */
 .info-pane__copy-path:has(svg[data-name="check"]),
 .info-pane__copy-path:hover:has(svg[data-name="check"]) {
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.12));
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
   border-color: transparent;
 }
 </style>

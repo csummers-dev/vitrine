@@ -112,7 +112,7 @@ const doRevoke = async () => {
 <style scoped>
 .session-value {
   font-size: 13px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   font-variant-numeric: tabular-nums;
 }
 
@@ -123,8 +123,8 @@ const doRevoke = async () => {
   height: 36px;
   padding: 0 16px;
   border-radius: 8px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
   color: var(--status-danger);
   font-size: 13px;
   font-weight: 500;

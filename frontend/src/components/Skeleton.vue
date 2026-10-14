@@ -54,9 +54,9 @@ const style = computed(() => {
   display: inline-block;
   background: linear-gradient(
     90deg,
-    var(--color-elevated, #f4f4f5) 0%,
-    var(--color-line, #ececec) 50%,
-    var(--color-elevated, #f4f4f5) 100%
+    var(--color-elevated) 0%,
+    var(--color-line) 50%,
+    var(--color-elevated) 100%
   );
   background-size: 200% 100%;
   border-radius: 4px;

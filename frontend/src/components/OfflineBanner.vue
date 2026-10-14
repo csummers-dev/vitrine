@@ -37,16 +37,16 @@ const online = useOnline();
   gap: 8px;
   max-width: calc(100% - 2rem);
   padding: 8px 16px;
-  border-radius: var(--radius-full, 9999px);
+  border-radius: var(--radius-full);
   /* Inverse surface so the pill stays dark in both themes (matches the
      multi-select pill treatment). */
-  background: var(--color-inverse-surface, #18181b);
-  color: #fff;
+  background: var(--color-inverse-surface);
+  color: var(--media-ink);
   font-size: 12.5px;
   font-weight: 500;
   box-shadow:
-    var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.18)),
-    0 0 0 1px rgba(255, 255, 255, 0.05);
+    var(--shadow-lg),
+    0 0 0 1px var(--media-line);
 }
 
 .offline-banner svg {

@@ -100,7 +100,7 @@ const save = () => {
 
 <style scoped>
 .fav-title__folder {
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   font-weight: 600;
   word-break: break-word;
 }
@@ -111,9 +111,9 @@ const save = () => {
   height: 34px;
   padding: 0 10px;
   border-radius: 7px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-canvas, #fafaf9);
-  color: var(--color-ink-1, #18181b);
+  border: 1px solid var(--color-line);
+  background: var(--color-canvas);
+  color: var(--color-ink-1);
   font-family: inherit;
   font-size: 13.5px;
   transition:
@@ -122,18 +122,18 @@ const save = () => {
 }
 
 .fav-title__input::placeholder {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 .fav-title__input:focus {
   outline: none;
-  border-color: var(--color-accent, #6e72d9);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.25));
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 
 .fav-title__hint {
   margin: 6px 0 0;
   font-size: 11.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 </style>

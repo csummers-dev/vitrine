@@ -125,15 +125,13 @@ const uploadFolder = () => openUpload(true);
 .upload-prompt {
   width: 100%;
   max-width: 440px;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
   border-radius: 12px;
-  box-shadow:
-    0 24px 48px -12px rgba(0, 0, 0, 0.25),
-    0 0 0 1px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-2);
   overflow: hidden;
-  font-family: var(--font-sans, system-ui);
-  color: var(--color-ink-1, #18181b);
+  font-family: var(--font-sans);
+  color: var(--color-ink-1);
 }
 
 .upload-prompt__header {
@@ -151,7 +149,7 @@ const uploadFolder = () => openUpload(true);
   margin: 4px 0 0;
   font-size: 13px;
   line-height: 1.45;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 
 .upload-prompt__choices {
@@ -167,9 +165,9 @@ const uploadFolder = () => openUpload(true);
   align-items: center;
   gap: 8px;
   padding: 20px 14px 16px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 10px;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   cursor: pointer;
   font: inherit;
   text-align: center;
@@ -180,8 +178,8 @@ const uploadFolder = () => openUpload(true);
 }
 
 .upload-prompt__choice:hover {
-  border-color: var(--color-accent, #6e72d9);
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.06));
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
 }
 
 .upload-prompt__choice:active {
@@ -189,7 +187,7 @@ const uploadFolder = () => openUpload(true);
 }
 
 .upload-prompt__choice:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 
@@ -197,8 +195,8 @@ const uploadFolder = () => openUpload(true);
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -207,12 +205,12 @@ const uploadFolder = () => openUpload(true);
 .upload-prompt__choice-label {
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 
 .upload-prompt__choice-hint {
   font-size: 11.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   line-height: 1.4;
 }
 
@@ -220,17 +218,17 @@ const uploadFolder = () => openUpload(true);
   display: flex;
   justify-content: flex-end;
   padding: 12px 14px;
-  border-top: 1px solid var(--color-line, #ececec);
-  background: var(--color-canvas, #fafaf9);
+  border-top: 1px solid var(--color-line);
+  background: var(--color-canvas);
 }
 
 .upload-prompt__cancel {
   height: 30px;
   padding: 0 12px;
   border-radius: 6px;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  color: var(--color-ink-2);
   font: inherit;
   font-size: 13px;
   font-weight: 500;
@@ -241,7 +239,7 @@ const uploadFolder = () => openUpload(true);
 }
 
 .upload-prompt__cancel:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 </style>

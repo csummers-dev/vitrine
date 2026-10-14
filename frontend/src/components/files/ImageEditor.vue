@@ -586,7 +586,7 @@ onBeforeUnmount(() => {
      it render behind the preview — the modal opened invisibly and looked
      like the Edit button did nothing (RC-13). */
   z-index: 10000;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--scrim-strong);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -597,11 +597,11 @@ onBeforeUnmount(() => {
   height: min(820px, 100%);
   display: flex;
   flex-direction: column;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
   border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 32px 64px -16px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-2);
 }
 
 .img-editor__head {
@@ -609,12 +609,12 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 14px;
-  border-bottom: 1px solid var(--color-line, #ececec);
+  border-bottom: 1px solid var(--color-line);
 }
 .img-editor__title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 .img-editor__icon-btn {
   width: 28px;
@@ -622,7 +622,7 @@ onBeforeUnmount(() => {
   border: 0;
   background: transparent;
   border-radius: 6px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -630,8 +630,8 @@ onBeforeUnmount(() => {
   transition: background-color var(--dur-base) ease;
 }
 .img-editor__icon-btn:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 
 .img-editor__toolbar {
@@ -639,8 +639,8 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 4px;
   padding: 8px 12px;
-  border-bottom: 1px solid var(--color-line, #ececec);
-  background: var(--color-canvas, #fafaf9);
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-canvas);
 }
 .img-editor__tool {
   height: 30px;
@@ -649,7 +649,7 @@ onBeforeUnmount(() => {
   border: 1px solid transparent;
   background: transparent;
   border-radius: 7px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -662,13 +662,13 @@ onBeforeUnmount(() => {
     border-color var(--dur-base) ease;
 }
 .img-editor__tool:hover:not(:disabled) {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 .img-editor__tool.is-active {
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.12));
-  color: var(--color-accent, #6e72d9);
-  border-color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
+  border-color: var(--color-accent);
 }
 .img-editor__tool:disabled {
   opacity: 0.4;
@@ -680,7 +680,7 @@ onBeforeUnmount(() => {
 .img-editor__sep {
   width: 1px;
   height: 18px;
-  background: var(--color-line, #ececec);
+  background: var(--color-line);
   margin: 0 4px;
 }
 .img-editor__spacer {
@@ -694,19 +694,13 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background-color: var(--color-canvas, #fafaf9);
-  background-image: radial-gradient(
-    rgba(24, 24, 27, 0.05) 1px,
-    transparent 1px
-  );
+  background-color: var(--color-canvas);
+  background-image: radial-gradient(var(--checker) 1px, transparent 1px);
   background-size: 20px 20px;
   overflow: hidden;
 }
 html.dark .img-editor__stage {
-  background-image: radial-gradient(
-    rgba(255, 255, 255, 0.04) 1px,
-    transparent 1px
-  );
+  background-image: radial-gradient(var(--checker) 1px, transparent 1px);
 }
 
 .img-editor__canvas-wrap {
@@ -718,20 +712,21 @@ html.dark .img-editor__stage {
   width: 100%;
   height: 100%;
   border-radius: 4px;
-  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-2);
 }
 
 /* ── Crop marquee ──────────────────────────────────────────────────── */
 .img-editor__crop {
   position: absolute;
-  border: 1px solid var(--color-accent, #6e72d9);
-  box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--color-accent);
+  /* Dims the image outside the crop. */
+  box-shadow: 0 0 0 4000px var(--scrim);
   cursor: move;
   touch-action: none;
 }
 .img-editor__crop-third {
   position: absolute;
-  background: rgba(255, 255, 255, 0.35);
+  background: var(--media-line);
   pointer-events: none;
 }
 .img-editor__crop-third--v1 {
@@ -762,8 +757,8 @@ html.dark .img-editor__stage {
   position: absolute;
   width: 12px;
   height: 12px;
-  background: var(--color-surface, #fff);
-  border: 1.5px solid var(--color-accent, #6e72d9);
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-accent);
   border-radius: 2px;
   touch-action: none;
 }
@@ -814,12 +809,12 @@ html.dark .img-editor__stage {
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-size: 13px;
 }
 .img-editor__spin {
   animation: img-editor-spin 0.9s linear infinite;
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
 }
 @keyframes img-editor-spin {
   to {
@@ -838,7 +833,7 @@ html.dark .img-editor__stage {
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  border-top: 1px solid var(--color-line, #ececec);
+  border-top: 1px solid var(--color-line);
   flex-wrap: wrap;
 }
 .img-editor__name {
@@ -850,7 +845,7 @@ html.dark .img-editor__stage {
 }
 .img-editor__name-label {
   font-size: 12.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   white-space: nowrap;
 }
 .img-editor__name-input {
@@ -858,20 +853,20 @@ html.dark .img-editor__stage {
   min-width: 0;
   height: 32px;
   padding: 0 10px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 7px;
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-surface);
+  color: var(--color-ink-1);
   font-size: 13px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   outline: none;
   transition:
     border-color var(--dur-base) ease,
     box-shadow var(--dur-base) ease;
 }
 .img-editor__name-input:focus {
-  border-color: var(--color-accent, #6e72d9);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 .img-editor__save-error {
   font-size: 12px;
@@ -903,19 +898,19 @@ html.dark .img-editor__save-error {
 }
 .img-editor__btn--ghost {
   background: transparent;
-  border-color: var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
+  border-color: var(--color-line);
+  color: var(--color-ink-2);
 }
 .img-editor__btn--ghost:hover:not(:disabled) {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 .img-editor__btn--primary {
   background: var(--accent-gradient);
-  color: white;
+  color: var(--color-on-accent);
 }
 .img-editor__btn--primary:hover:not(:disabled) {
-  background: var(--color-accent-strong, #575cc7);
+  background: var(--color-accent-strong);
 }
 .img-editor__btn--danger {
   background: var(--status-danger-fill);
@@ -943,7 +938,7 @@ html.dark .img-editor__save-error {
 }
 .img-editor__confirm-msg {
   font-size: 12.5px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   min-width: 0;
 }
 .img-editor__confirm-actions {

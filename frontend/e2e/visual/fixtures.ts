@@ -56,13 +56,20 @@ export const test = base.extend({
     for (const [p, iso] of Object.entries(DATES)) fake.setModified(p, iso);
     await use(fake);
   },
-  page: async ({ page }, use) => {
+  page: async ({ page, fake }, use) => {
+    const pageErrors: string[] = [];
+    page.on("pageerror", (e) => pageErrors.push(e.message));
     // Start the page clock at NOW and let it run: relative times are stable
     // ("1h ago"), and code that measures elapsed time still works (a frozen
     // Date.now() stops the row context menu from opening).
     await page.clock.install({ time: new Date(NOW) });
     await page.clock.resume();
     await use(page);
+    expect(pageErrors, "uncaught errors in the page").toEqual([]);
+    expect(
+      fake.unhandled,
+      "API calls the fake server doesn't implement"
+    ).toEqual([]);
   },
 });
 
@@ -77,6 +84,10 @@ export async function snap(page: Page, name: string): Promise<void> {
       .map((i) => new Promise((r) => i.addEventListener("load", r, { once: true }))));
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
   })()`);
+  // A baseline must never capture an error toast.
+  await expect(page.locator(".Vue-Toastification__toast--error")).toHaveCount(
+    0
+  );
   await expect(page).toHaveScreenshot(`${name}.png`, { fullPage: false });
 }
 

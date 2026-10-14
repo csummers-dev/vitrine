@@ -4,20 +4,20 @@
    styling (h1/h2/code/etc.) is handled by the browser/user-agent. */
 .md_preview {
   padding: 20px 24px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: var(--radius-md);
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-1, #18181b);
-  font-family: var(--font-sans, system-ui);
+  background: var(--color-surface);
+  color: var(--color-ink-1);
+  font-family: var(--font-sans);
   font-size: 14px;
   line-height: 1.6;
 }
 
 .md_preview code,
 .md_preview pre {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 12.5px;
-  background: var(--color-canvas, #fafaf9);
+  background: var(--color-canvas);
   border-radius: var(--radius-xs);
   padding: 1px 6px;
 }
@@ -25,7 +25,7 @@
 .md_preview pre {
   padding: 12px 14px;
   overflow-x: auto;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
 }
 
 .md_preview pre code {
@@ -34,7 +34,7 @@
 }
 
 .md_preview a {
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
   text-decoration: none;
 }
 
@@ -43,10 +43,10 @@
 }
 
 .md_preview blockquote {
-  border-left: 3px solid var(--color-line-strong, #d4d4d8);
+  border-left: 3px solid var(--color-line-strong);
   padding: 4px 14px;
   margin: 12px 0;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 
 .md_preview h1,
@@ -61,5 +61,5 @@
   overflow: auto;
   flex: 1;
   padding: 16px;
-  background: var(--color-canvas, #fafaf9);
+  background: var(--color-canvas);
 }

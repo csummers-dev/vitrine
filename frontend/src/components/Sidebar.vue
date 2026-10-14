@@ -409,7 +409,7 @@
                     aria-hidden="true"
                   >
                     <span
-                      class="block h-full bg-[var(--color-accent,#6e72d9)]"
+                      class="block h-full bg-[var(--color-accent)]"
                       :style="{
                         width: `${Math.max(3, Math.round(c.fraction * 100))}%`,
                       }"
@@ -1319,7 +1319,7 @@ export default {
   height: 2px;
   border-radius: 2px;
   background: var(--accent-gradient);
-  box-shadow: 0 0 0 2px var(--color-canvas, #fafaf9);
+  box-shadow: 0 0 0 2px var(--color-canvas);
 }
 .fav-reorder-target::before {
   top: -1px;
@@ -1332,7 +1332,7 @@ export default {
    "picked up to re-order", distinct from the solid move-into highlight. */
 .fav-dragging {
   opacity: 0.5;
-  outline: 1px dashed var(--color-accent, #6e72d9);
+  outline: 1px dashed var(--color-accent);
   outline-offset: -1px;
 }
 

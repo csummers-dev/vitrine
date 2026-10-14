@@ -108,9 +108,9 @@ const totalSize = computed(() => {
   align-items: center;
   margin: 4px 0 12px;
   padding: 14px;
-  border-radius: var(--radius-lg, 12px);
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
 }
 .album-header__cover {
   width: 96px;
@@ -118,14 +118,14 @@ const totalSize = computed(() => {
   border-radius: 8px;
   object-fit: cover;
   flex-shrink: 0;
-  box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-2);
 }
 .album-header__cover--fallback {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-3, #a1a1aa);
+  background: var(--color-elevated);
+  color: var(--color-ink-3);
 }
 .album-header__info {
   min-width: 0;
@@ -135,7 +135,7 @@ const totalSize = computed(() => {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 .album-header__title {
   margin: 2px 0;
@@ -148,7 +148,7 @@ const totalSize = computed(() => {
 }
 .album-header__meta {
   font-size: 12px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 .album-header__actions {
   display: flex;
@@ -162,23 +162,23 @@ const totalSize = computed(() => {
   height: 30px;
   padding: 0 12px;
   border-radius: 999px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-1, #18181b);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink-1);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
 }
 .album-header__btn:hover {
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 .album-header__btn--primary {
   border-color: transparent;
-  background: var(--accent-gradient, #6e72d9);
-  color: #fff;
+  background: var(--accent-gradient);
+  color: var(--color-on-accent);
 }
 .album-header__btn--primary:hover {
-  background: var(--accent-gradient, #6e72d9);
+  background: var(--accent-gradient);
   filter: brightness(1.08);
 }
 @media (max-width: 767px) {

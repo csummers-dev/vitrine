@@ -120,7 +120,7 @@ const onRemove = (event: MouseEvent) => {
   align-items: center;
   gap: 4px;
   padding: 1px 8px;
-  border-radius: var(--radius-full, 9999px);
+  border-radius: var(--radius-full);
   font-family: inherit;
   font-size: 11.5px;
   font-weight: 500;
@@ -134,8 +134,8 @@ const onRemove = (event: MouseEvent) => {
     box-shadow var(--dur-base) ease;
   /* Default fallback if color class doesn't match — should never happen
      since the union type is enforced server-side, but defensive. */
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-elevated);
+  color: var(--color-ink-2);
 }
 
 /* Size variants — sm is for inline listing rows where vertical space
@@ -163,7 +163,7 @@ const onRemove = (event: MouseEvent) => {
 }
 
 .tag-chip--interactive:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 
@@ -228,7 +228,7 @@ const onRemove = (event: MouseEvent) => {
   margin-right: -2px;
   padding: 0;
   border: 0;
-  border-radius: var(--radius-full, 9999px);
+  border-radius: var(--radius-full);
   background: transparent;
   color: inherit;
   opacity: 0.55;
@@ -241,12 +241,7 @@ const onRemove = (event: MouseEvent) => {
 .tag-chip__remove:hover,
 .tag-chip__remove:focus-visible {
   opacity: 1;
-  background: rgba(0, 0, 0, 0.08);
+  background: var(--color-hover);
   outline: none;
-}
-
-html.dark .tag-chip__remove:hover,
-html.dark .tag-chip__remove:focus-visible {
-  background: rgba(255, 255, 255, 0.12);
 }
 </style>

@@ -162,10 +162,7 @@ table tr > *:last-child {
   background: var(--surfacePrimary);
   color: var(--textSecondary);
   border-radius: 2px;
-  box-shadow:
-    0 2px 2px 0 rgba(0, 0, 0, 0.14),
-    0 1px 5px 0 rgba(0, 0, 0, 0.12),
-    0 3px 1px -2px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-1);
   overflow: auto;
 }
 
@@ -300,8 +297,8 @@ body.rtl .card .card-action {
   width: 150%;
   font-size: 0.6em;
   text-align: center;
-  background: #44a6f5;
-  color: #fff;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
   padding: 0.5em 0.2em;
   border-radius: 0.4em;
   top: -2em;
@@ -326,7 +323,7 @@ body.rtl .card .card-action {
 }
 
 .overlay {
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--scrim);
   position: fixed;
   top: 0;
   left: 0;

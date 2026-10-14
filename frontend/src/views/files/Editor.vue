@@ -279,7 +279,7 @@ onBeforeUnmount(() => {
   z-index: 9998;
   display: flex;
   flex-direction: column;
-  background: var(--color-canvas, #fafaf9);
+  background: var(--color-canvas);
   overflow: hidden;
 }
 
@@ -291,8 +291,8 @@ onBeforeUnmount(() => {
   gap: 12px;
   height: 48px;
   padding: 0 12px;
-  background: var(--color-surface, #fff);
-  border-bottom: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-line);
   flex-shrink: 0;
 }
 .editor-topbar__group {
@@ -312,19 +312,19 @@ onBeforeUnmount(() => {
   margin-left: 2px;
 }
 .editor-topbar__title-icon {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   flex-shrink: 0;
 }
 .editor-topbar__name {
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .editor-topbar__dirty {
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
   font-size: 20px;
   line-height: 0;
   flex-shrink: 0;
@@ -336,7 +336,7 @@ onBeforeUnmount(() => {
   border-radius: 7px;
   background: transparent;
   border: 0;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -346,15 +346,15 @@ onBeforeUnmount(() => {
     color var(--dur-base) ease;
 }
 .editor-iconbtn:hover:not(:disabled) {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 .editor-iconbtn--active {
-  background: var(--color-selected, rgba(110, 114, 217, 0.12));
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-selected);
+  color: var(--color-accent-ink);
 }
 .editor-iconbtn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 
@@ -367,7 +367,7 @@ onBeforeUnmount(() => {
   border-radius: 7px;
   border: 0;
   background: var(--accent-gradient);
-  color: #fff;
+  color: var(--color-on-accent);
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
@@ -376,14 +376,14 @@ onBeforeUnmount(() => {
     opacity var(--dur-base) ease;
 }
 .editor-savebtn:hover:not(:disabled) {
-  background: var(--color-accent-strong, #4e5ac0);
+  background: var(--color-accent-strong);
 }
 .editor-savebtn:disabled {
   opacity: 0.55;
   cursor: default;
 }
 .editor-savebtn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 
@@ -410,27 +410,21 @@ onBeforeUnmount(() => {
   justify-content: center;
   padding: 24px 16px;
   overflow: auto;
-  background-color: var(--color-canvas, #fafaf9);
-  background-image: radial-gradient(
-    rgba(24, 24, 27, 0.05) 1px,
-    transparent 1px
-  );
+  background-color: var(--color-canvas);
+  background-image: radial-gradient(var(--checker) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 html.dark .text-editor__stage {
-  background-image: radial-gradient(
-    rgba(255, 255, 255, 0.04) 1px,
-    transparent 1px
-  );
+  background-image: radial-gradient(var(--checker) 1px, transparent 1px);
 }
 
 .text-editor__card {
   width: min(960px, 100%);
   height: 100%;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
-  border-radius: var(--radius-lg, 12px);
-  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.18);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -444,9 +438,9 @@ html.dark .text-editor__stage {
   border: 0;
   outline: none;
   resize: none;
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-1, #18181b);
-  font-family: var(--font-mono, monospace);
+  background: var(--color-surface);
+  color: var(--color-ink-1);
+  font-family: var(--font-mono);
   font-size: 13px;
   line-height: 1.6;
   tab-size: 2;
@@ -458,6 +452,6 @@ html.dark .text-editor__stage {
   word-break: break-word;
 }
 .text-editor__area::placeholder {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 </style>

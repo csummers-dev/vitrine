@@ -70,44 +70,23 @@ const parts = computed<{ text: string; accent: boolean; chars: string[] }[]>(
 .brand-name__ltr {
   font-weight: inherit;
 }
+/* One kind colour per letter; the kind tokens carry the dark variants. */
 .brand-name__ltr--0 {
-  color: #545aae;
-} /* lilac */
+  color: var(--tint-video-fg);
+}
 .brand-name__ltr--1 {
-  color: #4a6da3;
-} /* blue */
+  color: var(--tint-folder-fg);
+}
 .brand-name__ltr--2 {
-  color: #35786c;
-} /* teal */
+  color: var(--tint-epub-fg);
+}
 .brand-name__ltr--3 {
-  color: #4d7a4e;
-} /* green */
+  color: var(--tint-csv-fg);
+}
 .brand-name__ltr--4 {
-  color: #9c5f45;
-} /* orange */
+  color: var(--tint-archive-fg);
+}
 .brand-name__ltr--5 {
-  color: #a84e4e;
-} /* red */
-
-/* Dusty palette (v2.7): the light values above are deep enough for the light
-   canvas, so every letter — lilac included — lifts to its dusty pastel in
-   dark. */
-:global(html.dark) .brand-name__ltr--0 {
-  color: #a9aede;
-}
-:global(html.dark) .brand-name__ltr--1 {
-  color: #a3bede;
-}
-:global(html.dark) .brand-name__ltr--2 {
-  color: #93c4ba;
-}
-:global(html.dark) .brand-name__ltr--3 {
-  color: #a3c4a4;
-}
-:global(html.dark) .brand-name__ltr--4 {
-  color: #d3a58e;
-}
-:global(html.dark) .brand-name__ltr--5 {
-  color: #dda0a0;
+  color: var(--tint-pdf-fg);
 }
 </style>

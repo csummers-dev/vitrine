@@ -363,8 +363,8 @@ watch(
   gap: 6px;
   padding: 4px 10px;
   border-radius: 999px;
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
   font-size: 11.5px;
   font-weight: 500;
   margin-bottom: 10px;
@@ -372,13 +372,13 @@ watch(
 
 .mcp-instructions {
   font-size: 12.5px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   margin: 0 0 14px;
   line-height: 1.45;
 }
 
 .mcp-instructions strong {
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   font-weight: 600;
 }
 
@@ -391,8 +391,8 @@ watch(
   margin-bottom: 14px;
   padding: 8px 10px;
   border-radius: 8px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
   cursor: pointer;
 }
 
@@ -406,12 +406,12 @@ watch(
 .mcp-option__label {
   font-size: 12.5px;
   font-weight: 500;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 
 .mcp-option__hint {
   font-size: 11.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   line-height: 1.4;
 }
 
@@ -454,30 +454,30 @@ watch(
 }
 
 .mcp-btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 
 .mcp-btn--ghost {
-  background: var(--color-surface, #fff);
-  border-color: var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-surface);
+  border-color: var(--color-line);
+  color: var(--color-ink-2);
 }
 
 .mcp-btn--ghost:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 
 .mcp-btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #6e72d9);
-  color: white;
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
 }
 
 .mcp-btn--primary:hover:not(:disabled) {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #575cc7);
+  border-color: var(--color-accent-strong);
 }
 
 .mcp-btn:disabled {

@@ -156,6 +156,43 @@
     0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-accent-ink);
 }
 
+/* ── Overlays and media ──────────────────────────────────────────────────
+   Scrims dim the app behind dialogs and drawers. Media chrome (viewer
+   toolbars, thumbnail badges, slideshow) sits over photos and video, so it
+   is dark in both themes. */
+:root {
+  --scrim: rgba(16, 20, 24, 0.45);
+  --scrim-strong: rgba(16, 20, 24, 0.7);
+  --media-canvas: #0b0c0e;
+  --media-chrome: rgba(0, 0, 0, 0.55);
+  --media-chrome-soft: rgba(0, 0, 0, 0.35);
+  --media-chrome-strong: rgba(0, 0, 0, 0.75);
+  --media-ink: #ffffff;
+  --media-ink-2: rgba(255, 255, 255, 0.72);
+  --media-line: rgba(255, 255, 255, 0.18);
+  --media-hover: rgba(255, 255, 255, 0.14);
+  --media-active: rgba(255, 255, 255, 0.28);
+  --media-danger: #f4ab9f;
+  /* Squares of the transparency checkerboard behind images. */
+  --checker: rgba(24, 24, 27, 0.05);
+  /* Document paper (PDF pages, QR codes, switch knobs): white in both
+     themes. */
+  --paper: #ffffff;
+  /* Bottom-up fade behind captions on photo tiles and video. */
+  --media-fade: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.7) 0%,
+    rgba(0, 0, 0, 0.3) 50%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  --media-fade-soft: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.35) 0%,
+    rgba(0, 0, 0, 0.1) 50%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
 /* ── File kinds ──────────────────────────────────────────────────────────
    -bg + -fg pair for a kind's icon tile (listing, preview toolbar, details
    rail), and a -solid for treemap blocks and colour dots. The -fg meets
@@ -387,6 +424,8 @@ html.dark {
   --tint-file-fg: #bcc1c8;
   --tint-error-bg: rgba(208, 80, 63, 0.22);
   --tint-error-fg: #f4ab9f;
+
+  --checker: rgba(255, 255, 255, 0.06);
 
   --kind-text-solid: #8a9099;
   --kind-other-solid: #6b7179;

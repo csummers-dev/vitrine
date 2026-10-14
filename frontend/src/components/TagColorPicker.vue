@@ -109,12 +109,10 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   gap: 6px;
   padding: 8px;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
   border-radius: 8px;
-  box-shadow:
-    0 4px 12px -4px rgba(0, 0, 0, 0.12),
-    0 0 0 1px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-2);
   /* Width sized to 4 swatches per row at 22px + 6px gap + 16px
      padding = ~128px. Two rows of 4. */
   width: 128px;
@@ -137,12 +135,12 @@ onBeforeUnmount(() => {
 }
 
 .tag-color-picker__swatch:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 
 .tag-color-picker__swatch--selected {
-  border-color: var(--color-ink-1, #18181b);
+  border-color: var(--color-ink-1);
 }
 
 /* Color variants — same fg color as TagChip's foreground tone so the

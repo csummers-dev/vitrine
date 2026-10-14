@@ -580,10 +580,10 @@ onBeforeUnmount(() => {
 
 .audio-viewer__card {
   width: min(440px, 100%);
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
-  border-radius: var(--radius-lg, 12px);
-  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.18);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -638,42 +638,16 @@ onBeforeUnmount(() => {
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
-  background-color: var(--color-elevated, #f4f4f5);
+  background-color: var(--color-elevated);
   /* 2.1 #5: 10px squircle so the square art doesn't read as a flat slab. */
   border-radius: 10px;
 }
 
 /* Fallback gradient when no embedded artwork was found in the file. */
 .audio-viewer__art--fallback {
-  /* Calm Minimal: accent-tinted fallback cover (was amber→magenta), follows the
-     accent picker. */
-  background:
-    radial-gradient(
-      at 25% 25%,
-      rgb(var(--accent-rgb) / 0.5) 0%,
-      transparent 55%
-    ),
-    radial-gradient(
-      at 80% 75%,
-      rgb(var(--accent-rgb) / 0.28) 0%,
-      transparent 55%
-    ),
-    var(--accent-gradient);
-}
-
-html.dark .audio-viewer__art--fallback {
-  background:
-    radial-gradient(
-      at 25% 25%,
-      rgb(var(--accent-rgb) / 0.42) 0%,
-      transparent 55%
-    ),
-    radial-gradient(
-      at 80% 75%,
-      rgb(var(--accent-rgb) / 0.24) 0%,
-      transparent 55%
-    ),
-    var(--accent-gradient);
+  /* No embedded artwork: the audio kind tile. */
+  background: var(--tint-audio-bg);
+  color: var(--tint-audio-fg);
 }
 
 /* ── Track info ───────────────────────────────────────────────── */
@@ -685,7 +659,7 @@ html.dark .audio-viewer__art--fallback {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   margin-bottom: 4px;
 }
 .audio-viewer__title {
@@ -693,13 +667,13 @@ html.dark .audio-viewer__art--fallback {
   font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.01em;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   line-height: 1.25;
   word-break: break-word;
 }
 .audio-viewer__subtitle {
   font-size: 12px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   line-height: 1.35;
 }
 
@@ -726,10 +700,10 @@ html.dark .audio-viewer__art--fallback {
   transform: translateY(-50%);
   height: 4px;
   border-radius: 999px;
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 .audio-viewer__scrubber:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 4px;
   border-radius: 4px;
 }
@@ -752,7 +726,7 @@ html.dark .audio-viewer__art--fallback {
   height: 12px;
   border-radius: 999px;
   background: var(--accent-gradient);
-  box-shadow: 0 0 0 4px var(--color-accent-soft, rgba(110, 114, 217, 0.1));
+  box-shadow: 0 0 0 4px var(--color-accent-soft);
 }
 
 .audio-viewer__time {
@@ -760,7 +734,7 @@ html.dark .audio-viewer__art--fallback {
   justify-content: space-between;
   margin-top: 6px;
   font-size: 11px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 /* ── Transport controls ──────────────────────────────────────── */
@@ -778,7 +752,7 @@ html.dark .audio-viewer__art--fallback {
   border: 0;
   background: transparent;
   border-radius: 8px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -790,11 +764,11 @@ html.dark .audio-viewer__art--fallback {
     opacity var(--dur-base) ease;
 }
 .audio-viewer__btn:hover:not(:disabled) {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 .audio-viewer__btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 .audio-viewer__btn:disabled {
@@ -811,7 +785,7 @@ html.dark .audio-viewer__art--fallback {
   height: 48px;
   border-radius: 999px;
   background: var(--accent-gradient);
-  color: white;
+  color: var(--color-on-accent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -819,7 +793,7 @@ html.dark .audio-viewer__art--fallback {
 }
 .audio-viewer__btn--play:hover:not(:disabled) {
   background: var(--accent-gradient-strong);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .audio-viewer__play-icon {
@@ -833,8 +807,8 @@ html.dark .audio-viewer__art--fallback {
 
 /* ── Volume ───────────────────────────────────────────────────── */
 .audio-viewer__volume {
-  border-top: 1px solid var(--color-line, #ececec);
-  background: var(--color-canvas, #fafaf9);
+  border-top: 1px solid var(--color-line);
+  background: var(--color-canvas);
   padding: 10px 16px;
   display: flex;
   align-items: center;
@@ -845,7 +819,7 @@ html.dark .audio-viewer__art--fallback {
   height: 24px;
   border: 0;
   background: transparent;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -856,8 +830,8 @@ html.dark .audio-viewer__art--fallback {
     color var(--dur-base) ease;
 }
 .audio-viewer__volume-btn:hover {
-  background: var(--color-hover, rgba(24, 24, 27, 0.045));
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-hover);
+  color: var(--color-ink-1);
 }
 
 /* Native range input theming — same lilac fill as the scrubber.
@@ -873,8 +847,8 @@ html.dark .audio-viewer__art--fallback {
   border-radius: 999px;
   background: linear-gradient(
     to right,
-    var(--color-accent, #6e72d9) var(--volume-fill, 0%),
-    var(--color-elevated, #f4f4f5) var(--volume-fill, 0%)
+    var(--color-accent) var(--volume-fill, 0%),
+    var(--color-elevated) var(--volume-fill, 0%)
   );
   cursor: pointer;
   outline: none;
@@ -882,12 +856,12 @@ html.dark .audio-viewer__art--fallback {
 .audio-viewer__volume-bar::-moz-range-track {
   height: 6px;
   border-radius: 999px;
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 .audio-viewer__volume-bar::-moz-range-progress {
   height: 6px;
   border-radius: 999px;
-  background: var(--color-accent, #6e72d9);
+  background: var(--color-accent);
 }
 .audio-viewer__volume-bar::-webkit-slider-thumb {
   appearance: none;
@@ -908,7 +882,7 @@ html.dark .audio-viewer__art--fallback {
   cursor: pointer;
 }
 .audio-viewer__volume-bar:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 2px;
 }
 
@@ -916,7 +890,7 @@ html.dark .audio-viewer__art--fallback {
   width: 32px;
   text-align: right;
   font-size: 11px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 .tabular {

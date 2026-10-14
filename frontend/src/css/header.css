@@ -60,8 +60,8 @@ header .action .counter {
   width: 28px;
   height: 28px;
   padding: 0;
-  border-radius: var(--radius-sm, 6px);
-  color: var(--color-ink-2, #52525b);
+  border-radius: var(--radius-sm);
+  color: var(--color-ink-2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -75,12 +75,12 @@ header .action .counter {
 }
 
 .hb-btn:hover {
-  background: var(--color-hover, rgba(24, 24, 27, 0.045));
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-hover);
+  color: var(--color-ink-1);
 }
 
 .hb-btn--danger:hover {
-  background: rgba(176, 96, 96, 0.08);
+  background: var(--status-danger-soft);
   color: var(--status-danger);
 }
 
@@ -89,7 +89,7 @@ header .action .counter {
   bottom: -2px;
   right: -2px;
   background: var(--accent-gradient);
-  color: white;
+  color: var(--color-on-accent);
   border-radius: var(--radius-full);
   font-size: 9px;
   font-weight: 700;
@@ -98,7 +98,7 @@ header .action .counter {
   padding: 0 4px;
   line-height: 14px;
   text-align: center;
-  border: 1.5px solid var(--color-canvas, #fafaf9);
+  border: 1.5px solid var(--color-canvas);
   font-variant-numeric: tabular-nums;
 }
 
@@ -188,19 +188,19 @@ html[dir="rtl"] #search.active #input {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--color-surface, var(--surfacePrimary));
-  border: 1px solid var(--color-line, var(--borderPrimary));
-  border-radius: var(--radius-md, 8px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  color: var(--color-ink-3, var(--textPrimary));
+  color: var(--color-ink-3);
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease;
 }
 
 .search-trigger:hover {
-  background: var(--color-elevated, var(--surfaceSecondary));
-  border-color: var(--color-line-strong, var(--borderSecondary));
+  background: var(--color-elevated);
+  border-color: var(--color-line-strong);
 }
 
 /* While the search is active, the trigger stays in the layout to RESERVE the
@@ -215,7 +215,7 @@ html[dir="rtl"] #search.active #input {
   flex: 1;
   text-align: left;
   font-size: 12.5px;
-  color: var(--color-ink-3, var(--textPrimary));
+  color: var(--color-ink-3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -223,7 +223,7 @@ html[dir="rtl"] #search.active #input {
 
 #search .search-count {
   font-size: 11px;
-  color: var(--color-ink-3, var(--textPrimary));
+  color: var(--color-ink-3);
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
 }
@@ -233,7 +233,7 @@ html[dir="rtl"] #search.active #input {
   font-size: 10.5px;
   font-weight: 500;
   padding: 1px 5px;
-  border-radius: var(--radius-sm, 6px);
+  border-radius: var(--radius-sm);
   /* Colorful ⌘K hint: lilac-tinted chip so the shortcut affordance pops
      against the neutral search field instead of reading as grey chrome. */
   background: color-mix(in srgb, var(--c-lilac) 12%, var(--color-elevated));
@@ -245,13 +245,13 @@ html[dir="rtl"] #search.active #input {
 
 /* Active: input form (expanded state — background + accent border) */
 #search #input {
-  background: var(--color-surface, var(--surfacePrimary));
-  border: 1px solid var(--color-accent, var(--accent));
+  background: var(--color-surface);
+  border: 1px solid var(--color-accent);
   display: flex;
   height: 100%;
   padding: 0 0.6em;
   gap: 0.4em;
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-md);
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease,
@@ -262,27 +262,27 @@ html[dir="rtl"] #search.active #input {
 
 /* Focus ring: only when the input actually has focus */
 #search #input:focus-within {
-  box-shadow: 0 0 0 3px var(--color-accent-ring, var(--accent-ring));
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 
 #search #input > svg,
 #search #input > .icon {
-  color: var(--color-ink-3, var(--textPrimary));
+  color: var(--color-ink-3);
   flex-shrink: 0;
 }
 
 #search #input:hover {
-  background: var(--color-surface, var(--surfacePrimary));
-  border-color: var(--color-line-strong, var(--borderSecondary));
+  background: var(--color-surface);
+  border-color: var(--color-line-strong);
 }
 
 #search #input input::placeholder {
-  color: var(--color-ink-3, var(--textPrimary));
+  color: var(--color-ink-3);
 }
 
 #search #input input {
   font-size: 13px;
-  color: var(--color-ink-1, var(--textSecondary));
+  color: var(--color-ink-1);
 }
 
 #search #input > .action,
@@ -300,10 +300,10 @@ html[dir="rtl"] #search.active #input {
 
 #search #result {
   visibility: hidden;
-  background: var(--color-surface, var(--surfacePrimary));
-  border: 1px solid var(--color-line, var(--borderPrimary));
-  border-radius: var(--radius-md, 8px);
-  box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(16, 24, 40, 0.08));
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
   position: absolute;
   top: calc(100% + 6px);
   /* Anchor to the search's right edge and match the expanded input width so the
@@ -313,7 +313,7 @@ html[dir="rtl"] #search.active #input {
   width: var(--search-w-expanded);
   max-height: 0;
   padding: 0;
-  color: var(--color-ink-1, var(--textPrimary));
+  color: var(--color-ink-1);
   transition:
     max-height 0.15s ease,
     visibility 0.15s ease,
@@ -359,16 +359,16 @@ html[dir="rtl"] #search #result ul > * {
   align-items: center;
   gap: 10px;
   padding: 6px 8px;
-  border-radius: var(--radius-md, 8px);
-  color: var(--color-ink-1, #18181b);
+  border-radius: var(--radius-md);
+  color: var(--color-ink-1);
   text-decoration: none;
   transition: background-color 0.08s ease;
 }
 
 #search .search-result-row:hover,
 #search .search-result-row:focus-visible {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
   outline: none;
 }
 
@@ -376,7 +376,7 @@ html[dir="rtl"] #search #result ul > * {
 #search .search-result-icon {
   width: 28px;
   height: 28px;
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -395,17 +395,17 @@ html[dir="rtl"] #search #result ul > * {
   font-size: 13px;
   font-weight: 500;
   line-height: 1.25;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 #search .search-result-path {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 11px;
   line-height: 1.3;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -418,7 +418,7 @@ html[dir="rtl"] #search #result ul > * {
   align-items: center;
   gap: 8px;
   padding: 28px 16px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-size: 12.5px;
 }
 
@@ -433,23 +433,23 @@ html[dir="rtl"] #search #result ul > * {
 
 #search .search-tips__title {
   font-size: 11.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   margin-right: 2px;
 }
 
 #search .search-tips__example {
   padding: 2px 8px;
   border-radius: 999px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
-  font-family: var(--font-mono, monospace);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 
 #search .search-tips__example:hover {
-  border-color: var(--color-accent, #6e72d9);
-  color: var(--color-ink-1, #18181b);
+  border-color: var(--color-accent);
+  color: var(--color-ink-1);
 }
 
 #search .search-save {
@@ -459,23 +459,23 @@ html[dir="rtl"] #search #result ul > * {
   width: 100%;
   margin-top: 4px;
   padding: 7px 8px;
-  border-top: 1px solid var(--color-line, #ececec);
-  border-radius: 0 0 var(--radius-md, 8px) var(--radius-md, 8px);
+  border-top: 1px solid var(--color-line);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
   font-size: 12.5px;
   font-weight: 500;
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
   text-align: left;
 }
 
 #search .search-save:hover {
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 
 #search .search-save__hint {
   margin-left: auto;
   font-size: 11px;
   font-weight: 400;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 #search .boxes {
@@ -506,7 +506,7 @@ html[dir="rtl"] #search .boxes h3 {
 
 #search .boxes > div > div {
   background: var(--accent);
-  color: #fff;
+  color: var(--color-on-accent);
   text-align: center;
   width: 10em;
   padding: 1em;
@@ -525,7 +525,7 @@ html[dir="rtl"] #search .boxes h3 {
 }
 
 #search .boxes svg {
-  color: #fff !important;
+  color: var(--color-on-accent) !important;
   width: 2.5em;
   height: 2.5em;
 }

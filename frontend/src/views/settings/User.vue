@@ -302,10 +302,10 @@ const send = async (currentPassword: string) => {
   margin: 16px 0;
   padding: 10px 14px;
   border-radius: 10px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
   font-size: 13px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 .user-edit__2fa span {
   flex: 1;
@@ -329,8 +329,8 @@ const send = async (currentPassword: string) => {
   /* Solid canvas bg instead of translucent + backdrop-blur. The blurred
      sticky bar caused every keystroke in the form to re-rasterize the
      backdrop region, which made input lag noticeably on this page. */
-  background: var(--color-canvas, #fafaf9);
-  border-top: 1px solid var(--color-line, #ececec);
+  background: var(--color-canvas);
+  border-top: 1px solid var(--color-line);
   z-index: 5;
 }
 
@@ -358,30 +358,30 @@ const send = async (currentPassword: string) => {
 }
 
 .user-edit__btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 
 .user-edit__btn--ghost {
-  background: var(--color-surface, #fff);
-  border-color: var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-surface);
+  border-color: var(--color-line);
+  color: var(--color-ink-2);
 }
 
 .user-edit__btn--ghost:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 
 .user-edit__btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #6e72d9);
-  color: white;
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
 }
 
 .user-edit__btn--primary:hover:not(:disabled) {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #575cc7);
+  border-color: var(--color-accent-strong);
 }
 
 /* Disabled state — applies to any variant so the user gets a visual cue
@@ -392,7 +392,7 @@ const send = async (currentPassword: string) => {
 }
 
 .user-edit__btn--danger {
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   border-color: var(--status-danger-ring);
   color: var(--status-danger);
 }

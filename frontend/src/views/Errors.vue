@@ -180,9 +180,9 @@ const goBack = () => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--color-canvas, #fafaf9);
-  color: var(--color-ink-1, #18181b);
-  font-family: var(--font-sans, system-ui);
+  background: var(--color-canvas);
+  color: var(--color-ink-1);
+  font-family: var(--font-sans);
 }
 
 .error-page__body {
@@ -196,13 +196,11 @@ const goBack = () => {
 .error-page__card {
   width: 100%;
   max-width: 420px;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
   border-radius: 14px;
   padding: 28px 24px 22px;
-  box-shadow:
-    0 24px 48px -16px rgba(0, 0, 0, 0.12),
-    0 0 0 1px rgba(0, 0, 0, 0.02);
+  box-shadow: var(--shadow-2);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -231,17 +229,17 @@ const goBack = () => {
 }
 
 .error-page__icon.info {
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
 }
 
 .error-page__code {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 .error-page__title {
@@ -249,14 +247,14 @@ const goBack = () => {
   font-weight: 600;
   margin: 0;
   letter-spacing: -0.01em;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 
 .error-page__message {
   margin: 4px 0 18px;
   font-size: 13px;
   line-height: 1.5;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   max-width: 320px;
 }
 
@@ -293,30 +291,30 @@ const goBack = () => {
 }
 
 .error-page__btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 
 .error-page__btn--ghost {
-  background: var(--color-surface, #fff);
-  border-color: var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-surface);
+  border-color: var(--color-line);
+  color: var(--color-ink-2);
 }
 
 .error-page__btn--ghost:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 
 .error-page__btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #6e72d9);
-  color: white;
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
 }
 
 .error-page__btn--primary:hover {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #575cc7);
+  border-color: var(--color-accent-strong);
 }
 
 /* When showHeader is on (embedded errors), the body should sit BELOW the

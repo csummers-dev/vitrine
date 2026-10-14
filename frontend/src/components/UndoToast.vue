@@ -31,7 +31,7 @@ defineProps<{
      container (the off-screen overflow the user hit). */
   min-width: 0;
   width: 100%;
-  color: white;
+  color: var(--media-ink);
   font-size: 13px;
   font-weight: 500;
 }
@@ -44,8 +44,8 @@ defineProps<{
   height: 26px;
   flex-shrink: 0;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.16);
-  color: white;
+  background: var(--media-hover);
+  color: var(--media-ink);
 }
 
 .undo-toast__message {
@@ -65,21 +65,21 @@ defineProps<{
 }
 
 .undo-toast__action {
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  color: white;
+  background: var(--media-hover);
+  border: 1px solid var(--media-ink-2);
+  color: var(--media-ink);
   font-family: inherit;
   font-size: 12px;
   font-weight: 600;
   padding: 4px 12px;
   border-radius: 7px;
   cursor: pointer;
-  transition: background-color var(--dur-base, 0.15s) ease;
+  transition: background-color var(--dur-base) ease;
   flex-shrink: 0;
   align-self: center;
 }
 
 .undo-toast__action:hover {
-  background: rgba(255, 255, 255, 0.28);
+  background: var(--media-active);
 }
 </style>

@@ -196,7 +196,7 @@ watch(item, (v, old) => {
   /* Frosted scrim (v2.7): the blur carries the depth, so the tint can stay
      lighter than a flat scrim would need — matches the frosted corner chips
      and gallery controls. */
-  background: rgba(10, 10, 14, 0.35);
+  background: var(--scrim);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
 }
@@ -208,12 +208,10 @@ watch(item, (v, old) => {
   max-height: 86vh;
   min-width: 320px;
   overflow: hidden;
-  border-radius: var(--radius-lg, 12px);
+  border-radius: var(--radius-lg);
   border: 1px solid var(--color-line);
   background: var(--color-surface);
-  box-shadow:
-    0 2px 8px rgba(8, 8, 12, 0.14),
-    0 18px 48px rgba(8, 8, 12, 0.22);
+  box-shadow: var(--shadow-2);
 }
 
 .quick-peek__head {

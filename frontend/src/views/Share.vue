@@ -46,7 +46,6 @@
 
     <!-- Password gate (401) -->
     <div v-else-if="error?.status === 401" class="share__gate">
-      <div class="share__gate-mesh" aria-hidden="true"></div>
       <form class="share__gate-card" @submit.prevent="fetchData">
         <div class="share__gate-icon">
           <Icon name="lock" :size="18" :stroke-width="1.6" />
@@ -86,7 +85,6 @@
       class="share__gate"
       data-testid="share-gone"
     >
-      <div class="share__gate-mesh" aria-hidden="true"></div>
       <div class="share__gate-card">
         <div class="share__gate-icon">
           <Icon name="link-2-off" :size="18" :stroke-width="1.6" />
@@ -337,7 +335,7 @@ const iconColorClass = computed(() =>
         type: req.value.type,
         name: req.value.name,
       })
-    : "bg-zinc-100 text-zinc-600"
+    : "kind-other"
 );
 
 const link = computed(() => (req.value ? api.getDownloadURL(req.value) : ""));
@@ -493,9 +491,9 @@ onBeforeUnmount(() => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--color-canvas, #fafaf9);
-  color: var(--color-ink-1, #18181b);
-  font-family: var(--font-sans, system-ui);
+  background: var(--color-canvas);
+  color: var(--color-ink-1);
+  font-family: var(--font-sans);
 }
 
 /* ── Shared button styles ──────────────────────────────────────────── */
@@ -519,30 +517,30 @@ onBeforeUnmount(() => {
 }
 
 .share-btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 
 .share-btn--ghost {
-  background: var(--color-surface, #fff);
-  border-color: var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-surface);
+  border-color: var(--color-line);
+  color: var(--color-ink-2);
 }
 
 .share-btn--ghost:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 
 .share-btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #6e72d9);
-  color: white;
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
 }
 
 .share-btn--primary:hover:not(:disabled) {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #575cc7);
+  border-color: var(--color-accent-strong);
 }
 
 .share-btn:disabled {
@@ -551,7 +549,7 @@ onBeforeUnmount(() => {
 }
 
 .share-btn__counter {
-  background: rgba(255, 255, 255, 0.22);
+  background: var(--media-active);
   padding: 1px 7px;
   border-radius: 999px;
   font-size: 11px;
@@ -568,7 +566,7 @@ onBeforeUnmount(() => {
   justify-content: center;
   gap: 8px;
   padding: 24px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-size: 13px;
 }
 
@@ -593,45 +591,13 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-.share__gate-mesh {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background:
-    radial-gradient(
-      ellipse 60% 50% at 20% 25%,
-      rgba(110, 114, 217, 0.18) 0%,
-      transparent 65%
-    ),
-    radial-gradient(
-      ellipse 60% 50% at 80% 75%,
-      rgba(244, 114, 182, 0.14) 0%,
-      transparent 65%
-    );
-}
-
-html.dark .share__gate-mesh {
-  background:
-    radial-gradient(
-      ellipse 60% 50% at 20% 25%,
-      rgba(110, 114, 217, 0.32) 0%,
-      transparent 65%
-    ),
-    radial-gradient(
-      ellipse 60% 50% at 80% 75%,
-      rgba(168, 85, 247, 0.2) 0%,
-      transparent 65%
-    );
-}
-
 .share__gate-card {
   position: relative;
   z-index: 1;
   width: 100%;
   max-width: 400px;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
   border-radius: 14px;
   padding: 26px 24px 22px;
   display: flex;
@@ -639,17 +605,15 @@ html.dark .share__gate-mesh {
   align-items: center;
   text-align: center;
   gap: 6px;
-  box-shadow:
-    0 24px 48px -16px rgba(0, 0, 0, 0.15),
-    0 0 0 1px rgba(0, 0, 0, 0.02);
+  box-shadow: var(--shadow-2);
 }
 
 .share__gate-icon {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -661,7 +625,7 @@ html.dark .share__gate-mesh {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 .share__gate-title {
@@ -669,14 +633,14 @@ html.dark .share__gate-mesh {
   font-weight: 600;
   margin: 0;
   letter-spacing: -0.01em;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 
 .share__gate-message {
   margin: 4px 0 14px;
   font-size: 13px;
   line-height: 1.5;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   max-width: 280px;
 }
 
@@ -684,12 +648,12 @@ html.dark .share__gate-mesh {
   width: 100%;
   height: 36px;
   padding: 0 12px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 8px;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   font: inherit;
   font-size: 14px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   outline: none;
   text-align: center;
   letter-spacing: 0.1em;
@@ -699,8 +663,8 @@ html.dark .share__gate-mesh {
 }
 
 .share__gate-input:focus {
-  border-color: var(--color-accent, #6e72d9);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 
 .share__gate-input.is-error {
@@ -756,8 +720,8 @@ html.dark .share__gate-mesh {
 }
 
 .share__info-card {
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
   border-radius: 12px;
   padding: 18px 18px 16px;
   display: flex;
@@ -780,7 +744,7 @@ html.dark .share__gate-mesh {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 .share__info-name {
@@ -788,7 +752,7 @@ html.dark .share__gate-mesh {
   font-weight: 600;
   letter-spacing: -0.005em;
   margin: -2px 0 4px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   word-break: break-word;
   line-height: 1.25;
 }
@@ -808,13 +772,13 @@ html.dark .share__gate-mesh {
 }
 
 .share__info-meta dt {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-weight: 500;
 }
 
 .share__info-meta dd {
   margin: 0;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
@@ -839,8 +803,8 @@ html.dark .share__gate-mesh {
   margin: 0 0 12px;
   padding: 8px 10px;
   border-radius: 8px;
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-elevated);
+  color: var(--color-ink-2);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -850,10 +814,10 @@ html.dark .share__gate-mesh {
 }
 
 .share__info-preview {
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 10px;
   overflow: hidden;
-  background: var(--color-canvas, #fafaf9);
+  background: var(--color-canvas);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -876,8 +840,8 @@ html.dark .share__gate-mesh {
 .share__info-qr {
   margin-top: 6px;
   padding: 14px;
-  background: var(--color-canvas, #fafaf9);
-  border: 1px dashed var(--color-line, #ececec);
+  background: var(--color-canvas);
+  border: 1px dashed var(--color-line);
   border-radius: 10px;
   display: flex;
   flex-direction: column;
@@ -887,7 +851,7 @@ html.dark .share__gate-mesh {
 
 .share__info-qr-caption {
   font-size: 11px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 .share__info-qr :deep(canvas),
@@ -897,8 +861,8 @@ html.dark .share__gate-mesh {
 
 /* ── File listing ──────────────────────────────────────────────────── */
 .share__list {
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -908,7 +872,7 @@ html.dark .share__gate-mesh {
   align-items: baseline;
   gap: 8px;
   padding: 14px 18px 10px;
-  border-bottom: 1px solid var(--color-line, #ececec);
+  border-bottom: 1px solid var(--color-line);
 }
 
 .share__list-title {
@@ -916,12 +880,12 @@ html.dark .share__gate-mesh {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 .share__list-count {
   font-size: 11.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-variant-numeric: tabular-nums;
 }
 
@@ -933,18 +897,18 @@ html.dark .share__gate-mesh {
   width: 100%;
   padding: 12px;
   text-align: center;
-  background: var(--color-canvas, #fafaf9);
+  background: var(--color-canvas);
   border: 0;
-  border-top: 1px solid var(--color-line, #ececec);
+  border-top: 1px solid var(--color-line);
   font-family: inherit;
   font-size: 12.5px;
   font-weight: 500;
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
   cursor: pointer;
 }
 
 .share__show-more:hover {
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 
 /* Multi-select pill (only shows when fileStore.multiple is on) */
@@ -959,11 +923,11 @@ html.dark .share__gate-mesh {
   padding: 6px 6px 6px 14px;
   border-radius: 999px;
   /* Use inverse-surface so the pill stays dark in both themes */
-  background: var(--color-inverse-surface, #18181b);
-  color: white;
+  background: var(--color-inverse-surface);
+  color: var(--media-ink);
   font-size: 13px;
   font-weight: 500;
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-2);
   transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 999;
 }
@@ -979,7 +943,7 @@ html.dark .share__gate-mesh {
 .share__multi-divider {
   width: 1px;
   height: 16px;
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--media-line);
 }
 
 .share__multi-close {
@@ -988,7 +952,7 @@ html.dark .share__gate-mesh {
   border-radius: 999px;
   background: transparent;
   border: 0;
-  color: white;
+  color: var(--media-ink);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -996,7 +960,7 @@ html.dark .share__gate-mesh {
 }
 
 .share__multi-close:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--media-hover);
 }
 
 /* ── Empty state ───────────────────────────────────────────────────── */
@@ -1013,8 +977,8 @@ html.dark .share__gate-mesh {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-3, #a1a1aa);
+  background: var(--color-elevated);
+  color: var(--color-ink-3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1024,12 +988,12 @@ html.dark .share__gate-mesh {
 .share__empty-title {
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 
 .share__empty-hint {
   font-size: 12px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   max-width: 320px;
   line-height: 1.45;
 }

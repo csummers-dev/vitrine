@@ -12,9 +12,7 @@
 }
 
 .share__box {
-  box-shadow:
-    rgba(0, 0, 0, 0.06) 0px 1px 3px,
-    rgba(0, 0, 0, 0.12) 0px 1px 2px;
+  box-shadow: var(--shadow-1);
   background: var(--surfacePrimary);
   color: var(--textPrimary);
   border-radius: 0.2em;
@@ -29,7 +27,7 @@
 
 .share__box__icon i {
   font-size: 10em;
-  color: #40c4ff;
+  color: var(--color-accent-ink);
 }
 
 .share__box__center {
@@ -73,7 +71,7 @@
 
 .share__wrong__password {
   background: var(--red);
-  color: #fff;
+  color: var(--media-ink);
   padding: 0.5em;
   text-align: center;
   animation: 0.2s opac forwards;

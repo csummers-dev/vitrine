@@ -29,7 +29,7 @@
 
 .upload-files .file .file-progress div {
   height: 100%;
-  background-color: #40c4ff;
+  background-color: var(--color-accent);
   width: 0;
   transition: 0.2s ease width;
   border-radius: 10px;

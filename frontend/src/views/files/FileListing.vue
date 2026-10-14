@@ -3015,10 +3015,10 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
    primary pane lights it up identically. Split-only (the flag is gated on
    `splitActive`), so single-pane drag never shows this. */
 .scroll-section--drop {
-  outline: 2px dashed var(--color-accent, #6e72d9);
+  outline: 2px dashed var(--color-accent);
   outline-offset: -4px;
   border-radius: 8px;
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.06));
+  background: var(--color-accent-soft);
 }
 
 #listing.listing--virtual {
@@ -3085,14 +3085,14 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
   margin-top: 8px;
   width: 34px;
   height: 34px;
-  border-radius: var(--radius-full, 9999px);
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-surface, #fff);
-  color: var(--color-accent, #6e72d9);
-  border: 1px solid var(--color-line, #ececec);
-  box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+  background: var(--color-surface);
+  color: var(--color-accent-ink);
+  border: 1px solid var(--color-line);
+  box-shadow: var(--shadow-1);
 }
 
 .ptr-indicator__spin--active {
@@ -3123,8 +3123,8 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
   position: fixed;
   z-index: 900;
   pointer-events: none;
-  border: 1px solid var(--color-accent, #6e72d9);
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.12));
+  border: 1px solid var(--color-accent);
+  background: var(--color-accent-soft);
   border-radius: 2px;
 }
 
@@ -3143,8 +3143,8 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
   align-items: center;
   gap: 4px;
   padding: 8px 12px;
-  background: var(--color-surface, #fff);
-  border-bottom: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-line);
   min-height: 44px;
 }
 
@@ -3152,7 +3152,7 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
   flex: 1;
   font-size: 13px;
   font-weight: 500;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3172,7 +3172,7 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   cursor: pointer;
   flex-shrink: 0;
   transition:
@@ -3181,12 +3181,12 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
 }
 #file-selection :deep(.action:hover),
 #file-selection :deep(.action:focus-visible) {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
   outline: none;
 }
 #file-selection :deep(.action:focus-visible) {
-  box-shadow: 0 0 0 2px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  box-shadow: 0 0 0 2px var(--color-accent-ring);
 }
 /* The Action component renders a `<span>{{ label }}</span>` inside;
    in this mobile context we want icon-only tap targets, so hide the
@@ -3203,7 +3203,7 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
 }
 html.dark #file-selection :deep(.action[title="Delete"]:hover),
 html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
-  background: rgba(127, 29, 29, 0.25);
+  background: var(--status-danger-soft);
   color: var(--status-danger);
 }
 
@@ -3225,15 +3225,15 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   margin: 0 4px;
 }
 .section-title--drop {
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.08));
-  box-shadow: inset 0 0 0 2px var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  box-shadow: inset 0 0 0 2px var(--color-accent);
 }
 /* Split-header parent spring-load target (#18): dragging a selection onto pane
    A's compact header navigates up a folder, mirroring the single-pane
    section-title drop affordance above. */
 .compare-head--drop {
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.08));
-  box-shadow: inset 0 0 0 2px var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  box-shadow: inset 0 0 0 2px var(--color-accent);
 }
 
 /* ── V2-J unified hero (title + control cluster) ─────────────────────────
@@ -3289,7 +3289,7 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   gap: 5px;
   height: 24px;
   padding: 0 10px;
-  border-radius: var(--radius-full, 9999px);
+  border-radius: var(--radius-full);
   border: 1px solid var(--color-line);
   background: transparent;
   color: var(--color-ink-2);
@@ -3343,13 +3343,13 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   border-radius: 8px;
   align-items: center;
   justify-content: center;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   flex-shrink: 0;
   margin-left: -4px;
   transition: background-color var(--dur-base) ease;
 }
 .fb-hero__menu:hover {
-  background: var(--color-hover, rgba(24, 24, 27, 0.045));
+  background: var(--color-hover);
 }
 /* Loading placeholder for the hero's left column (before the listing resolves). */
 .fb-hero__title {
@@ -3379,14 +3379,14 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
 .fb-hero__count {
   flex: none;
   font-size: 12px;
-  color: var(--color-ink-3, #82828c);
+  color: var(--color-ink-3);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 .fb-hero__count::before {
   content: "·";
   margin: 0 6px 0 2px;
-  color: var(--color-ink-3, #82828c);
+  color: var(--color-ink-3);
 }
 /* Saved search (5.3): name · count · query · folder, in place of the crumbs. */
 .saved-search-head {
@@ -3395,12 +3395,12 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
 }
 .saved-search-head__icon {
   flex: none;
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
 }
 .saved-search-head__name {
   font-size: 15px;
   font-weight: 600;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3412,10 +3412,10 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   max-width: 280px;
   padding: 1px 6px;
   border-radius: 5px;
-  background: var(--color-elevated, #f4f4f5);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-elevated);
+  border: 1px solid var(--color-line);
   font-size: 11.5px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3423,7 +3423,7 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
 .saved-search-head__in {
   flex: none;
   font-size: 12px;
-  color: var(--color-ink-3, #82828c);
+  color: var(--color-ink-3);
   white-space: nowrap;
 }
 .saved-search-head__btn {
@@ -3434,11 +3434,11 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 .saved-search-head__btn:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 @media (max-width: 640px) {
   .saved-search-head__query,
@@ -3488,8 +3488,8 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
    edge they left the middle empty. The centre divider stays a static 1px line
    (ComparePane's border-left). Mirrors pane B's `.compare-pane--active`. */
 .fb-primary--active .compare-head {
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.06));
-  box-shadow: inset 0 -2px 0 0 var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  box-shadow: inset 0 -2px 0 0 var(--color-accent);
 }
 
 .fb-breadcrumb-bar {
@@ -3512,9 +3512,9 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   min-width: 0;
   max-width: 100%;
   padding: 4px 10px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 8px;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
 }
 
 /* Current-folder favorites star (v1.3 S3-2). Sits next to the current-folder
@@ -3530,7 +3530,7 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   border: 0;
   border-radius: 4px;
   background: transparent;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   cursor: pointer;
   transition:
     background-color 0.1s ease,
@@ -3538,12 +3538,12 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
 }
 
 .current-fav-btn:hover {
-  background: var(--color-hover, rgba(24, 24, 27, 0.045));
-  color: var(--tag-color-amber-fg, #8a6a32);
+  background: var(--color-hover);
+  color: var(--tag-color-amber-fg);
 }
 
 .current-fav-btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 
@@ -3573,8 +3573,8 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   padding: 0 14px;
   border-radius: 8px;
   background: var(--accent-gradient);
-  border: 1px solid var(--color-accent, #6e72d9);
-  color: white;
+  border: 1px solid var(--color-accent);
+  color: var(--color-on-accent);
   font-family: inherit;
   font-size: 13px;
   font-weight: 500;
@@ -3587,12 +3587,12 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
 
 .empty-cta:hover {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #575cc7);
-  box-shadow: 0 4px 12px -4px rgba(110, 114, 217, 0.4);
+  border-color: var(--color-accent-strong);
+  box-shadow: 0 4px 12px -4px var(--color-accent-ring);
 }
 
 .empty-cta:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 2px;
 }
 
@@ -3635,20 +3635,20 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
    only the border + focus ring change, signaling "this is editable". */
 .folder-rename-input {
   background: transparent;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 6px;
   padding: 2px 8px;
   margin: -3px -9px;
   width: calc(100% + 18px);
   outline: none;
   font-family: inherit;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   transition:
     border-color var(--dur-base) ease,
     box-shadow var(--dur-base) ease;
 }
 .folder-rename-input:focus {
-  border-color: var(--color-accent, #6e72d9);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 </style>

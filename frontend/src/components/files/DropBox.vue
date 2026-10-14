@@ -201,10 +201,10 @@ const onDrop = (e: DragEvent) => {
 .dropbox__card {
   width: min(560px, 100%);
   padding: 28px;
-  border-radius: var(--radius-lg, 12px);
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
-  box-shadow: 0 24px 48px -24px rgba(0, 0, 0, 0.25);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  box-shadow: var(--shadow-2);
 }
 .dropbox__icon {
   width: 40px;
@@ -213,8 +213,8 @@ const onDrop = (e: DragEvent) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.12));
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
 }
 .dropbox__eyebrow {
   margin-top: 14px;
@@ -222,19 +222,19 @@ const onDrop = (e: DragEvent) => {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 .dropbox__title {
   margin: 4px 0 6px;
   font-size: 20px;
   font-weight: 650;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   overflow-wrap: anywhere;
 }
 .dropbox__hint {
   margin: 0 0 12px;
   font-size: 13px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 .dropbox__limits {
   margin: 0 0 14px;
@@ -247,9 +247,9 @@ const onDrop = (e: DragEvent) => {
 .dropbox__limits li {
   padding: 2px 8px;
   border-radius: 999px;
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
   font-size: 11px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 .dropbox__field {
   display: flex;
@@ -258,15 +258,15 @@ const onDrop = (e: DragEvent) => {
   margin-bottom: 14px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 .dropbox__input {
   height: 36px;
   padding: 0 10px;
   border-radius: 8px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-1, #18181b);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink-1);
   font: inherit;
   font-weight: 400;
 }
@@ -276,21 +276,21 @@ const onDrop = (e: DragEvent) => {
   align-items: center;
   gap: 6px;
   padding: 28px 16px;
-  border: 1.5px dashed var(--color-line-strong, #d4d4d8);
+  border: 1.5px dashed var(--color-line-strong);
   border-radius: 12px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   font-size: 13px;
   text-align: center;
 }
 .dropbox__zone--over {
-  border-color: var(--color-accent, #6e72d9);
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.08));
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
 }
 .dropbox__pick {
   border: 0;
   background: none;
   padding: 0;
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
@@ -310,7 +310,7 @@ const onDrop = (e: DragEvent) => {
 .dropbox__item {
   padding: 8px 10px;
   border-radius: 8px;
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
   font-size: 12px;
 }
 .dropbox__item-row {
@@ -321,20 +321,20 @@ const onDrop = (e: DragEvent) => {
 .dropbox__item-name {
   flex: 1;
   min-width: 0;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 .dropbox__item-size,
 .dropbox__item-state {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-variant-numeric: tabular-nums;
 }
 .dropbox__item--done .dropbox__item-state {
-  color: var(--c-green, #16a34a);
+  color: var(--c-green);
   font-weight: 600;
 }
 .dropbox__item--failed .dropbox__item-state,
 .dropbox__error {
-  color: var(--status-danger, #b91c1c);
+  color: var(--status-danger);
 }
 .dropbox__error {
   margin-top: 4px;
@@ -343,13 +343,13 @@ const onDrop = (e: DragEvent) => {
   margin-top: 6px;
   height: 3px;
   border-radius: 999px;
-  background: var(--color-line, #ececec);
+  background: var(--color-line);
   overflow: hidden;
 }
 .dropbox__bar span {
   display: block;
   height: 100%;
-  background: var(--color-accent, #6e72d9);
+  background: var(--color-accent);
   transition: width 0.15s ease;
 }
 </style>

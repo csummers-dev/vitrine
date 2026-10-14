@@ -46,7 +46,7 @@
 }
 
 .button--flat.button--grey {
-  color: #6f6f6f;
+  color: var(--color-ink-3);
 }
 
 .button[disabled] {

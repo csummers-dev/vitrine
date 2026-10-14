@@ -1,7 +1,6 @@
 <template>
   <main class="login">
     <!-- Decorative mesh layer — sits behind the card, never receives clicks -->
-    <div class="login__mesh" aria-hidden="true"></div>
 
     <form class="login-card" @submit="submit" novalidate>
       <!-- Header: workspace logo + name chip -->
@@ -479,56 +478,11 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   padding: 24px 16px;
-  background: var(--color-canvas, #fafaf9);
+  background: var(--color-canvas);
   position: relative;
   overflow: hidden;
-  font-family: var(--font-sans, system-ui);
-  color: var(--color-ink-1, #18181b);
-}
-
-/* Decorative mesh background — one soft radial blob per accent preset, so the
-   page reads as a gradient of all six accent colors (lilac, blue, teal, green,
-   amber, rose) arranged around the card. Hard-coded hues (not the accent CSS
-   var) because login is pre-auth, where the chosen accent isn't applied yet.
-   IMPORTANT: no `filter: blur()`. A full-viewport blur filter is very
-   expensive to paint on every reflow/repaint (which input events trigger),
-   so we rely on the radial gradients' own soft edges + tuned alpha + a
-   wider spread to stay ambient without the GPU cost. */
-.login__mesh {
-  position: absolute;
-  inset: 0;
-  /* Calm Minimal: a single faint accent wash (two soft blobs) replacing the
-     six-color "all accents" mesh. Uses the default accent vars (violet) since
-     the picker hasn't loaded pre-auth. */
-  background:
-    radial-gradient(
-      ellipse 64% 60% at 16% 18%,
-      rgb(var(--accent-rgb) / 0.14) 0%,
-      transparent 62%
-    ),
-    radial-gradient(
-      ellipse 60% 56% at 88% 84%,
-      rgb(var(--accent-rgb) / 0.1) 0%,
-      transparent 62%
-    );
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Dark mode: stronger alpha so the accent wash stays visible against the dark
-   canvas. */
-html.dark .login__mesh {
-  background:
-    radial-gradient(
-      ellipse 64% 60% at 16% 18%,
-      rgb(var(--accent-rgb) / 0.24) 0%,
-      transparent 64%
-    ),
-    radial-gradient(
-      ellipse 60% 56% at 88% 84%,
-      rgb(var(--accent-rgb) / 0.16) 0%,
-      transparent 64%
-    );
+  font-family: var(--font-sans);
+  color: var(--color-ink-1);
 }
 
 /* ── Card ───────────────────────────────────────────────────────────── */
@@ -537,13 +491,11 @@ html.dark .login__mesh {
   z-index: 1;
   width: 100%;
   max-width: 400px;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
   border-radius: 14px;
   padding: 24px 24px 20px;
-  box-shadow:
-    0 32px 64px -16px rgba(0, 0, 0, 0.15),
-    0 0 0 1px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-2);
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -572,10 +524,10 @@ html.dark .login__mesh {
 .login-card__logo:has(.login-card__logo-fallback) {
   background: linear-gradient(
     135deg,
-    var(--color-accent, #6e72d9) 0%,
-    var(--color-accent-strong, #575cc7) 100%
+    var(--color-accent) 0%,
+    var(--color-accent-strong) 100%
   );
-  box-shadow: 0 1px 2px rgba(110, 114, 217, 0.4);
+  box-shadow: var(--shadow-1);
 }
 
 .login-card__logo-img {
@@ -591,7 +543,7 @@ html.dark .login__mesh {
 .login-card__brand {
   font-size: 12.5px;
   font-weight: 600;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   letter-spacing: -0.005em;
   white-space: nowrap;
   overflow: hidden;
@@ -601,7 +553,7 @@ html.dark .login__mesh {
 .login-card__title {
   font-size: 20px;
   font-weight: 600;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   margin: 0;
   letter-spacing: -0.01em;
   line-height: 1.2;
@@ -611,7 +563,7 @@ html.dark .login__mesh {
   margin: -8px 0 4px;
   font-size: 13px;
   line-height: 1.45;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 
 /* ── Logout-reason banner ───────────────────────────────────────────── */
@@ -621,8 +573,8 @@ html.dark .login__mesh {
   gap: 8px;
   padding: 8px 12px;
   border-radius: 8px;
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
   font-size: 12.5px;
   font-weight: 500;
   line-height: 1.4;
@@ -638,19 +590,19 @@ html.dark .login__mesh {
 .login-field__label {
   font-size: 12px;
   font-weight: 500;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 
 .login-input {
   width: 100%;
   height: 36px;
   padding: 0 12px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 8px;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   font: inherit;
   font-size: 14px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   outline: none;
   transition:
     border-color 0.1s ease,
@@ -659,13 +611,13 @@ html.dark .login__mesh {
 }
 
 .login-input:focus {
-  border-color: var(--color-accent, #6e72d9);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 
 .login-input:disabled {
-  background: var(--color-canvas, #fafaf9);
-  color: var(--color-ink-3, #a1a1aa);
+  background: var(--color-canvas);
+  color: var(--color-ink-3);
   cursor: not-allowed;
 }
 
@@ -676,7 +628,7 @@ html.dark .login__mesh {
 
 .login-input.is-error:focus {
   border-color: var(--status-danger-fill);
-  box-shadow: 0 0 0 3px rgba(176, 96, 96, 0.25);
+  box-shadow: 0 0 0 3px var(--status-danger-ring);
 }
 
 .login-input.is-ok {
@@ -714,7 +666,7 @@ html[dir="rtl"] .login-input--has-toggle {
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -731,14 +683,14 @@ html[dir="rtl"] .login-password-toggle {
 }
 
 .login-password-toggle:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 
 .login-password-toggle:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 
 .login-password-toggle:disabled {
@@ -784,21 +736,21 @@ html[dir="rtl"] .login-password-toggle {
   gap: 10px;
   margin: 4px 0 2px;
   font-size: 12px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 .login-or::before,
 .login-or::after {
   content: "";
   flex: 1;
   height: 1px;
-  background: var(--color-line, #ececec);
+  background: var(--color-line);
 }
 .login-submit {
   height: 36px;
   border-radius: 8px;
-  border: 1px solid var(--color-accent, #6e72d9);
+  border: 1px solid var(--color-accent);
   background: var(--accent-gradient);
-  color: white;
+  color: var(--color-on-accent);
   font-family: inherit;
   font-size: 13.5px;
   font-weight: 600;
@@ -817,12 +769,12 @@ html[dir="rtl"] .login-password-toggle {
 
 .login-submit:hover:not(:disabled) {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #575cc7);
-  box-shadow: 0 4px 12px -4px rgba(110, 114, 217, 0.5);
+  border-color: var(--color-accent-strong);
+  box-shadow: var(--shadow-1);
 }
 
 .login-submit:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 2px;
 }
 
@@ -845,7 +797,7 @@ html[dir="rtl"] .login-password-toggle {
 .login-toggle {
   margin: 4px 0 0;
   font-size: 12.5px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   text-align: center;
 }
 
@@ -855,7 +807,7 @@ html[dir="rtl"] .login-password-toggle {
   padding: 0;
   font: inherit;
   font-weight: 600;
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
   cursor: pointer;
   /* Symmetric so the link reads with a space on BOTH sides whether it sits
      at the end ("…account? Sign in") or mid-sentence ("Click here to …"). */
@@ -869,7 +821,7 @@ html[dir="rtl"] .login-password-toggle {
   transition: color var(--dur-base) ease;
 }
 .login-card__version:hover {
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
   text-decoration: underline;
 }
 
@@ -878,7 +830,7 @@ html[dir="rtl"] .login-password-toggle {
 }
 
 .login-toggle__link:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -887,9 +839,9 @@ html[dir="rtl"] .login-password-toggle {
 .login-card__footer {
   margin-top: 4px;
   text-align: center;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 10.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   letter-spacing: 0.02em;
 }
 

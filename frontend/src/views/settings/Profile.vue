@@ -219,7 +219,7 @@
               boxShadow:
                 accent === p.name
                   ? '0 0 0 2px var(--color-surface), 0 0 0 4px ' + p.value
-                  : '0 0 0 1px rgba(0, 0, 0, 0.08)',
+                  : '0 0 0 1px var(--color-line-strong)',
             }"
             @click="setAccent(p.name)"
           >
@@ -633,7 +633,7 @@ const updatePassword = async () => {
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(20, 18, 28, 0.14);
+  box-shadow: var(--shadow-1);
 }
 .avatar-preview__img {
   width: 100%;
@@ -704,12 +704,12 @@ const updatePassword = async () => {
   width: 100%;
   height: 34px;
   padding: 0 10px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 6px;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   font: inherit;
   font-size: 13px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   outline: none;
   transition:
     border-color 0.1s ease,
@@ -717,8 +717,8 @@ const updatePassword = async () => {
 }
 
 .settings-input:focus {
-  border-color: var(--color-accent, #6e72d9);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 
 .settings-input.is-ok {
@@ -759,19 +759,19 @@ const updatePassword = async () => {
 }
 
 .settings-btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 
 .settings-btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #6e72d9);
-  color: white;
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
 }
 
 .settings-btn--primary:hover:not(:disabled) {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #575cc7);
+  border-color: var(--color-accent-strong);
 }
 
 .settings-btn:disabled {
@@ -795,18 +795,18 @@ const updatePassword = async () => {
   /* Saving state uses the app accent (lilac). Saved keeps the calm
      green; error keeps red — both still readable on the same chrome. */
   background: var(--accent-gradient);
-  color: #fff;
-  box-shadow: 0 8px 24px -8px rgba(110, 114, 217, 0.45);
+  color: var(--color-on-accent);
+  box-shadow: 0 8px 24px -8px var(--color-accent-ring);
 }
 
 .save-state.saved {
   background: var(--status-success-fill);
-  box-shadow: 0 8px 24px -8px rgba(4, 120, 87, 0.45);
+  box-shadow: 0 8px 24px -8px var(--status-success-soft);
 }
 
 .save-state.error {
   background: var(--status-danger-fill-strong);
-  box-shadow: 0 8px 24px -8px rgba(185, 28, 28, 0.45);
+  box-shadow: 0 8px 24px -8px var(--status-danger-ring);
 }
 
 .save-state__spin {

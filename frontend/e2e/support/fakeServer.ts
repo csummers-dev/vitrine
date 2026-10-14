@@ -221,6 +221,45 @@ export class FakeServer {
     if (e) e.modified = iso;
   }
 
+  /** Global settings (Settings → Global), as GET /api/settings returns. */
+  settings: Record<string, unknown> = {
+    signup: false,
+    createUserDir: false,
+    hideLoginButton: false,
+    uploadSharesEnabled: false,
+    requireAdminTwoFactor: false,
+    uploadConcurrencyMax: 0,
+    rememberLastPage: false,
+    minimumPasswordLength: 12,
+    trashRetentionDays: 30,
+    verifyTransfers: false,
+    userHomeBasePath: "/users",
+    defaults: {
+      scope: ".",
+      viewMode: "list",
+      singleClick: false,
+      redirectAfterCopyMove: true,
+      sorting: { by: "name", asc: true },
+      perm: USER.perm,
+      commands: [],
+      hideDotfiles: false,
+      dateFormat: false,
+    },
+    authMethod: "json",
+    rules: [],
+    branding: {
+      name: "",
+      disableExternal: false,
+      disableUsedPercentage: false,
+      files: "",
+      theme: "",
+      color: "",
+    },
+    tus: { chunkSize: 10485760, retryCount: 5 },
+    shell: [],
+    commands: {},
+  };
+
   /** The user's preferences: served in the token, updated by PUT /users. */
   preferences: Record<string, unknown> = {};
 
@@ -643,10 +682,16 @@ export class FakeServer {
       return json({ path: t.path });
     }
     if (api === "/tags/batch") return json({});
-    // The admin settings fetch is optional for the listing; the real server
-    // answers it, the UI tolerates a miss.
-    if (api === "/settings" && method === "GET")
-      return text("404 Not Found", 404);
+    if (api === "/settings") {
+      if (method === "PUT") {
+        this.settings = JSON.parse(req.postData() ?? "{}") as Record<
+          string,
+          unknown
+        >;
+        return text("", 200);
+      }
+      return json(this.settings);
+    }
     if (/^\/users\/\d+$/.test(api)) {
       if (method === "PUT") {
         const body = JSON.parse(req.postData() ?? "{}") as {

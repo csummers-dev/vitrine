@@ -39,9 +39,9 @@ const onSelect = (v: T) => {
 .segmented {
   display: inline-flex;
   padding: 3px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 8px;
-  background: var(--color-canvas, #fafaf9);
+  background: var(--color-canvas);
   gap: 2px;
 }
 
@@ -57,7 +57,7 @@ const onSelect = (v: T) => {
   font-family: inherit;
   font-size: 12.5px;
   font-weight: 500;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   transition:
     background-color 0.1s ease,
     color 0.1s ease,
@@ -65,19 +65,17 @@ const onSelect = (v: T) => {
 }
 
 .segmented__option:hover:not(.is-selected) {
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 
 .segmented__option.is-selected {
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-1, #18181b);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.06),
-    0 0 0 1px rgba(0, 0, 0, 0.04);
+  background: var(--color-surface);
+  color: var(--color-ink-1);
+  box-shadow: var(--shadow-1);
 }
 
 .segmented__option:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 

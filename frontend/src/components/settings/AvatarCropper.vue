@@ -240,7 +240,7 @@ watch(
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: rgba(10, 10, 14, 0.4);
+  background: var(--scrim);
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
 }
@@ -249,10 +249,8 @@ watch(
   width: min(340px, 92vw);
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: var(--radius-lg, 12px);
-  box-shadow:
-    0 2px 8px rgba(8, 8, 12, 0.16),
-    0 18px 48px rgba(8, 8, 12, 0.22);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
   padding: 18px;
 }
 
@@ -293,8 +291,9 @@ watch(
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  box-shadow: 0 0 0 999px rgba(10, 10, 14, 0.55);
-  outline: 1px solid rgba(255, 255, 255, 0.5);
+  /* Dims everything outside the crop circle. */
+  box-shadow: 0 0 0 999px var(--scrim-strong);
+  outline: 1px solid var(--media-ink-2);
   pointer-events: none;
 }
 

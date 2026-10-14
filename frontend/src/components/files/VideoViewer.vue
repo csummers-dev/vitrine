@@ -354,10 +354,10 @@ onBeforeUnmount(() => {
 
 .video-viewer__frame {
   position: relative;
-  background: #0a0a0a;
-  border-radius: var(--radius-lg, 12px);
+  background: var(--media-canvas);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.36);
+  box-shadow: var(--shadow-2);
   width: min(100%, 1280px);
   max-height: 100%;
   aspect-ratio: 16 / 9;
@@ -389,8 +389,8 @@ onBeforeUnmount(() => {
   gap: 10px;
   padding: 6px 8px 6px 12px;
   border-radius: 999px;
-  background: rgba(10, 10, 10, 0.72);
-  color: #fff;
+  background: var(--media-chrome);
+  color: var(--media-ink);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
@@ -398,19 +398,19 @@ onBeforeUnmount(() => {
   border: 0;
   border-radius: 999px;
   padding: 3px 10px;
-  background: rgba(255, 255, 255, 0.16);
-  color: #fff;
+  background: var(--media-hover);
+  color: var(--media-ink);
   font: inherit;
   cursor: pointer;
 }
 .video-viewer__resume-btn:hover {
-  background: rgba(255, 255, 255, 0.28);
+  background: var(--media-active);
 }
 .video-viewer__resume-close {
   display: inline-flex;
   border: 0;
   background: none;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--media-ink-2);
   cursor: pointer;
   padding: 2px;
 }
@@ -426,8 +426,8 @@ onBeforeUnmount(() => {
   gap: 8px;
   padding: 24px;
   text-align: center;
-  background: rgba(10, 10, 10, 0.78);
-  color: #fff;
+  background: var(--media-chrome-strong);
+  color: var(--media-ink);
   font-size: 13px;
   z-index: 2;
 }
@@ -439,14 +439,14 @@ onBeforeUnmount(() => {
   max-width: 340px;
   font-size: 12px;
   line-height: 1.5;
-  color: rgba(255, 255, 255, 0.66);
+  color: var(--media-ink-2);
 }
 .video-viewer__preparing-timer {
   margin-top: 2px;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--media-ink-2);
 }
 .video-viewer__spin {
   animation: video-viewer-spin 0.9s linear infinite;
@@ -467,20 +467,20 @@ onBeforeUnmount(() => {
   padding: 32px;
   text-align: center;
   width: min(100%, 420px);
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
-  border-radius: var(--radius-lg, 12px);
-  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.18);
-  color: var(--color-ink-3, #a1a1aa);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  color: var(--color-ink-3);
 }
 .video-viewer__fallback-title {
   font-size: 15px;
   font-weight: 600;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 .video-viewer__fallback-hint {
   font-size: 13px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   max-width: 32ch;
   line-height: 1.45;
 }
@@ -504,15 +504,15 @@ onBeforeUnmount(() => {
 }
 .video-viewer__btn--primary {
   background: var(--accent-gradient);
-  color: #fff;
+  color: var(--media-ink);
 }
 .video-viewer__btn--ghost {
-  background: var(--color-surface, #fff);
-  border-color: var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-surface);
+  border-color: var(--color-line);
+  color: var(--color-ink-2);
 }
 .video-viewer__btn--ghost:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 </style>

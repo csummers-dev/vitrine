@@ -11,7 +11,11 @@
           :class="{ 'is-current': segments.length === 0 }"
           @click="navigate('/files/')"
         >
-          <Icon name="house" :size="13" class="text-[var(--color-accent)]" />
+          <Icon
+            name="house"
+            :size="13"
+            class="text-[var(--color-accent-ink)]"
+          />
           <span>Home</span>
         </button>
         <template v-for="(seg, i) in segments" :key="i">
@@ -54,7 +58,7 @@
          above the list so it's visible even when the folder has no subfolders. -->
     <div v-if="creating" class="folder-picker__create">
       <span
-        class="folder-picker__icon bg-[var(--color-accent-soft)] text-[var(--color-accent)]"
+        class="folder-picker__icon bg-[var(--color-accent-soft)] text-[var(--color-accent-ink)]"
       >
         <Icon
           name="folder"
@@ -103,7 +107,7 @@
           @click="navigate(folder.url)"
         >
           <span
-            class="folder-picker__icon bg-[var(--color-accent-soft)] text-[var(--color-accent)]"
+            class="folder-picker__icon bg-[var(--color-accent-soft)] text-[var(--color-accent-ink)]"
           >
             <Icon
               name="folder"
@@ -382,10 +386,10 @@ defineExpose({
   flex-wrap: wrap;
   gap: 2px;
   font-size: 12px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   padding: 6px 8px;
-  background: var(--color-canvas, #fafaf9);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-canvas);
+  border: 1px solid var(--color-line);
   border-radius: 8px;
 }
 
@@ -395,18 +399,18 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 8px;
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
   cursor: pointer;
   transition:
     background-color var(--dur-base) ease,
     color var(--dur-base) ease;
 }
 .folder-picker__sort:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 .folder-picker__sort:focus-visible {
   outline: 2px solid var(--color-accent-ring);
@@ -422,24 +426,24 @@ defineExpose({
   background: transparent;
   border: 0;
   font: inherit;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   cursor: pointer;
   white-space: nowrap;
 }
 
 .folder-picker__crumb:hover {
-  background: var(--color-hover, rgba(24, 24, 27, 0.045));
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-hover);
+  color: var(--color-ink-1);
 }
 
 .folder-picker__crumb.is-current {
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   font-weight: 600;
   cursor: default;
 }
 
 .folder-picker__crumb-sep {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   flex-shrink: 0;
 }
 
@@ -468,7 +472,7 @@ defineExpose({
 }
 
 .folder-picker__row:hover {
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 
 /* Inline "new folder" input row — accent ring so it reads as an active field. */
@@ -478,8 +482,8 @@ defineExpose({
   gap: 10px;
   padding: 6px 8px;
   border-radius: 8px;
-  border: 1px solid var(--color-accent, #6e72d9);
-  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-accent);
+  background: var(--color-surface);
 }
 
 .folder-picker__create-input {
@@ -491,23 +495,23 @@ defineExpose({
   font: inherit;
   font-size: 13px;
   font-weight: 500;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   padding: 0;
 }
 
 .folder-picker__create-input::placeholder {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-weight: 400;
 }
 
 .folder-picker__create-kbd {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 10px;
   padding: 1px 5px;
   border-radius: 4px;
-  background: var(--color-elevated, #f4f4f5);
-  border: 1px solid var(--color-line, #ececec);
-  color: var(--color-ink-3, #a1a1aa);
+  background: var(--color-elevated);
+  border: 1px solid var(--color-line);
+  color: var(--color-ink-3);
   flex-shrink: 0;
 }
 
@@ -515,10 +519,7 @@ defineExpose({
   width: 26px;
   height: 26px;
   border-radius: 6px;
-  /* Color comes from the bg-amber-50 / text-amber-500 utilities on the
-     element (RC-22) so the global dark-icon-colors.css remap applies and
-     this matches the listing's folder icons in both themes — the
-     hardcoded amber hex here stayed bright in dark mode. */
+  /* Colour comes from the accent utilities on the element. */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -530,14 +531,14 @@ defineExpose({
   min-width: 0;
   font-size: 13px;
   font-weight: 500;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .folder-picker__chevron {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   flex-shrink: 0;
 }
 
@@ -548,20 +549,20 @@ defineExpose({
   align-items: center;
   gap: 6px;
   padding: 28px 16px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-size: 12.5px;
   text-align: center;
 }
 
 .folder-picker__state--empty {
-  border: 1px dashed var(--color-line, #ececec);
+  border: 1px dashed var(--color-line);
   border-radius: 10px;
-  background: var(--color-canvas, #fafaf9);
+  background: var(--color-canvas);
 }
 
 .folder-picker__state-hint {
   font-size: 11.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   max-width: 240px;
 }
 

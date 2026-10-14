@@ -106,10 +106,10 @@ watchEffect(async () => {
 .text-viewer__card {
   width: min(960px, 100%);
   height: 100%;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
-  border-radius: var(--radius-lg, 12px);
-  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.18);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -120,11 +120,11 @@ watchEffect(async () => {
   margin: 0;
   padding: 18px 22px;
   overflow: auto;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 13px;
   line-height: 1.6;
-  color: var(--color-ink-1, #18181b);
-  background: var(--color-surface, #fff);
+  color: var(--color-ink-1);
+  background: var(--color-surface);
   tab-size: 2;
   white-space: pre;
 }
@@ -148,7 +148,7 @@ watchEffect(async () => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-size: 13px;
 }
 
@@ -171,7 +171,7 @@ html.dark .text-viewer__pre {
   padding: 32px 40px 64px;
   font-size: 15px;
   line-height: 1.7;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   word-wrap: break-word;
 }
 @media (max-width: 640px) {
@@ -190,17 +190,17 @@ html.dark .text-viewer__pre {
   font-weight: 600;
   line-height: 1.3;
   margin: 1.6em 0 0.6em;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 .markdown-body :deep(h1) {
   font-size: 1.9em;
   padding-bottom: 0.3em;
-  border-bottom: 1px solid var(--color-line, #ececec);
+  border-bottom: 1px solid var(--color-line);
 }
 .markdown-body :deep(h2) {
   font-size: 1.5em;
   padding-bottom: 0.3em;
-  border-bottom: 1px solid var(--color-line, #ececec);
+  border-bottom: 1px solid var(--color-line);
 }
 .markdown-body :deep(h3) {
   font-size: 1.25em;
@@ -235,7 +235,7 @@ html.dark .text-viewer__pre {
 }
 
 .markdown-body :deep(a) {
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
   text-decoration: none;
 }
 .markdown-body :deep(a:hover) {
@@ -244,23 +244,23 @@ html.dark .text-viewer__pre {
 
 .markdown-body :deep(blockquote) {
   padding: 0.2em 1em;
-  border-left: 3px solid var(--color-line-strong, #d4d4d8);
-  color: var(--color-ink-2, #52525b);
+  border-left: 3px solid var(--color-line-strong);
+  color: var(--color-ink-2);
 }
 
 .markdown-body :deep(code) {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 0.88em;
   padding: 0.15em 0.4em;
   border-radius: 4px;
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 .markdown-body :deep(pre) {
   padding: 14px 16px;
   border-radius: 8px;
-  background: var(--color-elevated, #f4f4f5);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-elevated);
+  border: 1px solid var(--color-line);
   overflow-x: auto;
 }
 .markdown-body :deep(pre code) {
@@ -280,14 +280,14 @@ html.dark .text-viewer__pre {
 .markdown-body :deep(th),
 .markdown-body :deep(td) {
   padding: 6px 13px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
 }
 .markdown-body :deep(th) {
   font-weight: 600;
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 .markdown-body :deep(tr:nth-child(2n) td) {
-  background: var(--color-canvas, #fafaf9);
+  background: var(--color-canvas);
 }
 
 .markdown-body :deep(img) {
@@ -298,11 +298,11 @@ html.dark .text-viewer__pre {
   height: 1px;
   border: 0;
   margin: 1.8em 0;
-  background: var(--color-line, #ececec);
+  background: var(--color-line);
 }
 
 .markdown-body :deep(h1),
 .markdown-body :deep(h2) {
-  border-color: var(--color-line, #ececec);
+  border-color: var(--color-line);
 }
 </style>

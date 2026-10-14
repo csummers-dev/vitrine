@@ -210,7 +210,7 @@ const groups = computed(() => GROUPS.filter((g) => g.items.length > 0));
   /* RC-1: a modal scrim must DARKEN the page in both themes. Using
      --color-ink-1 (the text color) made the scrim near-white in dark mode
      — a bright wash over the dark UI. Fixed dark wash instead. */
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--scrim-strong);
   -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
   display: flex;
@@ -225,15 +225,13 @@ const groups = computed(() => GROUPS.filter((g) => g.items.length > 0));
   max-height: 80vh;
   display: flex;
   flex-direction: column;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
   border-radius: 12px;
-  box-shadow:
-    0 24px 48px -12px rgba(0, 0, 0, 0.28),
-    0 0 0 1px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-2);
   overflow: hidden;
-  font-family: var(--font-sans, system-ui);
-  color: var(--color-ink-1, #18181b);
+  font-family: var(--font-sans);
+  color: var(--color-ink-1);
   outline: none;
 }
 
@@ -243,7 +241,7 @@ const groups = computed(() => GROUPS.filter((g) => g.items.length > 0));
   justify-content: space-between;
   gap: 12px;
   padding: 16px 18px 12px;
-  border-bottom: 1px solid var(--color-line, #ececec);
+  border-bottom: 1px solid var(--color-line);
 }
 
 .shortcuts__title {
@@ -256,7 +254,7 @@ const groups = computed(() => GROUPS.filter((g) => g.items.length > 0));
 .shortcuts__subtitle {
   margin: 4px 0 0;
   font-size: 12px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 .shortcuts__close {
@@ -265,7 +263,7 @@ const groups = computed(() => GROUPS.filter((g) => g.items.length > 0));
   border-radius: 6px;
   border: 0;
   background: transparent;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -276,12 +274,12 @@ const groups = computed(() => GROUPS.filter((g) => g.items.length > 0));
 }
 
 .shortcuts__close:hover {
-  background: var(--color-hover, var(--color-elevated, #f4f4f5));
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-hover);
+  color: var(--color-ink-1);
 }
 
 .shortcuts__close:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 
@@ -300,7 +298,7 @@ const groups = computed(() => GROUPS.filter((g) => g.items.length > 0));
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   margin: 12px 0 6px;
 }
 
@@ -318,7 +316,7 @@ const groups = computed(() => GROUPS.filter((g) => g.items.length > 0));
 }
 
 .shortcuts__row + .shortcuts__row {
-  border-top: 1px solid var(--color-line, #ececec);
+  border-top: 1px solid var(--color-line);
 }
 
 .shortcuts__keys {
@@ -330,16 +328,16 @@ const groups = computed(() => GROUPS.filter((g) => g.items.length > 0));
 
 .shortcuts__keys kbd,
 .shortcuts__inlinekbd {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 10.5px;
   font-weight: 500;
   padding: 2px 7px;
   border-radius: 5px;
-  background: var(--color-elevated, #f4f4f5);
-  border: 1px solid var(--color-line, #ececec);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  border: 1px solid var(--color-line);
+  color: var(--color-ink-1);
   line-height: 1.4;
-  box-shadow: 0 1px 0 var(--color-line, #ececec);
+  box-shadow: 0 1px 0 var(--color-line);
   min-width: 22px;
   text-align: center;
 }
@@ -350,20 +348,20 @@ const groups = computed(() => GROUPS.filter((g) => g.items.length > 0));
 
 .shortcuts__then {
   font-size: 11px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   text-transform: lowercase;
   letter-spacing: 0.02em;
 }
 
 .shortcuts__desc {
   font-size: 12.5px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   line-height: 1.4;
 }
 
 .shortcuts__empty {
   font-size: 12px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   margin: 6px 0 0;
 }
 
@@ -373,13 +371,13 @@ const groups = computed(() => GROUPS.filter((g) => g.items.length > 0));
   justify-content: space-between;
   gap: 12px;
   padding: 12px 16px;
-  border-top: 1px solid var(--color-line, #ececec);
-  background: var(--color-canvas, #fafaf9);
+  border-top: 1px solid var(--color-line);
+  background: var(--color-canvas);
 }
 
 .shortcuts__hint {
   font-size: 11.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -390,8 +388,8 @@ const groups = computed(() => GROUPS.filter((g) => g.items.length > 0));
   padding: 0 14px;
   border-radius: 6px;
   background: var(--accent-gradient);
-  border: 1px solid var(--color-accent, #6e72d9);
-  color: white;
+  border: 1px solid var(--color-accent);
+  color: var(--color-on-accent);
   font: inherit;
   font-size: 13px;
   font-weight: 500;
@@ -403,11 +401,11 @@ const groups = computed(() => GROUPS.filter((g) => g.items.length > 0));
 
 .shortcuts__ok:hover {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #575cc7);
+  border-color: var(--color-accent-strong);
 }
 
 .shortcuts__ok:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 

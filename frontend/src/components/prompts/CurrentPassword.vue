@@ -132,12 +132,10 @@ const cancel = () => {
 .cpw {
   width: 100%;
   max-width: 420px;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
   border-radius: 12px;
-  box-shadow:
-    0 24px 48px -12px rgba(0, 0, 0, 0.25),
-    0 0 0 1px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-2);
   overflow: hidden;
 }
 
@@ -151,8 +149,8 @@ const cancel = () => {
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -175,7 +173,7 @@ const cancel = () => {
 .cpw__title {
   font-size: 15px;
   font-weight: 600;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   margin: 0;
   letter-spacing: -0.005em;
 }
@@ -184,19 +182,19 @@ const cancel = () => {
   margin: 4px 0 12px;
   font-size: 13px;
   line-height: 1.45;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 
 .cpw__input {
   width: 100%;
   height: 34px;
   padding: 0 10px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 6px;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   font: inherit;
   font-size: 13px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   outline: none;
   transition:
     border-color 0.1s ease,
@@ -204,8 +202,8 @@ const cancel = () => {
 }
 
 .cpw__input:focus {
-  border-color: var(--color-accent, #6e72d9);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 
 .cpw__input.is-error {
@@ -215,12 +213,12 @@ const cancel = () => {
 
 .cpw__input.is-error:focus {
   border-color: var(--status-danger-fill);
-  box-shadow: 0 0 0 3px rgba(176, 96, 96, 0.25);
+  box-shadow: 0 0 0 3px var(--status-danger-soft);
 }
 
 .cpw__input:disabled {
-  background: var(--color-canvas, #fafaf9);
-  color: var(--color-ink-3, #a1a1aa);
+  background: var(--color-canvas);
+  color: var(--color-ink-3);
   cursor: not-allowed;
 }
 
@@ -236,8 +234,8 @@ const cancel = () => {
   justify-content: flex-end;
   gap: 8px;
   padding: 12px 14px;
-  border-top: 1px solid var(--color-line, #ececec);
-  background: var(--color-canvas, #fafaf9);
+  border-top: 1px solid var(--color-line);
+  background: var(--color-canvas);
 }
 
 .cpw__btn {
@@ -259,30 +257,30 @@ const cancel = () => {
 }
 
 .cpw__btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 
 .cpw__btn--ghost {
-  background: var(--color-surface, #fff);
-  border-color: var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-surface);
+  border-color: var(--color-line);
+  color: var(--color-ink-2);
 }
 
 .cpw__btn--ghost:hover:not(:disabled) {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 
 .cpw__btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #6e72d9);
-  color: white;
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
 }
 
 .cpw__btn--primary:hover:not(:disabled) {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #575cc7);
+  border-color: var(--color-accent-strong);
 }
 
 .cpw__btn:disabled {

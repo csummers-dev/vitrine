@@ -246,15 +246,13 @@ const copyChecksum = async (text: string) => {
 .info-prompt {
   width: 100%;
   max-width: 480px;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
   border-radius: 12px;
-  box-shadow:
-    0 24px 48px -12px rgba(0, 0, 0, 0.25),
-    0 0 0 1px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-2);
   overflow: hidden;
-  font-family: var(--font-sans, system-ui);
-  color: var(--color-ink-1, #18181b);
+  font-family: var(--font-sans);
+  color: var(--color-ink-1);
   display: flex;
   flex-direction: column;
   max-height: min(620px, 85vh);
@@ -286,7 +284,7 @@ const copyChecksum = async (text: string) => {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   margin-bottom: 2px;
 }
 
@@ -295,7 +293,7 @@ const copyChecksum = async (text: string) => {
   font-weight: 600;
   margin: 0;
   letter-spacing: -0.005em;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   word-break: break-word;
   line-height: 1.3;
 }
@@ -319,7 +317,7 @@ const copyChecksum = async (text: string) => {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   margin-bottom: 6px;
 }
 
@@ -337,7 +335,7 @@ const copyChecksum = async (text: string) => {
   gap: 12px;
   padding: 7px 0;
   font-size: 12.5px;
-  border-bottom: 1px solid var(--color-line, #ececec);
+  border-bottom: 1px solid var(--color-line);
 }
 
 .info-prompt__row:last-child {
@@ -345,13 +343,13 @@ const copyChecksum = async (text: string) => {
 }
 
 .info-prompt__row dt {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-weight: 500;
 }
 
 .info-prompt__row dd {
   margin: 0;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   text-align: right;
   min-width: 0;
 }
@@ -366,26 +364,26 @@ const copyChecksum = async (text: string) => {
 }
 
 .info-prompt__row--checksum dt {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 11px;
   padding-top: 2px;
 }
 
 .info-prompt__show-btn {
-  background: var(--color-elevated, #f4f4f5);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-elevated);
+  border: 1px solid var(--color-line);
   border-radius: 4px;
   padding: 2px 8px;
   font-family: inherit;
   font-size: 11px;
   font-weight: 500;
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
   cursor: pointer;
   transition: background-color 0.1s ease;
 }
 
 .info-prompt__show-btn:hover {
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
+  background: var(--color-accent-soft);
 }
 
 .info-prompt__loading {
@@ -393,7 +391,7 @@ const copyChecksum = async (text: string) => {
   align-items: center;
   gap: 5px;
   font-size: 11.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 .info-prompt__spin {
@@ -407,22 +405,22 @@ const copyChecksum = async (text: string) => {
 }
 
 .info-prompt__hash {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 10.5px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   word-break: break-all;
   cursor: copy;
   padding: 2px 6px;
   border-radius: 4px;
-  background: var(--color-canvas, #fafaf9);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-canvas);
+  border: 1px solid var(--color-line);
   line-height: 1.4;
   display: inline-block;
   max-width: 100%;
 }
 
 .info-prompt__hash:hover {
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 
 /* ── Footer ────────────────────────────────────────────────────────── */
@@ -430,8 +428,8 @@ const copyChecksum = async (text: string) => {
   display: flex;
   justify-content: flex-end;
   padding: 12px 14px;
-  border-top: 1px solid var(--color-line, #ececec);
-  background: var(--color-canvas, #fafaf9);
+  border-top: 1px solid var(--color-line);
+  background: var(--color-canvas);
 }
 
 .info-prompt__btn {
@@ -449,18 +447,18 @@ const copyChecksum = async (text: string) => {
 }
 
 .info-prompt__btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 
 .info-prompt__btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #6e72d9);
-  color: white;
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
 }
 
 .info-prompt__btn--primary:hover {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #575cc7);
+  border-color: var(--color-accent-strong);
 }
 </style>

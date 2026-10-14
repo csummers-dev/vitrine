@@ -163,13 +163,13 @@ const submit = async () => {
   font: inherit;
   font-size: 13px;
   font-weight: 500;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   padding: 0;
   letter-spacing: -0.005em;
 }
 
 .inline-new__input::placeholder {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-weight: 400;
 }
 
@@ -178,18 +178,18 @@ const submit = async () => {
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   white-space: nowrap;
 }
 
 .inline-new__hint kbd {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 10px;
   padding: 1px 5px;
   border-radius: 4px;
-  background: var(--color-elevated, #f4f4f5);
-  border: 1px solid var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-elevated);
+  border: 1px solid var(--color-line);
+  color: var(--color-ink-2);
   line-height: 1.3;
 }
 </style>

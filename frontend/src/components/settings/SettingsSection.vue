@@ -34,15 +34,15 @@ withDefaults(
 
 <style scoped>
 .settings-section {
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 12px;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   overflow: hidden;
 }
 
 .settings-section__header {
   padding: 16px 18px 14px;
-  border-bottom: 1px solid var(--color-line, #ececec);
+  border-bottom: 1px solid var(--color-line);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -61,7 +61,7 @@ withDefaults(
 .settings-section__title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   margin: 0;
   letter-spacing: -0.005em;
 }
@@ -69,18 +69,18 @@ withDefaults(
 .settings-section__description {
   margin: 4px 0 0;
   font-size: 12.5px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   line-height: 1.45;
 }
 
 .settings-section__body.has-rows :deep(.settings-row + .settings-row) {
-  border-top: 1px solid var(--color-line, #ececec);
+  border-top: 1px solid var(--color-line);
 }
 
 .settings-section__footer {
   padding: 12px 18px;
-  border-top: 1px solid var(--color-line, #ececec);
-  background: var(--color-canvas, #fafaf9);
+  border-top: 1px solid var(--color-line);
+  background: var(--color-canvas);
   display: flex;
   justify-content: flex-end;
   align-items: center;

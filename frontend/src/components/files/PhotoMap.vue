@@ -269,7 +269,7 @@ onBeforeUnmount(() => {
   position: fixed;
   inset: 0;
   z-index: 900;
-  background: rgba(10, 10, 12, 0.5);
+  background: var(--scrim);
   display: flex;
   padding: 24px;
 }
@@ -277,18 +277,18 @@ onBeforeUnmount(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  border-radius: var(--radius-lg, 12px);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  background: var(--color-surface, #fff);
-  box-shadow: 0 24px 64px -16px rgba(0, 0, 0, 0.5);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-2);
 }
 .photo-map__head {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 12px 10px 16px;
-  border-bottom: 1px solid var(--color-line, #ececec);
-  color: var(--color-ink-1, #18181b);
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-ink-1);
 }
 .photo-map__title {
   margin: 0;
@@ -299,7 +299,7 @@ onBeforeUnmount(() => {
 .photo-map__status {
   flex: 1;
   font-size: 12px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 .photo-map__btn {
   display: inline-flex;
@@ -307,9 +307,9 @@ onBeforeUnmount(() => {
   gap: 6px;
   height: 30px;
   padding: 0 12px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 999px;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   color: inherit;
   font-size: 12px;
   cursor: pointer;
@@ -328,23 +328,23 @@ onBeforeUnmount(() => {
 }
 .photo-map__icon:hover,
 .photo-map__btn:hover {
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 .photo-map__progress {
   height: 3px;
-  background: var(--color-line, #ececec);
+  background: var(--color-line);
 }
 .photo-map__progress span {
   display: block;
   height: 100%;
-  background: var(--color-accent, #6e72d9);
+  background: var(--color-accent);
   transition: width 0.2s ease;
 }
 .photo-map__map {
   position: relative;
   flex: 1;
   min-height: 0;
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 .photo-map__empty {
   position: absolute;
@@ -356,8 +356,8 @@ onBeforeUnmount(() => {
   justify-content: center;
   gap: 8px;
   font-size: 13px;
-  color: var(--color-ink-2, #52525b);
-  background: var(--color-surface, #fff);
+  color: var(--color-ink-2);
+  background: var(--color-surface);
 }
 :deep(.photo-map__icon-wrap) {
   background: none;
@@ -368,9 +368,9 @@ onBeforeUnmount(() => {
   width: 44px;
   height: 44px;
   border-radius: 10px;
-  border: 2px solid #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
-  background: #ddd;
+  border: 2px solid var(--paper);
+  box-shadow: var(--shadow-2);
+  background: var(--color-elevated);
   cursor: pointer;
 }
 :deep(.photo-map__pin img) {
@@ -388,8 +388,8 @@ onBeforeUnmount(() => {
   height: 20px;
   padding: 0 5px;
   border-radius: 999px;
-  background: var(--color-accent, #6e72d9);
-  color: #fff;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
   font-size: 11px;
   font-weight: 700;
   line-height: 20px;

@@ -273,7 +273,11 @@
           aria-label="Home"
           @click="navigateB('/files/', true)"
         >
-          <Icon name="house" :size="14" class="text-[var(--color-accent)]" />
+          <Icon
+            name="house"
+            :size="14"
+            class="text-[var(--color-accent-ink)]"
+          />
         </button>
         <template v-for="(seg, i) in segments" :key="seg.url">
           <Icon name="chevron-right" :size="12" class="compare-crumb-sep" />
@@ -1351,7 +1355,7 @@ onBeforeUnmount(() => {
   min-width: 0;
   min-height: 0;
   flex: 1 1 0;
-  border-left: 1px solid var(--color-line, #ececec);
+  border-left: 1px solid var(--color-line);
   position: relative;
 }
 /* Active-pane affordance: the ONLY indicator is the header (tint + accent
@@ -1365,18 +1369,18 @@ onBeforeUnmount(() => {
    split-only header shares one source of truth. Only the pane-B-specific active
    tint stays scoped here (pane A uses `.fb-primary--active`). */
 .compare-pane--active .compare-head {
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.06));
+  background: var(--color-accent-soft);
   /* Accent underline so the active pane reads clearly from its header alone
      (the edge ring was removed). Inset shadow → no layout shift. */
-  box-shadow: inset 0 -2px 0 0 var(--color-accent, #6e72d9);
+  box-shadow: inset 0 -2px 0 0 var(--color-accent);
 }
 /* Parent spring-load drop target (#18): dragging a selection onto pane B's
    header navigates up a folder. Matches pane A's `.compare-head--drop`. The
    accent ring wins over the active-pane underline while a drag hovers. */
 .compare-head--drop,
 .compare-pane--active .compare-head--drop {
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.08));
-  box-shadow: inset 0 0 0 2px var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  box-shadow: inset 0 0 0 2px var(--color-accent);
 }
 
 /* Per-pane breadcrumb at the bottom of pane B (Request #3). Mirrors pane A's
@@ -1395,9 +1399,9 @@ onBeforeUnmount(() => {
   min-width: 0;
   max-width: 100%;
   padding: 4px 10px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 8px;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
@@ -1421,7 +1425,7 @@ onBeforeUnmount(() => {
   background: transparent;
   font: inherit;
   font-size: 12.5px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
@@ -1441,16 +1445,16 @@ onBeforeUnmount(() => {
    last entry"). Keep it `flex-shrink: 0` like the rest (inherited from
    `.compare-foot__crumbs > *`) so the bar scrolls and the crumb stays visible. */
 .compare-crumb:hover {
-  background: var(--color-hover, rgba(24, 24, 27, 0.045));
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-hover);
+  color: var(--color-ink-1);
 }
 .compare-crumb.is-current {
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   font-weight: 600;
   cursor: default;
 }
 .compare-crumb-sep {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   flex-shrink: 0;
 }
 
@@ -1473,11 +1477,11 @@ onBeforeUnmount(() => {
   gap: 3px;
   padding: 5px 6px 5px 12px;
   border-radius: 999px;
-  background: var(--color-inverse-surface, #18181b);
-  color: #fff;
+  background: var(--color-inverse-surface);
+  color: var(--media-ink);
   box-shadow:
-    var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.15)),
-    0 0 0 1px rgba(255, 255, 255, 0.05);
+    var(--shadow-lg),
+    0 0 0 1px var(--media-line);
   z-index: 6;
   max-width: calc(100% - 24px);
 }
@@ -1486,7 +1490,7 @@ onBeforeUnmount(() => {
   font-weight: 500;
   margin-right: 4px;
   white-space: nowrap;
-  color: #fff;
+  color: var(--media-ink);
 }
 .compare-pill__btn {
   width: 28px;
@@ -1494,7 +1498,7 @@ onBeforeUnmount(() => {
   border-radius: 50%;
   border: 0;
   background: transparent;
-  color: #fff;
+  color: var(--media-ink);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1504,10 +1508,10 @@ onBeforeUnmount(() => {
     color 0.12s ease;
 }
 .compare-pill__btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--media-hover);
 }
 .compare-pill__btn--danger:hover {
-  background: rgba(176, 96, 96, 0.2);
+  background: var(--status-danger-soft);
   color: var(--status-danger);
 }
 
@@ -1520,10 +1524,10 @@ onBeforeUnmount(() => {
 }
 /* Cross-pane drop affordance — a dashed accent frame while a drag hovers. */
 .compare-body--drop {
-  outline: 2px dashed var(--color-accent, #6e72d9);
+  outline: 2px dashed var(--color-accent);
   outline-offset: -4px;
   border-radius: 8px;
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.06));
+  background: var(--color-accent-soft);
 }
 
 /* The `.fb-listing.list` container picks up the global row layout from
@@ -1552,7 +1556,7 @@ onBeforeUnmount(() => {
 .compare-divider {
   height: 1px;
   margin: 5px 12px;
-  background: var(--color-line, #ececec);
+  background: var(--color-line);
 }
 
 .compare-state {
@@ -1563,7 +1567,7 @@ onBeforeUnmount(() => {
   justify-content: center;
   gap: 8px;
   padding: 32px 16px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-size: 13px;
   text-align: center;
 }
@@ -1582,15 +1586,15 @@ onBeforeUnmount(() => {
   height: 30px;
   padding: 0 14px;
   border-radius: 8px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-2, #52525b);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
   font: inherit;
   font-size: 12.5px;
   cursor: pointer;
 }
 .compare-retry:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 </style>

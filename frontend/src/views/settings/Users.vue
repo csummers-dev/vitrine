@@ -201,13 +201,13 @@ const summaryPerms = (user: IUser) => {
 
 .users-btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #6e72d9);
-  color: white;
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
 }
 
 .users-btn--primary:hover {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #575cc7);
+  border-color: var(--color-accent-strong);
 }
 
 /* ── User list ───────────────────────────────────────────────────────── */
@@ -231,7 +231,7 @@ const summaryPerms = (user: IUser) => {
 }
 
 .users-card:hover {
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 
 .users-card__top {
@@ -252,7 +252,7 @@ const summaryPerms = (user: IUser) => {
   font-weight: 600;
   color: white;
   flex-shrink: 0;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-1);
 }
 
 /* Calm Minimal: avatars follow the single accent (was a six-hue conic). */
@@ -280,7 +280,7 @@ const summaryPerms = (user: IUser) => {
 .users-card__name {
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   letter-spacing: -0.005em;
   white-space: nowrap;
   overflow: hidden;
@@ -297,23 +297,23 @@ const summaryPerms = (user: IUser) => {
   border-radius: 999px;
   font-size: 10.5px;
   font-weight: 500;
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-elevated);
+  color: var(--color-ink-2);
   flex-shrink: 0;
 }
 
 .users-card__chip.is-admin {
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
 }
 
 .users-card__scope {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 11.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   min-width: 0;
 }
 
@@ -325,12 +325,12 @@ const summaryPerms = (user: IUser) => {
 }
 
 .users-card__scope :deep(svg) {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   flex-shrink: 0;
 }
 
 .users-card__chev {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   flex-shrink: 0;
 }
 
@@ -350,9 +350,9 @@ const summaryPerms = (user: IUser) => {
   gap: 4px;
   padding: 2px 7px;
   border-radius: 4px;
-  background: var(--color-canvas, #fafaf9);
-  border: 1px solid var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-canvas);
+  border: 1px solid var(--color-line);
+  color: var(--color-ink-2);
   font-size: 10.5px;
   font-weight: 500;
   white-space: nowrap;
@@ -360,7 +360,7 @@ const summaryPerms = (user: IUser) => {
 }
 
 .users-perm-chip :deep(svg) {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 /* ── Empty state ────────────────────────────────────────────────────── */
@@ -377,8 +377,8 @@ const summaryPerms = (user: IUser) => {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-3, #a1a1aa);
+  background: var(--color-elevated);
+  color: var(--color-ink-3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -388,7 +388,7 @@ const summaryPerms = (user: IUser) => {
 .users-empty__title {
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 
 .users-empty__cta {

@@ -63,11 +63,7 @@ defineProps<{
   align-items: center;
   justify-content: center;
   color: var(--page-accent);
-  background: color-mix(
-    in srgb,
-    var(--page-accent) 14%,
-    var(--color-surface, #fff)
-  );
+  background: color-mix(in srgb, var(--page-accent) 14%, var(--color-surface));
   box-shadow: inset 0 0 0 1px
     color-mix(in srgb, var(--page-accent) 24%, transparent);
 }
@@ -81,7 +77,7 @@ defineProps<{
   font-size: 22px;
   font-weight: 600;
   letter-spacing: -0.01em;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   margin: 0;
   line-height: 1.2;
 }
@@ -89,7 +85,7 @@ defineProps<{
 .settings-page__description {
   margin: 6px 0 0;
   font-size: 13px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   line-height: 1.5;
 }
 

@@ -342,15 +342,13 @@ const toogleCheckAll = (e: Event) => {
 .rc-prompt {
   width: 100%;
   max-width: 520px;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
   border-radius: 12px;
-  box-shadow:
-    0 24px 48px -12px rgba(0, 0, 0, 0.25),
-    0 0 0 1px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-2);
   overflow: hidden;
-  font-family: var(--font-sans, system-ui);
-  color: var(--color-ink-1, #18181b);
+  font-family: var(--font-sans);
+  color: var(--color-ink-1);
   display: flex;
   flex-direction: column;
   max-height: min(640px, 85vh);
@@ -388,7 +386,7 @@ const toogleCheckAll = (e: Event) => {
   margin: 4px 0 0;
   font-size: 12.5px;
   line-height: 1.45;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 
 /* "Downloads/completed → Movies" — surfaces the source + destination
@@ -398,18 +396,18 @@ const toogleCheckAll = (e: Event) => {
   margin: 8px 0 0;
   font-size: 12px;
   line-height: 1.4;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 4px 8px;
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
   border-radius: 6px;
   font-variant-numeric: tabular-nums;
 }
 
 .rc-prompt__context :deep(svg) {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   flex-shrink: 0;
 }
 
@@ -420,7 +418,7 @@ const toogleCheckAll = (e: Event) => {
   margin: 6px 0 0;
   font-size: 11.5px;
   line-height: 1.45;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   word-break: break-all;
 }
 
@@ -440,8 +438,8 @@ const toogleCheckAll = (e: Event) => {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-3, #a1a1aa);
-  border-bottom: 1px solid var(--color-line, #ececec);
+  color: var(--color-ink-3);
+  border-bottom: 1px solid var(--color-line);
   margin-bottom: 8px;
 }
 
@@ -454,7 +452,7 @@ const toogleCheckAll = (e: Event) => {
 
 .rc-item {
   padding: 10px 0;
-  border-bottom: 1px solid var(--color-line, #ececec);
+  border-bottom: 1px solid var(--color-line);
 }
 
 .rc-item:last-child {
@@ -472,7 +470,7 @@ const toogleCheckAll = (e: Event) => {
 .rc-item__name {
   font-size: 12.5px;
   font-weight: 500;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   word-break: break-all;
 }
 
@@ -488,12 +486,12 @@ const toogleCheckAll = (e: Event) => {
 }
 
 .rc-chip.is-override {
-  background: rgba(4, 120, 87, 0.12);
+  background: var(--status-success-soft);
   color: var(--status-success);
 }
 .rc-chip.is-skip {
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
 }
 .rc-chip.is-warn {
   background: var(--status-warning-soft);
@@ -525,18 +523,18 @@ const toogleCheckAll = (e: Event) => {
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 8px;
   cursor: pointer;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   transition:
     background-color 0.1s ease,
     border-color 0.1s ease;
 }
 
 .rc-item__col:has(input:checked) {
-  border-color: var(--color-accent, #6e72d9);
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.06));
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
 }
 
 .rc-item__col-meta {
@@ -544,12 +542,12 @@ const toogleCheckAll = (e: Event) => {
   flex-direction: column;
   gap: 1px;
   font-size: 11.5px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   min-width: 0;
 }
 
 .rc-item__col-size {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-variant-numeric: tabular-nums;
   font-size: 11px;
 }
@@ -570,7 +568,7 @@ const toogleCheckAll = (e: Event) => {
   background: transparent;
   border: 1px solid transparent;
   border-radius: 8px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   font: inherit;
   font-size: 13px;
   font-weight: 500;
@@ -582,59 +580,36 @@ const toogleCheckAll = (e: Event) => {
 }
 
 .rc-quick__btn:hover {
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 
-/* The "Decide for each" CTA — a solid GREEN fill ("go / take action") that
-   reads on either theme. The previous amber darkened on the light surface to an
-   unpleasant brown; green keeps the positive-action read at full contrast.
-   - Light: the green token deepened (toward black) so the WHITE label clears
-     AA contrast (#fff on ~#12823b ≈ 4.9:1).
-   - Dark: the bright green token with a NEAR-BLACK label (white-on-bright-green
-     would fail), giving a high-contrast "primary green button" look.
-   Each :hover RE-DECLARES its own background: the generic `.rc-quick__btn:hover`
-   rule (class + pseudo) out-specifies the `.rc-quick__btn--accent` base class
-   and fills near-white, so without an explicit accent-hover background the
-   button would wash out to an unreadable white on hover (the old bug). */
+/* The "Decide for each" CTA: the primary (accent) button. Its :hover
+   re-declares the fill because the generic `.rc-quick__btn:hover` rule
+   out-specifies this class. */
 .rc-quick__btn--accent {
-  background: color-mix(in srgb, var(--c-green) 80%, #000);
-  border-color: color-mix(in srgb, var(--c-green) 80%, #000);
-  color: #fff;
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
   font-weight: 600;
 }
-html.dark .rc-quick__btn--accent {
-  background: var(--c-green);
-  border-color: var(--c-green);
-  color: #06281a;
-}
-
 .rc-quick__btn--accent:hover {
-  background: color-mix(in srgb, var(--c-green) 70%, #000);
-  border-color: color-mix(in srgb, var(--c-green) 70%, #000);
-}
-html.dark .rc-quick__btn--accent:hover {
-  background: color-mix(in srgb, var(--c-green) 82%, #fff);
-  border-color: color-mix(in srgb, var(--c-green) 82%, #fff);
+  background: var(--color-accent-strong);
+  border-color: var(--color-accent-strong);
 }
 
 .rc-quick__btn :deep(svg) {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   flex-shrink: 0;
 }
 
-/* The Decide button's icon matches its label colour (white on light, near-black
-   on dark) — placed AFTER the generic grey rule so it wins on source order. */
 .rc-quick__btn--accent :deep(svg) {
-  color: #fff;
-}
-html.dark .rc-quick__btn--accent :deep(svg) {
-  color: #06281a;
+  color: var(--color-on-accent);
 }
 
 .rc-quick__tip {
   margin-left: auto;
   display: inline-flex;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   cursor: help;
 }
 
@@ -644,8 +619,8 @@ html.dark .rc-quick__btn--accent :deep(svg) {
   align-items: center;
   gap: 8px;
   padding: 12px 14px;
-  border-top: 1px solid var(--color-line, #ececec);
-  background: var(--color-canvas, #fafaf9);
+  border-top: 1px solid var(--color-line);
+  background: var(--color-canvas);
 }
 
 /* H9: Spacer separates the left-aligned Back nav button from the
@@ -683,29 +658,29 @@ html.dark .rc-quick__btn--accent :deep(svg) {
 }
 
 .rc-btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 
 .rc-btn--ghost {
-  background: var(--color-surface, #fff);
-  border-color: var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-surface);
+  border-color: var(--color-line);
+  color: var(--color-ink-2);
 }
 
 .rc-btn--ghost:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 
 .rc-btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #6e72d9);
-  color: white;
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
 }
 
 .rc-btn--primary:hover {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #575cc7);
+  border-color: var(--color-accent-strong);
 }
 </style>

@@ -54,14 +54,14 @@ withDefaults(
   display: block;
   font-size: 13px;
   font-weight: 500;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   cursor: default;
 }
 
 .settings-row__description {
   margin: 2px 0 0;
   font-size: 12px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   line-height: 1.45;
   max-width: 460px;
 }

@@ -33,7 +33,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-3, var(--textPrimary));
+  color: var(--color-ink-3);
 }
 
 /* Empty / informational message */
@@ -53,7 +53,7 @@
   height: 2em !important;
   margin: 0 auto 0.4em;
   display: block;
-  color: var(--color-ink-4, var(--iconTertiary));
+  color: var(--color-ink-4);
 }
 
 /* * * * * * * * * * * * * *
@@ -66,7 +66,7 @@
   align-items: center;
   cursor: pointer;
   user-select: none;
-  color: var(--color-ink-1, var(--textSecondary));
+  color: var(--color-ink-1);
   transition:
     background-color var(--dur-base) ease,
     border-color var(--dur-base) ease,
@@ -89,7 +89,7 @@
   letter-spacing: -0.005em;
   font-size: 13px;
   line-height: 1.2;
-  color: var(--color-ink-1, var(--textSecondary));
+  color: var(--color-ink-1);
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
@@ -128,13 +128,13 @@
 :is(#listing, .fb-listing) .item .name.is-moving {
   background-image: linear-gradient(
     100deg,
-    var(--color-ink-1, var(--textSecondary)) 0%,
-    var(--color-ink-1, var(--textSecondary)) 30%,
+    var(--color-ink-1) 0%,
+    var(--color-ink-1) 30%,
     var(--color-accent-strong) 42%,
     var(--color-accent) 50%,
     var(--color-accent-grad) 58%,
-    var(--color-ink-1, var(--textSecondary)) 70%,
-    var(--color-ink-1, var(--textSecondary)) 100%
+    var(--color-ink-1) 70%,
+    var(--color-ink-1) 100%
   );
   background-size: 300px 100%;
   background-repeat: repeat-x;
@@ -149,13 +149,13 @@ html.dark :is(#listing, .fb-listing) .item .item__name-text.is-moving,
 html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   background-image: linear-gradient(
     100deg,
-    var(--color-ink-1, var(--textSecondary)) 0%,
-    var(--color-ink-1, var(--textSecondary)) 30%,
+    var(--color-ink-1) 0%,
+    var(--color-ink-1) 30%,
     var(--color-accent-grad) 42%,
     var(--color-accent-ink) 50%,
     var(--color-accent-grad) 58%,
-    var(--color-ink-1, var(--textSecondary)) 70%,
-    var(--color-ink-1, var(--textSecondary)) 100%
+    var(--color-ink-1) 70%,
+    var(--color-ink-1) 100%
   );
 }
 
@@ -176,11 +176,7 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
     animation: none;
     background-image: none;
     -webkit-text-fill-color: currentColor;
-    color: var(--color-accent, #6e72d9);
-  }
-  html.dark :is(#listing, .fb-listing) .item .item__name-text.is-moving,
-  html.dark :is(#listing, .fb-listing) .item .name.is-moving {
-    color: #a5b0ff;
+    color: var(--color-accent-ink);
   }
 }
 
@@ -225,16 +221,16 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   font-size: 13px;
   font-weight: 500;
   letter-spacing: -0.005em;
-  color: var(--color-ink-1, var(--textSecondary));
+  color: var(--color-ink-1);
   /* Subtle visual hint that the field is editable without adding chrome */
-  box-shadow: inset 0 -1px 0 var(--color-accent, #6e72d9);
+  box-shadow: inset 0 -1px 0 var(--color-accent);
   border-radius: 0;
 }
 
 :is(#listing, .fb-listing) .item__name-compact-meta {
   display: none;
   font-size: 11px;
-  color: var(--color-ink-3, var(--textPrimary));
+  color: var(--color-ink-3);
   font-variant-numeric: tabular-nums;
   line-height: 1.3;
   margin-top: 1px;
@@ -246,7 +242,7 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
 :is(#listing, .fb-listing) .item .size,
 :is(#listing, .fb-listing) .item .modified {
   font-size: 12px;
-  color: var(--color-ink-2, var(--textPrimary));
+  color: var(--color-ink-2);
   font-variant-numeric: tabular-nums;
 }
 
@@ -308,10 +304,10 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   width: 14px;
   height: 14px;
   border-radius: var(--radius-xs);
-  border: 1px solid var(--color-line-strong, var(--borderSecondary));
+  border: 1px solid var(--color-line-strong);
   /* An empty checkbox sits on a soft elevated fill (not plain white) so it
      reads as a real control against the row even when unchecked. */
-  background: var(--color-elevated, var(--surfacePrimary));
+  background: var(--color-elevated);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -323,19 +319,19 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
 :is(#listing, .fb-listing)
   .item:hover
   .item__checkbox:not(.item__checkbox--checked) {
-  border-color: var(--color-ink-3, var(--iconTertiary));
+  border-color: var(--color-ink-3);
 }
 
 .item__checkbox--checked {
-  background: var(--color-accent, var(--accent));
-  border-color: var(--color-accent, var(--accent));
-  color: white;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+  box-shadow: var(--shadow-1);
 }
 
 .item__checkbox--indeterminate {
-  background: var(--color-accent, var(--accent));
-  border-color: var(--color-accent, var(--accent));
+  background: var(--color-accent);
+  border-color: var(--color-accent);
   position: relative;
 }
 
@@ -357,30 +353,23 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
 }
 
 :is(#listing, .fb-listing).list .item.header .item__checkbox:hover {
-  border-color: var(--color-ink-3, var(--iconTertiary));
+  border-color: var(--color-ink-3);
 }
 
 /* Icon squircle */
 .item__icon {
   width: 28px;
   height: 28px;
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   flex-shrink: 0;
   position: relative;
-  /* Vivid tiles: the per-type Tailwind class paints a saturated background-
-     color; this white→transparent sheen overlays it for a gradient "app
-     icon" depth (works for any hue), plus a soft lift. Hidden behind image
-     thumbnails (the <img> paints over it). */
-  background-image: linear-gradient(
-    140deg,
-    rgba(255, 255, 255, 0.3),
-    rgba(255, 255, 255, 0) 60%
-  );
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
+  /* Flat kind tile (.kind-* sets the colours); image thumbnails paint over
+     it. */
+  background-image: none;
 }
 
 /* Spring-load progress ring (F6) — overlays the folder icon during a
@@ -401,13 +390,13 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   /* 2.1 #9: vivid blue (was white) so the countdown ring stands out from the
      white folder glyph inside the amber tile. The dark drop-shadow keeps it
      legible on any folder/icon colour. */
-  stroke: var(--c-blue, #2563eb);
+  stroke: var(--c-blue);
   transition: stroke-dashoffset 60ms linear;
-  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.55));
+  filter: drop-shadow(0 0 2px var(--media-chrome));
 }
 /* Subtle ring around the row itself so users see *which* row is loading. */
 .item.item--spring-loaded {
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.08));
+  background: var(--color-accent-soft);
 }
 /* 2.4.0 Stage 1: rows sitting on the clipboard as a CUT render dimmed (the
    Finder-style "armed for move" affordance) until pasted or disarmed (Esc).
@@ -438,13 +427,13 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: var(--c-green, #16a34a);
-  color: #fff;
+  background: var(--status-success-fill);
+  color: var(--media-ink);
   font-size: 8px;
   font-weight: 700;
   line-height: 12px;
   text-align: center;
-  box-shadow: 0 0 0 1.5px var(--color-surface, #fff);
+  box-shadow: 0 0 0 1.5px var(--color-surface);
   pointer-events: none;
 }
 .item__progress {
@@ -454,13 +443,13 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   bottom: 0;
   z-index: 1;
   height: 3px;
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--media-chrome-soft);
   pointer-events: none;
 }
 .item__progress-fill {
   display: block;
   height: 100%;
-  background: var(--c-red, #dc2626);
+  background: var(--color-accent);
 }
 :is(#listing, .fb-listing).mosaic .item__watched {
   right: 6px;
@@ -527,10 +516,10 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
 .item__fav-btn {
   width: 24px;
   height: 24px;
-  border-radius: var(--radius-sm, 6px);
+  border-radius: var(--radius-sm);
   border: 0;
   background: transparent;
-  color: var(--color-ink-3, var(--iconTertiary));
+  color: var(--color-ink-3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -551,8 +540,8 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
 
 .item__actions-btn:hover,
 .item__fav-btn:hover {
-  background: var(--color-elevated, var(--surfaceSecondary));
-  color: var(--color-ink-1, var(--textSecondary));
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 
 /* v2.7 a11y: the row/tile action buttons are hover-revealed (opacity 0 at
@@ -562,7 +551,7 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
 .item__actions-btn:focus-visible,
 .item__fav-btn:focus-visible {
   opacity: 1;
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 
@@ -573,12 +562,12 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   opacity: 1 !important;
   /* Dusty favorite gold (v2.7) — --c-amber tracks the sidebar/drawer stars
      in both themes. */
-  color: var(--c-amber, #cf9b3f);
+  color: var(--c-amber);
 }
 
 .item__fav-btn--active:hover {
-  color: var(--c-amber, #cf9b3f);
-  background: color-mix(in srgb, var(--c-amber, #cf9b3f) 14%, transparent);
+  color: var(--c-amber);
+  background: color-mix(in srgb, var(--c-amber) 14%, transparent);
 }
 
 /* v2.7 quick actions (Share / Download on file tiles): grid + gallery only —
@@ -643,7 +632,7 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   height: 36px;
   padding: 0 6px;
   margin: 2px 0;
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-md);
   align-items: center;
 }
 
@@ -653,7 +642,7 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
 }
 
 :is(#listing, .fb-listing).list .item:hover {
-  background: var(--color-hover, var(--hover));
+  background: var(--color-hover);
 }
 
 /* Column header — same 5-col grid as rows. Transparent so it blends into the
@@ -671,8 +660,8 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
      directly against the line. */
   margin: 0;
   border-radius: 0;
-  border-top: 1px solid var(--color-line, var(--borderPrimary));
-  border-bottom: 1px solid var(--color-line, var(--borderPrimary));
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
   cursor: default;
   position: sticky;
   top: 0;
@@ -685,7 +674,7 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-3, var(--textPrimary));
+  color: var(--color-ink-3);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -699,7 +688,7 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
 }
 
 :is(#listing, .fb-listing).list .item.header p:hover {
-  color: var(--color-ink-1, var(--textSecondary));
+  color: var(--color-ink-1);
 }
 
 :is(#listing, .fb-listing).list .item.header svg {
@@ -717,7 +706,7 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
 /* Thin divider between folders and files in list mode */
 .folder-file-divider {
   height: 1px;
-  background: var(--color-line, var(--borderPrimary));
+  background: var(--color-line);
   margin: 8px 6px;
 }
 
@@ -771,9 +760,9 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   position: relative;
   padding: 0;
   overflow: hidden;
-  background: var(--color-surface, var(--surfacePrimary));
-  border: 1px solid var(--color-line, var(--borderPrimary));
-  border-radius: var(--radius-md, 8px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition:
     border-color var(--dur-base) ease,
@@ -783,16 +772,12 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
 }
 
 :is(#listing, .fb-listing).mosaic .item:hover {
-  border-color: var(--color-line-strong, var(--borderSecondary));
+  border-color: var(--color-line-strong);
   /* Subtle lift: the tile rises a touch with a slightly deeper shadow so the
      grid/gallery feels tactile on hover. (prefers-reduced-motion makes this
      instant via the global transition-duration override.) */
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px -8px rgba(0, 0, 0, 0.16);
-}
-
-html.dark :is(#listing, .fb-listing).mosaic .item:hover {
-  box-shadow: 0 10px 22px -8px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-2);
 }
 
 :is(#listing, .fb-listing).mosaic .item.header {
@@ -833,17 +818,17 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
    was the reported near-overlap on mobile). Frost it so it reads over both
    tinted icons and photo thumbnails, mirroring the action button treatment. */
 :is(#listing, .fb-listing).mosaic:not(.gallery) .item__select .item__checkbox {
-  background: color-mix(in srgb, var(--color-surface, #fff) 82%, transparent);
+  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow-1);
 }
 
 :is(#listing, .fb-listing).mosaic:not(.gallery)
   .item__select
   .item__checkbox--checked {
-  background: var(--color-accent, var(--accent));
-  border-color: var(--color-accent, var(--accent));
+  background: var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 :is(#listing, .fb-listing).mosaic .item__actions-btn {
@@ -853,18 +838,18 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
      white (rgba(255,255,255,0.8)) read as a bright button on dark tiles
      and didn't match the app's surface styling. color-mix with the
      surface token frosts white in light mode and near-black in dark. */
-  background: color-mix(in srgb, var(--color-surface, #fff) 82%, transparent);
+  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
-  border: 1px solid var(--color-line, var(--borderPrimary));
-  border-radius: var(--radius-sm, 6px);
-  color: var(--color-ink-3, var(--textPrimary));
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  color: var(--color-ink-3);
   opacity: 1;
 }
 
 :is(#listing, .fb-listing).mosaic .item__actions-btn:hover {
-  background: var(--color-elevated, var(--surfaceSecondary));
-  color: var(--color-ink-1, var(--textSecondary));
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 
 /* ── Name wrapper (holds the media block + the footer name) ── */
@@ -917,7 +902,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
   font-size: 13px;
   font-weight: 500;
   line-height: 1.3;
-  color: var(--color-ink-1, var(--textSecondary));
+  color: var(--color-ink-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -937,7 +922,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
   width: 100%;
   padding: 1px 10px 10px;
   font-size: 11px;
-  color: var(--color-ink-3, var(--textPrimary));
+  color: var(--color-ink-3);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   overflow: hidden;
@@ -1052,7 +1037,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
   color: var(--color-accent-ink);
 }
 :is(#listing, .fb-listing).mosaic.gallery .item[data-dir="true"] .item__icon {
-  background-color: rgb(var(--accent-rgb) / 0.16);
+  background-color: var(--color-accent-soft);
   background-image: none;
   box-shadow: none;
 }
@@ -1068,11 +1053,10 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
   width: 64px;
   height: 64px;
   border-radius: var(--radius-lg);
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   box-shadow:
-    inset 0 0 0 1px rgba(0, 0, 0, 0.06),
-    0 1px 2px rgba(0, 0, 0, 0.04),
-    0 2px 6px -2px rgba(0, 0, 0, 0.06);
+    inset 0 0 0 1px var(--color-line),
+    var(--shadow-1);
 }
 
 :is(#listing, .fb-listing).mosaic.gallery
@@ -1096,12 +1080,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
   left: 0;
   right: 0;
   padding: 28px 12px 20px;
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.7) 0%,
-    rgba(0, 0, 0, 0.3) 50%,
-    transparent 100%
-  );
+  background: var(--media-fade);
   color: white;
   font-size: 12px;
   font-weight: 500;
@@ -1126,7 +1105,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
   align-items: baseline;
   min-width: 0;
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--media-ink-2);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   overflow: hidden;
@@ -1162,24 +1141,19 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
 :is(#listing, .fb-listing).mosaic.gallery
   .item:not([data-dir="true"]):not([data-type="image"]):not([data-type="video"])
   .item__name-text {
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.35) 0%,
-    rgba(0, 0, 0, 0.1) 50%,
-    transparent 100%
-  );
-  color: var(--color-ink-1, var(--textSecondary));
+  background: var(--media-fade-soft);
+  color: var(--color-ink-1);
 }
 
 :is(#listing, .fb-listing).mosaic.gallery
   .item:not([data-dir="true"]):not([data-type="image"]):not([data-type="video"])
   .item__meta {
-  color: var(--color-ink-3, var(--textPrimary));
+  color: var(--color-ink-3);
 }
 
 /* ── E. Corner controls: dark/translucent on tinted bg ───── */
 :is(#listing, .fb-listing).mosaic.gallery .item__actions-btn {
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--media-chrome);
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   border: 0;
@@ -1187,13 +1161,13 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
 }
 
 :is(#listing, .fb-listing).mosaic.gallery .item__actions-btn:hover {
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
+  background: var(--media-chrome-strong);
+  color: var(--media-ink);
 }
 
 :is(#listing, .fb-listing).mosaic.gallery .item__select .item__checkbox {
-  background: rgba(0, 0, 0, 0.3);
-  border-color: rgba(255, 255, 255, 0.7);
+  background: var(--media-chrome-soft);
+  border-color: var(--media-ink-2);
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
 }
@@ -1201,15 +1175,15 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
 :is(#listing, .fb-listing).mosaic.gallery
   .item__select
   .item__checkbox--checked {
-  background: var(--color-accent, var(--accent));
-  border-color: var(--color-accent, var(--accent));
+  background: var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 /* Selected tile: 2px accent border + 2px outer ring (matches mockup `border-2 ring-2`) */
 :is(#listing, .fb-listing).mosaic.gallery .item[aria-selected="true"] {
   border-width: 2px !important;
-  border-color: var(--color-accent, var(--accent)) !important;
-  box-shadow: 0 0 0 2px var(--color-accent-ring, var(--accent-ring)) !important;
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 2px var(--color-accent-ring) !important;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -1244,7 +1218,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
   height: auto;
   aspect-ratio: 16 / 10;
   border-radius: 0;
-  background-color: rgb(var(--accent-rgb) / 0.16);
+  background-color: var(--color-accent-soft);
   background-image: none;
   box-shadow: none;
 }
@@ -1271,7 +1245,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
   inset: auto;
   padding: 0;
   background: none;
-  color: var(--color-ink-1, var(--textSecondary));
+  color: var(--color-ink-1);
   font-size: 13px;
   font-weight: 500;
   line-height: 1.3;
@@ -1289,7 +1263,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
   margin: 0;
   padding: 1px 10px 10px;
   font-size: 11px;
-  color: var(--color-ink-3, var(--textPrimary));
+  color: var(--color-ink-3);
   z-index: auto;
   pointer-events: auto;
 }
@@ -1310,13 +1284,13 @@ html.dark :is(#listing, .fb-listing).mosaic .item:hover {
 :is(#listing, .fb-listing).mosaic:not(.gallery)
   .item[data-dir="true"]
   .item__icon {
-  background-color: rgb(var(--accent-rgb) / 0.16);
+  background-color: var(--color-accent-soft);
   color: var(--color-accent-ink);
 }
 
 /* Dark canvas needs a denser wash to keep the same perceived presence. */
 html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
-  background-color: rgb(var(--accent-rgb) / 0.24);
+  background-color: var(--color-selected);
 }
 
 /* * * * * * * * * * * * * *
@@ -1329,12 +1303,12 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
 
 /* Full accent ring around selected row, follows the row's rounded corners */
 :is(#listing, .fb-listing).list .item[aria-selected="true"] {
-  box-shadow: inset 0 0 0 1px var(--color-accent-ring, var(--accent-ring));
+  box-shadow: inset 0 0 0 1px var(--color-accent-ring);
 }
 
 :is(#listing, .fb-listing).mosaic .item[aria-selected="true"] {
-  border-color: var(--color-accent, var(--accent)) !important;
-  box-shadow: 0 0 0 2px var(--color-accent-ring, var(--accent-ring));
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 2px var(--color-accent-ring);
 }
 
 /* * * * * * * * * * * * * *
@@ -1363,12 +1337,12 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
   max-width: calc(100% - 2em);
   /* Use the inverse-surface token so the pill stays dark in BOTH themes
      (var(--color-ink-1) flips to white in dark mode, which was the bug). */
-  background-color: var(--color-inverse-surface, #18181b);
+  background-color: var(--color-inverse-surface);
   padding: 6px 6px 6px 16px;
-  border-radius: var(--radius-full, 9999px);
+  border-radius: var(--radius-full);
   box-shadow:
-    var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.15)),
-    0 0 0 1px rgba(255, 255, 255, 0.05);
+    var(--shadow-2),
+    0 0 0 1px var(--media-line);
   transition: bottom 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   color: white;
 }
@@ -1388,7 +1362,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
 #multiple-selection .multiple-selection__divider {
   width: 1px;
   height: 18px;
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--media-line);
   margin: 0 4px;
   flex-shrink: 0;
 }
@@ -1396,7 +1370,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
 #multiple-selection button {
   height: 30px;
   padding: 0 12px;
-  border-radius: var(--radius-full, 9999px);
+  border-radius: var(--radius-full);
   background: transparent;
   border: 0;
   color: white;
@@ -1414,11 +1388,11 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
 }
 
 #multiple-selection button:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--media-hover);
 }
 
 #multiple-selection button.multiple-selection__danger:hover {
-  background: rgba(176, 96, 96, 0.2);
+  background: var(--status-danger-soft);
   color: var(--status-danger);
 }
 
@@ -1531,7 +1505,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
   gap: 8px;
   padding: 10px 14px;
   flex-shrink: 0;
-  border-bottom: 1px solid var(--color-line, #ececec);
+  border-bottom: 1px solid var(--color-line);
 }
 /* Empty flexible filler that pushes the action cluster to the right now that
    the breadcrumb has moved to the bottom bar. */
@@ -1554,7 +1528,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
   min-width: 0;
   font-size: 13px;
   font-weight: 600;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1562,7 +1536,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
 .compare-head__count {
   flex-shrink: 0;
   font-size: 12px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   white-space: nowrap;
 }
 .compare-head__actions {
@@ -1575,7 +1549,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
   width: 1px;
   height: 18px;
   margin: 0 2px;
-  background: var(--color-line, #ececec);
+  background: var(--color-line);
 }
 .compare-btn {
   height: 28px;
@@ -1586,9 +1560,9 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
   justify-content: center;
   gap: 5px;
   border-radius: 7px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-2, #52525b);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
   font: inherit;
   font-size: 12px;
   cursor: pointer;
@@ -1597,8 +1571,8 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
     color 0.12s ease;
 }
 .compare-btn:hover:not(:disabled) {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 .compare-btn:disabled {
   opacity: 0.45;
@@ -1645,7 +1619,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
   transition: background-color 0.12s ease;
 }
 .compare-head__parent:hover:not(:disabled) {
-  background: var(--color-hover, rgba(24, 24, 27, 0.045));
+  background: var(--color-hover);
 }
 .compare-head__parent:disabled {
   opacity: 0.4;
@@ -1662,16 +1636,12 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
   /* V2 #22: drive the highlight off --color-accent-ink (the base accent in
      light mode, a LIGHT lilac in dark) so the fill + ring pop on the dark
      canvas instead of reading as a muddy dark tint. */
-  outline: 2px solid var(--color-accent-ink, #6e72d9);
+  outline: 2px solid var(--color-accent-ink);
   outline-offset: -2px;
   border-radius: var(--radius-md);
-  background: color-mix(
-    in srgb,
-    var(--color-accent-ink, #6e72d9) 28%,
-    transparent
-  );
+  background: color-mix(in srgb, var(--color-accent-ink) 28%, transparent);
   box-shadow: 0 0 0 4px
-    color-mix(in srgb, var(--color-accent-ink, #6e72d9) 20%, transparent);
+    color-mix(in srgb, var(--color-accent-ink) 20%, transparent);
 }
 /* V2 #22: the target folder's icon lifts/brightens so it's obvious you're
    dropping INTO it (not just near it). */
@@ -1700,19 +1670,15 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
 .fb-columns > .info-pane-rail {
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: var(--radius-lg, 12px);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow:
-    0 1px 2px rgba(20, 18, 28, 0.04),
-    0 4px 14px rgba(20, 18, 28, 0.05);
+  box-shadow: var(--shadow-1);
 }
 html.dark .fb-columns > .fb-primary,
 html.dark .fb-columns > .compare-pane,
 html.dark .fb-columns > .info-pane,
 html.dark .fb-columns > .info-pane-rail {
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.4),
-    0 6px 18px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-1);
 }
 
 /* Pane B is its own card now — the gap is the divider, so drop the old

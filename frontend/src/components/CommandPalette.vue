@@ -80,7 +80,7 @@
                   :size="15"
                   :stroke-width="1.6"
                   class="cmd-palette__row-icon"
-                  :style="{ color: 'var(--color-ink-2, #52525b)' }"
+                  :style="{ color: 'var(--color-ink-2)' }"
                 />
                 <span class="cmd-palette__row-label">{{ cmd.label }}</span>
                 <span v-if="cmd.hint" class="cmd-palette__row-hint">{{
@@ -574,7 +574,7 @@ const run = async (cmd: Command) => {
      every keystroke (filter-as-you-type) and a blurred backdrop forces a
      re-rasterize of everything behind on each frame. Slightly darker
      overlay compensates for the loss of the blur effect. */
-  background: rgba(0, 0, 0, 0.42);
+  background: var(--scrim);
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -588,12 +588,10 @@ const run = async (cmd: Command) => {
   max-height: min(520px, calc(100vh - 112px));
   display: flex;
   flex-direction: column;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
   border-radius: 12px;
-  box-shadow:
-    0 24px 48px -12px rgba(0, 0, 0, 0.25),
-    0 0 0 1px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-2);
   overflow: hidden;
 }
 
@@ -603,11 +601,11 @@ const run = async (cmd: Command) => {
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  border-bottom: 1px solid var(--color-line, #ececec);
+  border-bottom: 1px solid var(--color-line);
 }
 
 .cmd-palette__input-icon {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   flex-shrink: 0;
 }
 
@@ -618,24 +616,24 @@ const run = async (cmd: Command) => {
   outline: none;
   font-size: 15px;
   font-family: inherit;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   padding: 0;
   min-width: 0;
 }
 
 .cmd-palette__input::placeholder {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 .cmd-palette__kbd {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 500;
   padding: 2px 6px;
   border-radius: 6px;
-  background: var(--color-elevated, #f4f4f5);
-  border: 1px solid var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-elevated);
+  border: 1px solid var(--color-line);
+  color: var(--color-ink-2);
   flex-shrink: 0;
 }
 
@@ -653,7 +651,7 @@ const run = async (cmd: Command) => {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 .cmd-palette__row {
@@ -669,21 +667,21 @@ const run = async (cmd: Command) => {
   text-align: left;
   font-family: inherit;
   font-size: 13.5px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   transition: background-color 0.06s ease;
 }
 
 .cmd-palette__row--selected {
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 
 .cmd-palette__row-icon {
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   flex-shrink: 0;
 }
 
 .cmd-palette__row--selected .cmd-palette__row-icon {
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
 }
 
 .cmd-palette__row-label {
@@ -695,18 +693,18 @@ const run = async (cmd: Command) => {
 }
 
 .cmd-palette__row-hint {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   padding: 2px 6px;
   border-radius: 5px;
-  background: var(--color-elevated, #f4f4f5);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-elevated);
+  border: 1px solid var(--color-line);
   flex-shrink: 0;
 }
 
 .cmd-palette__row--selected .cmd-palette__row-hint {
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
 }
 
 /* ── Empty state ────────────────────────────────────────────────────── */
@@ -716,7 +714,7 @@ const run = async (cmd: Command) => {
   align-items: center;
   gap: 10px;
   padding: 40px 16px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-size: 13px;
 }
 
@@ -729,12 +727,12 @@ const run = async (cmd: Command) => {
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-size: 12.5px;
 }
 .cmd-palette__searching-spinner {
   animation: cmd-palette-spin 0.9s linear infinite;
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
 }
 @keyframes cmd-palette-spin {
   to {
@@ -753,10 +751,10 @@ const run = async (cmd: Command) => {
   align-items: center;
   gap: 16px;
   padding: 8px 14px;
-  border-top: 1px solid var(--color-line, #ececec);
-  background: var(--color-canvas, #fafaf9);
+  border-top: 1px solid var(--color-line);
+  background: var(--color-canvas);
   font-size: 11.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 .cmd-palette__footer-item {
@@ -766,14 +764,14 @@ const run = async (cmd: Command) => {
 }
 
 .cmd-palette__footer-item kbd {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 10.5px;
   font-weight: 500;
   padding: 1px 5px;
   border-radius: 4px;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  color: var(--color-ink-2);
   line-height: 1.3;
 }
 

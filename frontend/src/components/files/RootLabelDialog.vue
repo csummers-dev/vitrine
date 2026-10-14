@@ -93,10 +93,10 @@ const save = () => {
   width: 100%;
   height: 34px;
   padding: 0 10px;
-  border-radius: var(--radius-sm, 6px);
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-canvas, #fafaf9);
-  color: var(--color-ink-1, #18181b);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-line);
+  background: var(--color-canvas);
+  color: var(--color-ink-1);
   font-family: inherit;
   font-size: 13.5px;
   transition:
@@ -105,18 +105,18 @@ const save = () => {
 }
 
 .root-label__input::placeholder {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 .root-label__input:focus {
   outline: none;
-  border-color: var(--color-accent, #6e72d9);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.25));
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 
 .root-label__hint {
   margin: 6px 0 0;
   font-size: 11.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 </style>

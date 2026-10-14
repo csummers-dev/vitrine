@@ -15,13 +15,13 @@
 }
 
 .shell__divider {
-  background: rgba(127, 127, 127, 0.3);
+  background: var(--color-line-strong);
   width: 100%;
   height: 8px;
 }
 
 .shell__divider:hover {
-  background: rgba(127, 127, 127, 0.9);
+  background: var(--color-ink-3);
 }
 
 .shell__content {

@@ -524,8 +524,8 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 4px;
   padding: 4px;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
   border-radius: 8px;
   box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.12);
 }
@@ -536,7 +536,7 @@ onBeforeUnmount(() => {
   border: 0;
   background: transparent;
   border-radius: 4px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -546,8 +546,8 @@ onBeforeUnmount(() => {
     color var(--dur-base) ease;
 }
 .epub-viewer__btn:hover:not(:disabled) {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 .epub-viewer__btn:disabled {
   opacity: 0.4;
@@ -556,7 +556,7 @@ onBeforeUnmount(() => {
 
 .epub-viewer__pct {
   font-size: 11.5px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   padding: 0 4px;
   min-width: 36px;
   text-align: center;
@@ -606,10 +606,10 @@ onBeforeUnmount(() => {
 /* Light mode — keep the readerArea matching the app surface so the
    page-edge gutter doesn't pop visually against a tinted canvas. */
 .epub-viewer :deep(.readerArea) {
-  background-color: var(--color-surface, #fff) !important;
+  background-color: var(--color-surface) !important;
 }
 .epub-viewer :deep(.tocArea) {
-  background: var(--color-elevated, #f4f4f5) !important;
+  background: var(--color-elevated) !important;
 }
 
 /* Dark-mode chrome keys off the effective book theme (the `--dark` modifier

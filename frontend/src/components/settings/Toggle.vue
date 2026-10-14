@@ -36,7 +36,7 @@ const onClick = () => {
   width: var(--track-w);
   height: var(--track-h);
   border-radius: 999px;
-  background: var(--color-ink-4, #d4d4d8);
+  background: var(--color-ink-4);
   border: 0;
   padding: 0;
   cursor: pointer;
@@ -46,7 +46,7 @@ const onClick = () => {
 }
 
 .toggle:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 2px;
 }
 
@@ -66,10 +66,8 @@ const onClick = () => {
   width: var(--thumb);
   height: var(--thumb);
   border-radius: 50%;
-  background: #ffffff;
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.18),
-    0 0 0 1px rgba(0, 0, 0, 0.04);
+  background: var(--paper);
+  box-shadow: var(--shadow-1);
   transition: transform 0.16s cubic-bezier(0.4, 0, 0.2, 1);
 }
 

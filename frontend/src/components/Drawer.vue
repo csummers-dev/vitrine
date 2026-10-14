@@ -113,7 +113,7 @@ watch(
 .drawer__scrim {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.32);
+  background: var(--scrim);
   display: flex;
   z-index: 1002; /* above slide-overs (1001) so nested drawers stack */
 }
@@ -124,12 +124,12 @@ watch(
      make 100% taller than the visible area, pushing the drawer's footer
      out of view. dvh tracks the actually-visible height. */
   height: 100dvh;
-  background: var(--color-surface, #fff);
-  border-right: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-line);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 24px 0 48px -12px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow-1);
 }
 
 .drawer--left {
@@ -142,8 +142,8 @@ watch(
   width: min(280px, 86vw);
   margin-left: auto;
   border-right: 0;
-  border-left: 1px solid var(--color-line, #ececec);
-  box-shadow: -24px 0 48px -12px rgba(0, 0, 0, 0.18);
+  border-left: 1px solid var(--color-line);
+  box-shadow: var(--shadow-1);
 }
 
 /* ── Transitions ──────────────────────────────────────────────────── */

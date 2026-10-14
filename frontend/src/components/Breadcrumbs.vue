@@ -18,7 +18,7 @@
       @dragleave="onDragLeave('root')"
       @drop="onDrop(rootUrl, 'root', $event)"
     >
-      <Icon name="house" :size="14" class="text-[var(--color-accent)]" />
+      <Icon name="house" :size="14" class="text-[var(--color-accent-ink)]" />
     </component>
 
     <!-- Compact ellipsis shown only at narrow widths when there are intermediate
@@ -387,11 +387,11 @@ onBeforeUnmount(() => {
     color var(--dur-base) ease;
 }
 .breadcrumb-sep:hover {
-  background: var(--color-hover, rgba(24, 24, 27, 0.045));
+  background: var(--color-hover);
   color: var(--color-ink-1);
 }
 .breadcrumb-sep:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
   color: var(--color-ink-1);
 }
@@ -408,7 +408,7 @@ onBeforeUnmount(() => {
     color var(--dur-base) ease;
 }
 .breadcrumb-link:hover {
-  background: var(--color-hover, rgba(24, 24, 27, 0.045));
+  background: var(--color-hover);
 }
 
 /* The text node lives in this block span so the ellipsis renders (an inline-flex
@@ -436,9 +436,9 @@ onBeforeUnmount(() => {
 }
 
 .breadcrumb-link.is-drop-target {
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
-  box-shadow: 0 0 0 2px var(--color-accent, #6e72d9);
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  box-shadow: 0 0 0 2px var(--color-accent);
+  color: var(--color-accent-ink);
 }
 
 /* While a file is being dragged in-app, every droppable crumb becomes a much

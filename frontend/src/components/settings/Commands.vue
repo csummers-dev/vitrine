@@ -45,16 +45,16 @@ export default {
   margin: 0;
   font-size: 12px;
   line-height: 1.5;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 
 .user-commands__hint code {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 11px;
   padding: 1px 6px;
   border-radius: 4px;
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
+  border: 1px solid var(--color-line);
 }
 </style>

@@ -348,21 +348,17 @@ const onKeydown = (event: KeyboardEvent) => {
   min-width: 200px;
   max-width: 320px;
   padding: 4px;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
   border-radius: 8px;
-  box-shadow:
-    0 16px 32px -8px rgba(0, 0, 0, 0.16),
-    0 4px 8px -2px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-2);
   outline: none;
-  font-family: var(--font-sans, system-ui);
-  color: var(--color-ink-1, #18181b);
+  font-family: var(--font-sans);
+  color: var(--color-ink-1);
 }
 
 html.dark .context-menu {
-  box-shadow:
-    0 16px 32px -8px rgba(0, 0, 0, 0.5),
-    0 4px 8px -2px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-2);
 }
 
 /* ── Items-based mode ────────────────────────────────────────────── */
@@ -377,7 +373,7 @@ html.dark .context-menu {
   border-radius: 5px;
   font: inherit;
   font-size: 13px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   text-align: left;
   cursor: pointer;
   transition:
@@ -389,7 +385,7 @@ html.dark .context-menu {
    We don't use :hover directly so mouse and keyboard stay in sync — the
    parent reflects mouse position into focusedIndex via @mouseenter. */
 .context-menu__item--focused {
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 
 .context-menu__item--disabled {
@@ -405,13 +401,13 @@ html.dark .context-menu {
   color: var(--status-danger);
 }
 html.dark .context-menu__item--destructive.context-menu__item--focused {
-  background: rgba(127, 29, 29, 0.25);
+  background: var(--status-danger-soft);
   color: var(--status-danger);
 }
 
 .context-menu__item-icon {
   flex-shrink: 0;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 .context-menu__item--focused .context-menu__item-icon {
   color: inherit;
@@ -425,9 +421,9 @@ html.dark .context-menu__item--destructive.context-menu__item--focused {
 }
 
 .context-menu__item-kbd {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   padding-left: 8px;
   flex-shrink: 0;
 }
@@ -436,7 +432,7 @@ html.dark .context-menu__item--destructive.context-menu__item--focused {
 .context-menu__separator {
   height: 1px;
   margin: 4px 6px;
-  background: var(--color-line, #ececec);
+  background: var(--color-line);
 }
 
 .context-menu__header {
@@ -445,7 +441,7 @@ html.dark .context-menu__item--destructive.context-menu__item--focused {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 /* ── Open/close transition ───────────────────────────────────────── */

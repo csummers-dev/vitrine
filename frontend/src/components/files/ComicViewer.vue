@@ -370,7 +370,7 @@ watch(
 .comic-reader {
   position: absolute;
   inset: 0;
-  background: #0b0b0e;
+  background: var(--media-canvas);
   overflow: hidden;
 }
 
@@ -408,11 +408,11 @@ watch(
   align-items: center;
   gap: 10px;
   margin: auto;
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--media-ink-2);
   font-size: 0.9rem;
 }
 .comic-status--error {
-  color: #fda4af;
+  color: var(--media-danger);
 }
 .comic-spin {
   animation: comic-spin 0.9s linear infinite;
@@ -450,8 +450,8 @@ watch(
   height: 40px;
   border: 0;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.45);
-  color: #fff;
+  background: var(--media-chrome);
+  color: var(--media-ink);
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.15s ease;
@@ -461,7 +461,7 @@ watch(
 }
 .comic-arrow:hover {
   opacity: 1;
-  background: rgba(0, 0, 0, 0.65);
+  background: var(--media-chrome-strong);
 }
 .comic-arrow--start {
   left: 12px;
@@ -480,9 +480,9 @@ watch(
   gap: 6px;
   padding: 6px 10px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--media-chrome);
   backdrop-filter: blur(8px);
-  color: #fff;
+  color: var(--media-ink);
   /* V3-D #11: fade the toolbar in/out as the reader idles. */
   transition:
     opacity 0.25s ease,
@@ -512,12 +512,12 @@ watch(
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: #fff;
+  color: var(--media-ink);
   font-size: 0.78rem;
   cursor: pointer;
 }
 .comic-tool:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--media-hover);
 }
 .comic-tool__label {
   line-height: 1;

@@ -100,7 +100,7 @@
                 type="button"
                 class="storage-block"
                 :class="[
-                  `kind-${b.node.kind || (b.node.isDir ? 'dir' : 'other')}`,
+                  `k-${b.node.kind || (b.node.isDir ? 'dir' : 'other')}`,
                   {
                     'storage-block--group': b.group,
                     'storage-block--other': b.node.other,
@@ -142,7 +142,7 @@
           </div>
           <ul class="storage-legend" aria-hidden="true">
             <li v-for="k in LEGEND" :key="k.kind">
-              <span class="storage-legend__dot" :class="`kind-${k.kind}`" />{{
+              <span class="storage-legend__dot" :class="`k-${k.kind}`" />{{
                 k.label
               }}
             </li>
@@ -168,7 +168,7 @@
                 <span class="storage-file__rank">{{ i + 1 }}</span>
                 <span
                   class="storage-legend__dot"
-                  :class="`kind-${f.kind || 'other'}`"
+                  :class="`k-${f.kind || 'other'}`"
                   aria-hidden="true"
                 />
                 <span class="storage-file__text">
@@ -523,19 +523,19 @@ const menuItems = computed<MenuItem[]>(() => {
   font-size: 20px;
   font-weight: 600;
   line-height: 1.2;
-  color: var(--color-ink-3, #82828c);
+  color: var(--color-ink-3);
   border-radius: 6px;
   padding: 0 3px;
 }
 .storage-crumbs__btn:hover {
-  color: var(--color-ink-1, #18181b);
-  background: var(--color-elevated, #f4f4f5);
+  color: var(--color-ink-1);
+  background: var(--color-elevated);
 }
 .storage-crumbs__btn.is-current {
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 .storage-crumbs__sep {
-  color: var(--color-ink-3, #82828c);
+  color: var(--color-ink-3);
   font-size: 18px;
 }
 .storage-dot {
@@ -548,7 +548,7 @@ const menuItems = computed<MenuItem[]>(() => {
   height: 6px;
   max-width: 420px;
   border-radius: 999px;
-  background: var(--color-line, #ececec);
+  background: var(--color-line);
   overflow: hidden;
 }
 .storage-disk__used,
@@ -558,10 +558,10 @@ const menuItems = computed<MenuItem[]>(() => {
   border-radius: 999px;
 }
 .storage-disk__used {
-  background: color-mix(in srgb, var(--color-ink-3, #82828c) 45%, transparent);
+  background: color-mix(in srgb, var(--color-ink-3) 45%, transparent);
 }
 .storage-disk__here {
-  background: var(--color-accent, #6e72d9);
+  background: var(--color-accent);
 }
 .storage-btn {
   display: inline-flex;
@@ -570,13 +570,13 @@ const menuItems = computed<MenuItem[]>(() => {
   height: 30px;
   padding: 0 11px;
   border-radius: 8px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-2, #52525b);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
   font-size: 13px;
 }
 .storage-btn:hover:not(:disabled) {
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 .storage-spin {
   animation: storage-spin 0.9s linear infinite;
@@ -614,8 +614,8 @@ const menuItems = computed<MenuItem[]>(() => {
   min-height: 320px;
   border-radius: 10px;
   overflow: hidden;
-  background: var(--color-canvas, #fafaf9);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-canvas);
+  border: 1px solid var(--color-line);
 }
 .storage-map__loading {
   position: absolute;
@@ -624,58 +624,77 @@ const menuItems = computed<MenuItem[]>(() => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  color: var(--color-ink-3, #82828c);
+  color: var(--color-ink-3);
   font-size: 13px;
 }
 
-/* Kind colours: distinct hues that read in both themes. */
-.kind-video {
-  --k: #7c6cd9;
+/* Kind colours (tokens.css --kind-*-solid). `k-` rather than `kind-`, which
+   is the global icon-tile class. */
+.k-video {
+  --k: var(--kind-video-solid);
+  --k-bg: var(--tint-video-bg);
+  --k-fg: var(--tint-video-fg);
 }
-.kind-image {
-  --k: #2f9e8f;
+.k-image {
+  --k: var(--kind-image-solid);
+  --k-bg: var(--tint-image-bg);
+  --k-fg: var(--tint-image-fg);
 }
-.kind-audio {
-  --k: #d08a2e;
+.k-audio {
+  --k: var(--kind-audio-solid);
+  --k-bg: var(--tint-audio-bg);
+  --k-fg: var(--tint-audio-fg);
 }
-.kind-pdf {
-  --k: #c9566a;
+.k-pdf {
+  --k: var(--kind-pdf-solid);
+  --k-bg: var(--tint-pdf-bg);
+  --k-fg: var(--tint-pdf-fg);
 }
-.kind-text {
-  --k: #4b8fd1;
+.k-text {
+  --k: var(--kind-text-solid);
+  --k-bg: var(--tint-text-bg);
+  --k-fg: var(--tint-text-fg);
 }
-.kind-archive {
-  --k: #9a7b55;
+.k-archive {
+  --k: var(--kind-archive-solid);
+  --k-bg: var(--tint-archive-bg);
+  --k-fg: var(--tint-archive-fg);
 }
-.kind-dir {
-  --k: #7d8597;
+.k-dir {
+  --k: var(--kind-folder-solid);
+  --k-bg: var(--tint-folder-bg);
+  --k-fg: var(--tint-folder-fg);
 }
-.kind-other {
-  --k: #a3a3ad;
+.k-other {
+  --k: var(--kind-other-solid);
+  --k-bg: var(--tint-file-bg);
+  --k-fg: var(--tint-file-fg);
 }
 
 .storage-block {
   position: absolute;
   box-sizing: border-box;
-  border: 1px solid var(--color-surface, #fff);
-  background: color-mix(in srgb, var(--k) 78%, transparent);
-  color: #fff;
+  border: 1px solid var(--color-surface);
+  /* Opaque tint (the -bg tokens are translucent in dark) so labels keep
+     their contrast. */
+  background: linear-gradient(var(--k-bg), var(--k-bg)), var(--color-surface);
+  color: var(--k-fg);
   text-align: left;
   overflow: hidden;
   transition: filter 0.1s ease;
 }
 .storage-block:hover,
 .storage-block:focus-visible {
-  filter: brightness(1.12);
+  filter: brightness(0.96);
   outline: none;
   z-index: 1;
 }
 .storage-block:focus-visible {
-  box-shadow: inset 0 0 0 2px #fff;
+  box-shadow: inset 0 0 0 2px var(--color-accent-ink);
 }
 .storage-block--group {
-  background: color-mix(in srgb, var(--k) 30%, var(--color-surface, #fff));
-  color: var(--color-ink-1, #18181b);
+  background: color-mix(in srgb, var(--k) 30%, var(--color-surface));
+  color: var(--color-ink-1);
 }
 .storage-block--other {
   background: repeating-linear-gradient(
@@ -701,7 +720,6 @@ const menuItems = computed<MenuItem[]>(() => {
 }
 .storage-block__size {
   font-size: 11px;
-  opacity: 0.85;
 }
 .storage-legend {
   display: flex;
@@ -711,7 +729,7 @@ const menuItems = computed<MenuItem[]>(() => {
   padding: 0;
   list-style: none;
   font-size: 11.5px;
-  color: var(--color-ink-3, #82828c);
+  color: var(--color-ink-3);
 }
 .storage-legend li {
   display: inline-flex;
@@ -744,7 +762,7 @@ const menuItems = computed<MenuItem[]>(() => {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-3, #82828c);
+  color: var(--color-ink-3);
 }
 .storage-largest__list {
   list-style: none;
@@ -755,7 +773,7 @@ const menuItems = computed<MenuItem[]>(() => {
 }
 .storage-largest__empty {
   font-size: 13px;
-  color: var(--color-ink-3, #82828c);
+  color: var(--color-ink-3);
 }
 .storage-file {
   width: 100%;
@@ -768,7 +786,7 @@ const menuItems = computed<MenuItem[]>(() => {
 }
 .storage-file:hover,
 .storage-file:focus-visible {
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
   outline: none;
 }
 .storage-file__rank {
@@ -776,7 +794,7 @@ const menuItems = computed<MenuItem[]>(() => {
   flex: none;
   text-align: right;
   font-size: 11px;
-  color: var(--color-ink-3, #82828c);
+  color: var(--color-ink-3);
   font-variant-numeric: tabular-nums;
 }
 .storage-file__text {
@@ -787,14 +805,14 @@ const menuItems = computed<MenuItem[]>(() => {
 }
 .storage-file__name {
   font-size: 13px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .storage-file__dir {
   font-size: 11px;
-  color: var(--color-ink-3, #82828c);
+  color: var(--color-ink-3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -802,7 +820,7 @@ const menuItems = computed<MenuItem[]>(() => {
 .storage-file__size {
   flex: none;
   font-size: 12px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   font-variant-numeric: tabular-nums;
 }
 </style>

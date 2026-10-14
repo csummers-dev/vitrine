@@ -376,21 +376,17 @@ const abortAll = () => {
   bottom: 20px;
   z-index: 1000;
   width: min(380px, calc(100vw - 40px));
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
   border-radius: 12px;
-  box-shadow:
-    0 20px 50px -12px rgba(0, 0, 0, 0.22),
-    0 6px 12px -4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-2);
   overflow: hidden;
-  font-family: var(--font-sans, system-ui);
-  color: var(--color-ink-1, #18181b);
+  font-family: var(--font-sans);
+  color: var(--color-ink-1);
 }
 
 html.dark .upload-dock {
-  box-shadow:
-    0 20px 50px -12px rgba(0, 0, 0, 0.6),
-    0 6px 12px -4px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-2);
 }
 
 /* ── Head (clickable to toggle) ──────────────────────────────────── */
@@ -404,15 +400,15 @@ html.dark .upload-dock {
   transition: background-color var(--dur-base) ease;
 }
 .upload-dock__head:hover {
-  background: var(--color-hover, rgba(24, 24, 27, 0.03));
+  background: var(--color-hover);
 }
 
 .upload-dock__icon {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.12));
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -422,11 +418,11 @@ html.dark .upload-dock {
     color var(--dur-slow) ease;
 }
 .upload-dock__icon.is-done {
-  background: rgba(16, 185, 129, 0.16);
+  background: var(--status-success-soft);
   color: var(--status-success);
 }
 html.dark .upload-dock__icon.is-done {
-  background: rgba(16, 185, 129, 0.2);
+  background: var(--status-success-soft);
   color: var(--status-success);
 }
 
@@ -438,7 +434,7 @@ html.dark .upload-dock__icon.is-done {
   font-size: 13px;
   font-weight: 600;
   line-height: 1.2;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -446,7 +442,7 @@ html.dark .upload-dock__icon.is-done {
 .upload-dock__meta {
   margin-top: 2px;
   font-size: 11.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   display: flex;
   align-items: center;
   gap: 5px;
@@ -471,7 +467,7 @@ html.dark .upload-dock__icon.is-done {
   border: 0;
   background: transparent;
   border-radius: 6px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -481,19 +477,19 @@ html.dark .upload-dock__icon.is-done {
     color var(--dur-base) ease;
 }
 .upload-dock__btn:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 .upload-dock__btn--danger:hover {
   background: var(--status-danger-soft);
   color: var(--status-danger);
 }
 html.dark .upload-dock__btn--danger:hover {
-  background: rgba(127, 29, 29, 0.25);
+  background: var(--status-danger-soft);
   color: var(--status-danger);
 }
 .upload-dock__btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 
@@ -501,7 +497,7 @@ html.dark .upload-dock__btn--danger:hover {
 .upload-dock__bar {
   height: 3px;
   width: 100%;
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
   position: relative;
   overflow: hidden;
 }
@@ -527,10 +523,10 @@ html.dark .upload-dock__btn--danger:hover {
   gap: 6px;
   padding: 6px 14px 8px;
   font-size: 11px;
-  color: var(--tag-color-amber-fg, #8a6a32);
-  background: var(--tag-color-amber-bg, rgba(160, 125, 63, 0.08));
-  border-top: 1px solid var(--color-line, #ececec);
-  border-bottom: 1px solid var(--color-line, #ececec);
+  color: var(--tag-color-amber-fg);
+  background: var(--tag-color-amber-bg);
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
 }
 
 .upload-dock__hint :deep(svg) {
@@ -549,8 +545,8 @@ html.dark .upload-dock__btn--danger:hover {
      viewports shrink gracefully without forcing a fixed pixel cap. */
   max-height: min(60vh, 480px);
   overflow-y: auto;
-  border-top: 1px solid var(--color-line, #ececec);
-  background: var(--color-canvas, #fafaf9);
+  border-top: 1px solid var(--color-line);
+  background: var(--color-canvas);
 }
 
 /* Scrollbar — minimal */
@@ -558,11 +554,11 @@ html.dark .upload-dock__btn--danger:hover {
   width: 6px;
 }
 .upload-dock__list::-webkit-scrollbar-thumb {
-  background: var(--color-line, #ececec);
+  background: var(--color-line);
   border-radius: 3px;
 }
 .upload-dock__list::-webkit-scrollbar-thumb:hover {
-  background: var(--color-ink-3, #a1a1aa);
+  background: var(--color-ink-3);
 }
 
 .upload-dock__file {
@@ -586,22 +582,22 @@ html.dark .upload-dock__btn--danger:hover {
   padding-left: 21px;
   font-size: 10.5px;
   line-height: 1.3;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .upload-dock__file-icon {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   flex-shrink: 0;
 }
 .upload-dock__file[data-type="dir"] .upload-dock__file-icon {
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
 }
 .upload-dock__file-name {
   flex: 1;
   font-size: 12px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -609,7 +605,7 @@ html.dark .upload-dock__btn--danger:hover {
 }
 .upload-dock__file-pct {
   font-size: 11px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   flex-shrink: 0;
   min-width: 32px;
   text-align: right;
@@ -626,7 +622,7 @@ html.dark .upload-dock__btn--danger:hover {
   border: 0;
   border-radius: 5px;
   background: transparent;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -646,11 +642,11 @@ html.dark .upload-dock__btn--danger:hover {
   color: var(--status-danger);
 }
 html.dark .upload-dock__file-remove:hover {
-  background: rgba(127, 29, 29, 0.25);
+  background: var(--status-danger-soft);
   color: var(--status-danger);
 }
 .upload-dock__file-remove:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 
@@ -665,7 +661,7 @@ html.dark .upload-dock__file-remove:hover {
 .upload-dock__file-bar {
   height: 2px;
   width: 100%;
-  background: var(--color-line, #ececec);
+  background: var(--color-line);
   border-radius: 999px;
   overflow: hidden;
 }

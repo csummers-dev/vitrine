@@ -180,7 +180,7 @@
               <Icon
                 name="file"
                 :size="13"
-                :style="{ color: 'var(--color-ink-2, #52525b)' }"
+                :style="{ color: 'var(--color-ink-2)' }"
                 class="sd__recent-icon"
               />
               <span class="sd__recent-name">{{ r.name }}</span>
@@ -485,9 +485,9 @@ const onItemClick = (_event: MouseEvent) => {
   flex-direction: column;
   height: 100%;
   width: 100%;
-  background: var(--color-canvas, #fafaf9);
-  color: var(--color-ink-1, #18181b);
-  font-family: var(--font-sans, system-ui);
+  background: var(--color-canvas);
+  color: var(--color-ink-1);
+  font-family: var(--font-sans);
   font-size: 13px;
 }
 
@@ -534,7 +534,7 @@ const onItemClick = (_event: MouseEvent) => {
 .sd__brand-name {
   font-size: 13px;
   font-weight: 600;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
@@ -543,8 +543,8 @@ const onItemClick = (_event: MouseEvent) => {
 
 .sd__brand-version {
   font-size: 11px;
-  font-family: var(--font-mono, monospace);
-  color: var(--color-ink-3, #a1a1aa);
+  font-family: var(--font-mono);
+  color: var(--color-ink-3);
   font-variant-numeric: tabular-nums;
   line-height: 1.2;
   width: fit-content;
@@ -552,7 +552,7 @@ const onItemClick = (_event: MouseEvent) => {
   transition: color var(--dur-base) ease;
 }
 .sd__brand-version:hover {
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
   text-decoration: underline;
 }
 
@@ -567,7 +567,7 @@ const onItemClick = (_event: MouseEvent) => {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   padding: 6px 8px;
 }
 
@@ -587,7 +587,7 @@ const onItemClick = (_event: MouseEvent) => {
   border: 0;
   background: transparent;
   border-radius: 8px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   font: inherit;
   font-size: 13.5px;
   text-align: left;
@@ -599,16 +599,13 @@ const onItemClick = (_event: MouseEvent) => {
 }
 
 .sd__navrow:hover {
-  background: var(--color-hover, var(--color-elevated, #f4f4f5));
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-hover);
+  color: var(--color-ink-1);
 }
 
 .sd__navrow.is-active {
-  background: var(
-    --color-selected,
-    var(--color-accent-soft, rgba(110, 114, 217, 0.1))
-  );
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-selected, var(--color-accent-soft));
+  color: var(--color-accent-ink);
   font-weight: 600;
 }
 
@@ -623,10 +620,10 @@ const onItemClick = (_event: MouseEvent) => {
 .sd__navrow-count {
   font-size: 11px;
   font-variant-numeric: tabular-nums;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   padding: 0 6px;
   border-radius: 999px;
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 
 .sd__spacer {
@@ -668,7 +665,7 @@ const onItemClick = (_event: MouseEvent) => {
   border: 0;
   background: transparent;
   border-radius: 8px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   font: inherit;
   font-size: 13.5px;
   text-align: left;
@@ -676,8 +673,8 @@ const onItemClick = (_event: MouseEvent) => {
 }
 
 .sd__fav-btn:hover {
-  background: var(--color-hover, var(--color-elevated, #f4f4f5));
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-hover);
+  color: var(--color-ink-1);
 }
 
 .sd__fav-star {
@@ -710,7 +707,7 @@ const onItemClick = (_event: MouseEvent) => {
   height: 2px;
   border-radius: 2px;
   background: var(--accent-gradient);
-  box-shadow: 0 0 0 2px var(--color-canvas, #fafaf9);
+  box-shadow: 0 0 0 2px var(--color-canvas);
 }
 .sd__fav--drop-before::before {
   top: -1px;
@@ -743,12 +740,12 @@ const onItemClick = (_event: MouseEvent) => {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   cursor: pointer;
   transition: color var(--dur-base) ease;
 }
 .sd__section-toggle:hover {
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 /* Inside Recent's head (which also holds "View all"), the head owns the
    padding so the toggle drops its own to keep the chevrons aligned. */
@@ -771,12 +768,12 @@ const onItemClick = (_event: MouseEvent) => {
   font: inherit;
   font-size: 10px;
   font-weight: 500;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   cursor: pointer;
   transition: color var(--dur-base) ease;
 }
 .sd__viewall:hover {
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
 }
 
 /* ── Recent list ─────────────────────────────────────────────────────── */
@@ -805,7 +802,7 @@ const onItemClick = (_event: MouseEvent) => {
   height: 40px;
   padding: 0 10px;
   border-radius: 8px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   font-size: 13.5px;
   text-decoration: none;
   cursor: pointer;
@@ -814,8 +811,8 @@ const onItemClick = (_event: MouseEvent) => {
     color var(--dur-base) ease;
 }
 .sd__recent-btn:hover {
-  background: var(--color-hover, var(--color-elevated, #f4f4f5));
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-hover);
+  color: var(--color-ink-1);
 }
 
 .sd__recent-icon {
@@ -835,8 +832,8 @@ const onItemClick = (_event: MouseEvent) => {
   margin: 8px;
   padding: 12px;
   border-radius: 10px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
 }
 
 .sd__storage-head {
@@ -852,19 +849,19 @@ const onItemClick = (_event: MouseEvent) => {
   gap: 6px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 
 .sd__storage-pct {
   font-size: 11px;
   font-variant-numeric: tabular-nums;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 .sd__storage-bar {
   height: 6px;
   border-radius: 999px;
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
   overflow: hidden;
 }
 
@@ -874,8 +871,8 @@ const onItemClick = (_event: MouseEvent) => {
   /* RC-7: track the accent + its per-preset gradient end-stop. */
   background: linear-gradient(
     90deg,
-    var(--color-accent, #6e72d9) 0%,
-    var(--color-accent-grad, #9095e6) 100%
+    var(--color-accent) 0%,
+    var(--color-accent-grad) 100%
   );
   transition: width 0.3s ease;
 }
@@ -886,7 +883,7 @@ const onItemClick = (_event: MouseEvent) => {
   justify-content: space-between;
   font-size: 11px;
   font-variant-numeric: tabular-nums;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 /* ── User row footer ─────────────────────────────────────────────────── */
@@ -909,7 +906,7 @@ const onItemClick = (_event: MouseEvent) => {
   left: 16px;
   right: 16px;
   height: 1px;
-  background: var(--color-line, #ececec);
+  background: var(--color-line);
 }
 
 .sd__user-btn {
@@ -929,7 +926,7 @@ const onItemClick = (_event: MouseEvent) => {
 }
 
 .sd__user-btn:hover {
-  background: var(--color-hover, var(--color-elevated, #f4f4f5));
+  background: var(--color-hover);
 }
 
 .sd__avatar {
@@ -938,14 +935,14 @@ const onItemClick = (_event: MouseEvent) => {
   border-radius: 50%;
   /* Calm Minimal: follows the single accent (was a six-hue rainbow conic). */
   background: var(--accent-gradient);
-  color: white;
+  color: var(--color-on-accent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 11px;
   font-weight: 600;
   flex-shrink: 0;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-1);
 }
 .sd__avatar--img {
   object-fit: cover;
@@ -962,7 +959,7 @@ const onItemClick = (_event: MouseEvent) => {
 .sd__user-name {
   font-size: 13px;
   font-weight: 600;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -970,7 +967,7 @@ const onItemClick = (_event: MouseEvent) => {
 
 .sd__user-role {
   font-size: 11px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 /* Rose-tinted so the destructive "leave" action reads apart from the neutral

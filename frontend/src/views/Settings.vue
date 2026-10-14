@@ -67,7 +67,7 @@ const loading = computed(() => layoutStore.loading);
 
 <style scoped>
 .settings-main {
-  background: var(--color-canvas, #fafaf9);
+  background: var(--color-canvas);
 }
 
 /* V2-J / V3-A: "Settings" heading pinned to the top of the full-height rail.
@@ -79,7 +79,7 @@ const loading = computed(() => layoutStore.loading);
   padding: 12px 16px 6px;
   font-size: 13px;
   font-weight: 650;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   flex-shrink: 0;
 }
 
@@ -97,7 +97,7 @@ const loading = computed(() => layoutStore.loading);
     display: flex;
     align-items: center;
     padding: 12px 16px 8px;
-    background: var(--color-canvas, #fafaf9);
+    background: var(--color-canvas);
   }
 }
 .settings-pagehead__menu {
@@ -107,12 +107,12 @@ const loading = computed(() => layoutStore.loading);
   border-radius: 8px;
   align-items: center;
   justify-content: center;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   margin-left: -4px;
   transition: background-color var(--dur-base) ease;
 }
 .settings-pagehead__menu:hover {
-  background: var(--color-hover, rgba(24, 24, 27, 0.045));
+  background: var(--color-hover);
 }
 
 /* Pinned overlay shown while a settings page is fetching. Sits in the top-
@@ -129,10 +129,10 @@ const loading = computed(() => layoutStore.loading);
   border-radius: 999px;
   font-size: 11.5px;
   font-weight: 500;
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-2, #52525b);
-  border: 1px solid var(--color-line, #ececec);
-  box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.12);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
+  border: 1px solid var(--color-line);
+  box-shadow: var(--shadow-2);
   pointer-events: none;
 }
 

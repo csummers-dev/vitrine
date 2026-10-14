@@ -422,15 +422,15 @@ const onCancel = () => {
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
-  background: var(--color-elevated, #f4f4f5);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-elevated);
+  border: 1px solid var(--color-line);
   border-radius: 999px;
   font-size: 12.5px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   margin-bottom: 14px;
 }
 .brp-summary strong {
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   font-weight: 600;
 }
 
@@ -439,8 +439,8 @@ const onCancel = () => {
   display: inline-flex;
   gap: 2px;
   padding: 3px;
-  background: var(--color-elevated, #f4f4f5);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-elevated);
+  border: 1px solid var(--color-line);
   border-radius: 8px;
   margin-bottom: 14px;
 }
@@ -453,7 +453,7 @@ const onCancel = () => {
   font-weight: 500;
   border: 0;
   background: transparent;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   border-radius: 5px;
   cursor: pointer;
   transition:
@@ -461,12 +461,12 @@ const onCancel = () => {
     color var(--dur-base) ease;
 }
 .brp-mode:hover:not(:disabled) {
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 .brp-mode--active {
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-1, #18181b);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  background: var(--color-surface);
+  color: var(--color-ink-1);
+  box-shadow: var(--shadow-1);
 }
 .brp-mode:disabled {
   cursor: not-allowed;
@@ -483,7 +483,7 @@ const onCancel = () => {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   margin-top: 10px;
   margin-bottom: 4px;
 }
@@ -493,47 +493,47 @@ const onCancel = () => {
 .brp-input {
   width: 100%;
   padding: 7px 10px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 13px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 6px;
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-surface);
+  color: var(--color-ink-1);
   outline: none;
   transition:
     border-color var(--dur-base) ease,
     box-shadow var(--dur-base) ease;
 }
 .brp-input:focus {
-  border-color: var(--color-accent, #6e72d9);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 .brp-input:disabled {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-3, #a1a1aa);
+  background: var(--color-elevated);
+  color: var(--color-ink-3);
   cursor: not-allowed;
 }
 .brp-help {
   margin-top: 6px;
   font-size: 11.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   line-height: 1.5;
 }
 .brp-help code {
   display: inline-block;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 11px;
   padding: 1px 4px;
   border-radius: 3px;
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-elevated);
+  color: var(--color-ink-2);
 }
 
 /* ── Preview list ──────────────────────────────────────────────── */
 .brp-preview {
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 8px;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   overflow: hidden;
 }
 .brp-preview-header {
@@ -541,13 +541,13 @@ const onCancel = () => {
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  background: var(--color-elevated, #f4f4f5);
-  border-bottom: 1px solid var(--color-line, #ececec);
+  background: var(--color-elevated);
+  border-bottom: 1px solid var(--color-line);
   font-size: 11.5px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 .brp-preview-counts {
   display: inline-flex;
@@ -564,15 +564,15 @@ const onCancel = () => {
   font-size: 11px;
 }
 .brp-count--ok {
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
 }
 .brp-count--skip {
   background: var(--status-danger-soft);
   color: var(--status-danger);
 }
 html.dark .brp-count--skip {
-  background: rgba(127, 29, 29, 0.3);
+  background: var(--status-danger-soft);
   color: var(--status-danger);
 }
 .brp-preview-list {
@@ -588,10 +588,10 @@ html.dark .brp-count--skip {
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 12px;
-  border-bottom: 1px solid var(--color-line-soft, #f4f4f5);
-  color: var(--color-ink-2, #52525b);
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-ink-2);
 }
 .brp-preview-row:last-child {
   border-bottom: none;
@@ -604,38 +604,38 @@ html.dark .brp-count--skip {
   min-width: 0;
 }
 .brp-to {
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   font-weight: 500;
   text-align: left;
 }
 .brp-arrow {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   flex-shrink: 0;
 }
 .brp-preview-row--conflict {
-  background: rgba(176, 96, 96, 0.06);
+  background: var(--status-danger-soft);
 }
 .brp-preview-row--conflict .brp-to {
   color: var(--status-danger);
   text-decoration: line-through;
-  text-decoration-color: rgba(185, 28, 28, 0.5);
+  text-decoration-color: var(--status-danger-ring);
 }
 html.dark .brp-preview-row--conflict {
-  background: rgba(127, 29, 29, 0.15);
+  background: var(--status-danger-soft);
 }
 html.dark .brp-preview-row--conflict .brp-to {
   color: var(--status-danger);
 }
 .brp-preview-row--unchanged .brp-to {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-style: italic;
 }
 .brp-reason {
   grid-column: 1 / -1;
   padding-top: 2px;
-  font-family: var(--font-sans, system-ui);
+  font-family: var(--font-sans);
   font-size: 11px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-style: italic;
 }
 .brp-preview-row--conflict .brp-reason {
@@ -651,10 +651,10 @@ html.dark .brp-preview-row--conflict .brp-reason {
   align-items: center;
   gap: 6px;
   font-size: 12.5px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 .brp-progress-spin {
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
   animation: brp-spin 0.9s linear infinite;
 }
 @keyframes brp-spin {
@@ -684,19 +684,19 @@ html.dark .brp-preview-row--conflict .brp-reason {
 }
 .brp-btn--ghost {
   background: transparent;
-  border-color: var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
+  border-color: var(--color-line);
+  color: var(--color-ink-2);
 }
 .brp-btn--ghost:hover:not(:disabled) {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 .brp-btn--primary {
   background: var(--accent-gradient);
-  color: white;
+  color: var(--color-on-accent);
 }
 .brp-btn--primary:hover:not(:disabled) {
-  background: var(--color-accent-strong, #575cc7);
+  background: var(--color-accent-strong);
 }
 .brp-btn:disabled {
   opacity: 0.5;

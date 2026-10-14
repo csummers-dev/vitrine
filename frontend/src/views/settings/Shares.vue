@@ -231,9 +231,9 @@ const buildLink = (share: Share) => api.getShareURL(share);
 }
 
 .shares-card {
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 10px;
-  background: var(--color-canvas, #fafaf9);
+  background: var(--color-canvas);
   padding: 12px;
 }
 
@@ -254,10 +254,10 @@ const buildLink = (share: Share) => api.getShareURL(share);
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 500;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   text-decoration: none;
   max-width: 100%;
   white-space: nowrap;
@@ -266,13 +266,13 @@ const buildLink = (share: Share) => api.getShareURL(share);
 }
 
 .shares-card__path:hover {
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
   text-decoration: underline;
 }
 
 .shares-card__path :deep(svg) {
   flex-shrink: 0;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 .shares-card__actions {
@@ -285,9 +285,9 @@ const buildLink = (share: Share) => api.getShareURL(share);
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-2, #52525b);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -299,8 +299,8 @@ const buildLink = (share: Share) => api.getShareURL(share);
 }
 
 .shares-icon-btn:hover:not(:disabled) {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 
 .shares-icon-btn--danger:hover:not(:disabled) {
@@ -313,18 +313,18 @@ const buildLink = (share: Share) => api.getShareURL(share);
   width: 100%;
   height: 28px;
   padding: 0 8px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 6px;
-  background: var(--color-surface, #fff);
-  font-family: var(--font-mono, monospace);
+  background: var(--color-surface);
+  font-family: var(--font-mono);
   font-size: 11.5px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   outline: none;
 }
 
 .shares-card__url:focus {
-  border-color: var(--color-accent, #6e72d9);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 
 .shares-card__meta {
@@ -340,25 +340,25 @@ const buildLink = (share: Share) => api.getShareURL(share);
   gap: 4px;
   padding: 1px 8px;
   border-radius: 999px;
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-elevated);
+  color: var(--color-ink-2);
   font-size: 11px;
   font-weight: 500;
 }
 
 .shares-meta-chip--done {
-  background: var(--status-danger-soft, #fee2e2);
-  color: var(--status-danger, #b91c1c);
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
 }
 
 .shares-card__usage {
   font-size: 11px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-variant-numeric: tabular-nums;
 }
 
 .shares-meta-chip :deep(svg) {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 /* Empty state */
@@ -375,8 +375,8 @@ const buildLink = (share: Share) => api.getShareURL(share);
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-3, #a1a1aa);
+  background: var(--color-elevated);
+  color: var(--color-ink-3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -386,12 +386,12 @@ const buildLink = (share: Share) => api.getShareURL(share);
 .shares-empty__title {
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 
 .shares-empty__hint {
   font-size: 12px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   max-width: 300px;
   line-height: 1.45;
 }

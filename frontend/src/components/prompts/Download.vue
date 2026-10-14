@@ -54,15 +54,13 @@ const formats = {
 .download-prompt {
   width: 100%;
   max-width: 440px;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
   border-radius: 12px;
-  box-shadow:
-    0 24px 48px -12px rgba(0, 0, 0, 0.25),
-    0 0 0 1px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-2);
   overflow: hidden;
-  font-family: var(--font-sans, system-ui);
-  color: var(--color-ink-1, #18181b);
+  font-family: var(--font-sans);
+  color: var(--color-ink-1);
 }
 
 .download-prompt__header {
@@ -80,7 +78,7 @@ const formats = {
   margin: 4px 0 0;
   font-size: 13px;
   line-height: 1.45;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 
 .download-prompt__formats {
@@ -97,35 +95,35 @@ const formats = {
   gap: 6px;
   height: 36px;
   padding: 0 10px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 8px;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   cursor: pointer;
   font: inherit;
   font-size: 12.5px;
   font-weight: 500;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   transition:
     background-color 0.1s ease,
     border-color 0.1s ease;
 }
 
 .download-prompt__format:hover {
-  border-color: var(--color-accent, #6e72d9);
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.06));
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
 }
 
 .download-prompt__format:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 
 .download-prompt__format :deep(svg) {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 .download-prompt__format-label {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 11.5px;
   letter-spacing: 0.02em;
 }
@@ -134,17 +132,17 @@ const formats = {
   display: flex;
   justify-content: flex-end;
   padding: 12px 14px;
-  border-top: 1px solid var(--color-line, #ececec);
-  background: var(--color-canvas, #fafaf9);
+  border-top: 1px solid var(--color-line);
+  background: var(--color-canvas);
 }
 
 .download-prompt__cancel {
   height: 30px;
   padding: 0 12px;
   border-radius: 6px;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  color: var(--color-ink-2);
   font: inherit;
   font-size: 13px;
   font-weight: 500;
@@ -155,7 +153,7 @@ const formats = {
 }
 
 .download-prompt__cancel:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 </style>

@@ -203,12 +203,12 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   z-index: 9999;
-  background: var(--color-canvas, #fafaf9);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-canvas);
+  color: var(--color-ink-1);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  font-family: var(--font-sans, system-ui);
+  font-family: var(--font-sans);
 }
 
 /* ── Body ────────────────────────────────────────────────────────────── */
@@ -226,20 +226,14 @@ onBeforeUnmount(() => {
   min-width: 0;
   min-height: 0;
   position: relative;
-  background-color: var(--color-canvas, #fafaf9);
-  background-image: radial-gradient(
-    rgba(24, 24, 27, 0.05) 1px,
-    transparent 1px
-  );
+  background-color: var(--color-canvas);
+  background-image: radial-gradient(var(--checker) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
 html.dark .preview-shell__stage {
   background-color: var(--color-canvas);
-  background-image: radial-gradient(
-    rgba(255, 255, 255, 0.04) 1px,
-    transparent 1px
-  );
+  background-image: radial-gradient(var(--checker) 1px, transparent 1px);
 }
 
 /* ── V2-J floating preview controls (overlay the stage) ──────────────────
@@ -260,10 +254,10 @@ html.dark .preview-shell__stage {
   gap: 3px;
   padding: 0 10px 0 7px;
   border-radius: 8px;
-  border: 1px solid var(--color-line, #ececec);
-  background: color-mix(in srgb, var(--color-surface, #fff) 82%, transparent);
+  border: 1px solid var(--color-line);
+  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
   backdrop-filter: blur(8px);
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   font-size: 12.5px;
   font-weight: 550;
   cursor: pointer;
@@ -273,12 +267,12 @@ html.dark .preview-shell__stage {
     transform var(--dur-base) ease;
 }
 .preview-float--back:hover {
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 /* Calm Minimal: the Exit arrow is ink — uniform with the "Exit" label, no color
    pop (was the brand accent). :deep() reaches the svg inside the Icon child. */
 .preview-float--back :deep(svg) {
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 .preview-float--actions {
   top: 14px;
@@ -286,8 +280,8 @@ html.dark .preview-shell__stage {
   gap: 4px;
   padding: 4px;
   border-radius: 10px;
-  border: 1px solid var(--color-line, #ececec);
-  background: color-mix(in srgb, var(--color-surface, #fff) 82%, transparent);
+  border: 1px solid var(--color-line);
+  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
   backdrop-filter: blur(8px);
   transition:
     opacity var(--dur-base) ease,
@@ -319,10 +313,10 @@ html.dark .preview-shell__stage {
   gap: 6px;
   padding: 6px;
   border-radius: 12px;
-  border: 1px solid var(--color-line, #ececec);
-  background: color-mix(in srgb, var(--color-surface, #fff) 88%, transparent);
+  border: 1px solid var(--color-line);
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
   backdrop-filter: blur(10px);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow-2);
   max-width: calc(100% - 32px);
   flex-wrap: wrap;
   justify-content: center;
@@ -355,28 +349,28 @@ html.dark .preview-shell__stage {
   border-radius: 7px;
   border: 0;
   background: transparent;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   cursor: pointer;
   transition:
     background-color var(--dur-base) ease,
     color var(--dur-base) ease;
 }
 .preview-float__btn:hover {
-  background: var(--color-hover, rgba(24, 24, 27, 0.045));
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-hover);
+  color: var(--color-ink-1);
 }
 .preview-float__btn.is-active {
-  background: var(--color-selected, rgba(110, 114, 217, 0.08));
-  color: var(--color-accent-ink, #6e72d9);
+  background: var(--color-selected);
+  color: var(--color-accent-ink);
 }
 .preview-float__btn--close:hover {
-  color: var(--c-rose, #fb7185);
+  color: var(--c-rose);
 }
 
 .preview-shell__info {
   width: 320px;
-  border-left: 1px solid var(--color-line, #ececec);
-  background: var(--color-canvas, #fafaf9);
+  border-left: 1px solid var(--color-line);
+  background: var(--color-canvas);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;

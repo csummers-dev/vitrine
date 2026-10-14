@@ -405,7 +405,7 @@ const onCancel = () => emit("cancel");
 .tag-picker__search-icon {
   position: absolute;
   left: 10px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   pointer-events: none;
 }
 
@@ -415,22 +415,22 @@ const onCancel = () => emit("cancel");
   padding: 0 12px 0 32px;
   font: inherit;
   font-size: 13px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 8px;
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-surface);
+  color: var(--color-ink-1);
 }
 
 .tag-picker__search-input:focus {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
-  border-color: var(--color-accent, #6e72d9);
+  border-color: var(--color-accent);
 }
 
 .tag-picker__loading,
 .tag-picker__empty {
   font-size: 12.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   text-align: center;
   padding: 16px 0;
 }
@@ -450,11 +450,11 @@ const onCancel = () => emit("cancel");
 }
 
 .tag-picker__row:hover {
-  background: var(--color-hover, rgba(24, 24, 27, 0.045));
+  background: var(--color-hover);
 }
 
 .tag-picker__row--selected {
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.08));
+  background: var(--color-accent-soft);
 }
 
 .tag-picker__row-label {
@@ -490,7 +490,7 @@ const onCancel = () => emit("cancel");
 .tag-picker__color-btn:focus-visible {
   transform: scale(1.15);
   outline: none;
-  border-color: var(--color-ink-3, #a1a1aa);
+  border-color: var(--color-ink-3);
 }
 
 .tag-picker__color-btn--lilac {
@@ -536,7 +536,7 @@ const onCancel = () => emit("cancel");
 
 .tag-picker__row--create {
   margin-top: 6px;
-  border-top: 1px solid var(--color-line, #ececec);
+  border-top: 1px solid var(--color-line);
   padding-top: 6px;
 }
 
@@ -547,9 +547,9 @@ const onCancel = () => emit("cancel");
   width: 100%;
   padding: 8px 10px;
   background: transparent;
-  border: 1px dashed var(--color-line-strong, #d4d4d8);
+  border: 1px dashed var(--color-line-strong);
   border-radius: 6px;
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
   font: inherit;
   font-size: 13px;
   font-weight: 500;
@@ -561,8 +561,8 @@ const onCancel = () => emit("cancel");
 }
 
 .tag-picker__create-btn:hover:not(:disabled) {
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.08));
-  border-color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
 }
 
 .tag-picker__create-btn:disabled {
@@ -585,24 +585,24 @@ const onCancel = () => emit("cancel");
 }
 
 .tag-picker__cancel {
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  color: var(--color-ink-2);
 }
 
 .tag-picker__cancel:hover {
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 
 .tag-picker__save {
   background: var(--accent-gradient);
-  border: 1px solid var(--color-accent, #6e72d9);
-  color: white;
+  border: 1px solid var(--color-accent);
+  color: var(--color-on-accent);
 }
 
 .tag-picker__save:hover:not(:disabled) {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #575cc7);
+  border-color: var(--color-accent-strong);
 }
 
 .tag-picker__save:disabled {

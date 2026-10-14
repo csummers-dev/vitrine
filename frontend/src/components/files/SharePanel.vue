@@ -517,7 +517,7 @@ watch(
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   margin-bottom: 8px;
 }
 
@@ -532,9 +532,9 @@ watch(
 }
 
 .share-card {
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 10px;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   padding: 10px;
 }
 
@@ -549,27 +549,27 @@ watch(
   min-width: 0;
   height: 28px;
   padding: 0 8px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 6px;
-  background: var(--color-canvas, #fafaf9);
-  font-family: var(--font-mono, monospace);
+  background: var(--color-canvas);
+  font-family: var(--font-mono);
   font-size: 11.5px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   outline: none;
 }
 
 .share-card__link:focus {
-  border-color: var(--color-accent, #6e72d9);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 
 .share-icon-btn {
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-2, #52525b);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -582,8 +582,8 @@ watch(
 }
 
 .share-icon-btn:hover:not(:disabled) {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 
 .share-icon-btn:disabled {
@@ -603,7 +603,7 @@ watch(
   flex-wrap: wrap;
   gap: 8px;
   font-size: 11px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 .share-card__expires {
@@ -618,14 +618,14 @@ watch(
   gap: 4px;
   padding: 1px 6px;
   border-radius: 999px;
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-elevated);
+  color: var(--color-ink-2);
   font-weight: 500;
 }
 
 .share-card__badge--done {
-  background: var(--status-danger-soft, #fee2e2);
-  color: var(--status-danger, #b91c1c);
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
 }
 .share-kinds {
   display: flex;
@@ -638,7 +638,7 @@ watch(
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 .share-check {
   margin-bottom: 14px;
@@ -646,7 +646,7 @@ watch(
 .share-card__usage {
   margin-top: 4px;
   font-size: 11px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-variant-numeric: tabular-nums;
 }
 
@@ -659,13 +659,13 @@ watch(
   display: block;
   font-size: 12px;
   font-weight: 500;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   margin-bottom: 6px;
 }
 
 .share-field__label-hint {
   font-weight: 400;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   margin-left: 4px;
 }
 
@@ -677,18 +677,18 @@ watch(
 .share-field__hint {
   margin-top: 4px;
   font-size: 11px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 .share-input {
   height: 32px;
   padding: 0 10px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 6px;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   font: inherit;
   font-size: 13px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   outline: none;
   transition:
     border-color 0.1s ease,
@@ -697,8 +697,8 @@ watch(
 }
 
 .share-input:focus {
-  border-color: var(--color-accent, #6e72d9);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 
 .share-input--num {
@@ -718,7 +718,7 @@ watch(
   justify-content: center;
   gap: 8px;
   padding: 40px 16px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-size: 13px;
 }
 
@@ -752,30 +752,30 @@ watch(
 }
 
 .share-btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 
 .share-btn--ghost {
-  background: var(--color-surface, #fff);
-  border-color: var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-surface);
+  border-color: var(--color-line);
+  color: var(--color-ink-2);
 }
 
 .share-btn--ghost:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 
 .share-btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #6e72d9);
-  color: white;
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
 }
 
 .share-btn--primary:hover:not(:disabled) {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #575cc7);
+  border-color: var(--color-accent-strong);
 }
 
 .share-btn:disabled {

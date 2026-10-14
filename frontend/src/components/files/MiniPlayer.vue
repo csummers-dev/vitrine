@@ -231,12 +231,12 @@ const clearQueue = () => {
   bottom: 16px;
   z-index: 40;
   width: min(380px, calc(100% - 32px));
-  border-radius: var(--radius-lg, 12px);
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
-  box-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  box-shadow: var(--shadow-2);
   overflow: hidden;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 .mini-player__bar {
   position: relative;
@@ -256,8 +256,8 @@ const clearQueue = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-3, #a1a1aa);
+  background: var(--color-elevated);
+  color: var(--color-ink-3);
 }
 .mini-player__meta {
   flex: 1;
@@ -280,7 +280,7 @@ const clearQueue = () => {
 .mini-player__sub {
   max-width: 100%;
   font-size: 11px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 .mini-player__controls {
   display: flex;
@@ -297,26 +297,26 @@ const clearQueue = () => {
   border: 0;
   border-radius: 6px;
   background: none;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   cursor: pointer;
 }
 .mini-player__icon-btn:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 .mini-player__icon-btn--on {
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
 }
 .mini-player__play {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: var(--accent-gradient, #6e72d9);
-  color: #fff;
+  background: var(--accent-gradient);
+  color: var(--color-on-accent);
 }
 .mini-player__play:hover {
-  background: var(--accent-gradient, #6e72d9);
-  color: #fff;
+  background: var(--accent-gradient);
+  color: var(--color-on-accent);
   filter: brightness(1.08);
 }
 .mini-player__progress {
@@ -327,16 +327,16 @@ const clearQueue = () => {
   height: 4px;
   padding: 0;
   border: 0;
-  background: var(--color-line, #ececec);
+  background: var(--color-line);
   cursor: pointer;
 }
 .mini-player__progress-fill {
   display: block;
   height: 100%;
-  background: var(--color-accent, #6e72d9);
+  background: var(--color-accent);
 }
 .mini-player__queue {
-  border-bottom: 1px solid var(--color-line, #ececec);
+  border-bottom: 1px solid var(--color-line);
   max-height: 260px;
   display: flex;
   flex-direction: column;
@@ -350,13 +350,13 @@ const clearQueue = () => {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 .mini-player__link {
   border: 0;
   background: none;
   font: inherit;
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
   cursor: pointer;
   text-transform: none;
   letter-spacing: 0;
@@ -373,10 +373,10 @@ const clearQueue = () => {
   border-radius: 6px;
 }
 .mini-player__row:hover {
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 .mini-player__row--current {
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
   font-weight: 600;
 }
 .mini-player__row-btn {
@@ -397,7 +397,7 @@ const clearQueue = () => {
 .mini-player__row-num {
   width: 20px;
   flex-shrink: 0;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-weight: 400;
 }
 @media (max-width: 767px) {

@@ -260,31 +260,31 @@ const doneCodes = () => {
 .tf-input {
   height: 34px;
   padding: 0 10px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 6px;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   font: inherit;
   font-size: 13px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   outline: none;
 }
 .tf-input:focus {
-  border-color: var(--color-accent, #6e72d9);
+  border-color: var(--color-accent);
 }
 .tf-btn {
   height: 32px;
   padding: 0 14px;
   border-radius: 6px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-1, #18181b);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink-1);
   font: inherit;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
 }
 .tf-btn:hover:not(:disabled) {
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 .tf-btn:disabled {
   opacity: 0.5;
@@ -292,14 +292,14 @@ const doneCodes = () => {
 }
 .tf-btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #6e72d9);
-  color: #fff;
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
 }
 .tf-btn--primary:hover:not(:disabled) {
   background: var(--accent-gradient-strong);
 }
 .tf-btn--danger {
-  color: var(--status-danger, #b91c1c);
+  color: var(--status-danger);
 }
 .tf-scan {
   display: flex;
@@ -310,7 +310,7 @@ const doneCodes = () => {
 .tf-qr {
   padding: 8px;
   border-radius: 8px;
-  background: #fff;
+  background: var(--paper);
   line-height: 0;
 }
 .tf-manual {
@@ -318,13 +318,13 @@ const doneCodes = () => {
   flex-direction: column;
   gap: 4px;
   font-size: 12px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 .tf-manual code,
 .tf-codes code {
-  font-family: var(--font-mono, ui-monospace, monospace);
+  font-family: var(--font-mono);
   font-size: 13px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   letter-spacing: 0.04em;
 }
 .tf-confirm,
@@ -336,7 +336,7 @@ const doneCodes = () => {
 }
 .tf-code {
   width: 9em;
-  font-family: var(--font-mono, ui-monospace, monospace);
+  font-family: var(--font-mono);
   letter-spacing: 0.15em;
 }
 .tf-codes {

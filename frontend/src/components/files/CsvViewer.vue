@@ -228,7 +228,7 @@ watch(selectedEncoding, () => {
   height: 100%;
   gap: 8px;
   padding: 24px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   text-align: center;
 }
 
@@ -238,8 +238,8 @@ watch(selectedEncoding, () => {
   height: 28px;
   padding: 12px;
   border-radius: 12px;
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-3, #a1a1aa);
+  background: var(--color-elevated);
+  color: var(--color-ink-3);
   box-sizing: content-box;
 }
 
@@ -254,8 +254,8 @@ watch(selectedEncoding, () => {
 .csv-table-container {
   flex: 1;
   overflow: auto;
-  background-color: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-line);
   border-radius: 8px;
 }
 
@@ -283,15 +283,15 @@ watch(selectedEncoding, () => {
   width: 100%;
   border-collapse: collapse;
   font-size: 12.5px;
-  background-color: var(--color-surface, #fff);
-  color: var(--color-ink-1, #18181b);
+  background-color: var(--color-surface);
+  color: var(--color-ink-1);
 }
 
 .csv-table thead {
   position: sticky;
   top: 0;
   z-index: 10;
-  background-color: var(--color-canvas, #fafaf9);
+  background-color: var(--color-canvas);
 }
 
 .csv-table th {
@@ -301,30 +301,30 @@ watch(selectedEncoding, () => {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-3, #a1a1aa);
-  border-bottom: 1px solid var(--color-line, #ececec);
-  background-color: var(--color-canvas, #fafaf9);
+  color: var(--color-ink-3);
+  border-bottom: 1px solid var(--color-line);
+  background-color: var(--color-canvas);
   white-space: nowrap;
 }
 
 .csv-table td {
   padding: 8px 14px;
   text-align: left;
-  border-bottom: 1px solid var(--color-line, #ececec);
+  border-bottom: 1px solid var(--color-line);
   white-space: nowrap;
   max-width: 400px;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   font-variant-numeric: tabular-nums;
 }
 
 .csv-table tbody tr:nth-child(even) {
-  background-color: var(--color-canvas, #fafaf9);
+  background-color: var(--color-canvas);
 }
 
 .csv-table tbody tr:hover {
-  background-color: var(--color-hover, rgba(24, 24, 27, 0.045));
+  background-color: var(--color-hover);
   transition: background-color var(--dur-base) ease;
 }
 
@@ -342,8 +342,8 @@ watch(selectedEncoding, () => {
   gap: 6px;
   padding: 6px 12px;
   border-radius: 999px;
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
   font-size: 11.5px;
   font-weight: 500;
 }
@@ -401,7 +401,7 @@ watch(selectedEncoding, () => {
   border: none;
   outline: none;
   padding: 6px 10px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   text-align: left;
   cursor: pointer;
   border-radius: 6px;
@@ -413,7 +413,7 @@ watch(selectedEncoding, () => {
 }
 
 .encoding-button:hover {
-  background-color: var(--color-elevated, #f4f4f5);
+  background-color: var(--color-elevated);
 }
 
 .selected-encoding {

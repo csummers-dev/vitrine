@@ -93,7 +93,7 @@ useFocusTrap(panel, toRef(props, "open"));
 .slideover__scrim {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.28);
+  background: var(--scrim);
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
   display: flex;
@@ -104,9 +104,9 @@ useFocusTrap(panel, toRef(props, "open"));
 .slideover {
   width: min(420px, 100vw);
   height: 100%;
-  background: var(--color-surface, #fff);
-  border-left: 1px solid var(--color-line, #ececec);
-  box-shadow: -24px 0 48px -12px rgba(0, 0, 0, 0.18);
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-line);
+  box-shadow: var(--shadow-1);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -118,7 +118,7 @@ useFocusTrap(panel, toRef(props, "open"));
   justify-content: space-between;
   gap: 12px;
   padding: 14px 16px;
-  border-bottom: 1px solid var(--color-line, #ececec);
+  border-bottom: 1px solid var(--color-line);
   flex-shrink: 0;
 }
 
@@ -132,14 +132,14 @@ useFocusTrap(panel, toRef(props, "open"));
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   margin-bottom: 2px;
 }
 
 .slideover__title {
   font-size: 15px;
   font-weight: 600;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   margin: 0;
   letter-spacing: -0.005em;
   white-space: nowrap;
@@ -157,7 +157,7 @@ useFocusTrap(panel, toRef(props, "open"));
   background: transparent;
   border: 0;
   cursor: pointer;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   flex-shrink: 0;
   transition:
     background-color 0.1s ease,
@@ -165,8 +165,8 @@ useFocusTrap(panel, toRef(props, "open"));
 }
 
 .slideover__close:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 
 .slideover__body {
@@ -177,8 +177,8 @@ useFocusTrap(panel, toRef(props, "open"));
 
 .slideover__footer {
   padding: 12px 16px;
-  border-top: 1px solid var(--color-line, #ececec);
-  background: var(--color-canvas, #fafaf9);
+  border-top: 1px solid var(--color-line);
+  background: var(--color-canvas);
   display: flex;
   justify-content: flex-end;
   gap: 8px;

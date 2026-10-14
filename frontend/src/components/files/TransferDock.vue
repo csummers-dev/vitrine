@@ -572,20 +572,16 @@ onBeforeUnmount(() => {
   transition: bottom 0.16s ease;
   z-index: 1000;
   width: min(340px, calc(100vw - 40px));
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
   border-radius: 12px;
-  box-shadow:
-    0 20px 50px -12px rgba(0, 0, 0, 0.22),
-    0 6px 12px -4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-2);
   overflow: hidden;
-  font-family: var(--font-sans, system-ui);
-  color: var(--color-ink-1, #18181b);
+  font-family: var(--font-sans);
+  color: var(--color-ink-1);
 }
 html.dark .transfer-dock {
-  box-shadow:
-    0 20px 50px -12px rgba(0, 0, 0, 0.6),
-    0 6px 12px -4px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-2);
 }
 
 .transfer-dock__head {
@@ -602,18 +598,18 @@ html.dark .transfer-dock {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.12));
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
   transition:
     background-color 0.3s ease,
     color 0.3s ease;
 }
 .transfer-dock__icon.is-done {
-  background: rgba(16, 185, 129, 0.16);
+  background: var(--status-success-soft);
   color: var(--status-success);
 }
 html.dark .transfer-dock__icon.is-done {
-  background: rgba(16, 185, 129, 0.2);
+  background: var(--status-success-soft);
   color: var(--status-success);
 }
 .transfer-dock__summary {
@@ -627,7 +623,7 @@ html.dark .transfer-dock__icon.is-done {
 }
 .transfer-dock__head-meta {
   font-size: 11px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   margin-top: 1px;
 }
 .transfer-dock__collapse {
@@ -636,7 +632,7 @@ html.dark .transfer-dock__icon.is-done {
   border: 0;
   background: transparent;
   border-radius: 7px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -647,8 +643,8 @@ html.dark .transfer-dock__icon.is-done {
     transform 0.18s ease;
 }
 .transfer-dock__collapse:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 .transfer-dock__collapse.is-collapsed {
   transform: rotate(180deg);
@@ -663,7 +659,7 @@ html.dark .transfer-dock__icon.is-done {
 }
 .transfer-dock__row {
   padding: 9px 0;
-  border-top: 1px solid var(--color-line, #ececec);
+  border-top: 1px solid var(--color-line);
 }
 .transfer-dock__row:first-child {
   border-top: 0;
@@ -685,7 +681,7 @@ html.dark .transfer-dock__icon.is-done {
 .transfer-dock__pct {
   font-size: 11.5px;
   font-weight: 600;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   flex-shrink: 0;
 }
 .transfer-dock__btn {
@@ -694,7 +690,7 @@ html.dark .transfer-dock__icon.is-done {
   border: 0;
   background: transparent;
   border-radius: 6px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -705,15 +701,15 @@ html.dark .transfer-dock__icon.is-done {
     color 0.12s ease;
 }
 .transfer-dock__btn:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 .transfer-dock__btn--retry {
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
 }
 .transfer-dock__btn--retry:hover {
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.12));
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
 }
 .transfer-dock__btn--retry.is-busy {
   cursor: default;
@@ -734,7 +730,7 @@ html.dark .transfer-dock__icon.is-done {
 }
 .transfer-dock__path {
   font-size: 11px;
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
   margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -742,7 +738,7 @@ html.dark .transfer-dock__icon.is-done {
 }
 .transfer-dock__note {
   font-size: 11px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -759,13 +755,13 @@ html.dark .transfer-dock__icon.is-done {
   height: 4px;
   margin-top: 7px;
   border-radius: 999px;
-  background: var(--color-elevated, #f1f1f3);
+  background: var(--color-elevated);
   overflow: hidden;
 }
 .transfer-dock__bar-fill {
   height: 100%;
   border-radius: 999px;
-  background: var(--color-accent, #6e72d9);
+  background: var(--color-accent);
   transition: width 0.3s ease;
 }
 .transfer-dock__row.is-done .transfer-dock__bar-fill {
@@ -776,7 +772,7 @@ html.dark .transfer-dock__icon.is-done {
 }
 .transfer-dock__row.is-canceled .transfer-dock__bar-fill,
 .transfer-dock__row.is-interrupted .transfer-dock__bar-fill {
-  background: var(--color-ink-3, #a1a1aa);
+  background: var(--color-ink-3);
 }
 
 /* Enter/leave */

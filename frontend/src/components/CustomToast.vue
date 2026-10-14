@@ -33,7 +33,7 @@ const clicked = () => {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-family: var(--font-sans, system-ui);
+  font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 500;
   line-height: 1.4;
@@ -51,7 +51,7 @@ const clicked = () => {
 .ct__action {
   flex-shrink: 0;
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--media-ink-2);
   color: inherit;
   font-family: inherit;
   font-size: 12px;
@@ -63,6 +63,6 @@ const clicked = () => {
 }
 
 .ct__action:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: var(--media-hover);
 }
 </style>

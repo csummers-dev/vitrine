@@ -190,16 +190,16 @@ const save = () => {
   margin: 12px 0 4px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 .save-search__input {
   width: 100%;
   height: 34px;
   padding: 0 10px;
   border-radius: 7px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-canvas, #fafaf9);
-  color: var(--color-ink-1, #18181b);
+  border: 1px solid var(--color-line);
+  background: var(--color-canvas);
+  color: var(--color-ink-1);
   font-family: inherit;
   font-size: 13.5px;
 }
@@ -209,13 +209,13 @@ const save = () => {
 }
 .save-search__input:focus {
   outline: none;
-  border-color: var(--color-accent, #6e72d9);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.25));
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 .save-search__reading {
   margin: 6px 0 0;
   font-size: 12px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 .save-search__examples {
   display: flex;
@@ -227,19 +227,19 @@ const save = () => {
 .save-search__example {
   padding: 2px 7px;
   border-radius: 999px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 .save-search__example:hover {
-  border-color: var(--color-accent, #6e72d9);
-  color: var(--color-ink-1, #18181b);
+  border-color: var(--color-accent);
+  color: var(--color-ink-1);
 }
 .save-search__hint {
   font-size: 11.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 .save-search__syntax {
   margin: 8px 0 0;
@@ -251,6 +251,6 @@ const save = () => {
   gap: 8px;
   margin-top: 12px;
   font-size: 12.5px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 </style>

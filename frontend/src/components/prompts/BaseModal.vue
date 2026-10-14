@@ -75,7 +75,7 @@ const backgroundClick = (event: Event) => {
   inset: 0;
   /* Match the lighter, blurred scrim used by ConfirmDialog / SlideOver /
      command palette so all modal surfaces share the same chrome. */
-  background-color: rgba(0, 0, 0, 0.32);
+  background-color: var(--scrim);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   display: flex;

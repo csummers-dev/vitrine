@@ -590,7 +590,7 @@ const onSave = async () => {
   gap: 8px;
   padding: 40px 8px;
   justify-content: center;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   font-size: 13px;
 }
 .atag-state--error {
@@ -616,7 +616,7 @@ const onSave = async () => {
   padding: 10px 12px;
   border-radius: 8px;
   background: var(--status-warning-soft);
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   font-size: 12.5px;
   line-height: 1.4;
 }
@@ -626,7 +626,7 @@ const onSave = async () => {
   color: var(--c-amber);
 }
 .atag-overwrite-note strong {
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   font-weight: 600;
 }
 
@@ -643,8 +643,8 @@ const onSave = async () => {
   flex-shrink: 0;
   border-radius: 10px;
   overflow: hidden;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-canvas, #fafaf9);
+  border: 1px solid var(--color-line);
+  background: var(--color-canvas);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -661,7 +661,7 @@ const onSave = async () => {
   justify-content: center;
   gap: 4px;
   padding: 0 8px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-size: 10.5px;
   /* WS7 #7: center the "Optional — applies to all" caption within the frame. */
   text-align: center;
@@ -680,9 +680,9 @@ const onSave = async () => {
   height: 30px;
   padding: 0 12px;
   border-radius: 7px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-2, #52525b);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
   font: inherit;
   font-size: 12.5px;
   font-weight: 500;
@@ -692,8 +692,8 @@ const onSave = async () => {
     color var(--dur-base) ease;
 }
 .atag-cover__btn:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 .atag-cover__btn--danger {
   color: var(--c-rose);
@@ -724,7 +724,7 @@ const onSave = async () => {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 .atag-row {
@@ -738,9 +738,9 @@ const onSave = async () => {
   height: 34px;
   padding: 0 10px;
   border-radius: 7px;
-  border: 1px solid var(--color-line-strong, #d4d4d8);
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-1, #18181b);
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-surface);
+  color: var(--color-ink-1);
   font: inherit;
   font-size: 13px;
   transition:
@@ -749,8 +749,8 @@ const onSave = async () => {
 }
 .atag-input:focus {
   outline: none;
-  border-color: var(--color-accent, #6e72d9);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.25));
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 .atag-textarea {
   height: auto;
@@ -765,7 +765,7 @@ const onSave = async () => {
   gap: 6px;
 }
 .atag-numtotal__sep {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 /* ── Footer buttons (mirror ExtractPanel) ────────────────────────────── */
@@ -787,19 +787,19 @@ const onSave = async () => {
     color 0.1s ease;
 }
 .atag-btn--ghost {
-  background: var(--color-surface, #fff);
-  border-color: var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-surface);
+  border-color: var(--color-line);
+  color: var(--color-ink-2);
   margin-right: auto;
 }
 .atag-btn--ghost:hover:not(:disabled) {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 .atag-btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #6e72d9);
-  color: white;
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
 }
 .atag-btn--primary:hover:not(:disabled) {
   background: var(--accent-gradient-strong);

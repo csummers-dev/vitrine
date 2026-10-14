@@ -192,10 +192,10 @@ const upload = async () => {
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  border: 1.5px dashed var(--color-line-strong, #d4d4d8);
+  border: 1.5px dashed var(--color-line-strong);
   border-radius: 8px;
-  background: var(--color-canvas, #fafaf9);
-  color: var(--color-ink-3, #a1a1aa);
+  background: var(--color-canvas);
+  color: var(--color-ink-3);
   font-size: 12px;
   cursor: pointer;
   transition:
@@ -205,14 +205,14 @@ const upload = async () => {
 }
 .sub-upload__zone:hover,
 .sub-upload__zone:focus-visible {
-  border-color: var(--color-accent, #6e72d9);
-  color: var(--color-ink-2, #52525b);
+  border-color: var(--color-accent);
+  color: var(--color-ink-2);
   outline: none;
 }
 .sub-upload__zone.is-over {
-  border-color: var(--color-accent, #6e72d9);
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.08));
-  color: var(--color-accent, #6e72d9);
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
 }
 .sub-upload__zone-text {
   min-width: 0;
@@ -239,25 +239,25 @@ const upload = async () => {
 }
 .sub-upload__lang > span {
   font-size: 11px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 .sub-upload__lang-input {
   height: 30px;
   padding: 0 8px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 6px;
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-surface);
+  color: var(--color-ink-1);
   font-size: 12.5px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   outline: none;
   transition:
     border-color var(--dur-base) ease,
     box-shadow var(--dur-base) ease;
 }
 .sub-upload__lang-input:focus {
-  border-color: var(--color-accent, #6e72d9);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 
 .sub-upload__btn {
@@ -266,7 +266,7 @@ const upload = async () => {
   border: 0;
   border-radius: 6px;
   background: var(--accent-gradient);
-  color: white;
+  color: var(--color-on-accent);
   font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
@@ -277,7 +277,7 @@ const upload = async () => {
   transition: background-color var(--dur-base) ease;
 }
 .sub-upload__btn:hover:not(:disabled) {
-  background: var(--color-accent-strong, #575cc7);
+  background: var(--color-accent-strong);
 }
 .sub-upload__btn:disabled {
   opacity: 0.5;
@@ -287,15 +287,15 @@ const upload = async () => {
 .sub-upload__hint {
   margin: 8px 0 0;
   font-size: 11px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 .sub-upload__hint code {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 10.5px;
   padding: 1px 4px;
   border-radius: 3px;
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-elevated);
+  color: var(--color-ink-2);
   word-break: break-all;
 }
 .sub-upload__error {

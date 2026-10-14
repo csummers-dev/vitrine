@@ -76,13 +76,13 @@ const signOut = () => logout();
   justify-content: center;
   padding: 64px 16px;
   box-sizing: border-box;
-  background: var(--color-canvas, #efeff4);
+  background: var(--color-canvas);
 }
 .tf-setup__card {
   width: min(640px, 100%);
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #dbdae3);
-  border-radius: var(--radius-lg, 12px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
   padding: 28px;
   box-sizing: border-box;
   display: flex;
@@ -96,20 +96,20 @@ const signOut = () => logout();
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
 }
 .tf-setup__title {
   margin: 0;
   font-size: 22px;
   font-weight: 600;
-  color: var(--color-ink-1, #17161d);
+  color: var(--color-ink-1);
 }
 .tf-setup__lead {
   margin: 0;
   font-size: 14px;
   line-height: 1.5;
-  color: var(--color-ink-2, #4c4a57);
+  color: var(--color-ink-2);
 }
 .tf-setup__actions {
   display: flex;
@@ -123,11 +123,11 @@ const signOut = () => logout();
   padding: 0;
   font: inherit;
   font-size: 13px;
-  color: var(--color-ink-3, #747180);
+  color: var(--color-ink-3);
   text-decoration: underline;
   cursor: pointer;
 }
 .tf-setup__link:hover {
-  color: var(--color-ink-1, #17161d);
+  color: var(--color-ink-1);
 }
 </style>

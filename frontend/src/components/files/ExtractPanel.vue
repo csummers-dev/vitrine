@@ -387,8 +387,8 @@ watch(
   gap: 10px;
   padding: 10px 12px;
   border-radius: 8px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-canvas, #fafaf9);
+  border: 1px solid var(--color-line);
+  background: var(--color-canvas);
   margin-bottom: 10px;
 }
 
@@ -419,7 +419,7 @@ html.dark .extract-source__icon {
 .extract-source__name {
   font-size: 12.5px;
   font-weight: 600;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -427,14 +427,14 @@ html.dark .extract-source__icon {
 
 .extract-source__meta {
   font-size: 11.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-variant-numeric: tabular-nums;
 }
 
 /* ── Instructions + hint ─────────────────────────────────────────────── */
 .extract-instructions {
   font-size: 12.5px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   margin: 0 0 12px;
   line-height: 1.45;
 }
@@ -446,8 +446,8 @@ html.dark .extract-source__icon {
   margin: 12px 0 0;
   padding: 8px 10px;
   border-radius: 6px;
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.08));
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
   font-size: 11.5px;
   line-height: 1.4;
 }
@@ -469,24 +469,24 @@ html.dark .extract-source__icon {
   margin: -2px 0 2px 10px;
   padding: 8px 10px;
   border-radius: 8px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-canvas, #fafaf9);
+  border: 1px solid var(--color-line);
+  background: var(--color-canvas);
 }
 .extract-folder-name__label {
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 .extract-folder-name__input {
   width: 100%;
   height: 32px;
   padding: 0 10px;
   border-radius: 6px;
-  border: 1px solid var(--color-line-strong, #d4d4d8);
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-1, #18181b);
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-surface);
+  color: var(--color-ink-1);
   font: inherit;
   font-size: 13px;
   transition:
@@ -495,8 +495,8 @@ html.dark .extract-source__icon {
 }
 .extract-folder-name__input:focus {
   outline: none;
-  border-color: var(--color-accent, #6e72d9);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.25));
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 
 .extract-option {
@@ -505,14 +505,14 @@ html.dark .extract-source__icon {
   gap: 10px;
   padding: 8px 10px;
   border-radius: 8px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
   cursor: pointer;
   transition: background-color var(--dur-base) ease;
 }
 
 .extract-option:hover {
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 
 .extract-option.is-disabled {
@@ -521,7 +521,7 @@ html.dark .extract-source__icon {
 }
 
 .extract-option.is-disabled:hover {
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
 }
 
 .extract-option__text {
@@ -534,12 +534,12 @@ html.dark .extract-source__icon {
 .extract-option__label {
   font-size: 12.5px;
   font-weight: 500;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 
 .extract-option__hint {
   font-size: 11.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
@@ -547,12 +547,12 @@ html.dark .extract-source__icon {
 }
 
 .extract-option__hint code {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 11px;
   padding: 1px 5px;
   border-radius: 4px;
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 
 /* ── Footer buttons (mirror MoveCopyPanel chrome) ────────────────────── */
@@ -575,31 +575,31 @@ html.dark .extract-source__icon {
 }
 
 .extract-btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 
 .extract-btn--ghost {
-  background: var(--color-surface, #fff);
-  border-color: var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-surface);
+  border-color: var(--color-line);
+  color: var(--color-ink-2);
   margin-right: auto;
 }
 
 .extract-btn--ghost:hover:not(:disabled) {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 
 .extract-btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #6e72d9);
-  color: white;
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
 }
 
 .extract-btn--primary:hover:not(:disabled) {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #575cc7);
+  border-color: var(--color-accent-strong);
 }
 
 .extract-btn:disabled {

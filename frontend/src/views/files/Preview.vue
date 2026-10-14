@@ -1671,7 +1671,7 @@ const { lengthY } = useSwipe(stageEl, {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
 }
 
 .preview-spin {
@@ -1702,8 +1702,8 @@ const { lengthY } = useSwipe(stageEl, {
   width: 64px;
   height: 64px;
   border-radius: 14px;
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-3, #a1a1aa);
+  background: var(--color-elevated);
+  color: var(--color-ink-3);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1723,12 +1723,12 @@ html.dark .preview-blob__icon--zip {
 .preview-blob__title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 
 .preview-blob__hint {
   font-size: 13px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 .preview-blob__actions {
@@ -1756,21 +1756,21 @@ html.dark .preview-blob__icon--zip {
 
 .preview-blob__btn--primary {
   background: var(--accent-gradient);
-  border: 1px solid var(--color-accent, #6e72d9);
-  color: white;
+  border: 1px solid var(--color-accent);
+  color: var(--color-on-accent);
 }
 .preview-blob__btn--primary:hover {
   background: var(--accent-gradient-strong);
 }
 
 .preview-blob__btn--ghost {
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  color: var(--color-ink-2);
 }
 .preview-blob__btn--ghost:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 
 /* ── PDF page counter (E4) ─────────────────────────────────────── */
@@ -1778,8 +1778,8 @@ html.dark .preview-blob__icon--zip {
   height: 28px;
   padding: 0 8px;
   border-radius: 6px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1792,17 +1792,17 @@ html.dark .preview-blob__icon--zip {
   font: inherit;
   font-size: 12px;
   text-align: center;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   outline: none;
   border-radius: 4px;
 }
 .preview-page__input:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 .preview-page__sep {
   font-size: 12px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 /* ── Zoom + fit toolbar controls (P2 — image) ───────────────────── */
@@ -1810,8 +1810,8 @@ html.dark .preview-blob__icon--zip {
   height: 28px;
   padding: 0 4px;
   border-radius: 6px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
   display: inline-flex;
   align-items: center;
   gap: 2px;
@@ -1822,7 +1822,7 @@ html.dark .preview-blob__icon--zip {
   border: 0;
   background: transparent;
   border-radius: 4px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1832,8 +1832,8 @@ html.dark .preview-blob__icon--zip {
     color var(--dur-base) ease;
 }
 .preview-zoom__btn:hover:not(:disabled) {
-  background: var(--color-hover, rgba(24, 24, 27, 0.045));
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-hover);
+  color: var(--color-ink-1);
 }
 .preview-zoom__btn:disabled {
   opacity: 0.4;
@@ -1841,7 +1841,7 @@ html.dark .preview-blob__icon--zip {
 }
 .preview-zoom__value {
   font-size: 11.5px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   padding: 0 6px;
   min-width: 44px;
   text-align: center;
@@ -1852,9 +1852,9 @@ html.dark .preview-blob__icon--zip {
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-2, #52525b);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1865,12 +1865,12 @@ html.dark .preview-blob__icon--zip {
     border-color var(--dur-base) ease;
 }
 .preview-fit__btn:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 .preview-fit__btn.is-active {
-  background: var(--color-selected, rgba(110, 114, 217, 0.08));
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-selected);
+  color: var(--color-accent-ink);
   border-color: transparent;
 }
 
@@ -1885,9 +1885,9 @@ html.dark .preview-blob__icon--zip {
   height: 28px;
   padding: 0 10px;
   border-radius: 6px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-2, #52525b);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
   font: inherit;
   font-size: 12px;
   font-weight: 500;
@@ -1902,11 +1902,11 @@ html.dark .preview-blob__icon--zip {
     border-color var(--dur-base) ease;
 }
 .preview-toolbar-format__btn:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 .preview-toolbar-format__btn:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 /* When the label is hidden at narrow widths, shrink to icon-only square
@@ -1934,10 +1934,8 @@ html.dark .preview-blob__icon--zip {
   border-radius: 8px;
   overflow: hidden;
   margin-bottom: 12px;
-  background: var(--color-elevated, #f4f4f5);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.06),
-    0 8px 24px -12px rgba(0, 0, 0, 0.18);
+  background: var(--color-elevated);
+  box-shadow: var(--shadow-2);
 }
 .preview-info__artwork img {
   width: 100%;
@@ -1946,10 +1944,8 @@ html.dark .preview-blob__icon--zip {
   display: block;
 }
 html.dark .preview-info__artwork {
-  background: var(--color-canvas-2, #232327);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.25),
-    0 8px 24px -12px rgba(0, 0, 0, 0.5);
+  background: var(--color-panel);
+  box-shadow: var(--shadow-2);
 }
 
 /* ── EPUB cover art ──────────────────────────────────────────────────
@@ -1968,9 +1964,9 @@ html.dark .preview-info__artwork {
   height: 32px;
   padding: 0 14px;
   border-radius: 999px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-2, #52525b);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
   font: inherit;
   font-size: 12.5px;
   font-weight: 500;
@@ -1981,13 +1977,13 @@ html.dark .preview-info__artwork {
     border-color var(--dur-base) ease;
 }
 .preview-epub-theme-btn:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 .preview-epub-theme-btn.is-active {
-  background: var(--color-selected, rgba(110, 114, 217, 0.08));
+  background: var(--color-selected);
   border-color: transparent;
-  color: var(--color-accent-ink, #6e72d9);
+  color: var(--color-accent-ink);
 }
 
 /* 2.1 #3: text-view controls in the details rail — full-width stacked buttons
@@ -2006,9 +2002,9 @@ html.dark .preview-info__artwork {
   height: 34px;
   padding: 0 12px;
   border-radius: 8px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-1, #18181b);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink-1);
   font: inherit;
   font-size: 12.5px;
   font-weight: 500;
@@ -2018,10 +2014,10 @@ html.dark .preview-info__artwork {
     border-color var(--dur-base) ease;
 }
 .preview-text-btn:hover {
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 .preview-text-btn.is-active {
-  background: var(--color-selected, rgba(110, 114, 217, 0.08));
+  background: var(--color-selected);
   border-color: transparent;
 }
 
@@ -2036,8 +2032,8 @@ html.dark .preview-info__artwork {
   width: auto;
   height: auto;
   border-radius: 8px;
-  box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.4);
-  background: var(--color-elevated, #f4f4f5);
+  box-shadow: var(--shadow-2);
+  background: var(--color-elevated);
 }
 
 /* ── EPUB chapter list (S5-5) ────────────────────────────────────────
@@ -2063,7 +2059,7 @@ html.dark .preview-info__artwork {
   text-align: left;
   border: 0;
   background: transparent;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   font-size: 12.5px;
   line-height: 1.4;
   padding: 6px 8px;
@@ -2077,16 +2073,16 @@ html.dark .preview-info__artwork {
     color var(--dur-base) ease;
 }
 .preview-epub-toc__item:hover {
-  background: var(--color-hover, rgba(24, 24, 27, 0.045));
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-hover);
+  color: var(--color-ink-1);
 }
 .preview-epub-toc__item.is-active {
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
   font-weight: 600;
 }
 .preview-epub-toc__item:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: -2px;
 }
 </style>

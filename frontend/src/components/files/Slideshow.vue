@@ -212,12 +212,12 @@ onBeforeUnmount(() => {
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: #000;
+  background: var(--media-canvas);
   display: flex;
   align-items: center;
   justify-content: center;
   outline: none;
-  color: #fff;
+  color: var(--media-ink);
 }
 .slideshow--idle {
   cursor: none;
@@ -255,8 +255,8 @@ onBeforeUnmount(() => {
   justify-content: center;
   border: 0;
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.35);
-  color: #fff;
+  background: var(--media-chrome-soft);
+  color: var(--media-ink);
   cursor: pointer;
   transition: opacity 0.3s ease;
 }
@@ -275,7 +275,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 12px;
   padding: 24px 20px 16px;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+  background: var(--media-fade);
   transition: opacity 0.3s ease;
   font-size: 13px;
 }
@@ -288,7 +288,7 @@ onBeforeUnmount(() => {
   min-width: 0;
 }
 .slideshow__counter {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--media-ink-2);
 }
 .slideshow__controls {
   display: flex;
@@ -303,27 +303,27 @@ onBeforeUnmount(() => {
   height: 34px;
   border: 0;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  background: var(--media-hover);
+  color: var(--media-ink);
   cursor: pointer;
 }
 .slideshow__btn:hover {
-  background: rgba(255, 255, 255, 0.24);
+  background: var(--media-active);
 }
 .slideshow__btn--on {
-  background: rgba(255, 255, 255, 0.32);
+  background: var(--media-active);
 }
 .slideshow__interval select {
   height: 34px;
   border: 0;
   border-radius: 8px;
   padding: 0 8px;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  background: var(--media-hover);
+  color: var(--media-ink);
   font: inherit;
 }
 .slideshow__interval option {
-  color: #000;
+  color: var(--media-canvas);
 }
 .sr-only {
   position: absolute;

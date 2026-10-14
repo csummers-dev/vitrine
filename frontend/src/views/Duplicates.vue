@@ -479,9 +479,9 @@ const trashSelected = async () => {
   gap: 10px 14px;
   padding: 14px;
   margin-bottom: 16px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 10px;
-  background: var(--color-canvas, #fafaf9);
+  background: var(--color-canvas);
 }
 .dupes-field {
   display: flex;
@@ -489,7 +489,7 @@ const trashSelected = async () => {
   gap: 4px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   flex: 1 1 220px;
 }
 .dupes-field--narrow {
@@ -507,9 +507,9 @@ const trashSelected = async () => {
   font-size: 13px;
   padding: 6px 9px;
   border-radius: 7px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-1, #18181b);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink-1);
 }
 .dupes-field textarea {
   resize: vertical;
@@ -521,7 +521,7 @@ const trashSelected = async () => {
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   padding-bottom: 7px;
 }
 .dupes-form__actions {
@@ -534,9 +534,9 @@ const trashSelected = async () => {
   height: 32px;
   padding: 0 13px;
   border-radius: 8px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-1, #18181b);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink-1);
   font-size: 13px;
   font-weight: 600;
 }
@@ -545,9 +545,9 @@ const trashSelected = async () => {
   cursor: default;
 }
 .dupes-btn--primary {
-  background: var(--color-accent, #6e72d9);
+  background: var(--color-accent);
   border-color: transparent;
-  color: #fff;
+  color: var(--color-on-accent);
 }
 .dupes-btn--danger {
   border-color: color-mix(in srgb, var(--c-rose) 30%, transparent);
@@ -558,13 +558,13 @@ const trashSelected = async () => {
   flex-basis: 100%;
   height: 4px;
   border-radius: 999px;
-  background: var(--color-line, #ececec);
+  background: var(--color-line);
   overflow: hidden;
 }
 .dupes-progress__bar {
   display: block;
   height: 100%;
-  background: var(--color-accent, #6e72d9);
+  background: var(--color-accent);
   transition: width 0.3s ease;
 }
 .dupes-progress__bar.is-indeterminate {
@@ -588,19 +588,19 @@ const trashSelected = async () => {
 }
 .dupes-toolbar__label {
   font-size: 12.5px;
-  color: var(--color-ink-3, #82828c);
+  color: var(--color-ink-3);
 }
 .dupes-chip {
   padding: 3px 10px;
   border-radius: 999px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
   font-size: 12.5px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 .dupes-chip:hover:not(:disabled) {
-  border-color: var(--color-accent, #6e72d9);
-  color: var(--color-ink-1, #18181b);
+  border-color: var(--color-accent);
+  color: var(--color-ink-1);
 }
 .dupes-chip:disabled {
   opacity: 0.5;
@@ -620,20 +620,20 @@ const trashSelected = async () => {
   gap: 10px;
 }
 .dupes-group {
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 10px;
   overflow: hidden;
 }
 .dupes-group__head {
   padding: 7px 12px;
   font-size: 12.5px;
-  color: var(--color-ink-3, #82828c);
-  background: var(--color-canvas, #fafaf9);
-  border-bottom: 1px solid var(--color-line, #ececec);
+  color: var(--color-ink-3);
+  background: var(--color-canvas);
+  border-bottom: 1px solid var(--color-line);
 }
 .dupes-group__size {
   font-weight: 600;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 .dupes-dot {
   margin: 0 4px;
@@ -651,7 +651,7 @@ const trashSelected = async () => {
   padding: 6px 12px;
 }
 .dupes-file + .dupes-file {
-  border-top: 1px solid var(--color-line, #ececec);
+  border-top: 1px solid var(--color-line);
 }
 .dupes-file__pick {
   flex: 1;
@@ -668,14 +668,14 @@ const trashSelected = async () => {
 }
 .dupes-file__name {
   font-size: 13px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .dupes-file__dir {
   font-size: 11.5px;
-  color: var(--color-ink-3, #82828c);
+  color: var(--color-ink-3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -683,21 +683,21 @@ const trashSelected = async () => {
 .dupes-file__date {
   flex: none;
   font-size: 12px;
-  color: var(--color-ink-3, #82828c);
+  color: var(--color-ink-3);
 }
 .dupes-file__show {
   flex: none;
   font-size: 12px;
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
   padding: 2px 6px;
   border-radius: 6px;
 }
 .dupes-file__show:hover {
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 .dupes-more {
   margin-top: 10px;
   font-size: 13px;
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
 }
 </style>

@@ -39,7 +39,7 @@ function* walk(dir) {
 /** The parts of a file that are styles: all of a .css file, and the
  *  <style> blocks and style="" / :style bindings of a .vue file. */
 function styleText(path, text) {
-  if (path.endsWith(".css")) return text;
+  if (path.endsWith(".css")) return text.replace(/\/\*[\s\S]*?\*\//g, "");
   const parts = [...text.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map(
     (m) => m[1]
   );

@@ -117,35 +117,21 @@ watch(
   max-height: 100%;
   width: auto;
   height: auto;
-  border-radius: var(--radius-lg, 12px);
-  border: 1px solid var(--color-line, #ececec);
-  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.18);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-line);
+  box-shadow: var(--shadow-2);
   /* Checkerboard for transparent-PNG sanity — shows through the img's
      own alpha pixels only, not around the image. */
   background:
-    linear-gradient(45deg, rgba(24, 24, 27, 0.04) 25%, transparent 25%) 0 0 /
-      16px 16px,
-    linear-gradient(-45deg, rgba(24, 24, 27, 0.04) 25%, transparent 25%) 0 8px /
-      16px 16px,
-    linear-gradient(45deg, transparent 75%, rgba(24, 24, 27, 0.04) 75%)
-      8px -8px / 16px 16px,
-    linear-gradient(-45deg, transparent 75%, rgba(24, 24, 27, 0.04) 75%) -8px
-      0 / 16px 16px,
-    var(--color-surface, #fff);
+    linear-gradient(45deg, var(--checker) 25%, transparent 25%) 0 0 / 16px 16px,
+    linear-gradient(-45deg, var(--checker) 25%, transparent 25%) 0 8px / 16px
+      16px,
+    linear-gradient(45deg, transparent 75%, var(--checker) 75%) 8px -8px / 16px
+      16px,
+    linear-gradient(-45deg, transparent 75%, var(--checker) 75%) -8px 0 / 16px
+      16px,
+    var(--color-surface);
   -webkit-user-drag: none;
   user-select: none;
-}
-
-html.dark .image-viewer__img {
-  background:
-    linear-gradient(45deg, rgba(255, 255, 255, 0.06) 25%, transparent 25%) 0 0 /
-      16px 16px,
-    linear-gradient(-45deg, rgba(255, 255, 255, 0.06) 25%, transparent 25%) 0
-      8px / 16px 16px,
-    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.06) 75%)
-      8px -8px / 16px 16px,
-    linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.06) 75%) -8px
-      0 / 16px 16px,
-    var(--color-surface);
 }
 </style>

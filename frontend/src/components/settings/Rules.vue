@@ -133,14 +133,14 @@ export default {
   align-items: center;
   gap: 6px;
   padding: 6px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 8px;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
 }
 
 .rules__row.is-deny {
-  background: #fef9f9;
-  border-color: #fee2e2;
+  background: var(--status-danger-soft);
+  border-color: var(--status-danger-ring);
 }
 
 /* ── Verdict chip (Allow / Deny toggle) ─────────────────────────────── */
@@ -163,12 +163,12 @@ export default {
 }
 
 .rules__verdict.is-allow {
-  background: rgba(4, 120, 87, 0.1);
+  background: var(--status-success-soft);
   color: var(--status-success);
 }
 
 .rules__verdict.is-allow:hover {
-  background: rgba(4, 120, 87, 0.18);
+  background: var(--status-success-soft);
 }
 
 .rules__verdict.is-deny {
@@ -190,9 +190,9 @@ export default {
   border-radius: 999px;
   font-size: 11.5px;
   font-weight: 500;
-  background: var(--color-elevated, #f4f4f5);
-  border: 1px solid var(--color-line, #ececec);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-elevated);
+  border: 1px solid var(--color-line);
+  color: var(--color-ink-2);
   cursor: pointer;
   flex-shrink: 0;
   font-family: inherit;
@@ -202,17 +202,17 @@ export default {
 }
 
 .rules__mode.is-on {
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
-  color: var(--color-accent, #6e72d9);
-  border-color: rgba(110, 114, 217, 0.25);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
+  border-color: var(--color-accent-ring);
 }
 
 .rules__mode:hover {
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 
 .rules__mode.is-on:hover {
-  color: var(--color-accent-strong, #575cc7);
+  color: var(--color-accent-strong);
 }
 
 /* ── Pattern input ──────────────────────────────────────────────────── */
@@ -221,13 +221,13 @@ export default {
   min-width: 0;
   height: 28px;
   padding: 0 10px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 6px;
-  background: var(--color-canvas, #fafaf9);
+  background: var(--color-canvas);
   font: inherit;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   outline: none;
   transition:
     border-color 0.1s ease,
@@ -235,9 +235,9 @@ export default {
 }
 
 .rules__input:focus {
-  background: var(--color-surface, #fff);
-  border-color: var(--color-accent, #6e72d9);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  background: var(--color-surface);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 
 /* ── Delete icon button ─────────────────────────────────────────────── */
@@ -247,7 +247,7 @@ export default {
   border-radius: 6px;
   border: 1px solid transparent;
   background: transparent;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -270,10 +270,10 @@ export default {
   margin: 4px 0 0;
   padding: 14px;
   font-size: 12.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   text-align: center;
-  background: var(--color-canvas, #fafaf9);
-  border: 1px dashed var(--color-line, #ececec);
+  background: var(--color-canvas);
+  border: 1px dashed var(--color-line);
   border-radius: 8px;
   line-height: 1.4;
 }
@@ -290,9 +290,9 @@ export default {
   height: 30px;
   padding: 0 12px;
   border-radius: 6px;
-  border: 1px dashed var(--color-line-strong, #d4d4d8);
+  border: 1px dashed var(--color-line-strong);
   background: transparent;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   font-family: inherit;
   font-size: 12.5px;
   font-weight: 500;
@@ -304,14 +304,14 @@ export default {
 }
 
 .rules__add:hover {
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.08));
-  border-color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
   border-style: solid;
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
 }
 
 .rules__add:focus-visible {
-  outline: 2px solid var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  outline: 2px solid var(--color-accent-ring);
   outline-offset: 1px;
 }
 </style>

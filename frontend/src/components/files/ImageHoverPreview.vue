@@ -78,13 +78,13 @@ const posStyle = computed(() => {
      interactive while the preview floats. */
   pointer-events: none;
   padding: 4px;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
   border-radius: 10px;
-  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-2);
 }
 html.dark .img-hover-preview {
-  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.7);
+  box-shadow: var(--shadow-2);
 }
 
 .img-hover-preview__img {
@@ -98,6 +98,6 @@ html.dark .img-hover-preview {
   height: auto;
   border-radius: 6px;
   object-fit: contain;
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 </style>

@@ -334,7 +334,7 @@ onMounted(load);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 .audit-filter--grow {
   flex: 1;
@@ -347,10 +347,10 @@ onMounted(load);
   gap: 5px;
   height: 34px;
   padding: 0 12px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 8px;
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
   font-size: 12.5px;
   cursor: pointer;
   transition:
@@ -358,15 +358,15 @@ onMounted(load);
     border-color var(--dur-base) ease;
 }
 .audit-clear:hover {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 
 .audit-state {
   display: flex;
   justify-content: center;
   padding: 40px 0;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 .audit-spin {
   animation: audit-spin 0.9s linear infinite;
@@ -384,7 +384,7 @@ onMounted(load);
 
 .audit-table-wrap {
   overflow-x: auto;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 10px;
 }
 .audit-table {
@@ -400,23 +400,23 @@ onMounted(load);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--color-ink-3, #a1a1aa);
-  background: var(--color-canvas, #fafaf9);
+  color: var(--color-ink-3);
+  background: var(--color-canvas);
   padding: 9px 12px;
-  border-bottom: 1px solid var(--color-line, #ececec);
+  border-bottom: 1px solid var(--color-line);
   white-space: nowrap;
 }
 .audit-table tbody td {
   padding: 8px 12px;
-  border-bottom: 1px solid var(--color-line, #ececec);
-  color: var(--color-ink-1, #18181b);
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-ink-1);
   vertical-align: top;
 }
 .audit-table tbody tr:last-child td {
   border-bottom: 0;
 }
 .audit-table tbody tr:hover {
-  background: var(--color-hover, rgba(24, 24, 27, 0.045));
+  background: var(--color-hover);
 }
 
 .tabular {
@@ -425,7 +425,7 @@ onMounted(load);
 
 .audit-col-time {
   white-space: nowrap;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 .audit-col-user {
   white-space: nowrap;
@@ -435,11 +435,11 @@ onMounted(load);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 .audit-col-ip {
   white-space: nowrap;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 .audit-action-chip {
@@ -448,8 +448,8 @@ onMounted(load);
   border-radius: 9999px;
   font-size: 11px;
   font-weight: 500;
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-elevated);
+  color: var(--color-ink-2);
   white-space: nowrap;
 }
 
@@ -462,7 +462,7 @@ onMounted(load);
 }
 .audit-pager__range {
   font-size: 12px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   font-variant-numeric: tabular-nums;
 }
 .audit-pager__btns {
@@ -475,10 +475,10 @@ onMounted(load);
   gap: 4px;
   height: 32px;
   padding: 0 12px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 8px;
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-2, #52525b);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
   font-size: 12.5px;
   cursor: pointer;
   transition:
@@ -486,8 +486,8 @@ onMounted(load);
     border-color var(--dur-base) ease;
 }
 .audit-pager__btn:hover:not(:disabled) {
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
 }
 .audit-pager__btn:disabled {
   opacity: 0.45;
@@ -500,16 +500,16 @@ onMounted(load);
   gap: 6px;
   height: 32px;
   padding: 0 14px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 7px;
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-surface);
+  color: var(--color-ink-1);
   font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
 }
 .audit-retry:hover {
-  border-color: var(--color-accent, #6e72d9);
-  color: var(--color-accent, #6e72d9);
+  border-color: var(--color-accent);
+  color: var(--color-accent-ink);
 }
 </style>

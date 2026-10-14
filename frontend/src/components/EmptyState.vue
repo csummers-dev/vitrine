@@ -74,16 +74,16 @@ const toneClass = computed(() => `is-${props.tone}`);
      matching the app's accent-gradient treatment elsewhere. */
   background: linear-gradient(
     140deg,
-    var(--color-accent-soft, rgba(110, 114, 217, 0.1)) 0%,
-    var(--color-elevated, #f4f4f5) 100%
+    var(--color-accent-soft) 0%,
+    var(--color-elevated) 100%
   );
-  color: var(--color-accent, #6e72d9);
-  box-shadow: inset 0 0 0 1px var(--color-accent-soft, rgba(110, 114, 217, 0.1));
+  color: var(--color-accent-ink);
+  box-shadow: inset 0 0 0 1px var(--color-accent-soft);
 }
 
 .empty-state__icon.is-info {
-  background: var(--color-accent-soft, rgba(110, 114, 217, 0.1));
-  color: var(--color-accent, #6e72d9);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
 }
 
 .empty-state__icon.is-danger {
@@ -110,13 +110,13 @@ html.dark .empty-state__icon.is-warn {
 .empty-state__title {
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   letter-spacing: -0.005em;
 }
 
 .empty-state__hint {
   font-size: 12px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   max-width: 320px;
   line-height: 1.45;
 }

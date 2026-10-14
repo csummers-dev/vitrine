@@ -306,12 +306,12 @@ watch(createUserDirData, () => {
   width: 100%;
   height: 34px;
   padding: 0 10px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 6px;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   font: inherit;
   font-size: 13px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   outline: none;
   transition:
     border-color 0.1s ease,
@@ -319,13 +319,13 @@ watch(createUserDirData, () => {
 }
 
 .settings-input:focus {
-  border-color: var(--color-accent, #6e72d9);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 
 .settings-input:disabled {
-  background: var(--color-canvas, #fafaf9);
-  color: var(--color-ink-3, #a1a1aa);
+  background: var(--color-canvas);
+  color: var(--color-ink-3);
   cursor: not-allowed;
 }
 
@@ -336,7 +336,7 @@ watch(createUserDirData, () => {
 
 .settings-input.is-error:focus {
   border-color: var(--status-danger-fill);
-  box-shadow: 0 0 0 3px rgba(176, 96, 96, 0.25);
+  box-shadow: 0 0 0 3px var(--status-danger-soft);
 }
 
 .settings-helper {
@@ -360,9 +360,9 @@ watch(createUserDirData, () => {
 .user-form__legacy :deep(input[type="number"]) {
   height: 30px;
   padding: 0 8px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 6px;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   font-size: 12.5px;
   margin-bottom: 6px;
 }
@@ -371,11 +371,11 @@ watch(createUserDirData, () => {
   font-size: 12.5px;
   font-weight: 600;
   margin: 4px 0 8px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 
 .user-form__legacy :deep(.small) {
   font-size: 11.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 </style>

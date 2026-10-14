@@ -236,12 +236,8 @@ defineEmits<{
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
-  background-image: linear-gradient(
-    140deg,
-    rgba(255, 255, 255, 0.3),
-    rgba(255, 255, 255, 0) 60%
-  );
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
+  background-image: none;
+  box-shadow: var(--shadow-1);
 }
 
 .preview-info__header-text {
@@ -251,7 +247,7 @@ defineEmits<{
 .preview-info__eyebrow {
   font-size: 10px;
   font-weight: 600;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 2px;
@@ -259,7 +255,7 @@ defineEmits<{
 .preview-info__name {
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   line-height: 1.25;
   word-break: break-all;
 }
@@ -305,10 +301,10 @@ defineEmits<{
   align-items: center;
   gap: 4px;
   padding: 8px 4px;
-  border-radius: var(--radius-md, 8px);
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-2, #52525b);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
@@ -355,14 +351,14 @@ defineEmits<{
    lives inside the Icon child component, so it needs :deep() to pierce the
    scope; the --action-hue custom property inherits into it from the button. */
 .preview-info .info-action :deep(svg) {
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 
 /* Calm Minimal: hover tints with the single accent (was the per-action hue). */
 .preview-info .info-action:hover {
   background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
   border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-line));
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 .preview-info .info-action--danger:hover {
   background: var(--status-danger-soft);
@@ -370,9 +366,9 @@ defineEmits<{
   border-color: var(--status-danger-ring);
 }
 html.dark .preview-info .info-action--danger:hover {
-  background: rgba(127, 29, 29, 0.16);
+  background: var(--status-danger-soft);
   color: var(--status-danger);
-  border-color: rgba(248, 113, 113, 0.4);
+  border-color: var(--status-danger-ring);
 }
 
 /* ── Label + property rows ───────────────────────────────────────────────
@@ -388,7 +384,7 @@ html.dark .preview-info .info-action--danger:hover {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   margin-bottom: 10px;
 }
 
@@ -408,12 +404,12 @@ html.dark .preview-info .info-action--danger:hover {
 }
 .preview-info__row dt,
 :slotted(.preview-info__row dt) {
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   flex-shrink: 0;
 }
 .preview-info__row dd,
 :slotted(.preview-info__row dd) {
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   text-align: right;
   margin: 0;
   /* Allow long values (titles with many words, file paths embedded in
@@ -432,16 +428,16 @@ html.dark .preview-info .info-action--danger:hover {
 }
 .mono,
 :slotted(.mono) {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
 }
 
 .preview-info__path {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   word-break: break-all;
-  background: var(--color-elevated, #f4f4f5);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-elevated);
+  border: 1px solid var(--color-line);
   border-radius: 6px;
   padding: 6px 8px;
 }
@@ -453,9 +449,9 @@ html.dark .preview-info .info-action--danger:hover {
 /* ── Keyboard hints footer ──────────────────────────────────────────── */
 .preview-info__keyboard {
   padding: 12px 16px;
-  border-top: 1px solid var(--color-line, #ececec);
+  border-top: 1px solid var(--color-line);
   font-size: 11px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -464,13 +460,13 @@ html.dark .preview-info .info-action--danger:hover {
 }
 .preview-info__keyboard :deep(kbd),
 .preview-info__keyboard kbd {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 10px;
   padding: 1px 5px;
   border-radius: 4px;
-  background: var(--color-elevated, #f4f4f5);
-  border: 1px solid var(--color-line, #ececec);
-  color: var(--color-ink-1, #18181b);
+  background: var(--color-elevated);
+  border: 1px solid var(--color-line);
+  color: var(--color-ink-1);
   line-height: 1.4;
 }
 </style>

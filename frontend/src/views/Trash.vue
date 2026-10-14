@@ -329,7 +329,7 @@ const onConfirm = async () => {
   transition: background-color 0.12s ease;
 }
 .trash-row:hover {
-  background: var(--color-hover, rgba(24, 24, 27, 0.045));
+  background: var(--color-hover);
 }
 
 /* Colour tile — bg/text classes come from fileIconColor (same as the listing). */
@@ -346,7 +346,7 @@ const onConfirm = async () => {
 .trash-name {
   font-size: 13.5px;
   font-weight: 560;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -354,13 +354,13 @@ const onConfirm = async () => {
 .trash-meta {
   margin-top: 1px;
   font-size: 11.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .trash-from {
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
 }
 
 /* Per-row actions — revealed on hover / focus-within (desktop); always visible
@@ -384,9 +384,9 @@ const onConfirm = async () => {
   height: 30px;
   padding: 0 11px;
   border-radius: 8px;
-  border: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
-  color: var(--color-ink-2, #52525b);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
   font: inherit;
   font-size: 12px;
   font-weight: 550;

@@ -442,12 +442,12 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 34px;
   padding: 0 10px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 6px;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   font: inherit;
   font-size: 13px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   outline: none;
   transition:
     border-color 0.1s ease,
@@ -455,8 +455,8 @@ onBeforeUnmount(() => {
 }
 
 .settings-input:focus {
-  border-color: var(--color-accent, #6e72d9);
-  box-shadow: 0 0 0 3px var(--color-accent-ring, rgba(110, 114, 217, 0.3));
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 
 .settings-input--num {
@@ -464,7 +464,7 @@ onBeforeUnmount(() => {
 }
 
 .settings-input--mono {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 12.5px;
 }
 
@@ -478,7 +478,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: var(--color-accent, #6e72d9);
+  color: var(--color-accent-ink);
   text-decoration: none;
 }
 
@@ -498,27 +498,27 @@ onBeforeUnmount(() => {
 .legacy-slot__hint {
   margin: 0 0 12px;
   font-size: 12px;
-  color: var(--color-ink-2, #52525b);
+  color: var(--color-ink-2);
   line-height: 1.5;
 }
 
 .legacy-slot :deep(code) {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 11.5px;
   padding: 1px 5px;
   border-radius: 4px;
-  background: var(--color-elevated, #f4f4f5);
-  color: var(--color-ink-1, #18181b);
-  border: 1px solid var(--color-line, #ececec);
+  background: var(--color-elevated);
+  color: var(--color-ink-1);
+  border: 1px solid var(--color-line);
 }
 
 .legacy-slot :deep(input[type="text"]),
 .legacy-slot :deep(input[type="number"]) {
   height: 30px;
   padding: 0 8px;
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 6px;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   font-size: 12.5px;
 }
 
@@ -526,17 +526,17 @@ onBeforeUnmount(() => {
   font-size: 12.5px;
   font-weight: 600;
   margin: 4px 0 8px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
 }
 
 .legacy-slot :deep(.small) {
   font-size: 11.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 /* ── Hook command rows ──────────────────────────────────────────────── */
 .hook {
-  border: 1px solid var(--color-line, #ececec);
+  border: 1px solid var(--color-line);
   border-radius: 8px;
   margin-bottom: 6px;
   overflow: hidden;
@@ -548,37 +548,37 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: var(--color-canvas, #fafaf9);
+  background: var(--color-canvas);
   border: 0;
   cursor: pointer;
   font: inherit;
   font-size: 12.5px;
   font-weight: 500;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   text-align: left;
 }
 
 .hook__header:hover {
-  background: var(--color-elevated, #f4f4f5);
+  background: var(--color-elevated);
 }
 
 .hook__textarea {
   width: 100%;
   padding: 10px 12px;
   border: 0;
-  border-top: 1px solid var(--color-line, #ececec);
-  background: var(--color-surface, #fff);
-  font-family: var(--font-mono, monospace);
+  border-top: 1px solid var(--color-line);
+  background: var(--color-surface);
+  font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--color-ink-1, #18181b);
+  color: var(--color-ink-1);
   outline: none;
   resize: vertical;
   min-height: 80px;
 }
 
 .hook__textarea:focus {
-  background: var(--color-surface, #fff);
-  border-top-color: var(--color-accent, #6e72d9);
+  background: var(--color-surface);
+  border-top-color: var(--color-accent);
 }
 
 /* ── Sticky save bar ───────────────────────────────────────────────── */
@@ -593,15 +593,15 @@ onBeforeUnmount(() => {
   /* Solid canvas bg instead of translucent + backdrop-blur. Same fix as
      the User edit page — the blurred sticky bar caused keystroke lag on
      this page (Global is form-heavy). */
-  background: var(--color-canvas, #fafaf9);
-  border-top: 1px solid var(--color-line, #ececec);
+  background: var(--color-canvas);
+  border-top: 1px solid var(--color-line);
   z-index: 5;
 }
 
 .global-actions__hint {
   flex: 1;
   font-size: 11.5px;
-  color: var(--color-ink-3, #a1a1aa);
+  color: var(--color-ink-3);
 }
 
 .global-actions__btn {
@@ -620,13 +620,13 @@ onBeforeUnmount(() => {
 
 .global-actions__btn--primary {
   background: var(--accent-gradient);
-  border-color: var(--color-accent, #6e72d9);
-  color: white;
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
 }
 
 .global-actions__btn--primary:hover {
   background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong, #575cc7);
+  border-color: var(--color-accent-strong);
 }
 
 @media (max-width: 540px) {
