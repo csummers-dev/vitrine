@@ -78,3 +78,12 @@ describe("NavStack", () => {
     expect(s.index).toBe(NAV_STACK_MAX - 1);
   });
 });
+
+describe("NavStack.setCurrentPath", () => {
+  it("updates the current entry in place", () => {
+    const s = new NavStack();
+    s.push("a", "/1");
+    s.setCurrentPath("/1?q=x");
+    expect(s.entries).toEqual([{ id: "a", path: "/1?q=x" }]);
+  });
+});

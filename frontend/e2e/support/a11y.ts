@@ -27,7 +27,13 @@ export async function expectAccessible(
         `${v.id} (${v.impact}): ${v.help}\n    ` +
         v.nodes
           .slice(0, 5)
-          .map((n) => n.target.join(" "))
+          .map(
+            (n) =>
+              n.target.join(" ") +
+              (n.failureSummary
+                ? `\n      ${n.failureSummary.replace(/\n/g, "\n      ")}`
+                : "")
+          )
           .join("\n    ")
     );
   expect(bad, "accessibility violations").toEqual([]);

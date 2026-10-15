@@ -224,18 +224,25 @@
           </div>
 
           <div id="listing" class="list file-icons">
-            <item
-              v-for="item in req.items.slice(0, showLimit)"
-              :key="base64(item.name)"
-              v-bind:index="item.index"
-              v-bind:name="item.name"
-              v-bind:isDir="item.isDir"
-              v-bind:url="item.url"
-              v-bind:modified="item.modified"
-              v-bind:type="item.type"
-              v-bind:size="item.size"
-              readOnly
-            />
+            <div
+              class="listing-grid-role"
+              role="grid"
+              aria-readonly="true"
+              :aria-label="t('files.files')"
+            >
+              <item
+                v-for="item in req.items.slice(0, showLimit)"
+                :key="base64(item.name)"
+                v-bind:index="item.index"
+                v-bind:name="item.name"
+                v-bind:isDir="item.isDir"
+                v-bind:url="item.url"
+                v-bind:modified="item.modified"
+                v-bind:type="item.type"
+                v-bind:size="item.size"
+                readOnly
+              />
+            </div>
             <button
               v-if="req.items.length > showLimit"
               type="button"

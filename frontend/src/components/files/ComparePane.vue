@@ -160,19 +160,26 @@
         hint="This folder has no items."
       />
 
-      <div v-else class="fb-listing list compare-listing">
+      <div
+        v-else
+        class="fb-listing list compare-listing"
+        role="grid"
+        aria-multiselectable="true"
+        aria-label="Files in the second pane"
+      >
         <!-- Column header (Name / Modified / Size) — reuses the global
              `.item.header` grid from listing.css (matched via `.fb-listing`),
              so the columns line up with the rows below. Sits above the scroller
              (sticky) rather than inside it, so it never scrolls away. -->
-        <div class="item header compare-colhead">
-          <div class="item__select">
+        <div class="item header compare-colhead" role="row">
+          <div class="item__select" role="columnheader">
             <div
               :class="[
                 'item__checkbox',
                 allSelectedB && 'item__checkbox--checked',
               ]"
               role="checkbox"
+              :aria-label="allSelectedB ? 'Deselect all' : 'Select all'"
               :aria-checked="allSelectedB"
               tabindex="0"
               :title="allSelectedB ? 'Deselect all' : 'Select all'"
@@ -190,8 +197,17 @@
           <p
             :class="{ active: sortBy === 'name' }"
             class="name"
-            role="button"
+            role="columnheader"
+            :aria-sort="
+              sortBy === 'name'
+                ? sortAsc
+                  ? 'ascending'
+                  : 'descending'
+                : 'none'
+            "
             tabindex="0"
+            @keydown.enter.prevent="setSort('name')"
+            @keydown.space.prevent="setSort('name')"
             title="Sort by name"
             aria-label="Sort by name"
             @click="setSort('name')"
@@ -202,8 +218,17 @@
           <p
             :class="{ active: sortBy === 'modified' }"
             class="modified"
-            role="button"
+            role="columnheader"
+            :aria-sort="
+              sortBy === 'modified'
+                ? sortAsc
+                  ? 'ascending'
+                  : 'descending'
+                : 'none'
+            "
             tabindex="0"
+            @keydown.enter.prevent="setSort('modified')"
+            @keydown.space.prevent="setSort('modified')"
             title="Sort by modified date"
             aria-label="Sort by modified date"
             @click="setSort('modified')"
@@ -214,8 +239,17 @@
           <p
             :class="{ active: sortBy === 'size' }"
             class="size"
-            role="button"
+            role="columnheader"
+            :aria-sort="
+              sortBy === 'size'
+                ? sortAsc
+                  ? 'ascending'
+                  : 'descending'
+                : 'none'
+            "
             tabindex="0"
+            @keydown.enter.prevent="setSort('size')"
+            @keydown.space.prevent="setSort('size')"
             title="Sort by size"
             aria-label="Sort by size"
             @click="setSort('size')"
@@ -223,16 +257,19 @@
             <span>Size</span>
             <Icon :name="colIcon('size')" />
           </p>
-          <div class="header__actions"></div>
+          <div class="header__actions" role="presentation"></div>
         </div>
         <!-- Inline new folder / file (#6): one-row input at the top of the list,
              scoped to pane B's folder. Mirrors pane A's placement (below the
              column header, above the rows). -->
-        <div v-if="inlineNewKindB" @click.stop>
-          <InlineNewItem :kind="inlineNewKindB" :target="paneNewTarget" />
+        <div v-if="inlineNewKindB" role="row" @click.stop>
+          <div role="gridcell" class="listing-grid-role">
+            <InlineNewItem :kind="inlineNewKindB" :target="paneNewTarget" />
+          </div>
         </div>
         <RecycleScroller
           ref="scrollerRef"
+          v-quiet-resize
           class="compare-scroller"
           :items="listRows"
           :item-size="null"
@@ -406,6 +443,8 @@
 </template>
 
 <script setup lang="ts">
+import { useRootLabel } from "@/composables/useRootLabel";
+import { vQuietResize } from "@/utils/quietResizeObserver";
 import {
   computed,
   nextTick,
@@ -648,7 +687,10 @@ const sortMenuItems = computed<MenuItem[]>(() => [
 
 // Current-folder details for the compact header (Request: header should carry
 // the same kind of info pane A's hero does — name + item count).
-const folderName = computed(() => panes.req?.name || "Home");
+const { rootLabel } = useRootLabel();
+const folderName = computed(
+  () => panes.req?.name || rootLabel.value || "My files"
+);
 const itemCount = computed(() => panes.req?.items?.length ?? 0);
 
 // Bottom breadcrumb: when the path overflows the bar it scrolls horizontally

@@ -32,11 +32,59 @@ const PREF_KEY = "favorites";
  */
 const TITLES_KEY = "favoriteTitles";
 
+/** Phase 6, Decision 6: each favorite gets a colour dot, picked from the
+ *  kind palette by a stable hash of its path unless the user chose one. */
+const COLORS_KEY = "favoriteColors";
+export const FAVORITE_COLORS = [
+  "folder",
+  "video",
+  "audio",
+  "image",
+  "pdf",
+  "archive",
+  "epub",
+  "comic",
+  "csv",
+  "code",
+] as const;
+export type FavoriteColor = (typeof FAVORITE_COLORS)[number];
+
+/** Stable colour for a path (FNV-1a over its characters). */
+export function autoFavoriteColor(path: string): FavoriteColor {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < path.length; i++) {
+    h ^= path.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return FAVORITE_COLORS[h % FAVORITE_COLORS.length];
+}
+
 export function useFavorites() {
   const prefs = usePreferences();
 
   /** Reactive list of favorited folder paths. Insertion order. */
   const favorites = computed<string[]>(() => prefs.get<string[]>(PREF_KEY, []));
+
+  /** Reactive map of path → chosen colour. */
+  const colors = computed<Record<string, string>>(() =>
+    prefs.get<Record<string, string>>(COLORS_KEY, {})
+  );
+  const isColor = (c: unknown): c is FavoriteColor =>
+    FAVORITE_COLORS.includes(c as FavoriteColor);
+  /** The dot colour for a favorite: the chosen one, else its own auto one. */
+  const colorFor = (path: string): FavoriteColor => {
+    const c = colors.value[path];
+    return isColor(c) ? c : autoFavoriteColor(path);
+  };
+  /** Choose a colour, or clear the choice ("" or undefined) to go back to
+   *  the automatic one. */
+  const setColor = (path: string, color?: FavoriteColor | "") => {
+    const next = { ...prefs.get<Record<string, string>>(COLORS_KEY, {}) };
+    if (color && isColor(color)) next[path] = color;
+    else delete next[path];
+    void prefs.set(COLORS_KEY, next);
+  };
+  const hasChosenColor = (path: string) => isColor(colors.value[path]);
 
   /** Reactive map of path → custom display title. */
   const titles = computed<Record<string, string>>(() =>
@@ -102,6 +150,12 @@ export function useFavorites() {
       PREF_KEY,
       current.filter((p) => p !== path)
     );
+    const cols = prefs.get<Record<string, string>>(COLORS_KEY, {});
+    if (path in cols) {
+      const nextCols = { ...cols };
+      delete nextCols[path];
+      void prefs.set(COLORS_KEY, nextCols);
+    }
     const t = prefs.get<Record<string, string>>(TITLES_KEY, {});
     if (path in t) {
       const next = { ...t };
@@ -183,6 +237,16 @@ export function useFavorites() {
       }
     }
     if (titlesChanged) void prefs.set(TITLES_KEY, nextTitles);
+
+    const currentColors = prefs.get<Record<string, string>>(COLORS_KEY, {});
+    let colorsChanged = false;
+    const nextColors: Record<string, string> = {};
+    for (const [k, v] of Object.entries(currentColors)) {
+      const r = remap(k);
+      if (r !== null) colorsChanged = true;
+      nextColors[r ?? k] = v;
+    }
+    if (colorsChanged) void prefs.set(COLORS_KEY, nextColors);
   };
 
   /** Insert a favorite at a specific position. Used to restore the exact
@@ -200,6 +264,10 @@ export function useFavorites() {
   return {
     favorites,
     titles,
+    colors,
+    colorFor,
+    setColor,
+    hasChosenColor,
     isFavorited,
     displayName,
     titleFor,

@@ -88,5 +88,36 @@ export function useRecents() {
     );
   };
 
-  return { recents, track, clear, remove };
+  /** Follow a rename or move made in the app: `from`/`to` are server paths
+   *  (decoded, no /files prefix). A folder moves every recent file under it. */
+  const renamePath = (from: string, to: string) => {
+    if (!from || !to || from === to) return;
+    const strip = (p: string) => (p.length > 1 ? p.replace(/\/+$/, "") : p);
+    const f = strip(from);
+    const t = strip(to);
+    let changed = false;
+    const next = prefs.get<RecentEntry[]>(PREF_KEY, []).map((r) => {
+      if (r.path === f) {
+        changed = true;
+        return { ...r, path: t, name: t.slice(t.lastIndexOf("/") + 1) };
+      }
+      if (r.path.startsWith(f + "/")) {
+        changed = true;
+        return { ...r, path: t + r.path.slice(f.length) };
+      }
+      return r;
+    });
+    if (changed) void prefs.set(PREF_KEY, next);
+  };
+
+  /** Drop entries (and anything under them) that no longer exist. */
+  const removeMany = (paths: string[]) => {
+    if (!paths.length) return;
+    const gone = new Set(paths);
+    const current = prefs.get<RecentEntry[]>(PREF_KEY, []);
+    const next = current.filter((r) => !gone.has(r.path));
+    if (next.length !== current.length) void prefs.set(PREF_KEY, next);
+  };
+
+  return { recents, track, clear, remove, renamePath, removeMany };
 }

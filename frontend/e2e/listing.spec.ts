@@ -89,7 +89,7 @@ test.describe("sorting and layout", () => {
       .poll(names)
       .toEqual(["Documents", "Music", "photo.jpg", "readme.md"]);
 
-    await app.getByRole("button", { name: "Sort by name" }).click();
+    await app.getByRole("columnheader", { name: "Sort by name" }).click();
     await expect
       .poll(names)
       .toEqual(["Music", "Documents", "readme.md", "photo.jpg"]);

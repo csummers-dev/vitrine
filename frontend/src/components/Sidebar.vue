@@ -74,99 +74,38 @@
            The mobile DRAWER keeps its create buttons: touch has no
            right-click, so the drawer stays the command hub there. -->
 
-      <!-- Quick links -->
+      <!-- Main places (Phase 6, 3.2): My files, Recent, Storage, Duplicates,
+           Trash. The active one is a raised pill with an accent icon. -->
       <nav
         class="px-2 pt-2 space-y-0.5 text-[13px] max-md:px-0 max-md:flex max-md:flex-col max-md:items-center s-rail-row"
+        aria-label="Places"
       >
         <button
-          @click="toRoot"
-          @contextmenu.prevent="onMyFilesContextMenu($event)"
+          v-for="item in navItems"
+          :key="item.key"
+          type="button"
           :class="[
-            'w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition text-left max-md:w-10 max-md:h-10 max-md:p-0 max-md:justify-center max-md:gap-0 s-rail-btn',
-            mainNavActive
-              ? 'bg-selected text-accent-ink font-medium'
-              : 'hover:bg-hover text-ink-2',
+            's-nav w-full flex items-center gap-2 px-2 py-1.5 transition text-left max-md:w-10 max-md:h-10 max-md:p-0 max-md:justify-center max-md:gap-0 s-rail-btn',
+            item.active ? 's-nav--active' : '',
           ]"
-          :title="rootLabel || $t('sidebar.myFiles')"
-          :aria-label="rootLabel || $t('sidebar.myFiles')"
+          :title="item.label"
+          :aria-label="item.label"
+          :aria-current="item.active ? 'page' : undefined"
+          :data-nav="item.key"
+          @click="item.go"
+          @contextmenu="item.key === 'files' && onMyFilesContextMenu($event)"
         >
-          <Icon
-            name="folder"
-            :size="14"
-            class="shrink-0"
-            :class="
-              mainNavActive
-                ? 'text-[var(--color-accent-ink)]'
-                : 'text-[var(--color-ink-2)]'
-            "
-          />
-          <span class="flex-1 max-md:hidden s-hide">{{
-            rootLabel || $t("sidebar.myFiles")
+          <Icon :name="item.icon" :size="15" class="s-nav__icon shrink-0" />
+          <span class="flex-1 truncate max-md:hidden s-hide">{{
+            item.label
           }}</span>
           <span
-            v-if="filesCount > 0"
+            v-if="item.key === 'files' && filesCount > 0"
             class="text-[11px] text-ink-3 tabular max-md:hidden s-hide"
           >
             {{ filesCount }}
           </span>
         </button>
-
-        <!-- Trash / recycle bin (2.4.0 Stage 2). Deleted items land here and
-             can be restored or removed for good. -->
-        <button
-          @click="toTrash"
-          :class="[
-            'w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition text-left max-md:w-10 max-md:h-10 max-md:p-0 max-md:justify-center max-md:gap-0 s-rail-btn',
-            trashNavActive
-              ? 'bg-selected text-accent-ink font-medium'
-              : 'hover:bg-hover text-ink-2',
-          ]"
-          :title="$t('sidebar.trash')"
-          :aria-label="$t('sidebar.trash')"
-        >
-          <Icon
-            name="trash-2"
-            :size="14"
-            class="shrink-0"
-            :class="
-              trashNavActive
-                ? 'text-[var(--color-accent-ink)]'
-                : 'text-[var(--color-ink-2)]'
-            "
-          />
-          <span class="flex-1 max-md:hidden s-hide">{{
-            $t("sidebar.trash")
-          }}</span>
-        </button>
-
-        <!-- Storage (4.0 5.1): what uses space. -->
-        <button
-          @click="toStorage"
-          :class="[
-            'w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition text-left max-md:w-10 max-md:h-10 max-md:p-0 max-md:justify-center max-md:gap-0 s-rail-btn',
-            storageNavActive
-              ? 'bg-selected text-accent-ink font-medium'
-              : 'hover:bg-hover text-ink-2',
-          ]"
-          title="Storage"
-          aria-label="Storage"
-        >
-          <Icon
-            name="chart-pie"
-            :size="14"
-            class="shrink-0"
-            :class="
-              storageNavActive
-                ? 'text-[var(--color-accent-ink)]'
-                : 'text-[var(--color-ink-2)]'
-            "
-          />
-          <span class="flex-1 max-md:hidden s-hide">Storage</span>
-        </button>
-
-        <!-- Settings is reachable by clicking the username row below (which
-             routes to Profile/Settings), so a separate nav item here was a
-             duplicate of the same destination. -->
       </nav>
 
       <!-- Scrollable middle region. ONLY Favorites + Recents live here, so
@@ -201,12 +140,10 @@
             @click="navigateFavorite(path)"
             @contextmenu="onFavoriteContextMenu(path, $event)"
           >
-            <Icon
-              name="star"
-              :size="16"
-              :stroke-width="0"
-              fill="currentColor"
-              class="text-[var(--c-amber)]"
+            <span
+              class="s-fav-dot s-fav-dot--rail"
+              :class="`fav-dot--${favoritesComposable.colorFor(path)}`"
+              aria-hidden="true"
             />
           </button>
         </nav>
@@ -291,12 +228,10 @@
                 @click="navigateFavorite(path)"
                 @keydown.enter="navigateFavorite(path)"
               >
-                <Icon
-                  name="star"
-                  :size="12"
-                  :stroke-width="0"
-                  fill="currentColor"
-                  class="text-[var(--c-amber)] shrink-0"
+                <span
+                  class="s-fav-dot"
+                  :class="`fav-dot--${favoritesComposable.colorFor(path)}`"
+                  aria-hidden="true"
                 />
                 <span class="truncate flex-1">{{ favoriteName(path) }}</span>
               </div>
@@ -324,7 +259,7 @@
                 class="transition-transform shrink-0"
                 :class="isSectionCollapsed('saved') ? '-rotate-90' : ''"
               />
-              <span>Saved searches</span>
+              <span>Smart folders</span>
             </button>
           </div>
           <ul
@@ -338,12 +273,9 @@
             >
               <router-link
                 :to="savedSearchUrl(s)"
-                class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] hover:bg-hover transition"
-                :class="
-                  $route.query.saved === s.id
-                    ? 'bg-hover text-ink-1 font-medium'
-                    : 'text-ink-2'
-                "
+                class="s-nav w-full flex items-center gap-2 px-2 py-1.5 text-[13px] transition"
+                :class="$route.query.saved === s.id ? 's-nav--active' : ''"
+                :aria-current="$route.query.saved === s.id ? 'page' : undefined"
                 :title="`${s.query} — in ${s.folder}`"
               >
                 <Icon
@@ -416,57 +348,6 @@
                     />
                   </span>
                 </span>
-              </router-link>
-            </li>
-          </ul>
-        </nav>
-
-        <!-- Recent (v1.3 S3-1). MRU log of recently-previewed files.
-           Capped at 5 visible; "View all" disclosure expands the rest
-           (up to the 50-cap from the store). Click opens preview by
-           routing to the file's URL. -->
-        <nav
-          v-if="isLoggedIn && recents.length > 0 && !collapsed"
-          class="px-2 pt-4 max-md:hidden"
-        >
-          <div class="px-2 pb-1.5 flex items-center justify-between gap-2">
-            <button
-              type="button"
-              class="flex items-center gap-1 text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] hover:text-ink-2 transition"
-              :aria-expanded="!isSectionCollapsed('recent')"
-              @click="toggleSection('recent')"
-            >
-              <Icon
-                name="chevron-down"
-                :size="11"
-                :stroke-width="2.4"
-                class="transition-transform shrink-0"
-                :class="isSectionCollapsed('recent') ? '-rotate-90' : ''"
-              />
-              <span>Recent</span>
-            </button>
-          </div>
-          <ul
-            v-show="!isSectionCollapsed('recent')"
-            class="list-none m-0 p-0 space-y-0.5"
-          >
-            <li
-              v-for="r in visibleRecents"
-              :key="r.path"
-              @contextmenu="onRecentContextMenu(r, $event)"
-            >
-              <router-link
-                :to="`/files${r.path}`"
-                class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] hover:bg-hover text-ink-2 transition"
-                :title="r.path"
-                @click="onRecentClick(`/files${r.path}`, $event)"
-              >
-                <Icon
-                  name="file"
-                  :size="12"
-                  class="text-[var(--color-ink-3)] shrink-0"
-                />
-                <span class="truncate flex-1">{{ recentLabel(r.name) }}</span>
               </router-link>
             </li>
           </ul>
@@ -651,7 +532,6 @@ import ContextMenu from "@/components/ContextMenu.vue";
 import prettyBytes from "pretty-bytes";
 import { usePreferences } from "@/composables/usePreferences";
 import { displayName } from "@/utils/filename";
-import { useRecents } from "@/composables/useRecents";
 import { useContinueShelf, SHELF_ICONS } from "@/composables/useContinueShelf";
 import {
   savedSearchUrl,
@@ -660,13 +540,10 @@ import {
 } from "@/composables/useSavedSearches";
 import { useFavorites } from "@/composables/useFavorites";
 import { useFavoriteTitleDialog } from "@/composables/useFavoriteTitleDialog";
+import { useFavoriteColorDialog } from "@/composables/useFavoriteColorDialog";
 import { useRootLabel } from "@/composables/useRootLabel";
 import { useDropTarget } from "@/composables/useDropTarget";
 import { useActivePane } from "@/composables/useActivePane";
-
-// How many recents to show before the "View all" disclosure kicks in.
-// 5 keeps the section compact in the default sidebar layout.
-const RECENTS_INITIAL = 5;
 
 const USAGE_DEFAULT = { used: "0 B", total: "0 B", usedPercentage: 0 };
 
@@ -690,9 +567,9 @@ export default {
     // the Options API via setup() so the computed below can read
     // them. RECENTS_INITIAL is exposed too so the template can show
     // the "View all" disclosure conditionally.
-    const recentsComposable = useRecents();
     const favoritesComposable = useFavorites();
     const favTitleDialog = useFavoriteTitleDialog();
+    const favColorDialog = useFavoriteColorDialog();
     const rootLabelComposable = useRootLabel();
     // Folder navigation (Home / favorites / recents) targets the active pane:
     // pane B in place when split + B active, else a normal route push (pane A).
@@ -725,33 +602,6 @@ export default {
       sidebarMenuPos.value = { x: event.clientX, y: event.clientY };
       sidebarMenuShow.value = true;
     };
-    const copyToClipboard = async (text) => {
-      // Modern path first; on failure (insecure HTTP context / denied
-      // permission) fall back to a hidden-textarea execCommand copy so
-      // LAN/HTTP homelab deployments still work. Confirm with a toast either
-      // way — the OS clipboard is invisible, so the user needs feedback.
-      try {
-        await navigator.clipboard.writeText(text);
-        toast.success(`Path copied: ${text}`);
-        return;
-      } catch {
-        /* fall through to the legacy path */
-      }
-      try {
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        ta.setAttribute("readonly", "");
-        ta.style.position = "fixed";
-        ta.style.opacity = "0";
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        document.body.removeChild(ta);
-        toast.success(`Path copied: ${text}`);
-      } catch {
-        /* both methods failed — silently no-op */
-      }
-    };
     // Favorites: Open · display title · remove. The title editor opens the
     // global FavoriteTitleDialog (mounted in App.vue).
     const onFavoriteContextMenu = (path, event) => {
@@ -766,10 +616,18 @@ export default {
         },
         {
           label: "Favorites display title…",
-          icon: "star",
+          icon: "pencil",
           action: () => {
             hideSidebarMenu();
             favTitleDialog.open(path);
+          },
+        },
+        {
+          label: "Change colour…",
+          icon: "palette",
+          action: () => {
+            hideSidebarMenu();
+            favColorDialog.open(path);
           },
         },
         { type: "separator" },
@@ -867,37 +725,6 @@ export default {
           action: () => {
             hideSidebarMenu();
             savedSearches.remove(s.id);
-          },
-        },
-      ]);
-    };
-    // Recent: Open · copy path · remove from the recents log.
-    const onRecentContextMenu = (recent, event) => {
-      openSidebarMenu(event, [
-        {
-          label: "Open",
-          icon: "external-link",
-          action: () => {
-            hideSidebarMenu();
-            navigateActivePane(`/files${recent.path}`);
-          },
-        },
-        {
-          label: "Copy path",
-          icon: "link",
-          action: () => {
-            hideSidebarMenu();
-            void copyToClipboard(recent.path);
-          },
-        },
-        { type: "separator" },
-        {
-          label: "Remove from Recent",
-          icon: "x",
-          destructive: true,
-          action: () => {
-            hideSidebarMenu();
-            recentsComposable.remove(recent.path);
           },
         },
       ]);
@@ -1101,9 +928,7 @@ export default {
       usageAbortController: new AbortController(),
       prefs,
       recentLabel,
-      recentsComposable,
       favoritesComposable,
-      RECENTS_INITIAL,
       performDrop,
       draggingFavIndex,
       favDropAfter,
@@ -1130,7 +955,6 @@ export default {
       sidebarMenuItems,
       hideSidebarMenu,
       onFavoriteContextMenu,
-      onRecentContextMenu,
       onContinueContextMenu,
       onSavedSearchContextMenu,
       savedSearchList: savedSearches.list,
@@ -1160,6 +984,47 @@ export default {
     trashNavActive() {
       return this.$route.path.startsWith("/trash");
     },
+    /** Main places, in sidebar order (Phase 6, 3.2). */
+    navItems() {
+      const p = this.$route.path;
+      return [
+        {
+          key: "files",
+          label: this.rootLabel || this.$t("sidebar.myFiles"),
+          icon: "folder",
+          active: this.mainNavActive,
+          go: this.toRoot,
+        },
+        {
+          key: "recent",
+          label: "Recent",
+          icon: "clock",
+          active: p.startsWith("/recent"),
+          go: this.toRecent,
+        },
+        {
+          key: "storage",
+          label: "Storage",
+          icon: "chart-pie",
+          active: this.storageNavActive,
+          go: this.toStorage,
+        },
+        {
+          key: "duplicates",
+          label: "Duplicates",
+          icon: "copy",
+          active: p.startsWith("/duplicates"),
+          go: this.toDuplicates,
+        },
+        {
+          key: "trash",
+          label: this.$t("sidebar.trash"),
+          icon: "trash-2",
+          active: this.trashNavActive,
+          go: this.toTrash,
+        },
+      ];
+    },
     storageNavActive() {
       return this.$route.path.startsWith("/storage");
     },
@@ -1184,23 +1049,11 @@ export default {
       const fileStore = useFileStore();
       return (fileStore.req?.numDirs ?? 0) + (fileStore.req?.numFiles ?? 0);
     },
-    /** Recents + Favorites (v1.3 S3-1 / S3-2). Reactive reads from
-     *  the composables — the underlying prefs Pinia store handles
-     *  cross-tab + post-mutation reactivity. */
-    recents() {
-      return this.recentsComposable.recents.value;
-    },
     continueItems() {
       return this.continueShelf.items.value;
     },
     favorites() {
       return this.favoritesComposable.favorites.value;
-    },
-    /** First N recents OR the full list depending on the
-     *  Always capped at RECENTS_INITIAL (5) — the sidebar shows only the
-     *  5 most recent files (the store still keeps up to 50). */
-    visibleRecents() {
-      return this.recents.slice(0, RECENTS_INITIAL);
     },
   },
   methods: {
@@ -1247,6 +1100,20 @@ export default {
       this.$router.push({ path: "/trash" });
       this.closeHovers();
     },
+    toRecent() {
+      this.$router.push({ path: "/recent" });
+      this.closeHovers();
+    },
+    toDuplicates() {
+      const p = this.$route.path.startsWith("/files")
+        ? decodeURIComponent(this.$route.path.slice("/files".length)).replace(
+            /\/$/,
+            ""
+          )
+        : "";
+      this.$router.push({ path: "/duplicates", query: p ? { path: p } : {} });
+      this.closeHovers();
+    },
     toStorage() {
       // Open on the folder being browsed, so "what's big here?" is one click.
       const p = this.$route.path.startsWith("/files")
@@ -1284,6 +1151,47 @@ export default {
 </script>
 
 <style scoped>
+/* Places and smart folders (Phase 6, 3.2): rows are rounded; the active one is
+   a raised pill (lifted panel colour in dark) with an accent icon. */
+.s-nav {
+  border-radius: var(--radius-md);
+  color: var(--color-ink-2);
+}
+.s-nav:hover {
+  background: var(--color-hover);
+  color: var(--color-ink-1);
+}
+.s-nav__icon {
+  color: var(--color-ink-3);
+}
+.s-nav--active,
+.s-nav--active:hover {
+  background: var(--color-raised);
+  box-shadow: var(--shadow-1);
+  color: var(--color-ink-1);
+  font-weight: 600;
+}
+.s-nav--active .s-nav__icon,
+.s-nav--active :deep(svg) {
+  color: var(--color-accent-ink);
+}
+.s-nav:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+/* Favorite colour dot (Decision 6). */
+.s-fav-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+.s-fav-dot--rail {
+  width: 12px;
+  height: 12px;
+}
+
 /* Sign-out button: rose-tinted so the destructive "leave" action stands out
    from the neutral nav chrome. Stronger rose + soft rose wash on hover. */
 .sidebar-logout {

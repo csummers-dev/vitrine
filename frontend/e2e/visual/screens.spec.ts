@@ -81,6 +81,80 @@ const SCREENS: Screen[] = [
     },
   },
   {
+    name: "shell-collapsed",
+    sizes: ["desktop"],
+    open: async (c) => {
+      await signedIn(c);
+      await expect(row(c.page, "readme.md")).toBeVisible();
+      await c.page.getByRole("button", { name: "Collapse sidebar" }).click();
+      await expect(
+        c.page.getByRole("button", { name: "Expand sidebar" })
+      ).toBeVisible();
+    },
+  },
+  {
+    name: "shell-drawer",
+    sizes: ["phone"],
+    open: async (c) => {
+      await signedIn(c);
+      await expect(row(c.page, "readme.md")).toBeVisible();
+      await c.page
+        .getByRole("button", { name: "Open navigation menu" })
+        .click();
+      await expect(
+        c.page.getByRole("button", { name: "Storage" })
+      ).toBeVisible();
+    },
+  },
+  {
+    name: "shell-split",
+    sizes: ["desktop"],
+    open: async (c) => {
+      await signedIn(c);
+      await expect(row(c.page, "readme.md")).toBeVisible();
+      await c.page.getByRole("button", { name: "More", exact: true }).click();
+      await c.page
+        .getByRole("menuitem", { name: "Split view", exact: true })
+        .click();
+      await expect(
+        c.page.getByRole("grid", { name: "Files in the second pane" })
+      ).toBeVisible();
+      await c.page.mouse.move(0, 0);
+    },
+  },
+  {
+    name: "recent",
+    sizes: ["desktop", "phone"],
+    open: async (c) => {
+      const now = c.fake.clock ?? Date.now();
+      c.fake.preferences = {
+        recents: [
+          {
+            path: "/readme.md",
+            name: "readme.md",
+            isDir: false,
+            accessedAt: now - 5 * 60e3,
+          },
+          {
+            path: "/Documents/budget.csv",
+            name: "budget.csv",
+            isDir: false,
+            accessedAt: now - 3 * 3600e3,
+          },
+          {
+            path: "/Documents/notes.txt",
+            name: "notes.txt",
+            isDir: false,
+            accessedAt: now - 2 * 86400e3,
+          },
+        ],
+      };
+      await signedIn(c);
+      await c.page.goto("/recent");
+      await expect(c.page.getByTestId("recent-list")).toBeVisible();
+    },
+  },
+  {
     name: "storage",
     sizes: ["desktop"],
     open: async (c) => {

@@ -48,6 +48,7 @@ const titles = {
   Audit: "settings.audit",
   Webhooks: "settings.webhooks",
   Trash: "sidebar.trash",
+  Recent: "sidebar.recent",
   Forbidden: "errors.forbidden",
   NotFound: "errors.notFound",
   InternalServerError: "errors.internal",
@@ -81,6 +82,21 @@ const routes = [
         path: ":path*",
         name: "Files",
         component: Files,
+      },
+    ],
+  },
+  {
+    // Recent files (Phase 6, 3.5).
+    path: "/recent",
+    component: Layout,
+    meta: {
+      requiresAuth: true,
+    },
+    children: [
+      {
+        path: "",
+        name: "Recent",
+        component: () => import("@/views/Recent.vue"),
       },
     ],
   },

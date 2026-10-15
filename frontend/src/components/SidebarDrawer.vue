@@ -29,30 +29,22 @@
       <nav v-if="isLoggedIn" class="sd__section sd__nav">
         <div class="sd__section-label">Navigate</div>
         <button
+          v-for="item in navItems"
+          :key="item.key"
           type="button"
           class="sd__navrow"
-          :class="{ 'is-active': isFiles }"
-          @click="goFiles"
+          :class="{ 'is-active': item.active }"
+          :aria-current="item.active ? 'page' : undefined"
+          @click="item.go"
         >
-          <Icon name="folder" :size="15" />
-          <span class="sd__navrow-label">{{
-            rootLabel || t("sidebar.myFiles")
-          }}</span>
-          <span v-if="filesCount > 0" class="sd__navrow-count">
+          <Icon :name="item.icon" :size="15" />
+          <span class="sd__navrow-label">{{ item.label }}</span>
+          <span
+            v-if="item.key === 'files' && filesCount > 0"
+            class="sd__navrow-count"
+          >
             {{ filesCount }}
           </span>
-        </button>
-
-        <!-- Trash (v2.7.2): the drawer had NO route to the recycle bin at all
-           — desktop parity, and on mobile this is the only way in. -->
-        <button
-          type="button"
-          class="sd__navrow"
-          :class="{ 'is-active': isTrash }"
-          @click="goTrash"
-        >
-          <Icon name="trash-2" :size="15" />
-          <span class="sd__navrow-label">{{ t("sidebar.trash") }}</span>
         </button>
 
         <!-- Settings + Profile both live on the user row at the bottom (the
@@ -125,66 +117,13 @@
               :title="path"
               @click="(e) => onFavTap(path, e)"
             >
-              <Icon
-                name="star"
-                :size="13"
-                :stroke-width="0"
-                fill="currentColor"
-                class="sd__fav-star"
+              <span
+                class="sd__fav-dot"
+                :class="`fav-dot--${favoritesComposable.colorFor(path)}`"
+                aria-hidden="true"
               />
               <span class="sd__fav-name">{{ favoriteName(path) }}</span>
             </button>
-          </li>
-        </ul>
-      </nav>
-
-      <!-- ── Recent (mobile parity with the desktop sidebar) ──────────────
-         MRU log of recently-previewed files. Capped at 5 with a "View all"
-         disclosure; collapsible (state shared cross-device with desktop). -->
-      <nav
-        v-if="isLoggedIn && recents.length > 0"
-        class="sd__section sd__recents"
-      >
-        <div class="sd__section-head">
-          <button
-            type="button"
-            class="sd__section-toggle"
-            :aria-expanded="!isCollapsed('recent')"
-            @click.stop="toggleSection('recent')"
-          >
-            <Icon
-              name="chevron-down"
-              :size="12"
-              :stroke-width="2.4"
-              class="sd__chevron"
-              :class="{ 'sd__chevron--collapsed': isCollapsed('recent') }"
-            />
-            <span>Recent</span>
-          </button>
-          <button
-            v-if="recents.length > RECENTS_INITIAL && !isCollapsed('recent')"
-            type="button"
-            class="sd__viewall"
-            @click.stop="recentsExpanded = !recentsExpanded"
-          >
-            {{ recentsExpanded ? "Show less" : "View all" }}
-          </button>
-        </div>
-        <ul v-show="!isCollapsed('recent')" class="sd__recent-list">
-          <li v-for="r in visibleRecents" :key="r.path">
-            <router-link
-              :to="`/files${r.path}`"
-              class="sd__recent-btn"
-              :title="r.path"
-            >
-              <Icon
-                name="file"
-                :size="13"
-                :style="{ color: 'var(--color-ink-2)' }"
-                class="sd__recent-icon"
-              />
-              <span class="sd__recent-name">{{ r.name }}</span>
-            </router-link>
           </li>
         </ul>
       </nav>
@@ -273,7 +212,6 @@ import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
 import { useFavorites } from "@/composables/useFavorites";
-import { useRecents } from "@/composables/useRecents";
 import { usePreferences } from "@/composables/usePreferences";
 import { useRootLabel } from "@/composables/useRootLabel";
 import { useTouchDrag } from "@/composables/useTouchDrag";
@@ -371,16 +309,6 @@ const favorites = computed(() => favoritesComposable.favorites.value);
 // Custom "My files" label (set via the desktop sidebar's right-click rename).
 const { rootLabel } = useRootLabel();
 
-// ── Recents (mobile parity with the desktop sidebar) ───────────────────
-const RECENTS_INITIAL = 5;
-const recentsComposable = useRecents();
-const recents = computed(() => recentsComposable.recents.value);
-const recentsExpanded = ref(false);
-const visibleRecents = computed(() =>
-  recentsExpanded.value
-    ? recents.value
-    : recents.value.slice(0, RECENTS_INITIAL)
-);
 // ── Section collapse/expand ────────────────────────────────────────────
 // Shared with the desktop Sidebar via the SAME prefs key, so a collapsed
 // Favorites / Recent stays collapsed when you switch devices.
@@ -461,6 +389,44 @@ const onFavTap = (path: string, event: MouseEvent) => {
 const goFiles = () => router.push("/files/");
 const goTrash = () => router.push("/trash");
 const isTrash = computed(() => route.path.startsWith("/trash"));
+/** Main places, same order as the desktop sidebar (Phase 6, 3.2). */
+const navItems = computed(() => [
+  {
+    key: "files",
+    label: rootLabel.value || t("sidebar.myFiles"),
+    icon: "folder",
+    active: isFiles.value,
+    go: goFiles,
+  },
+  {
+    key: "recent",
+    label: "Recent",
+    icon: "clock",
+    active: route.path.startsWith("/recent"),
+    go: () => router.push("/recent"),
+  },
+  {
+    key: "storage",
+    label: "Storage",
+    icon: "chart-pie",
+    active: route.path.startsWith("/storage"),
+    go: () => router.push("/storage"),
+  },
+  {
+    key: "duplicates",
+    label: "Duplicates",
+    icon: "copy",
+    active: route.path.startsWith("/duplicates"),
+    go: () => router.push("/duplicates"),
+  },
+  {
+    key: "trash",
+    label: t("sidebar.trash"),
+    icon: "trash-2",
+    active: isTrash.value,
+    go: goTrash,
+  },
+]);
 const goProfile = () => router.push("/settings/profile");
 const logout = () => auth.logout();
 
@@ -631,6 +597,12 @@ const onItemClick = (_event: MouseEvent) => {
 }
 
 /* ── Favorites ───────────────────────────────────────────────────────── */
+.sd__fav-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
 .sd__favs {
   display: flex;
   flex-direction: column;
@@ -675,13 +647,6 @@ const onItemClick = (_event: MouseEvent) => {
 .sd__fav-btn:hover {
   background: var(--color-hover);
   color: var(--color-ink-1);
-}
-
-.sd__fav-star {
-  /* Warm gold that reads on both the light canvas and the dark sidebar.
-     (Was #b45309 — a dark brown that looked muddy in light mode.) */
-  color: var(--c-amber);
-  flex-shrink: 0;
 }
 
 .sd__fav-name {
@@ -759,72 +724,6 @@ const onItemClick = (_event: MouseEvent) => {
 }
 .sd__chevron--collapsed {
   transform: rotate(-90deg);
-}
-
-.sd__viewall {
-  border: 0;
-  background: transparent;
-  padding: 0;
-  font: inherit;
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--color-ink-3);
-  cursor: pointer;
-  transition: color var(--dur-base) ease;
-}
-.sd__viewall:hover {
-  color: var(--color-accent-ink);
-}
-
-/* ── Recent list ─────────────────────────────────────────────────────── */
-.sd__recents {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.sd__recent-list {
-  list-style: none;
-  margin: 0;
-  padding: 0 4px 2px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  overflow-y: auto;
-  max-height: 240px;
-}
-
-.sd__recent-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  height: 40px;
-  padding: 0 10px;
-  border-radius: 8px;
-  color: var(--color-ink-2);
-  font-size: 13.5px;
-  text-decoration: none;
-  cursor: pointer;
-  transition:
-    background-color var(--dur-base) ease,
-    color var(--dur-base) ease;
-}
-.sd__recent-btn:hover {
-  background: var(--color-hover);
-  color: var(--color-ink-1);
-}
-
-.sd__recent-icon {
-  flex-shrink: 0;
-}
-
-.sd__recent-name {
-  flex: 1;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* ── Storage card ────────────────────────────────────────────────────── */

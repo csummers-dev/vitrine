@@ -245,7 +245,8 @@
     "newFolder": "New folder",
     "settings": "Settings",
     "signup": "Sign Up",
-    "trash": "Trash"
+    "trash": "Trash",
+    "recent": "Recent"
   },
   "success": {
     "linkCopied": "Link copied!"

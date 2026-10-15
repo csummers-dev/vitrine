@@ -242,6 +242,38 @@
   --kind-other-solid: #8b9199;
 }
 
+/* Favorite colour dots (Decision 6). */
+.fav-dot--folder {
+  background: var(--kind-folder-solid);
+}
+.fav-dot--video {
+  background: var(--kind-video-solid);
+}
+.fav-dot--audio {
+  background: var(--kind-audio-solid);
+}
+.fav-dot--image {
+  background: var(--kind-image-solid);
+}
+.fav-dot--pdf {
+  background: var(--kind-pdf-solid);
+}
+.fav-dot--archive {
+  background: var(--kind-archive-solid);
+}
+.fav-dot--epub {
+  background: var(--kind-epub-solid);
+}
+.fav-dot--comic {
+  background: var(--kind-comic-solid);
+}
+.fav-dot--csv {
+  background: var(--kind-csv-solid);
+}
+.fav-dot--code {
+  background: var(--kind-code-solid);
+}
+
 /* Icon tiles by kind (utils/fileIcon). */
 .kind-folder {
   background: var(--tint-folder-bg);

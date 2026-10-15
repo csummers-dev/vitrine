@@ -49,8 +49,8 @@
               icon="chevron-right"
               label="Forward"
               tooltip="Forward (Alt+→)"
+              v-if="width >= 768"
               size="sm"
-              class="max-md:hidden"
               :disabled="!navHistory.canForward.value"
               @click="navHistory.forward"
             />
@@ -205,8 +205,8 @@
               />
               <!-- Upload: the primary action. On phones it moves into More. -->
               <UiButton
-                v-if="headerButtons.upload"
-                class="fb-hero__upload max-md:hidden"
+                v-if="headerButtons.upload && width >= 768"
+                class="fb-hero__upload"
                 variant="primary"
                 size="sm"
                 icon="upload"
@@ -597,76 +597,118 @@
                 @shuffle="player.playTracks(folderAudio, 0, { shuffle: true })"
                 @queue="player.enqueue(folderAudio)"
               />
-              <div>
-                <div class="item header">
-                  <div class="item__select">
-                    <div
-                      :class="[
-                        'item__checkbox',
-                        allSelected && 'item__checkbox--checked',
-                      ]"
-                      role="checkbox"
-                      :aria-checked="allSelected"
-                      tabindex="0"
-                      @click.stop="toggleSelectAll"
-                      :title="allSelected ? 'Deselect all' : 'Select all'"
-                    >
-                      <Icon
-                        v-if="allSelected"
-                        name="check"
-                        :size="11"
-                        :stroke-width="3.5"
-                        style="color: white"
-                      />
+              <!-- One grid for the header row and every item row (aria:
+                   rows with cells, multi-select). display: contents keeps the
+                   layout exactly as before. -->
+              <div
+                class="listing-grid-role"
+                role="grid"
+                aria-multiselectable="true"
+                :aria-label="t('files.files')"
+                :aria-rowcount="(fileStore.req?.items.length ?? 0) + 1"
+              >
+                <div>
+                  <div class="item header" role="row">
+                    <div class="item__select" role="columnheader">
+                      <div
+                        :class="[
+                          'item__checkbox',
+                          allSelected && 'item__checkbox--checked',
+                        ]"
+                        role="checkbox"
+                        :aria-label="
+                          allSelected ? 'Deselect all' : 'Select all'
+                        "
+                        :aria-checked="allSelected"
+                        tabindex="0"
+                        @click.stop="toggleSelectAll"
+                        :title="allSelected ? 'Deselect all' : 'Select all'"
+                      >
+                        <Icon
+                          v-if="allSelected"
+                          name="check"
+                          :size="11"
+                          :stroke-width="3.5"
+                          style="color: white"
+                        />
+                      </div>
                     </div>
+                    <p
+                      :class="{ active: nameSorted }"
+                      class="name"
+                      role="columnheader"
+                      :aria-sort="
+                        nameSorted
+                          ? fileStore.req?.sorting.asc
+                            ? 'ascending'
+                            : 'descending'
+                          : 'none'
+                      "
+                      tabindex="0"
+                      @click="sort('name')"
+                      @keydown.enter.prevent="sort('name')"
+                      @keydown.space.prevent="sort('name')"
+                      :title="t('files.sortByName')"
+                      :aria-label="t('files.sortByName')"
+                    >
+                      <span>{{ t("files.name") }}</span>
+                      <Icon :name="nameIcon" />
+                    </p>
+                    <p
+                      :class="{ active: modifiedSorted }"
+                      class="modified"
+                      role="columnheader"
+                      :aria-sort="
+                        modifiedSorted
+                          ? fileStore.req?.sorting.asc
+                            ? 'ascending'
+                            : 'descending'
+                          : 'none'
+                      "
+                      tabindex="0"
+                      @click="sort('modified')"
+                      @keydown.enter.prevent="sort('modified')"
+                      @keydown.space.prevent="sort('modified')"
+                      :title="t('files.sortByLastModified')"
+                      :aria-label="t('files.sortByLastModified')"
+                    >
+                      <span>Modified</span>
+                      <Icon :name="modifiedIcon" />
+                    </p>
+                    <p
+                      :class="{ active: sizeSorted }"
+                      class="size"
+                      role="columnheader"
+                      :aria-sort="
+                        sizeSorted
+                          ? fileStore.req?.sorting.asc
+                            ? 'ascending'
+                            : 'descending'
+                          : 'none'
+                      "
+                      tabindex="0"
+                      @click="sort('size')"
+                      @keydown.enter.prevent="sort('size')"
+                      @keydown.space.prevent="sort('size')"
+                      :title="t('files.sortBySize')"
+                      :aria-label="t('files.sortBySize')"
+                    >
+                      <span>{{ t("files.size") }}</span>
+                      <Icon :name="sizeIcon" />
+                    </p>
+                    <div class="header__actions" role="presentation"></div>
                   </div>
-                  <p
-                    :class="{ active: nameSorted }"
-                    class="name"
-                    role="button"
-                    tabindex="0"
-                    @click="sort('name')"
-                    :title="t('files.sortByName')"
-                    :aria-label="t('files.sortByName')"
-                  >
-                    <span>{{ t("files.name") }}</span>
-                    <Icon :name="nameIcon" />
-                  </p>
-                  <p
-                    :class="{ active: modifiedSorted }"
-                    class="modified"
-                    role="button"
-                    tabindex="0"
-                    @click="sort('modified')"
-                    :title="t('files.sortByLastModified')"
-                    :aria-label="t('files.sortByLastModified')"
-                  >
-                    <span>Modified</span>
-                    <Icon :name="modifiedIcon" />
-                  </p>
-                  <p
-                    :class="{ active: sizeSorted }"
-                    class="size"
-                    role="button"
-                    tabindex="0"
-                    @click="sort('size')"
-                    :title="t('files.sortBySize')"
-                    :aria-label="t('files.sortBySize')"
-                  >
-                    <span>{{ t("files.size") }}</span>
-                    <Icon :name="sizeIcon" />
-                  </p>
-                  <div class="header__actions"></div>
                 </div>
-              </div>
 
-              <!-- Inline new folder / new file row (Stage 8). Replaces the legacy
+                <!-- Inline new folder / new file row (Stage 8). Replaces the legacy
              modal: appears at the top of the listing with a focused input. -->
-              <div v-if="inlineNewKind" @click.stop>
-                <InlineNewItem :kind="inlineNewKind" />
-              </div>
+                <div v-if="inlineNewKind" role="row" @click.stop>
+                  <div role="gridcell" class="listing-grid-role">
+                    <InlineNewItem :kind="inlineNewKind" />
+                  </div>
+                </div>
 
-              <!-- v1.3 S6-1: the LIST view is virtualized with
+                <!-- v1.3 S6-1: the LIST view is virtualized with
                  RecycleScroller (fixed 44px rows) so a 10k-file folder
                  only ever mounts the visible window + a small buffer.
                  dirs → divider → files are flattened into `listRows`;
@@ -675,138 +717,141 @@
                  incremental `showLimit` windowing in the v-else branch —
                  their tiles wrap to variable heights, so list-first per
                  the locked Stage 6 plan. -->
-              <!-- `:key` on typeFilter: shrinking `items` IN PLACE leaves the
+                <!-- `:key` on typeFilter: shrinking `items` IN PLACE leaves the
                  RecycleScroller's pooled row views visible at their old
                  offsets (the wrapper resizes but stale views linger — v2.7
                  chips bug, verified live). Nothing else shrinks the list
                  without swapping `req`, so re-creating the scroller per
                  filter state is the surgical fix; scroll resets, which a
                  filter change wants anyway. -->
-              <RecycleScroller
-                v-if="isListVirtual"
-                ref="listScroller"
-                :key="'vlist-' + typeFilter"
-                class="listing-virtual"
-                :items="listRows"
-                :item-size="null"
-                :min-item-size="40"
-                key-field="id"
-                :buffer="320"
-                data-clear-on-click="true"
-                v-slot="{ item: row }"
-              >
-                <div
-                  v-if="row.divider"
-                  class="folder-file-divider"
+                <RecycleScroller
+                  v-if="isListVirtual"
+                  ref="listScroller"
+                  v-quiet-resize
+                  :key="'vlist-' + typeFilter"
+                  class="listing-virtual"
+                  :items="listRows"
+                  :item-size="null"
+                  :min-item-size="40"
+                  key-field="id"
+                  :buffer="320"
                   data-clear-on-click="true"
-                ></div>
-                <item
-                  v-else-if="row.item"
-                  v-bind:index="row.item.index"
-                  v-bind:name="row.item.name"
-                  v-bind:isDir="row.item.isDir"
-                  v-bind:url="row.item.url"
-                  v-bind:modified="row.item.modified"
-                  v-bind:type="row.item.type"
-                  v-bind:size="row.item.size"
-                  v-bind:path="row.item.path"
-                  @dropAlongside="onItemDropAlongside"
-                  @rowPointerDown="onItemPointerDown"
+                  v-slot="{ item: row }"
                 >
-                </item>
-              </RecycleScroller>
+                  <div
+                    v-if="row.divider"
+                    class="folder-file-divider"
+                    data-clear-on-click="true"
+                  ></div>
+                  <item
+                    v-else-if="row.item"
+                    v-bind:index="row.item.index"
+                    v-bind:name="row.item.name"
+                    v-bind:isDir="row.item.isDir"
+                    v-bind:url="row.item.url"
+                    v-bind:modified="row.item.modified"
+                    v-bind:type="row.item.type"
+                    v-bind:size="row.item.size"
+                    v-bind:path="row.item.path"
+                    @dropAlongside="onItemDropAlongside"
+                    @rowPointerDown="onItemPointerDown"
+                  >
+                  </item>
+                </RecycleScroller>
 
-              <template v-else>
-                <!-- CH-1: the folders + files grids are windowed — only the
+                <template v-else>
+                  <!-- CH-1: the folders + files grids are windowed — only the
                    tiles near the viewport mount. The top/bottom spacer
                    blocks stand in for the rows scrolled out of view so the
                    scroll height + position stay exact. Spacers are block
                    siblings of the grid (not grid cells), so there's no gap
                    math to get wrong, and each section's total height stays
                    constant as you scroll. -->
-                <div
-                  v-if="(fileStore.req?.numDirs ?? 0) > 0"
-                  ref="dirsSectionRef"
-                  class="listing-section-pad"
-                  data-clear-on-click="true"
-                >
                   <div
-                    class="grid-pad"
-                    data-clear-on-click="true"
-                    :style="{ height: dirsWin.topPad + 'px' }"
-                  ></div>
-                  <div
-                    class="listing-section listing-section--dirs"
+                    v-if="(fileStore.req?.numDirs ?? 0) > 0"
+                    ref="dirsSectionRef"
+                    class="listing-section-pad"
                     data-clear-on-click="true"
                   >
-                    <item
-                      v-for="item in dirs"
-                      :key="base64(item.name)"
-                      v-bind:index="item.index"
-                      v-bind:name="item.name"
-                      v-bind:isDir="item.isDir"
-                      v-bind:url="item.url"
-                      v-bind:modified="item.modified"
-                      v-bind:type="item.type"
-                      v-bind:size="item.size"
-                      v-bind:path="item.path"
-                      :folder-cover="folderCovers"
-                      @dropAlongside="onItemDropAlongside"
-                      @rowPointerDown="onItemPointerDown"
+                    <div
+                      class="grid-pad"
+                      data-clear-on-click="true"
+                      :style="{ height: dirsWin.topPad + 'px' }"
+                    ></div>
+                    <div
+                      class="listing-section listing-section--dirs"
+                      data-clear-on-click="true"
                     >
-                    </item>
+                      <item
+                        v-for="item in dirs"
+                        :key="base64(item.name)"
+                        v-bind:index="item.index"
+                        v-bind:name="item.name"
+                        v-bind:isDir="item.isDir"
+                        v-bind:url="item.url"
+                        v-bind:modified="item.modified"
+                        v-bind:type="item.type"
+                        v-bind:size="item.size"
+                        v-bind:path="item.path"
+                        :folder-cover="folderCovers"
+                        @dropAlongside="onItemDropAlongside"
+                        @rowPointerDown="onItemPointerDown"
+                      >
+                      </item>
+                    </div>
+                    <div
+                      class="grid-pad"
+                      data-clear-on-click="true"
+                      :style="{ height: dirsWin.botPad + 'px' }"
+                    ></div>
                   </div>
-                  <div
-                    class="grid-pad"
-                    data-clear-on-click="true"
-                    :style="{ height: dirsWin.botPad + 'px' }"
-                  ></div>
-                </div>
 
-                <div
-                  v-if="
-                    (fileStore.req?.numDirs ?? 0) > 0 &&
-                    (fileStore.req?.numFiles ?? 0) > 0
-                  "
-                  class="folder-file-divider"
-                  data-clear-on-click="true"
-                ></div>
-
-                <div
-                  v-if="(fileStore.req?.numFiles ?? 0) > 0"
-                  ref="filesSectionRef"
-                  class="listing-section-pad"
-                  data-clear-on-click="true"
-                >
                   <div
-                    class="grid-pad"
+                    v-if="
+                      (fileStore.req?.numDirs ?? 0) > 0 &&
+                      (fileStore.req?.numFiles ?? 0) > 0
+                    "
+                    class="folder-file-divider"
                     data-clear-on-click="true"
-                    :style="{ height: filesWin.topPad + 'px' }"
                   ></div>
-                  <div class="listing-section" data-clear-on-click="true">
-                    <item
-                      v-for="item in files"
-                      :key="base64(item.name)"
-                      v-bind:index="item.index"
-                      v-bind:name="item.name"
-                      v-bind:isDir="item.isDir"
-                      v-bind:url="item.url"
-                      v-bind:modified="item.modified"
-                      v-bind:type="item.type"
-                      v-bind:size="item.size"
-                      v-bind:path="item.path"
-                      @dropAlongside="onItemDropAlongside"
-                      @rowPointerDown="onItemPointerDown"
-                    >
-                    </item>
+
+                  <div
+                    v-if="(fileStore.req?.numFiles ?? 0) > 0"
+                    ref="filesSectionRef"
+                    class="listing-section-pad"
+                    data-clear-on-click="true"
+                  >
+                    <div
+                      class="grid-pad"
+                      data-clear-on-click="true"
+                      :style="{ height: filesWin.topPad + 'px' }"
+                    ></div>
+                    <div class="listing-section" data-clear-on-click="true">
+                      <item
+                        v-for="item in files"
+                        :key="base64(item.name)"
+                        v-bind:index="item.index"
+                        v-bind:name="item.name"
+                        v-bind:isDir="item.isDir"
+                        v-bind:url="item.url"
+                        v-bind:modified="item.modified"
+                        v-bind:type="item.type"
+                        v-bind:size="item.size"
+                        v-bind:path="item.path"
+                        @dropAlongside="onItemDropAlongside"
+                        @rowPointerDown="onItemPointerDown"
+                      >
+                      </item>
+                    </div>
+                    <div
+                      class="grid-pad"
+                      data-clear-on-click="true"
+                      :style="{ height: filesWin.botPad + 'px' }"
+                    ></div>
                   </div>
-                  <div
-                    class="grid-pad"
-                    data-clear-on-click="true"
-                    :style="{ height: filesWin.botPad + 'px' }"
-                  ></div>
-                </div>
-              </template>
+                </template>
+              </div>
+              <!-- /grid -->
 
               <input
                 style="display: none"
@@ -1037,6 +1082,7 @@
 </template>
 
 <script setup lang="ts">
+import { vQuietResize } from "@/utils/quietResizeObserver";
 import Icon from "@/components/Icon.vue";
 import { useAuthStore } from "@/stores/auth";
 import { useClipboardStore } from "@/stores/clipboard";

@@ -424,7 +424,8 @@ const submit = async (event: Event) => {
         // Network blip — fall back to the default redirect
       }
     }
-    router.push({ path: destination });
+    // Replace: Back from the first page must not return to the sign-in form.
+    router.replace({ path: destination });
   } catch (e) {
     if (e instanceof StatusError) {
       if (challenge.value && (e.status === 403 || e.status === 400)) {

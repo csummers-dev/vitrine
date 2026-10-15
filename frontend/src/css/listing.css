@@ -1668,17 +1668,17 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
 .fb-columns > .compare-pane,
 .fb-columns > .info-pane,
 .fb-columns > .info-pane-rail {
+  /* Soft native (Phase 6, 3.1): the content is a rounded panel on the
+     window, inset 10 px; split view and the details panel are panels too. */
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   overflow: hidden;
   box-shadow: var(--shadow-1);
 }
-html.dark .fb-columns > .fb-primary,
-html.dark .fb-columns > .compare-pane,
-html.dark .fb-columns > .info-pane,
-html.dark .fb-columns > .info-pane-rail {
-  box-shadow: var(--shadow-1);
+.fb-columns > .info-pane,
+.fb-columns > .info-pane-rail {
+  background: var(--color-panel);
 }
 
 /* Pane B is its own card now — the gap is the divider, so drop the old
@@ -1722,4 +1722,12 @@ html.dark .fb-columns > .info-pane-rail {
   :is(#listing, .fb-listing).mosaic.gallery .listing-section--dirs {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
+}
+
+/* Phase 6, 3.x: wrappers that only carry ARIA grid roles; they mustn't
+   change the layout of the listing they wrap. */
+.listing-grid-role,
+:is(#listing, .fb-listing) .listing-grid-role,
+:is(#listing, .fb-listing).list > .listing-grid-role {
+  display: contents;
 }

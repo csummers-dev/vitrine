@@ -2,7 +2,7 @@
   <div
     class="item"
     :class="{ 'item--spring-loaded': springProgress > 0, 'item--cut': isCut }"
-    role="button"
+    role="row"
     tabindex="0"
     :draggable="isDraggable && !isRenaming"
     @dragstart="dragStart($event)"
@@ -28,7 +28,7 @@
     <!-- Selection checkbox. On its own click handler (stop-propagation) so it
          toggles selection WITHOUT triggering the row's open — the only way to
          multi-select on touch, where a plain row tap now opens the item. -->
-    <div class="item__select" @click.stop="onSelectClick">
+    <div class="item__select" role="gridcell" @click.stop="onSelectClick">
       <div v-if="isSelected" class="item__checkbox item__checkbox--checked">
         <Icon
           name="check"
@@ -41,7 +41,7 @@
     </div>
 
     <!-- Name cell: icon squircle + name (inline) -->
-    <div class="item__name">
+    <div class="item__name" role="gridcell">
       <div class="item__icon" :class="iconColorClass">
         <!-- Native lazy load (not v-lazy): vue-lazyload swaps the failing URL
              for its own error placeholder and never re-dispatches the native
@@ -55,6 +55,7 @@
           loading="lazy"
           decoding="async"
           class="item__thumb"
+          alt=""
           @error="onThumbError"
         />
         <!-- Inner wrapper: display:contents in list/grid (layout-transparent),
@@ -156,24 +157,29 @@
 
     <!-- Meta wrapper: display:contents in list mode (so children become grid items),
          flex row in mosaic mode (so size · modified appear inline; CSS order swaps them) -->
-    <div class="item__meta">
+    <div class="item__meta" role="presentation">
       <!-- Modified -->
-      <div class="item__modified modified">
+      <div class="item__modified modified" role="gridcell">
         <time :datetime="modified">{{ humanTime() }}</time>
       </div>
 
       <!-- Size -->
-      <div v-if="isDir" class="item__size size" data-order="-1">
+      <div v-if="isDir" class="item__size size" role="gridcell" data-order="-1">
         <template v-if="dirSizeLabel">{{ dirSizeLabel }}</template>
         <template v-else>&mdash;</template>
       </div>
-      <div v-else class="item__size size" :data-order="humanSize()">
+      <div
+        v-else
+        class="item__size size"
+        role="gridcell"
+        :data-order="humanSize()"
+      >
         {{ humanSize() }}
       </div>
     </div>
 
     <!-- Actions menu trigger -->
-    <div class="item__actions">
+    <div class="item__actions" role="gridcell">
       <!-- Favorite star (v1.3 S3-2). Folders only. Hover-visible
            when not favorited; permanently visible (filled) when
            favorited so the user can find their pins at a glance. -->
@@ -231,6 +237,7 @@ import { useLayoutStore } from "@/stores/layout";
 import { useTagsStore } from "@/stores/tags";
 import { usePreferences } from "@/composables/usePreferences";
 import { useFavorites } from "@/composables/useFavorites";
+import { useRecents } from "@/composables/useRecents";
 import { useVideoProgress } from "@/composables/useVideoProgress";
 import { useImageHoverPreview } from "@/composables/useImageHoverPreview";
 import { startTransfer, isPathInMove } from "@/utils/transfers";
@@ -332,6 +339,7 @@ const videoFraction = computed(() =>
   props.type === "video" && props.path ? videoProgress.fraction(props.path) : 0
 );
 const favorites = useFavorites();
+const recents = useRecents();
 const { movingPaths } = useTransfers();
 
 // True while this item is part of an in-flight MOVE (the floating transfer dock
@@ -780,6 +788,10 @@ const undoRename = async (
   try {
     await api.move([{ from: fromLink, to: toLink }]);
     if (wasDir) favorites.renamePath(fromLink, toLink);
+    recents.renamePath(
+      decodeURIComponent(removePrefix(fromLink)),
+      decodeURIComponent(removePrefix(toLink))
+    );
     listing.setPreselect(decodeURIComponent(removePrefix(toLink)));
   } catch (e) {
     if (e instanceof Error) $showError(e);
@@ -841,6 +853,11 @@ const submitRename = async () => {
     // Keep any Favorites pointing at this folder (or its descendants)
     // pinned — follow the rename instead of letting the link break.
     if (wasDir) favorites.renamePath(oldLink, newLink);
+    // Recent files follow the rename too (Phase 6, 3.5).
+    recents.renamePath(
+      decodeURIComponent(removePrefix(oldLink)),
+      decodeURIComponent(removePrefix(newLink))
+    );
     // Decode the path before queueing it — removePrefix(newLink) is
     // URL-encoded (we built newLink with encodeURIComponent), but
     // item.path in the next listing is decoded. Without this decode

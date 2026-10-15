@@ -89,19 +89,15 @@ export function installNavHistory(router: Router): void {
     const existing = (window.history.state ?? {})[STATE_KEY] as
       | string
       | undefined;
-    if (from === START_LOCATION) {
-      // First page of this load: a reload lands on a tagged entry.
-      if (!existing || !stack.moveTo(existing)) {
-        const id = newId();
-        stack.reset(id, to.fullPath);
-        tag(id);
-      }
-    } else if (wasPop) {
-      if (!existing || !stack.moveTo(existing)) {
-        const id = newId();
-        stack.reset(id, to.fullPath);
-        tag(id);
-      }
+    if (existing && stack.moveTo(existing)) {
+      // Back, forward, a reload, or a replace (the router keeps our id on
+      // the entry it replaces): keep the position, follow a changed path.
+      stack.setCurrentPath(to.fullPath);
+    } else if (from === START_LOCATION || wasPop) {
+      // First page of this load, or an entry from before this stack.
+      const id = newId();
+      stack.reset(id, to.fullPath);
+      tag(id);
     } else {
       const id = newId();
       if (wasReplace) stack.replace(id, to.fullPath);

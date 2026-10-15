@@ -1,7 +1,7 @@
 {
   "note": "Allowed raw style literals per file. Only ever lower these (Phase 6).",
   "totals": {
-    "radius": 301,
+    "radius": 300,
     "shadow": 58,
     "hex": 9,
     "colorFn": 20
@@ -186,7 +186,7 @@
       "shadow": 1
     },
     "src/components/SidebarDrawer.vue": {
-      "radius": 12,
+      "radius": 11,
       "shadow": 1
     },
     "src/components/SlideOver.vue": {

@@ -71,6 +71,12 @@ export class NavStack {
     return true;
   }
 
+  /** The current entry now shows another path (a replace kept its id). */
+  setCurrentPath(path: string): void {
+    const cur = this.entries[this.index];
+    if (cur) cur.path = path;
+  }
+
   /** Begin again with just this page (reload with no saved state). */
   reset(id: string, path: string): void {
     this.entries = [{ id, path }];
