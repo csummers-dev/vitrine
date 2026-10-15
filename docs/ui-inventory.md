@@ -67,15 +67,17 @@ Every screen and overlay with the states it must be checked in. "Shot" marks sta
 | Screen | States | Shot | Done |
 |---|---|---|---|
 | Login | password, code step, SSO button, error, throttled | password | |
-| Files | List, Icons, Gallery | List, Icons | |
-| Files | empty folder, loading, error, 403, broken favorite | | |
-| Files | split view, saved search, drag over, selection | | |
+| Shell | sidebar expanded and collapsed, phone drawer, back/forward | collapsed, drawer | Step 3 |
+| Files | List, Icons, Gallery | List, Icons, Gallery | Step 4 |
+| Files | empty folder, loading, error, 403, broken favorite | empty, error | Step 4 |
+| Files | split view, saved search, drag over, selection | split view, saved search, selection | Step 4 |
+| Details panel | one item, several, the folder, over the list (768–1099 px), phone sheet | one, several, over the list, sheet | Step 4 |
 | Files | inline rename, new folder | | |
 | Preview | image, video, audio, PDF, EPUB, comic, CSV, text, editor | | |
 | Trash | empty, with items | empty | |
 | Storage | treemap, largest files, loading | treemap | |
 | Duplicates | idle, scanning, results, none found | | |
-| Recent | list, empty (if Decision 1) | | |
+| Recent | list, empty (if Decision 1) | list | Step 3 |
 | Settings | Profile, Shares, Sessions, Global, Users, User, Audit, Webhooks | Profile, Global | |
 | Two-factor set-up | required by admin policy | yes | |
 | Public share | folder, file, password, limited, gone | | |

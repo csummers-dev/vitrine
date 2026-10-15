@@ -128,7 +128,13 @@
           v-else
           class="item__name-text name"
           :class="{ 'is-moving': isMoving }"
-          ><span class="item__name-glyph">{{ displayedName }}</span></span
+          :title="name"
+          ><span class="item__name-glyph"
+            ><span class="item__name-base">{{ nameParts.base }}</span
+            ><span v-if="nameParts.ext" class="item__name-ext">{{
+              nameParts.ext
+            }}</span></span
+          ></span
         >
         <div class="item__name-compact-meta">
           <time :datetime="modified">{{ humanTime() }}</time>
@@ -375,6 +381,15 @@ const showExtensions = computed<boolean>(() =>
 const displayedName = computed(() =>
   displayName(props.name, props.isDir, showExtensions.value)
 );
+// The shown name in two parts so a long name truncates in the middle and its
+// extension stays visible (Phase 6, 4.2). Folders, dotfiles and unusually
+// long "extensions" stay in one piece.
+const nameParts = computed(() => {
+  const shown = displayedName.value;
+  if (props.isDir) return { base: shown, ext: "" };
+  const { base, ext } = splitExtension(shown);
+  return ext && ext.length <= 8 ? { base, ext } : { base: shown, ext: "" };
+});
 // True when this row should hide its extension (a file, pref off, and it
 // actually has a splittable extension). Drives the rename base/ext handling.
 const hideExtension = computed(

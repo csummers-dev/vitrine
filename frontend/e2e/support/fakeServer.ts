@@ -535,7 +535,18 @@ export class FakeServer {
         body: PIXEL,
       });
     }
-    if (api.startsWith("/folder-size")) return json({ size: 0, count: 0 });
+    if (api.startsWith("/folder-size")) {
+      const dir = norm(api.slice("/folder-size".length) || "/");
+      const prefix = dir === "/" ? "/" : `${dir}/`;
+      let size = 0;
+      let count = 0;
+      for (const [p, e] of this.fs)
+        if (p.startsWith(prefix) && !e.isDir) {
+          size += (e.content ?? "").length;
+          count++;
+        }
+      return json({ size, count, computedAt: new Date().toISOString() });
+    }
     // Duplicate finder (4.0 5.2): groups files by content. A new scan
     // reports "running" once, so the client's polling is exercised.
     if (api === "/dupes/scan") {

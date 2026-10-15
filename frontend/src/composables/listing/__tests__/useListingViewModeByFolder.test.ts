@@ -14,6 +14,7 @@ import { resetPrefsHarness } from "../../__tests__/_prefsHarness";
 import {
   useListingViewMode,
   rememberFolderView,
+  folderViewKey,
   VIEW_BY_FOLDER_PREF,
 } from "@/composables/listing/useListingViewMode";
 import { usePreferences } from "@/composables/usePreferences";
@@ -40,7 +41,7 @@ describe("view remembered per folder (Decision 3)", () => {
     const { v, path } = setup();
     await v.setView("mosaic");
     expect(usePreferences().get(VIEW_BY_FOLDER_PREF, {})).toEqual({
-      "/Movies/": "mosaic",
+      "/Movies": "mosaic",
     });
     expect(update).not.toHaveBeenCalled();
     expect(useAuthStore().user?.viewMode).toBe("list");
@@ -61,7 +62,7 @@ describe("view remembered per folder (Decision 3)", () => {
   });
 
   it("ignores a bad stored value", async () => {
-    await usePreferences().set(VIEW_BY_FOLDER_PREF, { "/Movies/": "nonsense" });
+    await usePreferences().set(VIEW_BY_FOLDER_PREF, { "/Movies": "nonsense" });
     const { v } = setup();
     expect(v.viewMode.value).toBe("list");
   });
@@ -75,5 +76,22 @@ describe("view remembered per folder (Decision 3)", () => {
     m = rememberFolderView(m, "/d", "list", 3);
     expect(Object.keys(m)).toEqual(["/c", "/a", "/d"]);
     expect(m["/a"]).toBe("mosaic");
+  });
+
+  it("treats encoded and trailing-slash paths as the same folder", async () => {
+    const { v, path } = setup("/files/My%20docs/");
+    await v.setView("mosaic gallery");
+    path.value = "/files/Other/";
+    await nextTick();
+    path.value = "/files/My docs";
+    await nextTick();
+    expect(v.viewMode.value).toBe("mosaic gallery");
+  });
+
+  it("normalises folder keys", () => {
+    expect(folderViewKey("/files/A%20B/")).toBe("/files/A B");
+    expect(folderViewKey("/files/")).toBe("/files");
+    expect(folderViewKey("/")).toBe("/");
+    expect(folderViewKey("/files/100%/")).toBe("/files/100%");
   });
 });

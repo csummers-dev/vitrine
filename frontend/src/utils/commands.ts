@@ -23,6 +23,13 @@ import { isExtractable } from "@/utils/archive";
 import { useBulkRename } from "@/composables/useBulkRename";
 import { useShortcutsOverlay } from "@/composables/useShortcutsOverlay";
 import { usePanesStore } from "@/stores/panes";
+import { usePreferences } from "@/composables/usePreferences";
+import { useDetailsPanel } from "@/composables/useDetailsPanel";
+import {
+  VIEW_BY_FOLDER_PREF,
+  folderViewKey,
+  rememberFolderView,
+} from "@/composables/listing/useListingViewMode";
 import {
   savedSearchUrl,
   useSavedSearches,
@@ -103,11 +110,28 @@ export function buildStaticCommands(ctx: CommandContext): Command[] {
   const canDownload = !!user?.perm.download;
   const isFolder = fileStore.req?.isDir === true;
   const isAdmin = !!user?.perm.admin;
-  const currentViewMode = user?.viewMode ?? "list";
+  // In a folder the palette switches that folder's view (Decision 3), like
+  // the header switch; elsewhere it changes the account default.
+  const prefs = usePreferences();
+  const route = router.currentRoute.value;
+  const folder = route.path.startsWith("/files")
+    ? folderViewKey(route.path)
+    : null;
+  const folderViews = () =>
+    prefs.get<Record<string, string>>(VIEW_BY_FOLDER_PREF, {}) ?? {};
+  const currentViewMode =
+    (folder && folderViews()[folder]) || user?.viewMode || "list";
 
   const setViewMode = async (mode: string) => {
     if (!user) return;
-    if (user.viewMode === mode) return;
+    if (currentViewMode === mode) return;
+    if (folder) {
+      void prefs.set(
+        VIEW_BY_FOLDER_PREF,
+        rememberFolderView(folderViews(), folder, mode)
+      );
+      return;
+    }
     const data = { id: user.id, viewMode: mode as ViewModeType };
     try {
       await users.update(data, ["viewMode"]);
@@ -320,7 +344,7 @@ export function buildStaticCommands(ctx: CommandContext): Command[] {
   cmds.push({
     id: "view.list",
     group: "view",
-    label: "Switch to list view",
+    label: "Switch to List view",
     hint: currentViewMode === "list" ? "Current" : undefined,
     icon: "list",
     keywords: ["table", "rows"],
@@ -329,21 +353,34 @@ export function buildStaticCommands(ctx: CommandContext): Command[] {
   cmds.push({
     id: "view.grid",
     group: "view",
-    label: "Switch to grid view",
+    label: "Switch to Icons view",
     hint: currentViewMode === "mosaic" ? "Current" : undefined,
     icon: "layout-grid",
-    keywords: ["tiles", "mosaic", "cards"],
+    keywords: ["grid", "tiles", "mosaic", "cards"],
     run: () => setViewMode("mosaic"),
   });
   cmds.push({
     id: "view.gallery",
     group: "view",
-    label: "Switch to gallery view",
+    label: "Switch to Gallery view",
     hint: currentViewMode === "mosaic gallery" ? "Current" : undefined,
     icon: "image",
     keywords: ["thumbnails", "photos", "media"],
     run: () => setViewMode("mosaic gallery"),
   });
+
+  // Details panel (Phase 6, 4.5). Listing pages, single pane only.
+  if (folder && !usePanesStore().split) {
+    const details = useDetailsPanel();
+    cmds.push({
+      id: "view.details",
+      group: "view",
+      label: details.isOpen.value ? "Hide details" : "Show details",
+      icon: "panel-right",
+      keywords: ["info", "inspector", "properties", "get info"],
+      run: () => details.toggle(),
+    });
+  }
 
   // Dual-pane split toggle (2.5.0). Only offered when there's room for two
   // panes; on narrow / mobile widths the split can't show.

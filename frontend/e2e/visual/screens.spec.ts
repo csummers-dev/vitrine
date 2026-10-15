@@ -81,6 +81,99 @@ const SCREENS: Screen[] = [
     },
   },
   {
+    name: "files-gallery",
+    sizes: ["desktop", "phone"],
+    open: async (c) => {
+      c.fake.user = { viewMode: "mosaic gallery" };
+      await signedIn(c);
+      await expect(row(c.page, "readme.md")).toBeVisible();
+    },
+  },
+  {
+    name: "details-one",
+    sizes: ["desktop"],
+    open: async (c) => {
+      await signedIn(c);
+      await row(c.page, "readme.md").click();
+      await expect(c.page.getByTestId("details-text-preview")).toContainText(
+        "vitrine"
+      );
+      await c.page.mouse.move(0, 0);
+    },
+  },
+  {
+    name: "details-multi",
+    sizes: ["desktop"],
+    open: async (c) => {
+      await signedIn(c);
+      await row(c.page, "photo.jpg").click();
+      await row(c.page, "readme.md").click({ modifiers: ["Shift"] });
+      await expect(c.page.getByTestId("details-multi")).toBeVisible();
+      await c.page.mouse.move(0, 0);
+    },
+  },
+  {
+    name: "details-overlay",
+    sizes: ["tablet"],
+    open: async (c) => {
+      await signedIn(c);
+      await expect(row(c.page, "readme.md")).toBeVisible();
+      await c.page
+        .getByRole("button", { name: "Details", exact: true })
+        .click();
+      await expect(c.page.getByTestId("details-scrim")).toBeVisible();
+    },
+  },
+  {
+    name: "details-sheet",
+    sizes: ["phone"],
+    open: async (c) => {
+      await signedIn(c);
+      await expect(row(c.page, "readme.md")).toBeVisible();
+      await c.page
+        .getByRole("button", { name: "Details", exact: true })
+        .first()
+        .click();
+      await expect(c.page.getByTestId("details-panel")).toBeVisible();
+    },
+  },
+  {
+    name: "files-empty",
+    sizes: ["desktop", "phone"],
+    open: async (c) => {
+      c.fake.fs.set("/Empty", {
+        isDir: true,
+        modified: c.fake.fs.get("/Music")!.modified,
+      });
+      await signedIn(c);
+      await c.page.goto("/files/Empty/");
+      await expect(c.page.getByText("Empty is empty")).toBeVisible();
+    },
+  },
+  {
+    name: "files-error",
+    sizes: ["desktop"],
+    open: async (c) => {
+      await signedIn(c);
+      await c.page.goto("/files/Missing/");
+      await expect(c.page.getByTestId("listing-error")).toBeVisible();
+    },
+  },
+  {
+    name: "saved-search",
+    sizes: ["desktop"],
+    open: async (c) => {
+      c.fake.preferences = {
+        "search.saved": [
+          { id: "s1", name: "Text files", query: "ext:md", folder: "/" },
+        ],
+      };
+      await signedIn(c);
+      await c.page.goto("/files/?saved=s1");
+      await expect(c.page.getByTestId("saved-search-head")).toBeVisible();
+    },
+  },
+  {
     name: "shell-collapsed",
     sizes: ["desktop"],
     open: async (c) => {

@@ -81,46 +81,45 @@
               @keydown.esc.prevent="cancelFolderRename"
               @blur="onFolderRenameBlur"
             />
+            <!-- Saved search (4.6): name and count over the query and the
+                 folder it searches, with edit and close. -->
             <div
               v-else-if="savedSearch"
-              class="fb-hero__crumbs saved-search-head"
+              class="saved-search-head"
               data-testid="saved-search-head"
             >
-              <Icon
-                name="folder-search"
-                :size="15"
-                class="saved-search-head__icon"
-              />
-              <span class="saved-search-head__name">{{
-                savedSearch.name
-              }}</span>
-              <span class="fb-hero__count">{{ savedSearchCountLabel }}</span>
-              <code
-                class="saved-search-head__query"
-                :title="`Searching ${savedSearchFolderLabel} for: ${savedSearch.query}`"
-                >{{ savedSearch.query }}</code
-              >
-              <span class="saved-search-head__in"
-                >in {{ savedSearchFolderLabel }}</span
-              >
-              <button
-                type="button"
-                class="saved-search-head__btn"
-                title="Edit saved search"
-                aria-label="Edit saved search"
-                @click="editSavedSearch"
-              >
-                <Icon name="pencil" :size="13" />
-              </button>
-              <button
-                type="button"
-                class="saved-search-head__btn"
-                :title="`Close and open ${savedSearchFolderLabel}`"
-                aria-label="Close saved search"
-                @click="closeSavedSearch"
-              >
-                <Icon name="x" :size="13" />
-              </button>
+              <div class="saved-search-head__line">
+                <Icon
+                  name="folder-search"
+                  :size="18"
+                  class="saved-search-head__icon"
+                />
+                <h1 class="saved-search-head__name">{{ savedSearch.name }}</h1>
+                <span class="fb-hero__count">{{ savedSearchCountLabel }}</span>
+                <UiIconButton
+                  icon="pencil"
+                  size="sm"
+                  label="Edit saved search"
+                  @click="editSavedSearch"
+                />
+                <UiIconButton
+                  icon="x"
+                  size="sm"
+                  label="Close saved search"
+                  :tooltip="`Close and open ${savedSearchFolderLabel}`"
+                  @click="closeSavedSearch"
+                />
+              </div>
+              <div class="saved-search-head__line saved-search-head__sub">
+                <code
+                  class="saved-search-head__query"
+                  :title="`Searching ${savedSearchFolderLabel} for: ${savedSearch.query}`"
+                  >{{ savedSearch.query }}</code
+                >
+                <span class="saved-search-head__in"
+                  >in {{ savedSearchFolderLabel }}</span
+                >
+              </div>
             </div>
             <div v-else class="fb-hero__crumbs">
               <breadcrumbs base="/files" title />
@@ -218,6 +217,15 @@
                 size="sm"
                 label="More"
                 @click.stop="showSectionMore"
+              />
+              <!-- Details panel (4.5): shown/hidden here or with ⌘I. -->
+              <UiIconButton
+                icon="panel-right"
+                size="sm"
+                label="Details"
+                :tooltip="`Details (${modKeyLabel}I)`"
+                :pressed="detailsPanel.isOpen.value"
+                @click.stop="detailsPanel.toggle()"
               />
             </div>
             <!-- Search sits directly beneath the toolbar cluster (single-pane —
@@ -435,7 +443,7 @@
               class="action"
               title="Details"
               aria-label="Details"
-              @click="layoutStore.mobileDetailsOpen = true"
+              @click="detailsPanel.show()"
             >
               <Icon name="info" :size="18" />
             </button>
@@ -486,7 +494,13 @@
          the real ListingItem layout so the page doesn't reflow on load. -->
           <ListingSkeleton
             v-if="layoutStore.loading"
-            :mode="viewMode === 'list' ? 'list' : 'mosaic'"
+            :mode="
+              viewMode === 'list'
+                ? 'list'
+                : viewMode === 'mosaic'
+                  ? 'mosaic'
+                  : 'gallery'
+            "
             :count="viewMode === 'list' ? 10 : 12"
           />
           <template v-else>
@@ -527,14 +541,9 @@
                 title="No matches yet"
                 :hint="`Nothing in ${savedSearchFolderLabel} matches “${savedSearch.query}”. This updates as files are added or changed.`"
               >
-                <button
-                  type="button"
-                  class="empty-cta"
-                  @click="editSavedSearch"
+                <UiButton size="sm" icon="pencil" @click="editSavedSearch"
+                  >Edit search</UiButton
                 >
-                  <Icon name="pencil" :size="13" />
-                  <span>Edit search</span>
-                </button>
               </EmptyState>
               <EmptyState
                 v-else
@@ -544,15 +553,14 @@
                 "
                 hint="Drop files here or use the Upload button to add content."
               >
-                <button
+                <UiButton
                   v-if="headerButtons.upload"
-                  type="button"
-                  class="empty-cta"
+                  variant="primary"
+                  size="sm"
+                  icon="upload"
                   @click="uploadFunc"
+                  >{{ t("buttons.upload") }}</UiButton
                 >
-                  <Icon name="upload" :size="13" />
-                  <span>{{ t("buttons.upload") }}</span>
-                </button>
               </EmptyState>
               <input
                 style="display: none"
@@ -732,7 +740,7 @@
                   class="listing-virtual"
                   :items="listRows"
                   :item-size="null"
-                  :min-item-size="40"
+                  :min-item-size="44"
                   key-field="id"
                   :buffer="320"
                   data-clear-on-click="true"
@@ -1155,7 +1163,7 @@ import Breadcrumbs from "@/components/Breadcrumbs.vue";
 import Action from "@/components/header/Action.vue";
 import Search from "@/components/Search.vue";
 import Item from "@/components/files/ListingItem.vue";
-import InfoPane from "@/components/files/InfoPane.vue";
+import { useDetailsPanel } from "@/composables/useDetailsPanel";
 import ComparePane from "@/components/files/ComparePane.vue";
 import QuickPeek from "@/components/files/QuickPeek.vue";
 import { useQuickPeek } from "@/composables/useQuickPeek";
@@ -1185,6 +1193,7 @@ import SharePanel from "@/components/files/SharePanel.vue";
 import ContextMenu, { type MenuItem } from "@/components/ContextMenu.vue";
 import {
   computed,
+  defineAsyncComponent,
   inject,
   nextTick,
   onBeforeUnmount,
@@ -1195,6 +1204,11 @@ import {
 import { useRoute, useRouter, onBeforeRouteUpdate } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
+
+// The details panel loads on first use, keeping it out of the first paint.
+const InfoPane = defineAsyncComponent(
+  () => import("@/components/files/InfoPane.vue")
+);
 
 const width = ref<number>(window.innerWidth);
 
@@ -1406,15 +1420,13 @@ const scrollSection = ref<HTMLElement | null>(null);
 const isTouchDevice = useTouchDevice();
 const photoInput = ref<HTMLInputElement | null>(null);
 
-// Retract the mobile details sheet whenever the selection empties — covers
-// deselect-all AND navigation (the route watcher clears `selected`), so a
-// stale sheet never lingers over the next folder.
-watch(
-  () => fileStore.selectedCount,
-  (n) => {
-    if (n === 0) layoutStore.mobileDetailsOpen = false;
-  }
-);
+// Details panel (4.5): beside the list, over it, or a bottom sheet.
+const detailsPanel = useDetailsPanel();
+const modKeyLabel = /mac|iphone|ipad|ipod/i.test(
+  typeof navigator === "undefined" ? "" : navigator.platform
+)
+  ? "⌘"
+  : "Ctrl+";
 // v1.3 S6-1: RecycleScroller instance for the virtualized list view.
 // Held so we can scroll a previously-opened item back into view when the
 // user navigates back from a preview (the recycler's analog of the
@@ -2412,6 +2424,13 @@ const keyEvent = (event: KeyboardEvent) => {
     case "s":
       event.preventDefault();
       document.getElementById("download-button")?.click();
+      break;
+    case "i":
+    case "I":
+      // ⌘I / Ctrl+I shows or hides the details panel (4.5), like Get Info.
+      if (splitActive.value) break;
+      event.preventDefault();
+      detailsPanel.toggle();
       break;
   }
 };
@@ -3472,8 +3491,17 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   margin: 0 6px 0 2px;
   color: var(--color-ink-3);
 }
-/* Saved search (5.3): name · count · query · folder, in place of the crumbs. */
+/* Saved search (5.3; two lines in Phase 6, 4.6): name · count, then the
+   query and the folder it searches. */
 .saved-search-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.saved-search-head__line {
+  display: flex;
+  align-items: center;
   gap: 6px;
   min-width: 0;
 }
@@ -3482,53 +3510,40 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   color: var(--color-accent-ink);
 }
 .saved-search-head__name {
-  font-size: 15px;
-  font-weight: 600;
+  margin: 0;
+  font-size: var(--type-title);
+  line-height: var(--type-title-lh);
+  font-weight: 700;
   color: var(--color-ink-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
 }
+.saved-search-head__sub {
+  padding-left: 24px;
+}
 .saved-search-head__query {
   flex: 0 1 auto;
   min-width: 0;
-  max-width: 280px;
+  max-width: 360px;
   padding: 1px 6px;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   background: var(--color-elevated);
   border: 1px solid var(--color-line);
-  font-size: 11.5px;
+  font-size: var(--type-small);
   color: var(--color-ink-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .saved-search-head__in {
-  flex: none;
-  font-size: 12px;
+  min-width: 0;
+  font-size: var(--type-small);
   color: var(--color-ink-3);
   white-space: nowrap;
-}
-.saved-search-head__btn {
-  flex: none;
-  width: 24px;
-  height: 24px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  color: var(--color-ink-2);
-}
-.saved-search-head__btn:hover {
-  background: var(--color-elevated);
-  color: var(--color-ink-1);
-}
-@media (max-width: 640px) {
-  .saved-search-head__query,
-  .saved-search-head__in {
-    display: none;
-  }
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 /* Inline rename input swaps in for the crumb row when renaming the folder. */
 .fb-hero__lead .folder-rename-input {
@@ -3645,39 +3660,6 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   .current-fav-btn {
     transition: none;
   }
-}
-
-/* Primary CTA shown inside the empty-folder state. Same chrome as the
-   header Upload button so the action feels familiar. */
-.empty-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 14px;
-  border-radius: 8px;
-  background: var(--accent-gradient);
-  border: 1px solid var(--color-accent);
-  color: var(--color-on-accent);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition:
-    background-color 0.1s ease,
-    border-color 0.1s ease,
-    box-shadow 0.1s ease;
-}
-
-.empty-cta:hover {
-  background: var(--accent-gradient-strong);
-  border-color: var(--color-accent-strong);
-  box-shadow: 0 4px 12px -4px var(--color-accent-ring);
-}
-
-.empty-cta:focus-visible {
-  outline: 2px solid var(--color-accent-ring);
-  outline-offset: 2px;
 }
 
 /* ── List enter/leave transitions (Stage 11e) ──────────────────────

@@ -699,6 +699,10 @@ onBeforeUnmount(() => {
 /* ── Content body ──────────────────────────────────────────────────── */
 .share__body {
   flex: 1;
+  /* Fill the page: the file list's names shrink (they truncate), so its
+     content no longer props the column open. */
+  width: 100%;
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: 360px 1fr;
   gap: 24px;

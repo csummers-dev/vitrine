@@ -104,7 +104,21 @@
    plain inline so it doesn't disturb the parent's ellipsis truncation or the
    "being moved" gradient text-clip. */
 :is(#listing, .fb-listing) .item .item__name-glyph {
-  display: inline;
+  display: inline-flex;
+  max-width: 100%;
+  min-width: 0;
+  vertical-align: top;
+}
+/* A long name truncates before its extension, which stays visible. */
+:is(#listing, .fb-listing) .item .item__name-base {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:is(#listing, .fb-listing) .item .item__name-ext {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* "Being moved" shimmer — while an item is part of an in-flight MOVE (the
@@ -251,7 +265,7 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
 :is(#listing, .fb-listing).list .item__modified,
 :is(#listing, .fb-listing).list .item__size {
   display: block;
-  line-height: 36px;
+  line-height: 42px;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
@@ -627,11 +641,11 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
 :is(#listing, .fb-listing).list .item {
   grid-template-columns: 28px minmax(0, 1fr) 120px 80px 32px;
   gap: 12px;
-  /* Calm Minimal: denser 36px row (+ 2px×2 margin = a 40px scroller slot, paired
-     with :min-item-size="40"). Was 40px row / 44px slot. */
-  height: 36px;
+  /* Soft native (Decision 8): one comfortable density, a 44px row pitch —
+     42px row + 1px above and below, paired with :min-item-size="44". */
+  height: 42px;
   padding: 0 6px;
-  margin: 2px 0;
+  margin: 1px 0;
   border-radius: var(--radius-md);
   align-items: center;
 }
@@ -737,7 +751,7 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
    former direct-child `> div`. */
 :is(#listing, .fb-listing).mosaic .listing-section {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
   gap: 12px;
 }
 
@@ -954,6 +968,93 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   .item__modified::before {
   content: "";
   margin: 0;
+}
+
+/* ── Icons view (Phase 6, 4.3) ───────────────────────────────
+   Soft native tiles: no card, a 72px kind tile or thumbnail centred over a
+   two-line name and the size. Every tile has the same fixed height so the
+   windowing maths in useListingGrid (GRID_TILE_H) stays exact. */
+:is(#listing, .fb-listing).mosaic:not(.gallery) .item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 156px;
+  padding: 10px 6px 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+}
+:is(#listing, .fb-listing).mosaic:not(.gallery) .item:hover {
+  background: var(--color-hover);
+  border-color: transparent;
+  transform: none;
+  box-shadow: none;
+}
+:is(#listing, .fb-listing).mosaic:not(.gallery) .item[aria-selected="true"] {
+  border-color: var(--color-accent-ring) !important;
+}
+:is(#listing, .fb-listing).mosaic:not(.gallery) .item__name {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+:is(#listing, .fb-listing).mosaic:not(.gallery) .item__icon {
+  width: 72px;
+  height: 72px;
+  aspect-ratio: auto;
+  border-radius: var(--radius-lg);
+}
+:is(#listing, .fb-listing).mosaic:not(.gallery) .item__icon svg {
+  width: 30px;
+  height: 30px;
+}
+:is(#listing, .fb-listing).mosaic:not(.gallery) .item__name-stack {
+  width: 100%;
+  padding: 8px 0 0;
+  text-align: center;
+}
+:is(#listing, .fb-listing).mosaic:not(.gallery) .item__name-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  max-height: 2.6em;
+  font-size: var(--type-small);
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+:is(#listing, .fb-listing).mosaic:not(.gallery) .item__name-glyph {
+  display: inline;
+}
+:is(#listing, .fb-listing).mosaic:not(.gallery) .item__name-base,
+:is(#listing, .fb-listing).mosaic:not(.gallery) .item__name-ext {
+  white-space: normal;
+  overflow: visible;
+}
+:is(#listing, .fb-listing).mosaic:not(.gallery) .item__meta {
+  justify-content: center;
+  padding: 2px 0 0;
+}
+:is(#listing, .fb-listing).mosaic:not(.gallery) .item__meta .item__modified {
+  display: none;
+}
+:is(#listing, .fb-listing).mosaic:not(.gallery)
+  .item[data-dir="true"]
+  .item__meta
+  .item__size {
+  display: block;
+}
+:is(#listing, .fb-listing).mosaic:not(.gallery) .item__select {
+  top: 6px;
+  left: 6px;
+}
+:is(#listing, .fb-listing).mosaic:not(.gallery) .item__actions {
+  top: 6px;
+  right: 6px;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -1179,9 +1280,17 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   border-color: var(--color-accent);
 }
 
-/* Selected tile: 2px accent border + 2px outer ring (matches mockup `border-2 ring-2`) */
+/* Soft native (Phase 6, 4.4): larger corners, no lift on hover, and the
+   same accent edge as a selected Icons tile — a 1px accent border plus a
+   soft outer ring, so the photo itself isn't cropped by a thick frame. */
+:is(#listing, .fb-listing).mosaic.gallery .item {
+  border-radius: var(--radius-lg);
+}
+:is(#listing, .fb-listing).mosaic.gallery .item:hover {
+  transform: none;
+  box-shadow: var(--shadow-1);
+}
 :is(#listing, .fb-listing).mosaic.gallery .item[aria-selected="true"] {
-  border-width: 2px !important;
   border-color: var(--color-accent) !important;
   box-shadow: 0 0 0 2px var(--color-accent-ring) !important;
 }
@@ -1666,8 +1775,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
 }
 .fb-columns > .fb-primary,
 .fb-columns > .compare-pane,
-.fb-columns > .info-pane,
-.fb-columns > .info-pane-rail {
+.fb-columns > .info-pane--docked {
   /* Soft native (Phase 6, 3.1): the content is a rounded panel on the
      window, inset 10 px; split view and the details panel are panels too. */
   background: var(--color-surface);
@@ -1676,8 +1784,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
   overflow: hidden;
   box-shadow: var(--shadow-1);
 }
-.fb-columns > .info-pane,
-.fb-columns > .info-pane-rail {
+.fb-columns > .info-pane--docked {
   background: var(--color-panel);
 }
 
@@ -1698,14 +1805,6 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
   .fb-columns > .compare-pane {
     border: 0;
     border-radius: 0;
-    box-shadow: none;
-  }
-}
-@media (max-width: 1023px) {
-  .fb-columns > .info-pane {
-    border-radius: 0;
-    border: 0;
-    border-left: 1px solid var(--color-line);
     box-shadow: none;
   }
 }
@@ -1730,4 +1829,18 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
 :is(#listing, .fb-listing) .listing-grid-role,
 :is(#listing, .fb-listing).list > .listing-grid-role {
   display: contents;
+}
+
+/* A listing that failed to load (Phase 6, 4.6): the error card sits inside
+   the content panel, centred, instead of filling the whole window. */
+.files-error .error-page {
+  min-height: 0;
+  flex: 1;
+  background: transparent;
+}
+.files-error .error-page__card {
+  box-shadow: none;
+}
+.files-error > header {
+  background: transparent;
 }

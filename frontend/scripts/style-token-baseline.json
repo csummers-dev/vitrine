@@ -1,8 +1,8 @@
 {
   "note": "Allowed raw style literals per file. Only ever lower these (Phase 6).",
   "totals": {
-    "radius": 300,
-    "shadow": 58,
+    "radius": 294,
+    "shadow": 57,
     "hex": 9,
     "colorFn": 20
   },
@@ -72,9 +72,6 @@
     },
     "src/components/files/ImageHoverPreview.vue": {
       "radius": 2
-    },
-    "src/components/files/InfoPane.vue": {
-      "radius": 3
     },
     "src/components/files/InlineNewItem.vue": {
       "radius": 1
@@ -234,8 +231,8 @@
       "radius": 2
     },
     "src/views/files/FileListing.vue": {
-      "radius": 11,
-      "shadow": 6
+      "radius": 8,
+      "shadow": 5
     },
     "src/views/files/Preview.vue": {
       "radius": 13

@@ -1,273 +1,181 @@
 <template>
+  <!-- Details panel (Phase 6, 4.5). Beside the list from 1100 px, over it
+       with a scrim from 768 px, a bottom sheet on phones. The `info-pane`
+       class names stay for custom.css (Decision 9). -->
+  <div
+    v-if="isOpen && mode !== 'docked'"
+    class="info-pane-scrim"
+    data-testid="details-scrim"
+    aria-hidden="true"
+    @click="panel.hide()"
+  ></div>
   <aside
-    v-if="paneVisible"
-    class="info-pane w-[320px] shrink-0 border-l border-line bg-canvas flex flex-col overflow-hidden max-lg:fixed max-lg:top-12 max-lg:right-0 max-lg:bottom-0 max-lg:h-[calc(100vh-48px)] max-lg:z-40 max-lg:shadow-2xl max-[540px]:left-16 max-[540px]:w-auto"
+    v-if="isOpen"
+    ref="paneEl"
+    class="info-pane"
+    :class="`info-pane--${mode}`"
+    aria-labelledby="details-title"
+    data-testid="details-panel"
+    @keydown.esc.stop="onEsc"
   >
-    <!-- Pane header (no divider — keeps the panel calm + sidebar-like) -->
-    <div class="h-11 px-4 flex items-center justify-between shrink-0">
-      <div class="text-[12px] font-semibold text-ink-2">Details</div>
-      <button
-        v-if="isMobile || !collapsed"
-        @click="isMobile ? close() : toggleCollapse()"
-        class="w-6 h-6 rounded hover:bg-hover flex items-center justify-center text-[var(--color-ink-2)] transition"
-        :title="isMobile ? 'Close' : 'Collapse panel'"
-        :aria-label="isMobile ? 'Close info pane' : 'Collapse info pane'"
-      >
-        <Icon :name="isMobile ? 'x' : 'panel-right-close'" :size="14" />
-      </button>
-    </div>
+    <header class="ip-head">
+      <h2 id="details-title" class="ip-head__title">Details</h2>
+      <UiIconButton
+        icon="x"
+        size="sm"
+        label="Close details"
+        @click="panel.hide()"
+      />
+    </header>
 
-    <!-- Scrollable body. The header and footer stay pinned (shrink-0); this
-         middle region owns the scroll. `min-h-0` lets it shrink below its
-         content's natural height so overflow-y engages here instead of the
-         details spilling past the bottom of the pane uncut. It is NOT a flex
-         container — a plain block so its children keep their natural height
-         and never get squished by flex-shrink. -->
-    <div class="ip-scroll flex-1 min-h-0 overflow-y-auto">
-      <!-- ── State 1: a single item is selected (RC-4) ─────────────── -->
+    <div class="ip-scroll">
+      <!-- ── One item ─────────────────────────────────────────────── -->
       <template v-if="item">
-        <!-- Preview -->
-        <div class="px-4 pt-2 pb-3">
-          <div
-            class="aspect-[4/3] rounded-lg border border-line overflow-hidden relative flex items-center justify-center preview-mesh"
+        <div class="ip-preview" :class="{ 'ip-preview--text': !!textPreview }">
+          <img
+            v-if="hasThumbnail && !thumbFailed"
+            :src="thumbnailUrl"
+            class="ip-preview__img"
+            alt=""
+            @error="thumbFailed = true"
+          />
+          <img
+            v-else-if="albumArtUrl"
+            :src="albumArtUrl"
+            class="ip-preview__img"
+            alt="Album artwork"
+          />
+          <img
+            v-else-if="epubCoverUrl"
+            :src="epubCoverUrl"
+            class="ip-preview__cover"
+            alt="Book cover"
+          />
+          <pre
+            v-else-if="textPreview"
+            class="ip-preview__text"
+            data-testid="details-text-preview"
+            >{{ textPreview }}</pre
           >
-            <!-- Photo / video / PDF thumbnail — fill the whole frame. -->
-            <img
-              v-if="hasThumbnail"
-              :src="thumbnailUrl"
-              class="w-full h-full object-cover"
-              :alt="item.name"
+          <div v-else class="ip-preview__tile" :class="iconColorClass">
+            <Icon
+              :name="iconName"
+              :size="40"
+              :stroke-width="1.5"
+              :fill="item.isDir ? 'currentColor' : 'none'"
             />
-            <!-- RC-42: embedded album art for a selected music file. -->
-            <img
-              v-else-if="albumArtUrl"
-              :src="albumArtUrl"
-              class="w-full h-full object-cover"
-              alt="Album artwork"
-            />
-            <!-- batch #4: embedded EPUB cover for a selected book, so the
-               details pane matches the preview pane. -->
-            <img
-              v-else-if="epubCoverUrl"
-              :src="epubCoverUrl"
-              class="max-w-full max-h-full w-auto h-auto object-contain rounded-md shadow-sm"
-              alt="Book cover"
-            />
-            <!-- No image preview (folders, archives, code, blobs, …): fill the
-               whole frame with the file's vivid color tile + matching icon,
-               mirroring the grid / gallery tile styling. -->
-            <div v-else class="info-tile" :class="iconColorClass">
-              <Icon
-                :name="iconName"
-                :size="46"
-                :stroke-width="1.5"
-                :fill="item.isDir ? 'currentColor' : 'none'"
-              />
-            </div>
           </div>
+          <template v-if="videoResume">
+            <span class="ip-preview__progress" aria-hidden="true"
+              ><span
+                class="ip-preview__progress-fill"
+                :style="{
+                  width: `${Math.round(videoResume.fraction * 100)}%`,
+                }"
+            /></span>
+            <span class="ip-preview__chip">
+              Stopped at {{ videoResume.at }}
+            </span>
+          </template>
         </div>
 
-        <!-- Title -->
-        <div class="px-4 pb-3">
-          <div
-            class="info-name text-[15px] font-semibold text-ink-1 leading-snug"
-          >
-            <template v-for="(seg, i) in nameSegments" :key="i"
-              >{{ seg }}<wbr
-            /></template>
-          </div>
-          <div class="text-[12px] text-ink-3 mt-0.5 tabular">
-            {{ typeLabel }}<span v-if="!item.isDir"> · {{ sizeLabel }}</span>
-          </div>
-        </div>
+        <h3 class="ip-name">
+          <template v-for="(seg, i) in nameSegments" :key="i"
+            >{{ seg }}<wbr
+          /></template>
+        </h3>
+        <p class="ip-sub tabular">
+          {{ kindLabel }}<span v-if="sizeText"> · {{ sizeText }}</span>
+        </p>
 
-        <!-- Primary action grid: Share / Download / Rename / Delete — fixed positions -->
-        <div class="px-4 pb-2 grid grid-cols-4 gap-1.5">
-          <button
-            v-if="canShare"
-            @click="action('share')"
-            class="info-action info-action--share"
-            title="Share"
-          >
-            <Icon name="share" :size="14" />
-            <span>Share</span>
-          </button>
-          <button
-            v-if="canDownload"
-            @click="download"
-            class="info-action info-action--download"
-            title="Download"
-          >
-            <Icon name="download" :size="14" />
-            <span>Download</span>
-          </button>
-          <button
-            v-if="canRename"
-            @click="action('rename')"
-            class="info-action info-action--rename"
-            title="Rename"
-          >
-            <Icon name="pencil" :size="14" />
-            <span>Rename</span>
-          </button>
-          <button
-            v-if="canDelete"
-            @click="action('delete')"
-            class="info-action info-action--danger"
-            title="Delete"
-          >
-            <Icon name="trash-2" :size="14" />
-            <span>Delete</span>
-          </button>
-        </div>
-
-        <!-- Secondary action row: Move / Copy / (Preview or Extract).
-         For files this is a clean 3-up grid; for folders Preview/Extract
-         are omitted and the row falls back to 2-col so Move + Copy still
-         fill the width. The third tile swaps to "Extract" when the file
-         is a supported archive (zip / 7z / rar / tar family) and the user
-         can create — an archive's "preview" really is its contents, which
-         is what Extract opens. -->
-        <div
-          v-if="canMove || canCopy || !item.isDir"
-          class="pb-4 grid gap-1.5"
-          :class="
-            !item.isDir
-              ? canEditTags
-                ? 'px-4 grid-cols-4'
-                : 'px-4 grid-cols-3'
-              : 'grid-cols-2 w-2/3 mx-auto'
-          "
-        >
-          <button
-            v-if="canMove"
-            @click="action('move')"
-            class="info-action info-action--move"
-            title="Move"
-          >
-            <Icon name="forward" :size="14" />
-            <span>Move</span>
-          </button>
-          <button
-            v-if="canCopy"
-            @click="action('copy')"
-            class="info-action info-action--copy"
-            title="Copy"
-          >
-            <Icon name="copy" :size="14" />
-            <span>Copy</span>
-          </button>
-          <!-- V2 #5: edit-tags joins the action row (between Copy and Preview),
-             mirroring the preview details panel, instead of a separate button. -->
-          <button
-            v-if="canEditTags"
-            @click="action('audio-tags')"
-            class="info-action info-action--tags"
-            title="Edit tags"
-          >
-            <Icon name="music" :size="14" />
-            <span>Edit tags</span>
-          </button>
-          <button
-            v-if="!item.isDir && canExtract"
-            @click="action('extract')"
-            class="info-action info-action--extract"
-            title="Extract"
-          >
-            <Icon name="package-open" :size="14" />
-            <span>Extract</span>
-          </button>
-          <button
-            v-else-if="!item.isDir"
+        <div class="ip-actions">
+          <UiButton
+            variant="primary"
+            size="sm"
+            :icon="openIcon"
+            data-testid="details-open"
             @click="open"
-            class="info-action info-action--preview"
-            title="Preview"
+            >{{ openLabel }}</UiButton
           >
-            <Icon name="eye" :size="14" />
-            <span>Preview</span>
-          </button>
-        </div>
-        <div v-else class="pb-4"></div>
-
-        <!-- Properties -->
-        <div class="px-4 py-3">
-          <div
-            class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] mb-2"
+          <UiButton v-if="canShare" size="sm" icon="share" @click="act('share')"
+            >Share</UiButton
           >
-            Properties
-          </div>
-          <dl class="text-[12px] space-y-1.5">
-            <div class="flex justify-between gap-3">
-              <dt class="text-ink-3">Type</dt>
-              <dd class="text-ink-1">{{ typeLabel }}</dd>
-            </div>
-            <div class="flex justify-between gap-3">
-              <dt class="text-ink-3">Size</dt>
-              <dd class="text-ink-1 tabular">
-                {{ item.isDir ? folderSizeLabel : sizeLabel }}
-              </dd>
-            </div>
-            <div class="flex justify-between gap-3">
-              <dt class="text-ink-3">Modified</dt>
-              <dd class="text-ink-1 tabular">{{ modifiedLabel }}</dd>
-            </div>
-            <div v-if="item.extension" class="flex justify-between gap-3">
-              <dt class="text-ink-3">Extension</dt>
-              <dd class="text-ink-1 font-mono text-[11px]">
-                {{ item.extension }}
-              </dd>
-            </div>
-          </dl>
+          <UiButton
+            v-if="canDownload"
+            size="sm"
+            icon="download"
+            @click="download"
+            >Download</UiButton
+          >
+          <UiIconButton
+            icon="ellipsis"
+            size="sm"
+            variant="secondary"
+            :label="`More actions for ${item.name}`"
+            @click="openMenu"
+          />
         </div>
 
-        <!-- WS7 #8: read-only audio tags for a single selected music file.
-           Non-empty fields only; refreshes after an edit (watch keys on
-           modified). Distinct from the v1.3 user "Tags" section below. -->
-        <div v-if="audioTagRows.length > 0" class="px-4 py-3">
-          <div
-            class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em] mb-2"
-          >
-            Audio tags
-          </div>
-          <dl class="text-[12px] space-y-1.5">
-            <div
-              v-for="row in audioTagRows"
-              :key="row.label"
-              class="flex justify-between gap-3"
-            >
-              <dt class="text-ink-3 shrink-0">{{ row.label }}</dt>
-              <dd class="text-ink-1 text-right break-words min-w-0">
-                {{ row.value }}
+        <section class="ip-section" aria-labelledby="ip-info">
+          <h4 id="ip-info" class="ip-section__title">Information</h4>
+          <dl class="ip-props">
+            <div>
+              <dt>Kind</dt>
+              <dd>{{ kindLabel }}</dd>
+            </div>
+            <div>
+              <dt>Size</dt>
+              <dd class="tabular">{{ sizeText || "—" }}</dd>
+            </div>
+            <div>
+              <dt>Modified</dt>
+              <dd class="tabular">
+                <time :datetime="item.modified">{{
+                  fullDate(item.modified)
+                }}</time>
+              </dd>
+            </div>
+            <div class="ip-props__where">
+              <dt>Where</dt>
+              <dd>
+                <span class="ip-path" :title="itemPath">{{ itemPath }}</span>
+                <UiIconButton
+                  :icon="copiedPath ? 'check' : 'copy'"
+                  size="sm"
+                  :label="copiedPath ? 'Path copied' : 'Copy path'"
+                  @click="copyPath"
+                />
               </dd>
             </div>
           </dl>
-        </div>
+        </section>
 
-        <!-- Tags (v1.3 S2-5). Full chip list + "Manage tags" CTA that
-         opens the picker SlideOver. Empty state shows the CTA on its
-         own. Reads tags from the cache populated by FileListing's
-         batch fetch; falls back to forFile when stale. -->
-        <div class="px-4 py-3">
-          <div class="mb-1.5 flex items-center justify-between gap-2">
-            <div
-              class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em]"
-            >
-              Tags
+        <section
+          v-if="audioTagRows.length > 0"
+          class="ip-section"
+          aria-labelledby="ip-audio"
+        >
+          <h4 id="ip-audio" class="ip-section__title">Audio tags</h4>
+          <dl class="ip-props">
+            <div v-for="row in audioTagRows" :key="row.label">
+              <dt>{{ row.label }}</dt>
+              <dd>{{ row.value }}</dd>
             </div>
-            <button
-              type="button"
-              class="info-pane__manage-tags"
-              :title="itemTags.length === 0 ? 'Add tags' : 'Manage tags'"
+          </dl>
+        </section>
+
+        <section class="ip-section" aria-labelledby="ip-tags">
+          <div class="ip-section__head">
+            <h4 id="ip-tags" class="ip-section__title">Tags</h4>
+            <UiButton
+              variant="ghost"
+              size="sm"
+              :icon="itemTags.length === 0 ? 'plus' : 'pencil'"
               @click="tagPicker.open"
+              >{{ itemTags.length === 0 ? "Add" : "Edit" }}</UiButton
             >
-              <Icon
-                :name="itemTags.length === 0 ? 'plus' : 'pencil'"
-                :size="11"
-              />
-              <span>{{ itemTags.length === 0 ? "Add" : "Manage" }}</span>
-            </button>
           </div>
-          <div v-if="itemTags.length > 0" class="info-pane__tag-list">
+          <div v-if="itemTags.length > 0" class="ip-tags">
             <TagChip
               v-for="t in itemTags"
               :key="t.id"
@@ -276,112 +184,113 @@
               :focusable="false"
             />
           </div>
-          <div v-else class="info-pane__tag-empty">No tags</div>
-        </div>
-
-        <!-- Location -->
-        <div class="px-4 py-3">
-          <div class="mb-1.5 flex items-center justify-between gap-2">
-            <div
-              class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em]"
-            >
-              Location
-            </div>
-            <!-- G6: Copy path action. Lives next to the Location label so
-             the affordance is right where the user is looking when they
-             want it. Uses the navigator.clipboard API (modern, no fallback
-             needed for our target browsers). Toast confirms because the
-             OS clipboard is invisible — the user needs feedback to know
-             something happened. -->
-            <button
-              type="button"
-              class="info-pane__copy-path"
-              :title="copiedPath ? 'Copied!' : 'Copy path'"
-              :aria-label="copiedPath ? 'Path copied' : 'Copy path'"
-              @click="copyPath"
-            >
-              <Icon :name="copiedPath ? 'check' : 'copy'" :size="12" />
-              <span>{{ copiedPath ? "Copied" : "Copy" }}</span>
-            </button>
-          </div>
-          <div
-            class="font-mono text-[11px] text-ink-2 break-all bg-elevated rounded-md px-2 py-1.5 border border-line"
-          >
-            {{ item.path || item.url }}
-          </div>
-        </div>
+          <p v-else class="ip-muted">No tags</p>
+        </section>
       </template>
 
-      <!-- ── State 2: 2+ items selected ─────────────────────────────── -->
+      <!-- ── Several items ────────────────────────────────────────── -->
       <template v-else-if="selectedCount >= 2">
-        <div class="ip-summary">
-          <div class="ip-summary__icon ip-summary__icon--accent">
-            <Icon name="layers" :size="26" :stroke-width="1.4" />
+        <div class="ip-summary" data-testid="details-multi">
+          <div class="ip-summary__tile kind-other">
+            <Icon name="layers" :size="28" :stroke-width="1.5" />
           </div>
-          <div class="ip-summary__title">
-            {{ selectedCount }} items selected
-          </div>
-          <div class="ip-summary__meta">{{ selectionSizeLabel }} total</div>
-          <p class="ip-summary__hint">
-            Use the action bar at the bottom of the list to move, copy, rename
-            or delete the selection.
-          </p>
+          <h3 class="ip-name">{{ selectedCount }} items selected</h3>
+          <p class="ip-sub tabular">{{ selectionSizeLabel }}</p>
         </div>
+        <div class="ip-actions ip-actions--wrap">
+          <UiButton
+            v-if="canDownload"
+            size="sm"
+            icon="download"
+            @click="act('download')"
+            >Download</UiButton
+          >
+          <UiButton v-if="canMove" size="sm" icon="forward" @click="act('move')"
+            >Move</UiButton
+          >
+          <UiButton v-if="canCopy" size="sm" icon="copy" @click="act('copy')"
+            >Copy</UiButton
+          >
+          <UiButton
+            v-if="canDelete"
+            size="sm"
+            variant="danger"
+            icon="trash-2"
+            @click="act('delete')"
+            >Delete</UiButton
+          >
+        </div>
+        <section class="ip-section" aria-labelledby="ip-kinds">
+          <h4 id="ip-kinds" class="ip-section__title">Selection</h4>
+          <dl class="ip-props">
+            <div v-for="k in selectionKinds" :key="k.label">
+              <dt>{{ k.label }}</dt>
+              <dd class="tabular">{{ k.count }}</dd>
+            </div>
+            <div>
+              <dt>Total size</dt>
+              <dd class="tabular">{{ selectionSizeLabel }}</dd>
+            </div>
+          </dl>
+        </section>
       </template>
 
-      <!-- ── State 3: nothing selected → current folder summary ─────── -->
+      <!-- ── Nothing selected: the folder on screen ───────────────── -->
       <template v-else>
-        <div class="ip-summary">
-          <div class="ip-summary__icon ip-summary__icon--folder">
+        <div class="ip-summary" data-testid="details-folder">
+          <div class="ip-summary__tile ip-summary__tile--folder">
             <Icon
               name="folder"
-              :size="26"
+              :size="28"
               :stroke-width="1.4"
               fill="currentColor"
             />
           </div>
-          <div class="ip-summary__title">{{ folderName }}</div>
-          <div class="ip-summary__meta">
+          <h3 class="ip-name">{{ folderName }}</h3>
+          <p class="ip-sub tabular">
             {{ folderItemCount }} {{ folderItemCount === 1 ? "item" : "items" }}
-          </div>
-          <dl class="ip-summary__props">
-            <div class="ip-summary__prop">
+          </p>
+        </div>
+        <section class="ip-section" aria-labelledby="ip-folder">
+          <h4 id="ip-folder" class="ip-section__title">Information</h4>
+          <dl class="ip-props">
+            <div>
+              <dt>Size</dt>
+              <dd class="tabular">{{ currentFolderSize }}</dd>
+            </div>
+            <div>
               <dt>Folders</dt>
               <dd class="tabular">{{ folderDirCount }}</dd>
             </div>
-            <div class="ip-summary__prop">
+            <div>
               <dt>Files</dt>
               <dd class="tabular">{{ folderFileCount }}</dd>
             </div>
-            <div class="ip-summary__prop ip-summary__prop--path">
-              <dt>Path</dt>
-              <dd class="ip-summary__path" :title="folderPath">
-                {{ folderPath }}
+            <div v-if="fileStore.req?.modified">
+              <dt>Modified</dt>
+              <dd class="tabular">{{ fullDate(fileStore.req.modified) }}</dd>
+            </div>
+            <div class="ip-props__where">
+              <dt>Where</dt>
+              <dd>
+                <span class="ip-path" :title="folderPath">{{
+                  folderPath
+                }}</span>
               </dd>
             </div>
           </dl>
-          <p class="ip-summary__hint">Select an item to see its details.</p>
-        </div>
+          <p class="ip-muted ip-hint">Select an item to see its details.</p>
+        </section>
       </template>
     </div>
-    <!-- /ip-scroll -->
 
-    <!-- Keyboard hint footer — only meaningful with a selection -->
-    <div
-      v-if="item"
-      class="px-4 py-2.5 text-[11px] text-ink-3 flex items-center justify-between shrink-0"
-    >
-      <span class="flex items-center gap-1.5">
-        <kbd
-          class="font-mono text-[10px] px-1 py-px rounded border border-line bg-elevated"
-          >Esc</kbd
-        >
-        <span>to clear</span>
-      </span>
-    </div>
+    <ContextMenu
+      :show="menu.show"
+      :pos="menu.pos"
+      :items="menuItems"
+      @hide="menu.show = false"
+    />
 
-    <!-- Tag picker sheet (v1.3 S2-5). Renders as a SlideOver via
-         Teleport so it sits above the InfoPane in stacking order. -->
     <TagPickerSheet
       v-if="item"
       :open="tagPicker.isOpen.value"
@@ -390,23 +299,21 @@
       @saved="tagPicker.close"
     />
   </aside>
-
-  <!-- Collapsed rail (desktop): a thin strip with an expand affordance
-       so the pane can be reclaimed without losing the entry point. -->
-  <button
-    v-else-if="showRail"
-    class="info-pane-rail shrink-0 border-l border-line bg-canvas flex items-start justify-center pt-3 text-[var(--color-ink-2)] hover:bg-hover transition"
-    title="Show details"
-    aria-label="Show details panel"
-    @click="toggleCollapse"
-  >
-    <Icon name="panel-left-open" :size="16" />
-  </button>
 </template>
 
 <script setup lang="ts">
+/**
+ * The details panel (Phase 6, 4.5): what the selection is, at a glance, and
+ * the few things you do with it. One item shows a preview, its information,
+ * tags and its main actions (the rest are in the ⋯ menu); several items show
+ * a count, total size and kinds with the actions they share; nothing selected
+ * shows the folder on screen. Open state and layout: useDetailsPanel.
+ */
 import Icon from "@/components/Icon.vue";
 import TagChip from "@/components/TagChip.vue";
+import ContextMenu, { type MenuItem } from "@/components/ContextMenu.vue";
+import UiButton from "@/components/ui/UiButton.vue";
+import UiIconButton from "@/components/ui/UiIconButton.vue";
 import TagPickerSheet from "@/components/files/TagPickerSheet.vue";
 import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
@@ -425,175 +332,103 @@ import { isAudioTaggable } from "@/utils/audio";
 import { files as api, audiotags as audioTagsApi } from "@/api";
 import type { Book } from "epubjs";
 import dayjs from "dayjs";
-import { computed, inject, onMounted, onUnmounted, ref, watch } from "vue";
+import {
+  computed,
+  inject,
+  nextTick,
+  onUnmounted,
+  reactive,
+  ref,
+  watch,
+} from "vue";
+import { useRouter } from "vue-router";
 import { useTagPicker } from "@/composables/useTagPicker";
-import { usePreferences } from "@/composables/usePreferences";
 import { useFolderSizes } from "@/composables/useFolderSizes";
+import { useDetailsPanel } from "@/composables/useDetailsPanel";
+import {
+  useVideoProgress,
+  formatTimestamp,
+} from "@/composables/useVideoProgress";
+import { useRootLabel } from "@/composables/useRootLabel";
 
 const fileStore = useFileStore();
 const tagsStore = useTagsStore();
-
-// Tag picker open-state (v1.3 S2-5; hoisted to a singleton composable
-// in S4-1 so the row context menu can also open it). The actual sheet
-// component still lives in this file — only the flag moved out.
-const tagPicker = useTagPicker();
 const authStore = useAuthStore();
 const layoutStore = useLayoutStore();
-const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
+const router = useRouter();
+const tagPicker = useTagPicker();
+const panel = useDetailsPanel();
+const { rootLabel } = useRootLabel();
+const $showSuccess = inject<IToastSuccess>("$showSuccess", () => {});
 
-// G6: Copy-path local state. We flash the button label to "Copied" for
-// ~1.5 s after a successful copy as immediate inline feedback, and ALSO
-// show a toast. Double-feedback is intentional: the inline change is
-// instant and right where the user clicked, the toast is durable so it
-// survives them looking away.
-const copiedPath = ref<boolean>(false);
-let copiedResetTimer: number | null = null;
+const isOpen = computed(() => panel.isOpen.value);
+const mode = computed(() => panel.mode.value);
 
-const copyPath = async () => {
-  const path = item.value?.path || item.value?.url;
-  if (!path) return;
-  try {
-    await navigator.clipboard.writeText(path);
-    copiedPath.value = true;
-    if (copiedResetTimer !== null) window.clearTimeout(copiedResetTimer);
-    copiedResetTimer = window.setTimeout(() => {
-      copiedPath.value = false;
-      copiedResetTimer = null;
-    }, 1500);
-    $showSuccess(`Path copied: ${path}`);
-  } catch {
-    // navigator.clipboard fails in insecure contexts (http://) or when
-    // the user denied permission. Fall back to a manual selection prompt
-    // via a one-off textarea + execCommand("copy") so the action still
-    // succeeds on LAN-only HTTP setups (homelab without TLS).
-    try {
-      const ta = document.createElement("textarea");
-      ta.value = path;
-      ta.setAttribute("readonly", "");
-      ta.style.position = "fixed";
-      ta.style.opacity = "0";
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-      copiedPath.value = true;
-      if (copiedResetTimer !== null) window.clearTimeout(copiedResetTimer);
-      copiedResetTimer = window.setTimeout(() => {
-        copiedPath.value = false;
-        copiedResetTimer = null;
-      }, 1500);
-      $showSuccess(`Path copied: ${path}`);
-    } catch {
-      /* both methods failed — silently no-op */
-    }
+// Over the list (overlay or sheet), focus moves into the panel so keyboard
+// users land where the new content is; Escape closes it.
+const paneEl = ref<HTMLElement | null>(null);
+watch(
+  () => isOpen.value && mode.value !== "docked",
+  (floating) => {
+    if (floating)
+      void nextTick(() => paneEl.value?.querySelector("button")?.focus());
   }
+);
+const onEsc = () => {
+  if (mode.value !== "docked") panel.hide();
 };
 
 const item = computed<ResourceItem | null>(() => {
   if (!fileStore.req || fileStore.selectedCount !== 1) return null;
-  const idx = fileStore.selected[0];
-  return fileStore.req.items[idx] ?? null;
+  return fileStore.req.items[fileStore.selected[0]] ?? null;
 });
+const selectedCount = computed(() => fileStore.selectedCount);
 
-// Folder size (2.4.0 Stage 4 / E): folders have no intrinsic size, so fetch the
-// recursive total on demand when a single folder is selected and show it in the
-// Size row ("Calculating…" until it resolves). Keyed by path + mtime so a folder
-// whose contents changed re-fetches. The fetch + cache live in the composable.
+// ── Sizes ─────────────────────────────────────────────────────────────
 const folderSizes = useFolderSizes();
-const folderSizeKey = (it: ResourceItem) => String(it.modified ?? "");
+const modKey = (it: { modified?: string }) => String(it.modified ?? "");
+const folderSizeOf = (it: ResourceItem): number | undefined =>
+  folderSizes.cached(it.url, modKey(it));
+
 watch(
-  item,
-  (it) => {
-    if (it?.isDir && it.url) void folderSizes.ensure(it.url, folderSizeKey(it));
+  () =>
+    [
+      isOpen.value,
+      item.value,
+      fileStore.selected.slice(),
+      fileStore.req?.url,
+    ] as const,
+  () => {
+    const req = fileStore.req;
+    if (!isOpen.value || !req) return;
+    if (req.url && selectedCount.value === 0)
+      void folderSizes.ensure(req.url, modKey(req));
+    for (const i of fileStore.selected) {
+      const it = req.items[i];
+      if (it?.isDir && it.url) void folderSizes.ensure(it.url, modKey(it));
+    }
   },
   { immediate: true }
 );
-const folderSizeLabel = computed(() => {
+
+const sizeText = computed(() => {
   const it = item.value;
-  if (!it?.isDir || !it.url) return "";
-  const s = folderSizes.cached(it.url, folderSizeKey(it));
-  return s === undefined ? "Calculating…" : filesize(s);
+  if (!it) return "";
+  if (!it.isDir) return filesize(it.size);
+  const s = folderSizeOf(it);
+  return s === undefined ? "" : filesize(s);
 });
 
-// ── RC-4: always-present details pane ───────────────────────────────
-// The pane stays docked so the listing never reflows when an item is
-// selected (which used to shift tiles mid-double-click and made
-// double-click-to-open impossible in grid/gallery). It shows three
-// states: a single item, a multi-select summary, or — when nothing is
-// selected — a summary of the current folder.
-const prefs = usePreferences();
-
-const selectedCount = computed(() => fileStore.selectedCount);
-
-// Below lg the pane reverts to an on-select overlay (an always-docked
-// 320px panel would dominate a phone). Tracked via matchMedia.
-const isMobile = ref(false);
-const updateIsMobile = () => {
-  isMobile.value =
-    typeof window !== "undefined" &&
-    window.matchMedia("(max-width: 1023px)").matches;
-};
-
-// Desktop collapse-to-rail, persisted across sessions. Calm Minimal: defaults to
-// collapsed (a slim rail) so an empty 320px column isn't parked.
-//
-// The pane's visibility follows ONLY this collapsed/expanded toggle — selecting a
-// file or folder no longer force-opens it, so clicking around the listing never
-// interrupts the user's flow. Selection drives the pane's CONTENT (which details
-// to show) when it IS open; it no longer decides whether it's open.
-const collapsed = ref<boolean>(
-  prefs.get<boolean>("detailsPaneCollapsed", true)
-);
-const toggleCollapse = () => {
-  // A plain pin toggle: the rail's expand affordance opens it, the open pane's
-  // chevron collapses it. The state sticks regardless of what's selected.
-  collapsed.value = !collapsed.value;
-  void prefs.set("detailsPaneCollapsed", collapsed.value);
-};
-
-// Full pane (desktop): shown only when the user has expanded it (!collapsed),
-// independent of selection. Mobile: opt-in overlay. Collapsed rail: desktop,
-// whenever collapsed.
-const paneVisible = computed(
-  () =>
-    (!isMobile.value && !collapsed.value) ||
-    // Mobile: opt-in only. The sheet used to auto-open on any selection,
-    // which covered the row and hijacked the user's next tap; now it opens
-    // exclusively from the selection toolbar's Details button.
-    (isMobile.value && layoutStore.mobileDetailsOpen)
-);
-const showRail = computed(() => !isMobile.value && collapsed.value);
-
-// Folder summary (nothing selected).
-const folderName = computed(() => fileStore.req?.name || "Home");
-const folderDirCount = computed(() => fileStore.req?.numDirs ?? 0);
-const folderFileCount = computed(() => fileStore.req?.numFiles ?? 0);
-const folderItemCount = computed(
-  () => folderDirCount.value + folderFileCount.value
-);
-const folderPath = computed(() => fileStore.req?.path ?? "/");
-
-// Multi-select summary (2+ selected).
-const selectionSizeLabel = computed(() => {
+const currentFolderSize = computed(() => {
   const req = fileStore.req;
-  if (!req) return "";
-  const total = fileStore.selected.reduce(
-    (sum, idx) => sum + (req.items[idx]?.size ?? 0),
-    0
-  );
-  return filesize(total);
+  if (!req?.url) return "—";
+  const s = folderSizes.cached(req.url, modKey(req));
+  return s === undefined ? "—" : filesize(s);
 });
 
-// Tag list for the currently-selected item. Reads from the same
-// byPath cache the listing rows use → no extra HTTP, and the chip
-// set stays consistent between the row + the info pane. V2 #23: ordered
-// alphabetically by name, matching the left-to-right order of the row dots.
-const itemTags = computed<Tag[]>(() => {
-  if (!item.value) return [];
-  return [...tagsStore.forPath(item.value.url)].sort((a, b) =>
-    a.name.localeCompare(b.name)
-  );
-});
+// ── One item ──────────────────────────────────────────────────────────
+const thumbFailed = ref(false);
+watch(item, () => (thumbFailed.value = false));
 
 const iconName = computed(() =>
   item.value
@@ -604,7 +439,6 @@ const iconName = computed(() =>
       })
     : "file"
 );
-
 const iconColorClass = computed(() =>
   item.value
     ? fileIconColor({
@@ -616,35 +450,256 @@ const iconColorClass = computed(() =>
 );
 
 const hasThumbnail = computed(() => {
-  if (!enableThumbs || !item.value || item.value.isDir) return false;
-  // Mirror the listing's thumbnail support so the details preview shows the
-  // same backend-rendered thumbnails the grid does — images always, video +
-  // PDF when the server supports them. Audio falls through to album art, then
-  // to the color tile.
-  const t = item.value.type;
-  if (t === "image") return true;
-  if (t === "video") return enableVideoThumbs;
-  if (t === "pdf") return enablePdfThumbs;
-  // V3-E #20: comics get a server-extracted cover (first page) — the same
-  // thumbnail the row icon shows. Mirror the listing's showThumbnail gate so
-  // the details frame shows the cover instead of the generic color tile.
-  // (.cbz joined .cbr in v2.7 — the original exclusion was reversed.)
-  const n = (item.value.name || "").toLowerCase();
-  if (n.endsWith(".cbr") || n.endsWith(".cbz")) return true;
-  return false;
+  const it = item.value;
+  if (!enableThumbs || !it || it.isDir) return false;
+  if (it.type === "image") return true;
+  if (it.type === "video") return enableVideoThumbs;
+  if (it.type === "pdf") return enablePdfThumbs;
+  const n = (it.name || "").toLowerCase();
+  return n.endsWith(".cbr") || n.endsWith(".cbz");
 });
+const thumbnailUrl = computed(() =>
+  item.value ? api.getPreviewURL(item.value as Resource, "thumb") : ""
+);
 
-// Break long file names at separators (., -, _, /, space) instead of mid-word:
-// each segment is rendered with a trailing <wbr> so wrapping prefers those
-// natural points and only breaks a long run as a last resort.
 const nameSegments = computed(() =>
   (item.value?.name ?? "").split(/(?<=[._\-\s/])/)
 );
 
-const thumbnailUrl = computed(() => {
-  if (!item.value) return "";
-  return api.getPreviewURL(item.value as Resource, "thumb");
+const KIND_NAMES: Record<string, [string, string]> = {
+  dir: ["Folder", "Folders"],
+  image: ["Image", "Images"],
+  video: ["Video", "Videos"],
+  audio: ["Audio", "Audio files"],
+  pdf: ["PDF document", "PDFs"],
+  text: ["Text document", "Text documents"],
+  textImmutable: ["Text document", "Text documents"],
+};
+const kindOf = (it: { isDir: boolean; type: string; extension?: string }) => {
+  if (it.isDir) return KIND_NAMES.dir;
+  const k = KIND_NAMES[it.type];
+  if (k) return k;
+  const ext = it.extension?.replace(".", "").toUpperCase();
+  return ext ? [`${ext} file`, `${ext} files`] : ["File", "Files"];
+};
+const kindLabel = computed(() => (item.value ? kindOf(item.value)[0] : ""));
+
+const itemPath = computed(() => item.value?.path || item.value?.url || "");
+
+const fullDate = (iso: string) => {
+  const m = dayjs(iso);
+  return m.isValid() ? m.format("MMM D, YYYY [at] HH:mm") : "—";
+};
+
+// Video: where playback stopped, over the poster.
+const videoProgress = useVideoProgress();
+const videoResume = computed(() => {
+  const it = item.value;
+  if (!it || it.type !== "video" || !it.path) return null;
+  const fraction = videoProgress.fraction(it.path);
+  const at = videoProgress.get(it.path)?.t ?? 0;
+  return fraction > 0 ? { fraction, at: formatTimestamp(at) } : null;
 });
+
+// Text: the first lines, read from the file (small files only).
+const TEXT_PREVIEW_MAX_BYTES = 256 * 1024;
+const TEXT_PREVIEW_LINES = 14;
+const textPreview = ref("");
+let textToken = 0;
+watch(
+  () => {
+    const it = item.value;
+    return it &&
+      isOpen.value &&
+      !it.isDir &&
+      (it.type === "text" || it.type === "textImmutable") &&
+      it.size <= TEXT_PREVIEW_MAX_BYTES
+      ? `${it.url}#${it.modified}`
+      : null;
+  },
+  async (key) => {
+    const token = ++textToken;
+    textPreview.value = "";
+    if (!key || !item.value) return;
+    try {
+      const res = await api.fetch(item.value.url);
+      if (token !== textToken) return;
+      const content = (res as Resource).content ?? "";
+      textPreview.value = content
+        .split("\n")
+        .slice(0, TEXT_PREVIEW_LINES)
+        .join("\n");
+    } catch {
+      /* unreadable: the kind tile shows instead */
+    }
+  },
+  { immediate: true }
+);
+
+const tagsOf = (url: string) =>
+  [...tagsStore.forPath(url)].sort((a, b) => a.name.localeCompare(b.name));
+const itemTags = computed<Tag[]>(() =>
+  item.value ? tagsOf(item.value.url) : []
+);
+
+// ── Actions ───────────────────────────────────────────────────────────
+const perm = computed(() => authStore.user?.perm);
+const canShare = computed(() => !!perm.value?.share && !!perm.value?.download);
+const canDownload = computed(() => !!perm.value?.download);
+const canRename = computed(() => !!perm.value?.rename);
+const canDelete = computed(() => !!perm.value?.delete);
+const canMove = computed(() => !!perm.value?.rename);
+const canCopy = computed(() => !!perm.value?.create);
+const canExtract = computed(
+  () =>
+    unzipEnabled &&
+    !!perm.value?.create &&
+    !!item.value &&
+    !item.value.isDir &&
+    isExtractable(item.value.name)
+);
+
+const isPlayable = computed(
+  () => item.value?.type === "video" || item.value?.type === "audio"
+);
+const openLabel = computed(() => (isPlayable.value ? "Play" : "Open"));
+const openIcon = computed(() =>
+  isPlayable.value ? "play" : item.value?.isDir ? "folder-open" : "eye"
+);
+
+const act = (name: string) => {
+  if (mode.value !== "docked") panel.hide();
+  layoutStore.showHover(name);
+};
+const open = () => {
+  if (!item.value) return;
+  if (mode.value !== "docked") panel.hide();
+  void router.push(item.value.url);
+};
+const download = () => {
+  if (item.value) window.open(api.getDownloadURL(item.value, false));
+};
+
+const copiedPath = ref(false);
+let copiedTimer: number | null = null;
+const copyPath = async () => {
+  const path = itemPath.value;
+  if (!path) return;
+  try {
+    await navigator.clipboard.writeText(path);
+  } catch {
+    // Plain-HTTP LAN setups have no async clipboard: fall back.
+    const ta = document.createElement("textarea");
+    ta.value = path;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+  }
+  copiedPath.value = true;
+  if (copiedTimer !== null) window.clearTimeout(copiedTimer);
+  copiedTimer = window.setTimeout(() => (copiedPath.value = false), 1500);
+  $showSuccess(`Path copied: ${path}`);
+};
+
+const menu = reactive({ show: false, pos: { x: 0, y: 0 } });
+const openMenu = (e: MouseEvent) => {
+  const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+  menu.pos = { x: r.left, y: r.bottom + 4 };
+  menu.show = true;
+};
+const menuItems = computed<MenuItem[]>(() => {
+  if (!item.value) return [];
+  const items: MenuItem[] = [];
+  if (canRename.value)
+    items.push({
+      label: "Rename",
+      icon: "pencil",
+      action: () => act("rename"),
+    });
+  if (canMove.value)
+    items.push({ label: "Move", icon: "forward", action: () => act("move") });
+  if (canCopy.value)
+    items.push({ label: "Copy", icon: "copy", action: () => act("copy") });
+  if (canExtract.value)
+    items.push({
+      label: "Extract",
+      icon: "package-open",
+      action: () => act("extract"),
+    });
+  if (canEditTags.value)
+    items.push({
+      label: "Edit audio tags",
+      icon: "music",
+      action: () => act("audio-tags"),
+    });
+  items.push({
+    label: "Copy path",
+    icon: "link",
+    action: () => void copyPath(),
+  });
+  if (canDelete.value)
+    items.push(
+      { type: "separator" },
+      {
+        label: "Delete",
+        icon: "trash-2",
+        destructive: true,
+        action: () => act("delete"),
+      }
+    );
+  return items;
+});
+
+// ── Several items ─────────────────────────────────────────────────────
+const selectedItems = computed(() => {
+  const req = fileStore.req;
+  if (!req) return [];
+  return fileStore.selected
+    .map((i) => req.items[i])
+    .filter((x): x is ResourceItem => !!x);
+});
+const selectionKinds = computed(() => {
+  const counts = new Map<string, number>();
+  for (const it of selectedItems.value) {
+    const [one, many] = kindOf(it);
+    const key = `${one}|${many}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([key, count]) => {
+      const [one, many] = key.split("|");
+      return { label: count === 1 ? one : many, count };
+    })
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+});
+const selectionSizeLabel = computed(() => {
+  let total = 0;
+  let pending = false;
+  for (const it of selectedItems.value) {
+    if (!it.isDir) total += it.size ?? 0;
+    else {
+      const s = folderSizeOf(it);
+      if (s === undefined) pending = true;
+      else total += s;
+    }
+  }
+  return pending ? `${filesize(total)} so far` : filesize(total);
+});
+
+// ── Nothing selected ──────────────────────────────────────────────────
+const folderName = computed(
+  () => fileStore.req?.name || rootLabel.value || "My files"
+);
+const folderDirCount = computed(() => fileStore.req?.numDirs ?? 0);
+const folderFileCount = computed(() => fileStore.req?.numFiles ?? 0);
+const folderItemCount = computed(
+  () => folderDirCount.value + folderFileCount.value
+);
+const folderPath = computed(() => fileStore.req?.path ?? "/");
 
 // ── Album art for a selected music file (RC-42) ─────────────────────
 // Mirrors AudioViewer's approach (E2): range-fetch the file header
@@ -870,377 +925,275 @@ watch(
 
 onUnmounted(clearEpubCover);
 
-const typeLabel = computed(() => {
-  if (!item.value) return "";
-  if (item.value.isDir) return "Folder";
-  if (item.value.extension) {
-    return `${item.value.extension.replace(".", "").toUpperCase()} file`;
-  }
-  return "File";
-});
-
-const sizeLabel = computed(() => (item.value ? filesize(item.value.size) : ""));
-
-const modifiedLabel = computed(() => {
-  if (!item.value) return "";
-  const m = dayjs(item.value.modified);
-  const now = dayjs();
-
-  // Same calendar day → "Nh ago" (rounded to nearest hour, min 1)
-  if (m.isSame(now, "day")) {
-    const hours = Math.max(
-      1,
-      Math.round((now.valueOf() - m.valueOf()) / 3600000)
-    );
-    return `${hours}h ago`;
-  }
-
-  // Same year → "MMM D"   (e.g. "May 24")
-  if (m.isSame(now, "year")) {
-    return m.format("MMM D");
-  }
-
-  // Older → "MMM D, YYYY" (e.g. "May 24, 2025")
-  return m.format("MMM D, YYYY");
-});
-
-const canShare = computed(
-  () => !!authStore.user?.perm.share && !!authStore.user?.perm.download
-);
-const canDownload = computed(() => !!authStore.user?.perm.download);
-const canRename = computed(() => !!authStore.user?.perm.rename);
-const canDelete = computed(() => !!authStore.user?.perm.delete);
-// Move requires rename perm (same backend operation); Copy requires create.
-const canMove = computed(() => !!authStore.user?.perm.rename);
-const canCopy = computed(() => !!authStore.user?.perm.create);
-// Extract (PR #5746, generalized) — show in place of Preview when the
-// selected file is a supported archive (zip / 7z / rar / tar family) and the
-// user can create + the operator hasn't disabled the feature. Preview is
-// useless for archives, so the slot is more valuable as the entry point.
-const canExtract = computed(
-  () =>
-    unzipEnabled &&
-    !!authStore.user?.perm.create &&
-    !!item.value &&
-    !item.value.isDir &&
-    isExtractable(item.value.name)
-);
-
-const close = () => {
-  // Mobile-only (desktop's header button calls toggleCollapse instead). Just
-  // retract the sheet; the selection is kept so the top selection toolbar
-  // stays available for actions. Deselect via the row checkboxes.
-  layoutStore.mobileDetailsOpen = false;
-};
-
-const action = (name: string) => {
-  layoutStore.showHover(name);
-};
-
-const open = () => {
-  if (item.value) {
-    window.location.href = item.value.url;
-  }
-};
-
-const download = () => {
-  if (item.value) {
-    const url = api.getDownloadURL(item.value as ResourceItem, false);
-    window.open(url);
-  }
-};
-
-const onKey = (event: KeyboardEvent) => {
-  if (event.key === "Escape" && item.value) {
-    close();
-  }
-};
-
-onMounted(() => {
-  window.addEventListener("keydown", onKey);
-  updateIsMobile();
-  window.addEventListener("resize", updateIsMobile);
-});
 onUnmounted(() => {
-  window.removeEventListener("keydown", onKey);
-  window.removeEventListener("resize", updateIsMobile);
+  if (copiedTimer !== null) window.clearTimeout(copiedTimer);
 });
 </script>
 
 <style scoped>
-/* ── RC-4: folder-summary + multi-select states + collapsed rail ──── */
-.ip-summary {
-  padding: 22px 16px 8px;
+.info-pane {
+  width: 320px;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--color-panel);
+  color: var(--color-ink-1);
 }
-.ip-summary__icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
+
+/* Over the list (768–1099 px): a floating panel at the right edge. */
+.info-pane--overlay {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  bottom: 10px;
+  z-index: 41;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-2);
+}
+
+/* Phones: a bottom sheet. */
+.info-pane--sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: auto;
+  max-height: 82vh;
+  z-index: 41;
+  border-top: 1px solid var(--color-line);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  box-shadow: var(--shadow-2);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.info-pane-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: var(--scrim);
+}
+
+.ip-head {
+  height: 48px;
+  padding: 0 var(--space-2) 0 var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.ip-head__title {
+  margin: 0;
+  font-size: var(--type-ui);
+  font-weight: 600;
+  color: var(--color-ink-1);
+}
+
+.ip-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 var(--space-4) var(--space-5);
+}
+
+/* ── Preview ───────────────────────────────────────────────────────── */
+.ip-preview {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 12px;
 }
-/* Folder summary icon mirrors the GRID folder tile exactly: the accent fill +
-   a soft diagonal sheen + the theme-correct on-accent folder glyph (was a
-   hardcoded amber-500 base + white glyph — Calm Minimal). */
-.ip-summary__icon--folder {
-  background-color: var(--color-accent);
-  background-image: none;
-  color: var(--color-on-accent);
-}
-.ip-summary__icon--accent {
-  background: var(--color-accent-soft);
-  color: var(--color-accent-ink);
-}
-.ip-summary__title {
-  font-size: 14.5px;
-  font-weight: 600;
-  color: var(--color-ink-1);
-  word-break: break-word;
-  line-height: 1.3;
-}
-.ip-summary__meta {
-  font-size: 12px;
-  color: var(--color-ink-3);
-  margin-top: 2px;
-  font-variant-numeric: tabular-nums;
-}
-.ip-summary__props {
+.ip-preview__img {
   width: 100%;
-  margin: 16px 0 0;
-  padding-top: 14px;
-  border-top: 1px solid var(--color-line);
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  text-align: left;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
-.ip-summary__prop {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 12px;
-}
-.ip-summary__prop dt {
-  color: var(--color-ink-3);
-}
-.ip-summary__prop dd {
-  color: var(--color-ink-1);
-  margin: 0;
-  min-width: 0;
-}
-/* The Path row stacks (label above, value below) and the value wraps fully
-   so the whole path is visible instead of being clipped with an ellipsis. */
-.ip-summary__prop--path {
-  flex-direction: column;
-  gap: 3px;
-}
-.ip-summary__path {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: 1.4;
-  word-break: break-all;
+.ip-preview__cover {
   max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
-.ip-summary__hint {
-  font-size: 11.5px;
-  color: var(--color-ink-3);
+.ip-preview--text {
+  align-items: stretch;
+  justify-content: stretch;
+  background: var(--color-surface);
+}
+.ip-preview__text {
+  margin: 0;
+  width: 100%;
+  padding: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
   line-height: 1.45;
-  margin: 16px 0 0;
+  color: var(--color-ink-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow: hidden;
+  /* Fade the last lines into the card. */
+  mask-image: linear-gradient(to bottom, black 70%, transparent);
 }
-.info-pane-rail {
-  width: 36px;
-  cursor: pointer;
-}
-
-/* Match the details panel background to the main sidebar (both --color-canvas)
-   so the two rails read as the same surface. */
-.info-pane {
-  background: var(--color-canvas);
-}
-
-/* Full-frame color tile for files with no image preview (folders, archives,
-   code, blobs, …). The vivid background-color comes from the file's
-   iconColorClass (bg-{hue}); we layer the same diagonal white sheen the grid /
-   gallery tiles use, and the icon inherits the class's white color. */
-.info-tile {
+.ip-preview__tile {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-image: none;
+}
+.ip-preview__progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: var(--media-chrome-soft);
+}
+.ip-preview__progress-fill {
+  display: block;
+  height: 100%;
+  background: var(--color-accent);
+}
+.ip-preview__chip {
+  position: absolute;
+  left: var(--space-2);
+  bottom: calc(var(--space-2) + 4px);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--media-chrome);
+  color: var(--media-ink);
+  font-size: var(--type-small);
+  font-variant-numeric: tabular-nums;
 }
 
-/* File name wraps at the <wbr> separators first, only breaking a long
-   unbroken run as a last resort — no ugly mid-word splits. */
-.info-name {
+/* ── Name, actions ─────────────────────────────────────────────────── */
+.ip-name {
+  margin: var(--space-3) 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--color-ink-1);
   overflow-wrap: anywhere;
-  word-break: normal;
+}
+.ip-sub {
+  margin: 2px 0 0;
+  font-size: var(--type-small);
+  color: var(--color-ink-3);
+}
+/* Open or Play across the top; Share, Download and ⋯ beneath it. */
+.ip-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+.ip-actions > :first-child {
+  grid-column: 1 / -1;
+}
+/* Several items: two equal columns. */
+.ip-actions--wrap {
+  grid-template-columns: 1fr 1fr;
+}
+.ip-actions--wrap > :first-child {
+  grid-column: auto;
 }
 
-.preview-mesh {
-  /* Flat panel behind the file preview (Soft native has no washes). */
-  background: var(--color-panel);
+/* ── Sections ──────────────────────────────────────────────────────── */
+.ip-section {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-line);
 }
-
-.info-action {
-  --action-hue: var(--c-blue);
+.ip-section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ip-section__title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--type-small);
+  font-weight: 600;
+  color: var(--color-ink-3);
+}
+.ip-section__head .ip-section__title {
+  margin: 0;
+}
+.ip-props {
+  margin: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 4px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-line);
-  background: var(--color-surface);
-  color: var(--color-ink-2);
-  font-size: 11px;
-  font-weight: 500;
-  cursor: pointer;
-  transition:
-    background-color var(--dur-base) ease,
-    border-color var(--dur-base) ease,
-    color var(--dur-base) ease;
+  gap: 6px;
+  font-size: var(--type-small);
 }
-
-/* Per-action accent hue (matches the command-palette icon colors) so each
-   action is recognizable at a glance. */
-.info-action--share {
-  --action-hue: var(--c-teal);
+.ip-props > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
 }
-.info-action--download {
-  --action-hue: var(--c-blue);
-}
-.info-action--rename {
-  /* Muted like its siblings (was --c-amber, a pre-collapse leftover —
-     gold is the FAVORITES color, v2.7.x). */
-  --action-hue: var(--c-lilac);
-}
-.info-action--move {
-  --action-hue: var(--c-blue);
-}
-.info-action--copy {
-  --action-hue: var(--c-teal);
-}
-.info-action--extract {
-  --action-hue: var(--c-green);
-}
-.info-action--preview {
-  --action-hue: var(--c-lilac);
-}
-.info-action--tags {
-  --action-hue: var(--c-lilac);
-}
-.info-action--danger {
-  --action-hue: var(--c-rose);
-}
-
-/* Calm Minimal: resting action icons are muted ink (chrome), not per-action
-   hues. Lucide svg draws with currentColor. */
-.info-action :deep(svg) {
-  color: var(--color-ink-2);
-}
-
-/* Hover tints the tile with the single accent (was the per-action hue).
-   color-mix degrades gracefully on engines that lack it. */
-.info-action:hover {
-  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
-  border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-line));
-  color: var(--color-ink-1);
-}
-/* Delete: turn the label red on hover too, for an unmistakable danger cue. */
-.info-action--danger:hover {
-  color: var(--c-rose);
-}
-
-/* ── Copy-path button (G6) ────────────────────────────────────────
-   Small ghost button sitting next to the "Location" label. Goes
-   accent-tinted in the "Copied" state to reinforce the success. */
-.info-pane__copy-path {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 22px;
-  padding: 0 7px;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  background: transparent;
+.ip-props dt {
   color: var(--color-ink-3);
-  font-size: 10.5px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-  transition:
-    background-color var(--dur-base) ease,
-    color var(--dur-base) ease,
-    border-color var(--dur-base) ease;
+  flex-shrink: 0;
 }
-.info-pane__copy-path:hover {
-  background: var(--color-elevated);
+.ip-props dd {
+  margin: 0;
+  min-width: 0;
   color: var(--color-ink-1);
-  border-color: var(--color-line);
+  text-align: right;
+  overflow-wrap: anywhere;
 }
-.info-pane__copy-path:focus-visible {
-  outline: 2px solid var(--color-accent-ring);
-  outline-offset: 1px;
-}
-
-/* Tag section (v1.3 S2-5) — chip list + "Manage" button. Same visual
-   shape as the Copy-path affordance so the section header pattern
-   stays consistent. */
-.info-pane__manage-tags {
-  display: inline-flex;
+.ip-props__where dd {
+  display: flex;
   align-items: center;
-  gap: 4px;
-  height: 22px;
-  padding: 0 8px;
-  border-radius: 6px;
-  font: inherit;
+  gap: var(--space-1);
+}
+.ip-path {
+  font-family: var(--font-mono);
   font-size: 11px;
-  font-weight: 500;
   color: var(--color-ink-2);
-  background: var(--color-surface);
-  border: 1px solid var(--color-line);
-  cursor: pointer;
-  transition:
-    background-color 0.1s ease,
-    color 0.1s ease,
-    border-color 0.1s ease;
+  overflow-wrap: anywhere;
 }
-.info-pane__manage-tags:hover {
-  background: var(--color-elevated);
-  color: var(--color-accent-ink);
-  border-color: var(--color-line-strong);
-}
-.info-pane__manage-tags:focus-visible {
-  outline: 2px solid var(--color-accent-ring);
-  outline-offset: 1px;
-}
-
-.info-pane__tag-list {
+.ip-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+  margin-top: var(--space-2);
+}
+.ip-muted {
+  margin: var(--space-1) 0 0;
+  font-size: var(--type-small);
+  color: var(--color-ink-3);
+}
+.ip-hint {
+  margin-top: var(--space-4);
 }
 
-.info-pane__tag-empty {
-  font-size: 12px;
-  color: var(--color-ink-3);
-  font-style: italic;
+/* ── Summaries (several items, the folder) ─────────────────────────── */
+.ip-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-top: var(--space-4);
 }
-/* Activate when the path is freshly in the clipboard. Subtle accent
-   wash + matching ink so the flash reads as "yes, it happened". */
-.info-pane__copy-path:has(svg[data-name="check"]),
-.info-pane__copy-path:hover:has(svg[data-name="check"]) {
+.ip-summary__tile {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ip-summary__tile--folder {
   background: var(--color-accent-soft);
   color: var(--color-accent-ink);
-  border-color: transparent;
+}
+.tabular {
+  font-variant-numeric: tabular-nums;
 }
 </style>

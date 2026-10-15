@@ -3,23 +3,34 @@
        preview shell (which is position:absolute), so the preview fills the
        area beside the sidebar instead of covering the whole viewport. -->
   <div class="relative flex-1 flex flex-col min-h-0 min-w-0">
-    <header-bar v-if="error || fileStore.req?.type === undefined">
-      <breadcrumbs base="/files" />
-    </header-bar>
-
     <!-- S6-5: offer an in-place retry on transient listing failures; a dead
-         favorite gets a tailored "remove pin" card instead. -->
-    <errors
-      v-if="error"
-      :errorCode="error.status"
-      :brokenFavoriteName="brokenFavorite ? brokenFavoriteName : undefined"
-      @retry="fetchData"
-      @removeFavorite="removeBrokenFavorite"
-    />
-    <component v-else-if="currentView" :is="currentView"></component>
+         favorite gets a tailored "remove pin" card instead. Shown inside the
+         same content panel as the listing (Phase 6, 4.6). -->
+    <div v-if="error" class="fb-columns flex-1 flex min-h-0 overflow-hidden">
+      <div
+        class="fb-primary files-error flex-1 flex flex-col min-w-0 min-h-0"
+        data-testid="listing-error"
+      >
+        <header-bar>
+          <breadcrumbs base="/files" />
+        </header-bar>
+        <errors
+          :errorCode="error.status"
+          :brokenFavoriteName="brokenFavorite ? brokenFavoriteName : undefined"
+          @retry="fetchData"
+          @removeFavorite="removeBrokenFavorite"
+        />
+      </div>
+    </div>
+    <template v-else>
+      <header-bar v-if="fileStore.req?.type === undefined">
+        <breadcrumbs base="/files" />
+      </header-bar>
+    </template>
+    <component v-if="!error && currentView" :is="currentView"></component>
     <!-- Boot-time loading (no view component yet): use the same listing
          skeleton FileListing shows so the layout stays consistent. -->
-    <ListingSkeleton v-else mode="list" :count="8" />
+    <ListingSkeleton v-else-if="!error" mode="list" :count="8" />
 
     <!-- Audio tag editor (1.6.0). Mounted in this parent so it's reachable
          from BOTH the listing and the preview view (each swaps into the

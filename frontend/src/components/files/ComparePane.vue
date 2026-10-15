@@ -273,7 +273,7 @@
           class="compare-scroller"
           :items="listRows"
           :item-size="null"
-          :min-item-size="40"
+          :min-item-size="44"
           key-field="id"
           :buffer="320"
           v-slot="{ item: row }"

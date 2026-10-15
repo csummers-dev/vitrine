@@ -42,6 +42,7 @@ const DATES: Record<string, string> = {
 export const SIZES = {
   desktop: { width: 1440, height: 900 },
   laptop: { width: 1280, height: 720 },
+  tablet: { width: 1024, height: 768 },
   phone: { width: 390, height: 844 },
 } as const;
 export type SizeName = keyof typeof SIZES;

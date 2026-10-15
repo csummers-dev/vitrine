@@ -166,6 +166,7 @@ const GROUPS: Group[] = [
         then: false,
         label: "Clear selection (and disarm a pending cut)",
       },
+      { chips: [`${MOD} I`], then: false, label: "Show or hide details" },
       { chips: [`${MOD} K`], then: false, label: "Open command palette" },
     ],
   },

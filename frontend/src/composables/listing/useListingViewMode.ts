@@ -15,6 +15,21 @@ export const VIEW_BY_FOLDER_PREF = "view.mode.byFolder";
 /** Folders remembered; the least recently set drop off. */
 export const VIEW_BY_FOLDER_MAX = 500;
 
+/**
+ * The key a folder's view is stored under: the decoded path with no trailing
+ * slash ("/files/My docs"), so "/files/My%20docs/" and "/files/My docs" are
+ * the same folder.
+ */
+export function folderViewKey(path: string): string {
+  let p = path;
+  try {
+    p = decodeURIComponent(path);
+  } catch {
+    /* a stray % — keep it as typed */
+  }
+  return p.length > 1 ? p.replace(/\/+$/, "") : p;
+}
+
 /** Records `mode` for `folder`, newest last, capped at VIEW_BY_FOLDER_MAX. */
 export function rememberFolderView(
   map: Record<string, string>,
@@ -59,15 +74,15 @@ export function useListingViewMode(deps: ListingViewModeDeps) {
     m === "list" || m === "mosaic" || m === "mosaic gallery";
   /** The view for the folder on screen: its own, else the account's. */
   const resolved = (): ViewModeType => {
-    const own = deps.folder ? folderViews()[deps.folder()] : undefined;
+    const own = deps.folder
+      ? folderViews()[folderViewKey(deps.folder())]
+      : undefined;
     return isMode(own) ? own : (authStore.user?.viewMode ?? "list");
   };
 
-  // View mode (list / grid / gallery) is a single PER-USER account preference,
+  // The account default view (Profile, and callers without a folder),
   // persisted server-side via `users.update` and mirrored locally through
-  // `authStore.updateUser`. It deliberately retains across folders — the chosen
-  // layout is the user's, not the folder's, so navigating around never resets it.
-  // (This replaces the old per-folder localStorage override.)
+  // `authStore.updateUser`. Folders switched in the listing keep their own.
   const persistViewMode = async (mode: ViewModeType) => {
     if (!authStore.user) return;
     const data = { id: authStore.user.id, viewMode: mode };
@@ -89,7 +104,7 @@ export function useListingViewMode(deps: ListingViewModeDeps) {
     if (deps.folder) {
       void prefs.set(
         VIEW_BY_FOLDER_PREF,
-        rememberFolderView(folderViews(), deps.folder(), mode)
+        rememberFolderView(folderViews(), folderViewKey(deps.folder()), mode)
       );
     } else {
       void persistViewMode(mode as ViewModeType);
@@ -105,7 +120,7 @@ export function useListingViewMode(deps: ListingViewModeDeps) {
     () => [
       authStore.user?.viewMode,
       deps.folder?.(),
-      deps.folder ? folderViews()[deps.folder()] : undefined,
+      deps.folder ? folderViews()[folderViewKey(deps.folder())] : undefined,
     ],
     () => {
       const mode = resolved();

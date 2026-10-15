@@ -68,10 +68,10 @@ describe("useListingGrid — measure() geometry", () => {
     const sec = fakeEl({ clientWidth: 692 });
     const g = useListingGrid(makeOpts({ dirsSectionEl: () => sec }));
     g.measure();
-    expect(g.dirsCols.value).toBe(4); // floor((692+12)/(160+12))
-    expect(g.filesCols.value).toBe(4);
-    expect(g.dirsTileH.value).toBe(116); // GRID_TILE_H fallback
-    expect(g.filesTileH.value).toBe(116);
+    expect(g.dirsCols.value).toBe(5); // floor((692+12)/(118+12))
+    expect(g.filesCols.value).toBe(5);
+    expect(g.dirsTileH.value).toBe(156); // GRID_TILE_H fallback
+    expect(g.filesTileH.value).toBe(156);
   });
 
   it("falls back to the scroll-container width (minus #listing padding) when no section is mounted", () => {
@@ -87,7 +87,7 @@ describe("useListingGrid — measure() geometry", () => {
     const g = useListingGrid(makeOpts());
     g.measure();
     expect(g.dirsCols.value).toBe(1); // untouched defaults
-    expect(g.dirsTileH.value).toBe(116);
+    expect(g.dirsTileH.value).toBe(156);
   });
 });
 

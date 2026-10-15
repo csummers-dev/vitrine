@@ -60,7 +60,7 @@ export interface ListingGridOptions {
 }
 
 const GUTTER = 12; // matches CSS `gap: 12px`
-const MIN_GRID = 160; // matches `minmax(160px, 1fr)`
+const MIN_GRID = 118; // matches `minmax(118px, 1fr)` (Icons view, Phase 6)
 const MIN_GALLERY = 220; // matches `minmax(220px, 1fr)` (file tiles)
 // Mobile (v2.7.2): under ~520px of container the CSS grid narrows its tracks
 // to minmax(150px, 1fr) so phones get a 2-up gallery — mirror that here so
@@ -80,7 +80,7 @@ const MIN_GALLERY_DIR = MIN_GALLERY; // 220 — folder tiles match file tiles
 // blank space before the scroll handler catches up.
 const BUFFER_ROWS = 3;
 // Fallbacks used before a real tile has been measured.
-const GRID_TILE_H = 116;
+const GRID_TILE_H = 156; // the fixed Icons tile height in listing.css
 
 const emptyWin = (): SectionWindow => ({
   start: 0,

@@ -109,7 +109,7 @@ test.describe("sorting and layout", () => {
     await expect(row(app, "readme.md")).toBeVisible();
     await expect
       .poll(() => fake.preferences["view.mode.byFolder"])
-      .toEqual({ "/files/": "mosaic" });
+      .toEqual({ "/files": "mosaic" });
 
     // Another folder keeps the account default (List)…
     await row(app, "Documents").dblclick();
