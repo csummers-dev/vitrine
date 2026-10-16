@@ -74,15 +74,15 @@ Every screen and overlay with the states it must be checked in. "Shot" marks sta
 | Details panel | one item, several, the folder, over the list (768–1099 px), phone sheet | one, several, over the list, sheet | Step 4 |
 | Files | inline rename, new folder | | |
 | Preview | image, video, audio, PDF, EPUB, comic, CSV, text, editor | | |
-| Trash | empty, with items | empty | |
-| Storage | treemap, largest files, loading | treemap | |
-| Duplicates | idle, scanning, results, none found | | |
+| Trash | empty, with items | empty, with items | Step 5 |
+| Storage | treemap, largest files, loading, error, duplicates pill | treemap, duplicates pill | Step 5 |
+| Duplicates | idle, scanning, results, none found, failed, canceled | idle, results, none found | Step 5 |
 | Recent | list, empty (if Decision 1) | list | Step 3 |
-| Settings | Profile, Shares, Sessions, Global, Users, User, Audit, Webhooks | Profile, Global | |
+| Settings | Profile, Shares, Sessions, Global, Users, User, Audit, Webhooks; phone list | Profile, Global, Users, phone list | Step 5 |
 | Two-factor set-up | required by admin policy | yes | |
-| Public share | folder, file, password, limited, gone | | |
-| Drop-box page | upload, done, closed | | |
-| Errors | 404, 403, 500, offline | | |
+| Public share | folder, file, password, limited, gone | folder, file, gone | Step 5 |
+| Drop-box page | upload, done, closed | upload | Step 5 |
+| Errors | 404, 403, 500, offline | 404 in a folder | Step 5 |
 
 ### Overlays
 

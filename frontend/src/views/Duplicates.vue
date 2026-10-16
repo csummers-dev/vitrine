@@ -32,8 +32,49 @@
       </UiPageHeader>
 
       <div class="flex-1 min-h-0 overflow-y-auto px-5 pb-8 max-md:px-3">
+        <!-- After a scan the settings fold into one line (5.2); Edit opens
+             them again. -->
+        <div
+          v-if="scan && !editing"
+          class="dupes-summary"
+          data-testid="dupes-settings-summary"
+        >
+          <Icon
+            name="sliders-horizontal"
+            :size="16"
+            class="dupes-summary__icon"
+          />
+          <span class="dupes-summary__text">{{ settingsSummary }}</span>
+          <span class="flex-1" />
+          <template v-if="running">
+            <UiButton size="sm" @click="cancel">Cancel scan</UiButton>
+          </template>
+          <template v-else>
+            <UiButton
+              size="sm"
+              variant="ghost"
+              icon="pencil"
+              @click="editing = true"
+              >Edit</UiButton
+            >
+            <UiButton
+              size="sm"
+              variant="primary"
+              icon="rotate-ccw"
+              @click="start"
+              >Scan again</UiButton
+            >
+          </template>
+          <UiProgress
+            v-if="running"
+            class="dupes-form__progress"
+            :value="progressPct ?? undefined"
+            :label="progressText"
+          />
+        </div>
+
         <!-- Scan settings -->
-        <form class="dupes-form" @submit.prevent="start">
+        <form v-else class="dupes-form" @submit.prevent="start">
           <UiTextField
             v-model="form.path"
             class="dupes-form__path"
@@ -66,25 +107,25 @@
             :disabled="running"
           />
           <div class="dupes-form__actions">
-            <UiButton v-if="running" @click="cancel">Cancel scan</UiButton>
-            <UiButton v-else type="submit" variant="primary" icon="search">
+            <UiButton v-if="scan" variant="ghost" @click="editing = false"
+              >Cancel</UiButton
+            >
+            <UiButton type="submit" variant="primary" icon="search">
               {{ scan ? "Scan again" : "Find duplicates" }}
             </UiButton>
           </div>
-          <UiProgress
-            v-if="running"
-            class="dupes-form__progress"
-            :value="progressPct ?? undefined"
-            :label="progressText"
-          />
         </form>
 
         <!-- Results -->
         <template v-if="groups.length > 0">
           <div class="dupes-toolbar" role="toolbar" aria-label="Selection">
             <span class="dupes-toolbar__label">Select all but</span>
-            <UiButton size="sm" @click="apply('newest')">the newest</UiButton>
-            <UiButton size="sm" @click="apply('oldest')">the oldest</UiButton>
+            <UiChip :pressed="lastRule === 'newest'" @click="apply('newest')"
+              >the newest</UiChip
+            >
+            <UiChip :pressed="lastRule === 'oldest'" @click="apply('oldest')"
+              >the oldest</UiChip
+            >
             <span class="dupes-toolbar__label">or keep copies in</span>
             <UiTextField
               v-model="keepFolder"
@@ -153,6 +194,7 @@
                       <span class="dupes-file__dir">{{ dirOf(f.path) }}</span>
                     </span>
                   </UiCheckbox>
+                  <span class="flex-1" />
                   <span class="dupes-file__date" :title="f.modified">{{
                     since(f.modified)
                   }}</span>
@@ -177,6 +219,31 @@
           </UiButton>
         </template>
 
+        <EmptyState
+          v-else-if="scan?.status === 'failed'"
+          icon="alert-triangle"
+          title="The scan failed"
+          :hint="scan.error || 'Something went wrong while reading the files.'"
+          data-testid="dupes-failed"
+        >
+          <UiButton size="sm" icon="rotate-ccw" @click="start"
+            >Try again</UiButton
+          >
+        </EmptyState>
+        <EmptyState
+          v-else-if="scan?.status === 'canceled'"
+          icon="circle-slash"
+          title="The scan was canceled"
+          hint="Nothing was changed. Start it again whenever you like."
+          data-testid="dupes-canceled"
+        />
+        <EmptyState
+          v-else-if="scan?.status === 'done'"
+          icon="circle-check"
+          title="No duplicates"
+          :hint="`Every file in ${folderName(scan.path)} is unique (${(scan.result?.filesSeen ?? 0).toLocaleString()} checked).`"
+          data-testid="dupes-none"
+        />
         <EmptyState
           v-else-if="!scan"
           icon="copy"
@@ -207,6 +274,8 @@ import EmptyState from "@/components/EmptyState.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import UiButton from "@/components/ui/UiButton.vue";
 import UiCheckbox from "@/components/ui/UiCheckbox.vue";
+import UiChip from "@/components/ui/UiChip.vue";
+import Icon from "@/components/Icon.vue";
 import UiPageHeader from "@/components/ui/UiPageHeader.vue";
 import UiProgress from "@/components/ui/UiProgress.vue";
 import UiSelect from "@/components/ui/UiSelect.vue";
@@ -267,6 +336,24 @@ const keepFolder = ref("");
 const limit = ref(200);
 const deleting = ref(false);
 const confirmOpen = ref(false);
+const editing = ref(false);
+const lastRule = ref<KeepRule | null>(null);
+
+/** One line describing the last scan's settings (5.2). */
+const settingsSummary = computed(() => {
+  const o = scan.value?.options;
+  if (!o) return "";
+  const min = o.minSize || 1;
+  const size = MIN_SIZES.find((m) => m.value === min)?.label ?? humanSize(min);
+  const parts = [
+    `${running.value ? "Scanning" : "Scanned"} ${folderName(o.path)}`,
+    min <= 1 ? "files of any size" : `files of ${size} and up`,
+    o.includeHidden ? "hidden files included" : "hidden files skipped",
+  ];
+  const ex = o.exclude?.length ?? 0;
+  if (ex > 0) parts.push(`${ex} ${ex === 1 ? "folder" : "folders"} skipped`);
+  return parts.join(" · ");
+});
 
 const running = computed(
   () => scan.value?.status === "queued" || scan.value?.status === "running"
@@ -325,7 +412,9 @@ const schedule = () => {
 onMounted(async () => {
   await refresh();
   const s = scan.value;
-  // Pick up the last scan's settings unless a folder was asked for.
+  // A folder asked for (from Storage or the palette) opens the settings on
+  // it; otherwise pick up the last scan's settings.
+  if (s && typeof route.query.path === "string") editing.value = true;
   if (s && typeof route.query.path !== "string") {
     form.value = {
       path: s.options.path,
@@ -341,6 +430,8 @@ onBeforeUnmount(() => {
 
 const start = async () => {
   try {
+    editing.value = false;
+    lastRule.value = null;
     selected.value = new Set();
     limit.value = 200;
     scan.value = await startScan({
@@ -371,6 +462,7 @@ const cancel = async () => {
 // ── Selection ─────────────────────────────────────────────────────────
 const apply = (rule: KeepRule) => {
   selected.value = autoSelect(groups.value, rule, keepFolder.value.trim());
+  lastRule.value = rule;
 };
 const toggle = (g: DupeGroup, path: string) => {
   const next = toggleCopy(g, selected.value, path);
@@ -419,6 +511,25 @@ const trashSelected = async () => {
 </script>
 
 <style scoped>
+.dupes-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-panel);
+}
+.dupes-summary__icon {
+  color: var(--color-ink-3);
+  flex: none;
+}
+.dupes-summary__text {
+  font-size: var(--type-body);
+  color: var(--color-ink-2);
+  min-width: 0;
+}
 .dupes-form {
   display: flex;
   flex-wrap: wrap;

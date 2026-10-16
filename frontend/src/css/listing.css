@@ -343,23 +343,7 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   box-shadow: var(--shadow-1);
 }
 
-.item__checkbox--indeterminate {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  position: relative;
-}
 
-.item__checkbox--indeterminate::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 6px;
-  height: 1.5px;
-  background: white;
-  border-radius: 1px;
-}
 
 /* Header select-all checkbox is interactive */
 :is(#listing, .fb-listing).list .item.header .item__checkbox {
@@ -873,55 +857,6 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   margin: 0;
 }
 
-/* ── C. Media block: full tile width, fixed 16:10, content centered ──
-   Images / video / audio / pdf thumbnails cover it; other files + folders
-   show their tinted icon centered on the block (the colored bg comes from
-   iconColorClass). Scoped :not(.gallery) so the gallery's full-bleed 4:3
-   icon rules are left entirely untouched. */
-:is(#listing, .fb-listing).mosaic:not(.gallery) .item__icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  aspect-ratio: 16 / 10;
-  height: auto;
-  margin: 0;
-  border-radius: 0;
-  overflow: hidden;
-  /* The shared squircle drop-shadow would cast a faint line between the media
-     and the footer; the card border + footer already provide the structure. */
-  box-shadow: none;
-}
-
-:is(#listing, .fb-listing).mosaic:not(.gallery) .item__icon svg {
-  width: 40px;
-  height: 40px;
-}
-
-:is(#listing, .fb-listing).mosaic:not(.gallery) .item__icon img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* ── D. Footer: filename (padded text block under the media) ── */
-:is(#listing, .fb-listing).mosaic:not(.gallery) .item__name-stack {
-  display: block;
-  padding: 8px 10px 0;
-}
-
-:is(#listing, .fb-listing).mosaic:not(.gallery) .item__name-text {
-  display: block;
-  width: 100%;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.3;
-  color: var(--color-ink-1);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 /* Tag dots are hidden in the grid + gallery: they'd clutter the compact card
    and there's no Modified column to anchor against. Tags still appear in the
    list view (as dots) and the details pane. */
@@ -929,19 +864,7 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   display: none;
 }
 
-/* ── E. Footer: meta line "size · modified" ─────────────── */
-:is(#listing, .fb-listing).mosaic:not(.gallery) .item__meta {
-  display: flex;
-  align-items: baseline;
-  width: 100%;
-  padding: 1px 10px 10px;
-  font-size: 11px;
-  color: var(--color-ink-3);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  overflow: hidden;
-}
-
+/* Size and modified line (the gallery shows both; Icons only the size). */
 :is(#listing, .fb-listing).mosaic .item__meta .item__size {
   order: 1;
 }
@@ -1016,6 +939,8 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   text-align: center;
 }
 :is(#listing, .fb-listing).mosaic:not(.gallery) .item__name-text {
+  width: 100%;
+  font-weight: 500;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -1036,8 +961,15 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   overflow: visible;
 }
 :is(#listing, .fb-listing).mosaic:not(.gallery) .item__meta {
+  display: flex;
   justify-content: center;
+  width: 100%;
   padding: 2px 0 0;
+  font-size: 11px;
+  color: var(--color-ink-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
 }
 :is(#listing, .fb-listing).mosaic:not(.gallery) .item__meta .item__modified {
   display: none;
@@ -1618,10 +1550,6 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
 }
 /* Empty flexible filler that pushes the action cluster to the right now that
    the breadcrumb has moved to the bottom bar. */
-.compare-head__spacer {
-  flex: 1 1 auto;
-  min-width: 0;
-}
 /* Current-folder details in the split header — name + item count — so each
    pane's header carries context (the breadcrumb is at the bottom). Fills the
    space the spacer used to, keeping the actions right-aligned; truncates. */
@@ -1686,9 +1614,6 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
 .compare-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
-}
-.compare-btn__label {
-  font-size: 12px;
 }
 /* Close (X) button — always red so it reads as the destructive "close pane"
    control at rest, not only on hover. Double-class + the :not(:disabled) match

@@ -66,3 +66,30 @@ test("the palette opens it on the current folder", async ({ app }) => {
     "/Backup"
   );
 });
+
+// Phase 6, 5.2: after a scan the settings fold into one line.
+test("folds the settings after a scan and reopens them with Edit", async ({
+  app,
+}) => {
+  await app.goto("/duplicates");
+  await app.getByLabel("Folder", { exact: true }).fill("/Docs");
+  await app.getByLabel("Smallest file").selectOption("Any size");
+  await app.getByRole("button", { name: "Find duplicates" }).click();
+
+  const folded = app.getByTestId("dupes-settings-summary");
+  await expect(folded).toContainText(
+    "Scanned Docs · files of any size · hidden files skipped"
+  );
+  await expect(app.getByLabel("Folder", { exact: true })).toHaveCount(0);
+  // The keep helpers are chips that show which rule is applied.
+  const newest = app.getByRole("button", { name: "the newest" });
+  await newest.click();
+  await expect(newest).toHaveAttribute("aria-pressed", "true");
+
+  await folded.getByRole("button", { name: "Edit" }).click();
+  await expect(app.getByLabel("Folder", { exact: true })).toHaveValue("/Docs");
+  await app.getByLabel("Folder", { exact: true }).fill("/Music");
+  await app.getByRole("button", { name: "Scan again" }).click();
+  await expect(app.getByTestId("dupes-none")).toContainText("No duplicates");
+  await expect(folded).toContainText("Scanned Music");
+});

@@ -32,10 +32,6 @@ video {
   width: 100%;
 }
 
-.mobile-only {
-  display: none !important;
-}
-
 .container {
   width: 95%;
   max-width: 960px;
@@ -85,36 +81,6 @@ i.spin,
 
 .break-word {
   word-break: break-all;
-}
-
-.vue-number-input > input {
-  background: var(--surfacePrimary) !important;
-  border-color: var(--surfaceSecondary) !important;
-  color: var(--textSecondary) !important;
-}
-
-.vue-number-input--small > input {
-  height: 1rem !important;
-  font-size: 1rem !important;
-}
-
-.vue-number-input :hover,
-.vue-number-input :focus {
-  border-color: var(--borderSecondary) !important;
-}
-
-.vue-number-input__button {
-  background: var(--surfacePrimary) !important;
-}
-
-.vue-number-input__button--minus,
-.vue-number-input__button--plus {
-  border-color: var(--surfaceSecondary) !important;
-}
-
-.vue-number-input__button::before,
-.vue-number-input__button::after {
-  background: var(--textSecondary) !important;
 }
 
 body > div[style*="z-index: 9990"] {

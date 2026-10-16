@@ -20,6 +20,7 @@ const Storage = () => import("@/views/Storage.vue");
 const Duplicates = () => import("@/views/Duplicates.vue");
 const TwoFactorSetup = () => import("@/views/TwoFactorSetup.vue");
 const Settings = () => import("@/views/Settings.vue");
+const SettingsHome = () => import("@/views/settings/SettingsHome.vue");
 const ProfileSettings = () => import("@/views/settings/Profile.vue");
 const Shares = () => import("@/views/settings/Shares.vue");
 const Sessions = () => import("@/views/settings/Sessions.vue");
@@ -163,12 +164,14 @@ const routes = [
     children: [
       {
         path: "",
-        name: "Settings",
         component: Settings,
-        redirect: {
-          path: "/settings/profile",
-        },
         children: [
+          {
+            // Phones: the list of sections. Wider screens go to Profile.
+            path: "",
+            name: "Settings",
+            component: SettingsHome,
+          },
           {
             path: "profile",
             name: "ProfileSettings",

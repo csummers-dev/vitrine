@@ -60,6 +60,10 @@ func TestMigrateNewDatabase(t *testing.T) {
 	if v, ok, _ := schemaVersion(db); !ok || v != SchemaVersion {
 		t.Errorf("schema = %d, %v", v, ok)
 	}
+	// Nothing was upgraded, so admins get no notice.
+	if _, err := (settingsBackend{db: db}).GetUpgradeNotice(); err == nil {
+		t.Error("new database left an upgrade notice")
+	}
 }
 
 func TestMigrateFrom3x(t *testing.T) {
@@ -104,6 +108,15 @@ func TestMigrateFrom3x(t *testing.T) {
 		t.Errorf("settings = %+v", set)
 	}
 
+	// Admins will be told once where the old database went (5.7).
+	notice, err := (settingsBackend{db: db}).GetUpgradeNotice()
+	if err != nil {
+		t.Fatalf("upgrade notice: %v", err)
+	}
+	if notice.From != 3 || notice.To != SchemaVersion || notice.Backup != res.Backup || notice.At.IsZero() {
+		t.Errorf("notice = %+v", notice)
+	}
+
 	// Running again changes nothing and takes no second backup.
 	again, err := Migrate(db, path, Migrations, nil)
 	if err != nil || again.Backup != "" || len(again.Applied) != 0 {
@@ -144,6 +157,10 @@ func TestMigrateFailureNamesBackup(t *testing.T) {
 	}
 	if b, _ := os.ReadFile(path + ".pre-5.0.bak"); string(b) != "earlier" {
 		t.Error("earlier backup overwritten")
+	}
+	// A failed upgrade records no notice; the error is the message.
+	if _, err := (settingsBackend{db: db}).GetUpgradeNotice(); err == nil {
+		t.Error("failed upgrade left a notice")
 	}
 	// The steps before the failure stuck; the failed one didn't.
 	if v, _, _ := schemaVersion(db); v != 4 || res.To != 4 {

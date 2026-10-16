@@ -1,6 +1,20 @@
 <template>
-  <main class="share">
-    <header-bar showMenu showLogo>
+  <main class="share" :class="{ 'share--public': !authStore.isLoggedIn }">
+    <header-bar
+      showMenu
+      showLogo
+      :showMobileNav="authStore.isLoggedIn"
+      class="share__bar"
+    >
+      <!-- A visitor sees the server's branding first (Phase 6, 5.5). -->
+      <span
+        v-if="!authStore.isLoggedIn"
+        class="share__brand"
+        data-testid="share-brand"
+      >
+        <img v-if="logoURL" :src="logoURL" alt="" class="share__brand-logo" />
+        <BrandName :name="brand" />
+      </span>
       <breadcrumbs :base="'/share/' + hash" />
       <template #actions>
         <button
@@ -24,7 +38,7 @@
           <Icon name="clipboard" :size="13" />
         </button>
         <button
-          v-if="!dropBox"
+          v-if="!dropBox && !error && req?.isDir"
           type="button"
           class="share-btn share-btn--ghost"
           @click="toggleMultipleSelection"
@@ -35,6 +49,14 @@
           />
           <span>{{ t("buttons.selectMultiple") }}</span>
         </button>
+        <UiButton
+          v-if="!authStore.isLoggedIn && !hideLoginButton"
+          variant="ghost"
+          size="sm"
+          icon="log-in"
+          to="/login"
+          >{{ t("sidebar.login") }}</UiButton
+        >
       </template>
     </header-bar>
 
@@ -287,6 +309,11 @@ import dayjs from "dayjs";
 import { Base64 } from "js-base64";
 import { createURL } from "@/api/utils";
 import HeaderBar from "@/components/header/HeaderBar.vue";
+import BrandName from "@/components/BrandName.vue";
+import UiButton from "@/components/ui/UiButton.vue";
+import { useAuthStore } from "@/stores/auth";
+import { useBrandLogo } from "@/composables/useBrandLogo";
+import { brand, hideLoginButton } from "@/utils/constants";
 import Breadcrumbs from "@/components/Breadcrumbs.vue";
 import Errors from "@/views/Errors.vue";
 import DropBox from "@/components/files/DropBox.vue";
@@ -318,6 +345,8 @@ const { t } = useI18n({});
 const route = useRoute();
 const fileStore = useFileStore();
 const layoutStore = useLayoutStore();
+const authStore = useAuthStore();
+const { logoURL } = useBrandLogo();
 
 watch(route, () => {
   showLimit.value = 100;
@@ -498,9 +527,41 @@ onBeforeUnmount(() => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  align-items: stretch;
   background: var(--color-canvas);
   color: var(--color-ink-1);
   font-family: var(--font-sans);
+}
+
+/* ── Public visitor (Phase 6, 5.5): branding in the bar, content centred
+   in a column, the multi-select pill kept off-screen until used. */
+.share__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+  flex-shrink: 0;
+  margin-right: var(--space-2);
+}
+.share__brand-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+.share--public .share__body {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+.share #multiple-selection {
+  position: fixed;
+}
+.share #multiple-selection:not(.active) {
+  visibility: hidden;
+}
+/* A share that can't be shown: the error card centred in the page. */
+.share .error-page {
+  min-height: 0;
+  flex: 1;
 }
 
 /* ── Shared button styles ──────────────────────────────────────────── */

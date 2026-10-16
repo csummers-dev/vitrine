@@ -16,7 +16,9 @@
          fits. Below md it's hidden and the hamburger-triggered drawer takes
          over: there's no cramped icon-rail middle state — it's full sidebar OR
          on-demand drawer, nothing in between. -->
-    <sidebar class="max-md:hidden" />
+    <!-- A visitor on a public share page gets no sidebar (Phase 6, 5.5):
+         the page carries the server's branding itself. -->
+    <sidebar v-if="!publicPage" class="max-md:hidden" />
 
     <!-- Mobile drawer — purpose-built SidebarDrawer (not the inline
          Sidebar). The inline Sidebar's responsive max-md icon-rail
@@ -25,6 +27,7 @@
          actually uses the drawer's full width. Mounts only when the
          hamburger opens it. -->
     <Drawer
+      v-if="!publicPage"
       :open="mobileNav.isOpen.value"
       side="left"
       @cancel="mobileNav.close"
@@ -33,6 +36,7 @@
     </Drawer>
 
     <main id="main" class="relative flex-1 flex flex-col min-w-0 min-h-0">
+      <UpgradeBanner v-if="authStore.isLoggedIn" />
       <router-view />
       <!-- 4.0 3.5: the play queue keeps playing while you browse. -->
       <MiniPlayer v-if="authStore.isLoggedIn" />
@@ -69,9 +73,10 @@ const PhotoMap = defineAsyncComponent(
   () => import("@/components/files/PhotoMap.vue")
 );
 import Drawer from "@/components/Drawer.vue";
+import UpgradeBanner from "@/components/UpgradeBanner.vue";
 import { useMobileNav } from "@/composables/useMobileNav";
 import { enableExec, mapEnabled } from "@/utils/constants";
-import { defineAsyncComponent, watch } from "vue";
+import { computed, defineAsyncComponent, watch } from "vue";
 import { useRoute } from "vue-router";
 
 const layoutStore = useLayoutStore();
@@ -80,6 +85,10 @@ const fileStore = useFileStore();
 const uploadStore = useUploadStore();
 const route = useRoute();
 const mobileNav = useMobileNav();
+/** A visitor (not signed in) on a public share page. */
+const publicPage = computed(
+  () => route.name === "Share" && !authStore.isLoggedIn
+);
 
 // NOTE: there is intentionally no "swipe in from the left edge to open the
 // drawer" gesture. That rightward edge-swipe is reserved by iOS Safari and

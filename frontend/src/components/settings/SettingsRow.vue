@@ -16,6 +16,16 @@
       >
         {{ description }}
       </p>
+      <!-- What can go wrong with this setting (5.4), and a save error that
+           belongs to this control. -->
+      <p v-if="risk" class="settings-row__risk">
+        <Icon name="triangle-alert" :size="13" />
+        <span>{{ risk }}</span>
+      </p>
+      <p v-if="error" class="settings-row__error" role="alert">
+        <Icon name="circle-alert" :size="13" />
+        <span>{{ error }}</span>
+      </p>
       <slot name="extra" />
     </div>
     <div class="settings-row__control">
@@ -26,6 +36,7 @@
 
 <script setup lang="ts">
 import { useId } from "vue";
+import Icon from "@/components/Icon.vue";
 import { provideFieldContext } from "@/components/ui/fieldContext";
 
 const props = withDefaults(
@@ -38,6 +49,10 @@ const props = withDefaults(
     /** Optional `for` attribute pairing the label with an input id.
      *  Named `htmlFor` because `for` is a reserved word in the parser. */
     htmlFor?: string;
+    /** A one-line note on the risk this setting carries. */
+    risk?: string;
+    /** An error from saving this setting, shown next to it. */
+    error?: string;
   }>(),
   { stacked: false }
 );
@@ -88,6 +103,28 @@ const ctx = provideFieldContext({
   max-width: 460px;
 }
 
+.settings-row__risk,
+.settings-row__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 6px 0 0;
+  max-width: 460px;
+  font-size: var(--type-small);
+  line-height: 1.45;
+}
+.settings-row__risk {
+  color: var(--status-warning);
+}
+.settings-row__error {
+  color: var(--status-danger);
+  font-weight: 500;
+}
+.settings-row__risk :deep(svg),
+.settings-row__error :deep(svg) {
+  flex: none;
+  margin-top: 2px;
+}
 .settings-row__control {
   flex-shrink: 0;
 }

@@ -191,6 +191,14 @@ export class FakeServer {
     polls: number;
   } | null = null;
 
+  /** A pending database-upgrade notice (Phase 6, 5.7). */
+  upgradeNotice: {
+    from: number;
+    to: number;
+    backup: string;
+    at: string;
+  } | null = null;
+
   /** Two-factor state for the signed-in user. */
   readonly twoFactor = { enabled: false };
 
@@ -679,7 +687,10 @@ export class FakeServer {
             originalDir: parentOf(t.path),
             isDir: root.isDir,
             size: (root.content ?? "").length,
-            trashedAt: new Date().toISOString(),
+            // An hour before "now" (the pinned clock in screenshots).
+            trashedAt: new Date(
+              (this.clock ?? Date.now()) - 3600_000
+            ).toISOString(),
             user: "admin",
           };
         })
@@ -693,16 +704,50 @@ export class FakeServer {
       return json({ path: t.path });
     }
     if (api === "/tags/batch") return json({});
+    // Database-upgrade notice (Phase 6, 5.7): admins only.
+    if (api === "/upgrade-notice") {
+      const perm = this.user.perm as { admin?: boolean } | undefined;
+      if (perm && !perm.admin) return text("403 Forbidden", 403);
+      if (method === "DELETE") {
+        this.upgradeNotice = null;
+        return text("", 204);
+      }
+      return json(this.upgradeNotice);
+    }
     if (api === "/settings") {
       if (method === "PUT") {
-        this.settings = JSON.parse(req.postData() ?? "{}") as Record<
+        const next = JSON.parse(req.postData() ?? "{}") as Record<
           string,
           unknown
         >;
+        // Like the server: no requiring two-factor while yours is off.
+        if (
+          next.requireAdminTwoFactor &&
+          !this.settings.requireAdminTwoFactor &&
+          !this.twoFactor.enabled
+        )
+          return text(
+            "409 Conflict (set up two-factor sign-in for your own account first)",
+            409
+          );
+        this.settings = next;
         return text("", 200);
       }
       return json(this.settings);
     }
+    // User management (Phase 6 screenshots): the signed-in admin and one
+    // more account.
+    if (api === "/users" && method === "GET")
+      return json([
+        { ...USER, preferences: this.preferences },
+        {
+          ...USER,
+          id: 2,
+          username: "sam",
+          perm: { ...USER.perm, admin: false },
+          twoFactorEnabled: false,
+        },
+      ]);
     if (/^\/users\/\d+$/.test(api)) {
       if (method === "PUT") {
         const body = JSON.parse(req.postData() ?? "{}") as {

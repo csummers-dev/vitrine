@@ -1,174 +1,112 @@
 <template>
-  <aside
-    class="settings-rail w-full h-full min-h-0 flex flex-col overflow-y-auto bg-canvas"
-    :class="{ 'border-r border-line': !borderless }"
+  <!-- Settings sections (Phase 6, 5.4). `rail`: the left panel on wider
+       screens. `list`: the phone's settings home, a list that opens each
+       section, with the way back to the files and the account below. -->
+  <nav
+    class="settings-rail"
+    :class="`settings-rail--${variant}`"
+    aria-label="Settings sections"
   >
-    <!-- Mobile-only: quick return to the file browser, pinned at the top with
-         the same folder glyph the main sidebar uses. On desktop the always-
-         visible main sidebar already provides this, so it's drawer-only. -->
-    <nav v-if="borderless" class="px-2 pt-3 text-[13px]">
-      <router-link to="/files/" v-slot="{ navigate }" custom>
-        <button
-          type="button"
-          class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-hover text-ink-2 transition text-left"
-          @click="(e) => onNavClick(e, navigate)"
-        >
-          <span class="flex items-center text-[var(--color-ink-2)]">
-            <Icon name="folder" :size="14" />
-          </span>
-          <span class="flex-1">{{ rootLabel || t("sidebar.myFiles") }}</span>
-        </button>
-      </router-link>
-    </nav>
+    <router-link
+      v-if="variant === 'list'"
+      to="/files/"
+      class="srail-item srail-item--files"
+      @click="emit('itemClicked')"
+    >
+      <Icon name="chevron-left" :size="16" />
+      <span class="srail-item__label">{{
+        rootLabel || t("sidebar.myFiles")
+      }}</span>
+    </router-link>
 
-    <div class="px-4 pt-5 pb-2">
-      <div
-        class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em]"
-      >
-        User
-      </div>
-    </div>
-    <nav class="px-2 space-y-0.5 text-[13px]">
-      <router-link
-        v-for="section in userSections"
-        :key="section.to"
-        :to="section.to"
-        v-slot="{ isActive, navigate }"
-        custom
-      >
-        <button
-          type="button"
-          :class="[
-            'w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition text-left',
-            isActive
-              ? 'bg-selected text-accent font-medium'
-              : 'hover:bg-hover text-ink-2',
-          ]"
-          @click="(e) => onNavClick(e, navigate)"
-        >
-          <span class="flex items-center" :style="{ color: section.hue }">
-            <Icon :name="section.icon" :size="14" />
-          </span>
-          <span class="flex-1">{{ section.label }}</span>
-        </button>
-      </router-link>
-    </nav>
-
-    <template v-if="user?.perm.admin">
-      <div class="px-4 pt-5 pb-2">
-        <div
-          class="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.06em]"
-        >
-          Administration
-        </div>
-      </div>
-      <nav class="px-2 space-y-0.5 text-[13px]">
-        <router-link
-          v-for="section in adminSections"
-          :key="section.to"
-          :to="section.to"
-          v-slot="{ isActive, navigate }"
-          custom
-        >
-          <button
-            type="button"
-            :class="[
-              'w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition text-left',
-              isActive ||
-              (section.matchPrefix &&
-                $route.path.startsWith(section.matchPrefix))
-                ? 'bg-selected text-accent font-medium'
-                : 'hover:bg-hover text-ink-2',
-            ]"
-            @click="(e) => onNavClick(e, navigate)"
+    <template v-for="group in groups" :key="group.title">
+      <h2 class="srail-group">{{ group.title }}</h2>
+      <ul class="srail-list">
+        <li v-for="section in group.sections" :key="section.to">
+          <router-link
+            :to="section.to"
+            class="srail-item"
+            :class="{ 'srail-item--active': isActive(section) }"
+            :aria-current="isActive(section) ? 'page' : undefined"
+            @click="emit('itemClicked')"
           >
-            <span class="flex items-center" :style="{ color: section.hue }">
-              <Icon :name="section.icon" :size="14" />
-            </span>
-            <span class="flex-1">{{ section.label }}</span>
-          </button>
-        </router-link>
-      </nav>
+            <span class="srail-item__icon"
+              ><Icon :name="section.icon" :size="16"
+            /></span>
+            <span class="srail-item__label">{{ section.label }}</span>
+            <Icon
+              v-if="variant === 'list'"
+              name="chevron-right"
+              :size="16"
+              class="srail-item__chev"
+            />
+          </router-link>
+        </li>
+      </ul>
     </template>
 
     <div class="flex-1"></div>
 
-    <!-- Mobile-only account + sign-out footer. On the settings route the main
-         sidebar isn't shown on mobile, so this rail is the only place to see
-         who you're signed in as and to sign out (desktop already has the main
-         sidebar for that). The "Back to files" chip moved to the top as a
-         proper My Files link. -->
-    <footer
-      v-if="borderless && user"
-      class="px-3 pb-3 pt-3 border-t border-line flex items-center gap-1.5"
-    >
+    <!-- Phone: who you're signed in as, and sign out (the main sidebar isn't
+         on screen here). -->
+    <footer v-if="variant === 'list' && user" class="srail-account">
       <button
         type="button"
-        class="flex-1 flex items-center gap-2 px-1.5 py-1.5 rounded-md hover:bg-hover transition min-w-0 text-left"
+        class="srail-account__who"
         :title="user.username"
         @click="goProfile"
       >
         <img
           v-if="avatarUrl"
           :src="avatarUrl"
-          alt="avatar"
-          class="w-7 h-7 rounded-full object-cover shadow-sm shrink-0"
+          alt=""
+          class="srail-account__avatar"
         />
-        <div
-          v-else
-          class="w-7 h-7 rounded-full avatar-accent flex items-center justify-center text-white text-[11px] font-semibold shadow-sm shrink-0"
-        >
-          {{ userInitials }}
-        </div>
-        <div class="flex-1 min-w-0">
-          <div
-            class="text-[13px] font-medium leading-tight truncate text-ink-1"
-          >
-            {{ user.username }}
-          </div>
-          <div class="text-[11px] text-ink-3 leading-tight truncate">
-            {{ user.perm.admin ? "Admin" : "User" }}
-          </div>
-        </div>
+        <span v-else class="srail-account__avatar avatar-accent">{{
+          userInitials
+        }}</span>
+        <span class="srail-account__text">
+          <span class="srail-account__name">{{ user.username }}</span>
+          <span class="srail-account__role">{{
+            user.perm.admin ? "Admin" : "User"
+          }}</span>
+        </span>
       </button>
-      <button
+      <UiButton
         v-if="canLogout"
-        type="button"
-        class="settings-rail__logout w-7 h-7 rounded-md flex items-center justify-center transition"
-        :title="t('sidebar.logout')"
-        :aria-label="t('sidebar.logout')"
+        variant="ghost"
+        size="sm"
+        icon="log-out"
         @click="logout"
+        >{{ t("sidebar.logout") }}</UiButton
       >
-        <Icon name="log-out" :size="14" />
-      </button>
     </footer>
-  </aside>
+  </nav>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useRootLabel } from "@/composables/useRootLabel";
 import { profileAvatarUrl } from "@/composables/useProfileAvatar";
 import * as auth from "@/utils/auth";
 import { noAuth, loginPage, logoutPage } from "@/utils/constants";
 import Icon from "@/components/Icon.vue";
+import UiButton from "@/components/ui/UiButton.vue";
 
 const { t } = useI18n();
 const authStore = useAuthStore();
 const avatarUrl = profileAvatarUrl;
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
-    /** When rendered inside a drawer, drop the right border (the drawer
-     *  panel already has its own divider). */
-    borderless?: boolean;
+    /** "rail" beside the content; "list" as the phone's settings home. */
+    variant?: "rail" | "list";
   }>(),
-  { borderless: false }
+  { variant: "rail" }
 );
-void props;
 
 const emit = defineEmits<{
   /** Fires when the user clicks a nav item. The parent uses this to close
@@ -267,20 +205,171 @@ const adminSections = computed<NavSection[]>(() => [
   },
 ]);
 
-const onNavClick = (e: MouseEvent, navigate: (e: MouseEvent) => void) => {
-  navigate(e);
-  emit("itemClicked");
-};
+const route = useRoute();
+const isActive = (s: NavSection) =>
+  route.path === s.to ||
+  (!!s.matchPrefix && route.path.startsWith(s.matchPrefix));
+
+const groups = computed(() => {
+  const out = [{ title: "Your account", sections: userSections.value }];
+  if (user.value?.perm.admin)
+    out.push({ title: "Administration", sections: adminSections.value });
+  return out;
+});
 </script>
 
 <style scoped>
-/* Sign-out button: rose-tinted so the destructive "leave" action reads apart
-   from the neutral nav chrome — matches the main sidebar / drawer. */
-.settings-rail__logout {
-  color: var(--c-rose);
+.settings-rail {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  padding: var(--space-3) var(--space-2);
 }
-.settings-rail__logout:hover {
-  color: var(--c-rose);
-  background: color-mix(in srgb, var(--c-rose) 14%, transparent);
+.srail-group {
+  margin: var(--space-4) var(--space-2) var(--space-1);
+  font-size: var(--type-small);
+  font-weight: 600;
+  color: var(--color-ink-3);
+}
+.srail-group:first-of-type {
+  margin-top: var(--space-1);
+}
+.srail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.srail-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 34px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-md);
+  font-size: var(--type-body);
+  color: var(--color-ink-2);
+  text-decoration: none;
+  transition: background-color var(--dur-base) ease;
+}
+.srail-item:hover {
+  background: var(--color-hover);
+  color: var(--color-ink-1);
+}
+.srail-item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+/* Current section: the raised pill the main sidebar uses. */
+.srail-item--active {
+  background: var(--color-raised);
+  color: var(--color-ink-1);
+  font-weight: 500;
+  box-shadow: var(--shadow-1);
+}
+.srail-item--active .srail-item__icon {
+  color: var(--color-accent-ink);
+}
+.srail-item__icon {
+  display: inline-flex;
+  color: var(--color-ink-3);
+}
+.srail-item__label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.srail-item__chev {
+  color: var(--color-ink-3);
+}
+
+/* Phone list: bigger rows on a panel, no current-item pill. */
+.settings-rail--list {
+  padding: var(--space-3);
+}
+.settings-rail--list .srail-list {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  gap: 0;
+}
+.settings-rail--list .srail-list li + li {
+  border-top: 1px solid var(--color-line);
+}
+.settings-rail--list .srail-item {
+  min-height: 48px;
+  border-radius: 0;
+  padding: 0 var(--space-3);
+  font-size: var(--type-ui);
+  color: var(--color-ink-1);
+}
+.settings-rail--list .srail-item--active {
+  background: transparent;
+  box-shadow: none;
+  font-weight: 400;
+}
+.settings-rail--list .srail-item--files {
+  min-height: 40px;
+  padding: 0 var(--space-1);
+  color: var(--color-accent-ink);
+}
+
+.srail-account {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-line);
+}
+.srail-account__who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+  text-align: left;
+}
+.srail-account__who:hover {
+  background: var(--color-hover);
+}
+.srail-account__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--type-small);
+  font-weight: 600;
+  color: var(--color-on-accent);
+}
+.srail-account__text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.srail-account__name {
+  font-size: var(--type-body);
+  font-weight: 500;
+  color: var(--color-ink-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.srail-account__role {
+  font-size: var(--type-small);
+  color: var(--color-ink-3);
 }
 </style>

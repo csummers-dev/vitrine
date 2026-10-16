@@ -49,7 +49,7 @@
             <span class="trash-tile" :class="tileColor(e)" aria-hidden="true">
               <Icon
                 :name="iconName(e)"
-                :size="17"
+                :size="15"
                 :stroke-width="1.7"
                 :fill="e.isDir ? 'currentColor' : 'none'"
               />
@@ -85,7 +85,7 @@
                 title="Delete forever"
                 aria-label="Delete forever"
                 @click="confirmForever(e)"
-                >Delete</UiButton
+                >Delete forever</UiButton
               >
             </div>
           </li>
@@ -247,13 +247,16 @@ const onConfirm = async () => {
   padding: 0;
 }
 
+/* List style (Phase 6, 5.3): 44 px rows with a 28 px kind tile, like the
+   file list. */
 .trash-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  transition: background-color 0.12s ease;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding: 4px 6px;
+  border-radius: var(--radius-md);
+  transition: background-color var(--dur-base) ease;
 }
 .trash-row:hover {
   background: var(--color-hover);
@@ -261,9 +264,9 @@ const onConfirm = async () => {
 
 /* Colour tile — bg/text classes come from fileIconColor (same as the listing). */
 .trash-tile {
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -271,8 +274,8 @@ const onConfirm = async () => {
 }
 
 .trash-name {
-  font-size: 13.5px;
-  font-weight: 560;
+  font-size: var(--type-body);
+  font-weight: 500;
   color: var(--color-ink-1);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -280,7 +283,7 @@ const onConfirm = async () => {
 }
 .trash-meta {
   margin-top: 1px;
-  font-size: 11.5px;
+  font-size: var(--type-small);
   color: var(--color-ink-3);
   overflow: hidden;
   text-overflow: ellipsis;

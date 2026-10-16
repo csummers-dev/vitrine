@@ -99,6 +99,12 @@ func Migrate(db *storm.DB, path string, migrations []Migration, logf func(string
 		res.Applied = append(res.Applied, m.Name)
 		logf("Database: applied %s", m.Name)
 	}
+	// Tell admins once, in the app, where the old database went (5.7). The
+	// upgrade itself succeeded, so a failure here is only logged.
+	notice := settings.UpgradeNotice{From: res.From, To: res.To, Backup: backup, At: time.Now().UTC()}
+	if err := save(db, upgradeNoticeKey, &notice); err != nil {
+		logf("Database: could not record the upgrade notice: %v", err)
+	}
 	return res, nil
 }
 

@@ -1,45 +1,26 @@
 <template>
-  <!-- V2-J: no top header bar. The rail runs full-height to the top (with a
-       small "Settings" heading); the active section's name renders as a page
-       title at the top of the content pane. -->
-  <div class="flex-1 flex min-h-0 overflow-hidden">
-    <!-- Inline left rail (220px) — visible at md+. Below md it hides and
-         the mobile drawer below takes over. -->
-    <div class="w-[220px] shrink-0 max-md:hidden overflow-hidden flex flex-col">
-      <div class="settings-rail-head">
-        <Icon name="settings-2" :size="15" class="text-[var(--color-ink-2)]" />
+  <!-- Settings shell (Phase 6, 5.4): the sections rail and the page, as two
+       panels like the files view. On phones the settings home is a list
+       (SettingsHome) and each page has a way back to it. -->
+  <div class="fb-columns settings-shell flex-1 flex min-h-0 overflow-hidden">
+    <div v-if="!isPhone" class="settings-rail-panel">
+      <h1 class="settings-rail-head">
+        <Icon name="settings-2" :size="16" />
         <span>Settings</span>
-      </div>
+      </h1>
       <SettingsRail />
     </div>
 
-    <!-- Mobile drawer instance — opened from the inline hamburger below. -->
-    <Drawer
-      :open="mobileNav.isOpen.value"
-      side="left"
-      @cancel="mobileNav.close"
-    >
-      <SettingsRail borderless @itemClicked="mobileNav.close" />
-    </Drawer>
-
-    <!-- Main settings content. Scrollable.
-         The router-view is always rendered. Each page manages its own
-         loading state — gating the view on `layoutStore.loading` here
-         caused an unmount-remount loop on pages with async onMounted.
-         Each page renders its own rich header (icon + title + description)
-         via <SettingsPage>, so the shell adds no title — only a mobile
-         hamburger to reach the rail drawer. -->
-    <section class="flex-1 overflow-y-auto min-w-0 settings-main">
-      <div class="settings-pagehead">
-        <button
-          type="button"
-          class="settings-pagehead__menu"
-          aria-label="Open settings menu"
-          title="Menu"
-          @click="mobileNav.open"
+    <section class="fb-primary settings-main flex-1 min-w-0 min-h-0">
+      <div v-if="isPhone && !isHome" class="settings-pagehead">
+        <UiButton
+          variant="ghost"
+          size="sm"
+          icon="chevron-left"
+          to="/settings"
+          data-testid="settings-back"
+          >Settings</UiButton
         >
-          <Icon name="menu" :size="18" />
-        </button>
       </div>
       <router-view />
       <!-- Lightweight overlay that doesn't tear down the router-view -->
@@ -52,67 +33,64 @@
 </template>
 
 <script setup lang="ts">
-import { useLayoutStore } from "@/stores/layout";
-import { useMobileNav } from "@/composables/useMobileNav";
-import Icon from "@/components/Icon.vue";
-import SettingsRail from "@/components/settings/SettingsRail.vue";
-import Drawer from "@/components/Drawer.vue";
 import { computed } from "vue";
+import { useRoute } from "vue-router";
+import { useLayoutStore } from "@/stores/layout";
+import { useWindowWidth } from "@/composables/useWindowWidth";
+import Icon from "@/components/Icon.vue";
+import UiButton from "@/components/ui/UiButton.vue";
+import SettingsRail from "@/components/settings/SettingsRail.vue";
 
 const layoutStore = useLayoutStore();
-const mobileNav = useMobileNav();
+const route = useRoute();
+const width = useWindowWidth();
 
 const loading = computed(() => layoutStore.loading);
+const isPhone = computed(() => width.value < 768);
+const isHome = computed(() => route.name === "Settings");
 </script>
 
 <style scoped>
 .settings-main {
-  background: var(--color-canvas);
+  position: relative;
+  overflow-y: auto;
 }
 
-/* V2-J / V3-A: "Settings" heading pinned to the top of the full-height rail.
-   Tightened (#2) so it sits closer to the nav. */
+.settings-rail-panel {
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--color-panel);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-xl);
+}
 .settings-rail-head {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 16px 6px;
-  font-size: 13px;
-  font-weight: 650;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-4) var(--space-4) 0;
+  font-size: var(--type-ui);
+  font-weight: 600;
   color: var(--color-ink-1);
   flex-shrink: 0;
 }
+.settings-rail-head :deep(svg) {
+  color: var(--color-ink-3);
+}
 
-/* V3-A: each page renders its own header via <SettingsPage>, so the shell
-   pagehead is now ONLY the mobile hamburger — shown at <md, hidden on desktop
-   where the rail is always visible. */
+/* Phone: a way back to the settings list above each page. */
 .settings-pagehead {
-  display: none;
-}
-@media (max-width: 768px) {
-  .settings-pagehead {
-    position: sticky;
-    top: 0;
-    z-index: 5;
-    display: flex;
-    align-items: center;
-    padding: 12px 16px 8px;
-    background: var(--color-canvas);
-  }
-}
-.settings-pagehead__menu {
-  width: 32px;
-  height: 32px;
-  display: inline-flex;
-  border-radius: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  color: var(--color-ink-2);
-  margin-left: -4px;
-  transition: background-color var(--dur-base) ease;
-}
-.settings-pagehead__menu:hover {
-  background: var(--color-hover);
+  padding: var(--space-2) var(--space-2) 0;
+  background: var(--color-surface);
 }
 
 /* Pinned overlay shown while a settings page is fetching. Sits in the top-
@@ -134,10 +112,6 @@ const loading = computed(() => layoutStore.loading);
   border: 1px solid var(--color-line);
   box-shadow: var(--shadow-2);
   pointer-events: none;
-}
-
-.settings-main {
-  position: relative;
 }
 
 .settings-spin {

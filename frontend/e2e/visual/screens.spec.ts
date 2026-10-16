@@ -174,6 +174,188 @@ const SCREENS: Screen[] = [
     },
   },
   {
+    name: "storage-dupes",
+    sizes: ["desktop", "phone"],
+    open: async (c) => {
+      c.fake.changeOnDisk(
+        "/Photos/2026/harbour copy.jpg",
+        "x".repeat(2_400_000)
+      );
+      c.fake.dupeScan = { opts: { path: "/", minSize: 1 }, polls: 1 };
+      await signedIn(c);
+      await c.page.goto("/storage");
+      await expect(c.page.getByTestId("storage-dupes-pill")).toBeVisible();
+    },
+  },
+  {
+    name: "duplicates-idle",
+    sizes: ["desktop", "phone"],
+    open: async (c) => {
+      await signedIn(c);
+      await c.page.goto("/duplicates");
+      await expect(c.page.getByText("Find duplicate files")).toBeVisible();
+    },
+  },
+  {
+    name: "duplicates-results",
+    sizes: ["desktop", "phone"],
+    open: async (c) => {
+      c.fake.changeOnDisk(
+        "/Photos/2026/harbour copy.jpg",
+        "x".repeat(2_400_000)
+      );
+      c.fake.changeOnDisk(
+        "/Documents/notes copy.txt",
+        "hello from notes\n".repeat(40)
+      );
+      c.fake.dupeScan = { opts: { path: "/", minSize: 1 }, polls: 1 };
+      await signedIn(c);
+      await c.page.goto("/duplicates");
+      await expect(c.page.getByTestId("dupes-groups")).toBeVisible();
+    },
+  },
+  {
+    name: "duplicates-none",
+    sizes: ["desktop"],
+    open: async (c) => {
+      c.fake.dupeScan = { opts: { path: "/Music", minSize: 1 }, polls: 1 };
+      await signedIn(c);
+      await c.page.goto("/duplicates");
+      await expect(c.page.getByTestId("dupes-none")).toBeVisible();
+    },
+  },
+  {
+    name: "trash-items",
+    sizes: ["desktop", "phone"],
+    open: async (c) => {
+      await signedIn(c);
+      await c.page.evaluate(async () => {
+        for (const p of [
+          "/api/resources/archive.zip",
+          "/api/resources/Projects/",
+        ])
+          await fetch(p, { method: "DELETE" });
+      });
+      await c.page.goto("/trash");
+      await expect(c.page.getByText("archive.zip")).toBeVisible();
+    },
+  },
+  {
+    name: "settings-home",
+    sizes: ["phone"],
+    open: async (c) => {
+      await signedIn(c);
+      await c.page.goto("/settings");
+      await expect(c.page.getByTestId("settings-home")).toBeVisible();
+    },
+  },
+  {
+    name: "settings-users",
+    sizes: ["desktop"],
+    open: async (c) => {
+      await signedIn(c);
+      await c.page.goto("/settings/users");
+      await expect(c.page.getByText("sam")).toBeVisible();
+    },
+  },
+  {
+    name: "share-panel",
+    sizes: ["desktop"],
+    open: async (c) => {
+      await signedIn(c);
+      await row(c.page, "Documents").click({ button: "right" });
+      await c.page
+        .getByRole("menuitem", { name: "Share", exact: true })
+        .click();
+      await expect(c.page.getByTestId("share-link-type")).toBeVisible();
+    },
+  },
+  {
+    name: "public-folder",
+    sizes: ["desktop", "phone"],
+    open: async ({ page, fake }) => {
+      fake.shares.push({
+        hash: "pf",
+        path: "/Documents",
+        expire: 0,
+        userID: 1,
+        views: 0,
+        downloads: 0,
+      });
+      await fake.install(page);
+      await page.goto("/share/pf");
+      await expect(page.getByTestId("share-brand")).toBeVisible();
+      await expect(row(page, "notes.txt")).toBeVisible();
+    },
+  },
+  {
+    name: "public-file",
+    sizes: ["phone"],
+    open: async ({ page, fake }) => {
+      fake.shares.push({
+        hash: "pr",
+        path: "/readme.md",
+        expire: 0,
+        userID: 1,
+        views: 0,
+        downloads: 0,
+      });
+      await fake.install(page);
+      await page.goto("/share/pr");
+      await expect(page.getByText("readme.md").first()).toBeVisible();
+    },
+  },
+  {
+    name: "public-dropbox",
+    sizes: ["phone"],
+    open: async ({ page, fake }) => {
+      fake.shares.push({
+        hash: "pd",
+        path: "/Documents",
+        expire: 0,
+        userID: 1,
+        views: 0,
+        downloads: 0,
+        mode: "upload",
+      });
+      await fake.install(page);
+      await page.goto("/share/pd");
+      await expect(page.getByTestId("dropbox")).toBeVisible();
+    },
+  },
+  {
+    name: "public-gone",
+    sizes: ["desktop"],
+    open: async ({ page, fake }) => {
+      fake.shares.push({
+        hash: "pg",
+        path: "/readme.md",
+        expire: 0,
+        userID: 1,
+        views: 0,
+        downloads: 1,
+        maxDownloads: 1,
+      });
+      await fake.install(page);
+      await page.goto("/share/pg");
+      await expect(page.getByTestId("share-gone")).toBeVisible();
+    },
+  },
+  {
+    name: "upgrade-banner",
+    sizes: ["desktop"],
+    open: async (c) => {
+      c.fake.upgradeNotice = {
+        from: 3,
+        to: 4,
+        backup: "/database/vitrine.db.pre-4.0.bak",
+        at: "2026-10-01T12:00:00Z",
+      };
+      await signedIn(c);
+      await expect(c.page.getByTestId("upgrade-banner")).toBeVisible();
+    },
+  },
+  {
     name: "shell-collapsed",
     sizes: ["desktop"],
     open: async (c) => {

@@ -55,52 +55,6 @@ header .action .counter {
   border-color: var(--color-canvas);
 }
 
-/* New header-bar button (replaces .action in toolbar; matches mockup) */
-.hb-btn {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border-radius: var(--radius-sm);
-  color: var(--color-ink-2);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  position: relative;
-  transition:
-    background-color var(--dur-base) ease,
-    color var(--dur-base) ease;
-}
-
-.hb-btn:hover {
-  background: var(--color-hover);
-  color: var(--color-ink-1);
-}
-
-.hb-btn--danger:hover {
-  background: var(--status-danger-soft);
-  color: var(--status-danger);
-}
-
-.hb-btn__badge {
-  position: absolute;
-  bottom: -2px;
-  right: -2px;
-  background: var(--accent-gradient);
-  color: var(--color-on-accent);
-  border-radius: var(--radius-full);
-  font-size: 9px;
-  font-weight: 700;
-  min-width: 14px;
-  height: 14px;
-  padding: 0 4px;
-  line-height: 14px;
-  text-align: center;
-  border: 1.5px solid var(--color-canvas);
-  font-variant-numeric: tabular-nums;
-}
 
 /* * * * * * * * * * * * * *
  *          SEARCH         *

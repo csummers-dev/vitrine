@@ -62,7 +62,11 @@
                 <Icon name="lock" :size="10" />
                 Password
               </span>
-              <span v-if="link.mode === 'upload'" class="share-card__badge">
+              <span
+                v-if="link.mode === 'upload'"
+                class="share-card__badge"
+                data-testid="share-badge-upload"
+              >
                 <Icon name="inbox" :size="10" />
                 Upload only
               </span>
@@ -113,20 +117,31 @@
           </div>
           <div class="share-field__hint">Leave 0 for a permanent link.</div>
         </div>
-        <!-- 4.1: folders can also be shared as a drop-box. -->
+        <!-- 4.1: folders can also be shared as a drop-box. Phase 6, 5.5: a
+             segmented control; "Upload only" stays visible when the server
+             has file requests turned off, disabled, with the reason. -->
         <div v-if="canDropBox" class="share-field">
-          <span class="share-field__label">Link type</span>
-          <div class="share-kinds" role="radiogroup" aria-label="Link type">
-            <label class="share-kind">
-              <input v-model="mode" type="radio" value="" />
-              <span>Download</span>
-            </label>
-            <label class="share-kind">
-              <input v-model="mode" type="radio" value="upload" />
-              <span>Upload only (file request)</span>
-            </label>
+          <span id="share-kind-label" class="share-field__label"
+            >Link type</span
+          >
+          <UiSegmented
+            v-model="mode"
+            :options="linkTypes"
+            aria-label="Link type"
+            size="sm"
+            data-testid="share-link-type"
+          />
+          <div v-if="!uploadSharesEnabled" class="share-field__hint">
+            Upload only: turned off on this server.
+            <router-link
+              v-if="isAdmin"
+              to="/settings/global"
+              class="share-link"
+              @click="onCancel"
+              >Turn on in Global settings</router-link
+            >
           </div>
-          <div v-if="mode === 'upload'" class="share-field__hint">
+          <div v-else-if="mode === 'upload'" class="share-field__hint">
             People with the link can add files to this folder but can't see or
             download what's in it.
           </div>
@@ -259,6 +274,7 @@ import { copy as copyToClip } from "@/utils/clipboard";
 import dayjs from "dayjs";
 import SlideOver from "@/components/SlideOver.vue";
 import Icon from "@/components/Icon.vue";
+import UiSegmented from "@/components/ui/UiSegmented.vue";
 import { useServerEvents } from "@/composables/useServerEvents";
 import { isExhausted, usageSummary } from "@/api/share";
 import { uploadSharesEnabled } from "@/utils/constants";
@@ -344,15 +360,22 @@ const targetPath = computed<string>(() => {
   return item?.path ?? item?.url ?? "";
 });
 
-// Only folders can receive uploads, and only with create permission.
+// Only folders can receive uploads, and only with create permission. When
+// the server has file requests off the choice still shows, disabled.
 const canDropBox = computed(
-  () =>
-    uploadSharesEnabled &&
-    !!authStore.user?.perm.create &&
-    targetUrl.value.endsWith("/")
+  () => !!authStore.user?.perm.create && targetUrl.value.endsWith("/")
 );
+const isAdmin = computed(() => !!authStore.user?.perm.admin);
+const linkTypes = computed(() => [
+  { value: "" as const, label: "Download" },
+  {
+    value: "upload" as const,
+    label: "Upload only",
+    disabled: !uploadSharesEnabled,
+  },
+]);
 watch(canDropBox, (ok) => {
-  if (!ok) mode.value = "";
+  if (!ok || !uploadSharesEnabled) mode.value = "";
 });
 
 const title = computed(() =>
@@ -786,5 +809,11 @@ watch(
 /* Copy-path utility sits at the far left, away from the Close/Create flow. */
 .share-btn--copy-path {
   margin-right: auto;
+}
+.share-link {
+  color: var(--color-accent-ink);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 </style>

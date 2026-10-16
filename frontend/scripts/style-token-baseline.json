@@ -1,7 +1,7 @@
 {
   "note": "Allowed raw style literals per file. Only ever lower these (Phase 6).",
   "totals": {
-    "radius": 294,
+    "radius": 288,
     "shadow": 57,
     "hex": 9,
     "colorFn": 20
@@ -210,7 +210,7 @@
       "shadow": 1
     },
     "src/css/listing.css": {
-      "radius": 3,
+      "radius": 2,
       "shadow": 7
     },
     "src/css/styles.css": {
@@ -242,7 +242,7 @@
       "shadow": 3
     },
     "src/views/Settings.vue": {
-      "radius": 2
+      "radius": 1
     },
     "src/views/settings/Audit.vue": {
       "radius": 2
@@ -272,11 +272,8 @@
       "shadow": 2
     },
     "src/views/Storage.vue": {
-      "radius": 3,
+      "radius": 1,
       "shadow": 1
-    },
-    "src/views/Trash.vue": {
-      "radius": 2
     },
     "src/views/TwoFactorSetup.vue": {
       "radius": 1

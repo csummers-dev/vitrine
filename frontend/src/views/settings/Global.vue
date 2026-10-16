@@ -24,40 +24,6 @@
           <Toggle v-model="settings.hideLoginButton" />
         </SettingsRow>
         <SettingsRow
-          label="Most files a user uploads at once"
-          description="Caps each user's own setting (1–10), so one person can't saturate the server."
-        >
-          <UiSelect
-            :model-value="settings.uploadConcurrencyMax || 10"
-            :options="UPLOAD_CAPS"
-            @update:model-value="
-              (v) => settings && (settings.uploadConcurrencyMax = v)
-            "
-          />
-        </SettingsRow>
-        <SettingsRow
-          label="Allow upload-only share links"
-          description="Let users turn a folder into a file request that anyone with the link can upload to. Off by default. Turning it off stops existing ones from accepting files."
-        >
-          <Toggle
-            :model-value="!!settings.uploadSharesEnabled"
-            @update:model-value="
-              (v: boolean) => settings && (settings.uploadSharesEnabled = v)
-            "
-          />
-        </SettingsRow>
-        <SettingsRow
-          label="Require two-factor sign-in for admins"
-          description="Admins who sign in with a password must set up two-factor sign-in before admin pages work. Turn it on after setting it up for your own account. If an admin gets stuck: vitrine users reset-2fa <name>."
-        >
-          <Toggle
-            :model-value="!!settings.requireAdminTwoFactor"
-            @update:model-value="
-              (v: boolean) => settings && (settings.requireAdminTwoFactor = v)
-            "
-          />
-        </SettingsRow>
-        <SettingsRow
           :label="t('settings.createUserDir')"
           description="When a user is created, automatically generate their home directory under the base path."
         >
@@ -107,6 +73,57 @@
           description="After every background copy (and cross-volume move), re-read the new files and checksum them against the source. A mismatch fails the transfer and keeps the original. Safer, but roughly doubles copy time."
         >
           <Toggle v-model="settings.verifyTransfers" />
+        </SettingsRow>
+      </SettingsSection>
+
+      <!-- ── Library and sharing (Phase 6, 5.4) ─────────────────────────
+           The settings that change what other people can do to the server,
+           each with what can go wrong. -->
+      <SettingsSection
+        title="Library and sharing"
+        description="What people can send to this server, and how hard it is to get in."
+        data-testid="global-library"
+      >
+        <SettingsRow
+          label="Allow upload-only share links"
+          description="Let users turn a folder into a file request that anyone with the link can upload to. Turning it off stops existing ones from accepting files."
+          risk="Anyone with such a link can fill your disk; give the links an expiry."
+        >
+          <Toggle
+            :model-value="!!settings.uploadSharesEnabled"
+            @update:model-value="
+              (v: boolean) => settings && (settings.uploadSharesEnabled = v)
+            "
+          />
+        </SettingsRow>
+        <SettingsRow
+          label="Most files a user uploads at once"
+          description="Caps each user's own setting (1–10)."
+          risk="High values let one person's uploads slow the server for everyone."
+        >
+          <UiSelect
+            :model-value="settings.uploadConcurrencyMax || 10"
+            :options="UPLOAD_CAPS"
+            @update:model-value="
+              (v) => settings && (settings.uploadConcurrencyMax = v)
+            "
+          />
+        </SettingsRow>
+        <SettingsRow
+          label="Require two-factor sign-in for admins"
+          description="Admins who sign in with a password must set up two-factor sign-in before admin pages work. Turn it on after setting it up for your own account."
+          risk="An admin who loses their codes is locked out until someone runs: vitrine users reset-2fa <name>."
+          :error="twoFactorError"
+        >
+          <Toggle
+            :model-value="!!settings.requireAdminTwoFactor"
+            @update:model-value="
+              (v: boolean) => {
+                if (settings) settings.requireAdminTwoFactor = v;
+                twoFactorError = '';
+              }
+            "
+          />
         </SettingsRow>
       </SettingsSection>
 
@@ -285,6 +302,7 @@ import UiSelect from "@/components/ui/UiSelect.vue";
 import { computed, inject, onBeforeUnmount, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { settings as api } from "@/api";
+import { StatusError } from "@/api/utils";
 import { useLayoutStore } from "@/stores/layout";
 import { enableExec } from "@/utils/constants";
 
@@ -306,6 +324,8 @@ const $showError = inject<IToastError>("$showError")!;
 const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
 
 const settings = ref<ISettings | null>(null);
+/** The two-factor guard's refusal, shown next to its toggle (5.4). */
+const twoFactorError = ref("");
 const originalSettings = ref<ISettings | null>(null);
 const commandObject = ref<{ [key: string]: string }>({});
 const shellValue = ref<string>("");
@@ -370,10 +390,20 @@ const save = async () => {
     .split(" ")
     .filter((s) => s !== "");
 
+  twoFactorError.value = "";
   try {
     await api.update(newSettings);
     $showSuccess(t("settings.settingsUpdated"));
   } catch (e) {
+    // The server refuses to require two-factor sign-in while your own
+    // account has none: say so beside that toggle, not in a toast.
+    if (e instanceof StatusError && e.status === 409) {
+      const why = /\((.+)\)/.exec(e.message)?.[1];
+      twoFactorError.value = why
+        ? why.charAt(0).toUpperCase() + why.slice(1) + "."
+        : "Set up two-factor sign-in for your own account first.";
+      return;
+    }
     if (e instanceof Error) $showError(e);
   }
 };

@@ -192,6 +192,10 @@ func NewHandler(
 	api.Handle("/settings", monkey(settingsGetHandler, "")).Methods("GET")
 	api.Handle("/settings", monkey(settingsPutHandler, "")).Methods("PUT")
 
+	// Database-upgrade notice for admins (4.0 Phase 6, 5.7).
+	api.Handle("/upgrade-notice", monkey(upgradeNoticeGetHandler, "")).Methods("GET")
+	api.Handle("/upgrade-notice", monkey(upgradeNoticeDeleteHandler, "")).Methods("DELETE")
+
 	// Audit log (v1.3 S8-1). Admin-only; read-only — the log itself is
 	// populated by the S1-5 events-bus subscriber.
 	api.Handle("/audit", monkey(auditGetHandler(auditLog), "")).Methods("GET")
