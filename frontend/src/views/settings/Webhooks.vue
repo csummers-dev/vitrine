@@ -538,7 +538,7 @@ load();
   gap: 3px;
   margin-right: 6px;
   padding: 0 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--color-elevated);
   color: var(--color-ink-2);
   font-size: 10px;
@@ -552,7 +552,7 @@ load();
   height: 30px;
   padding: 0 12px;
   border: 1px solid var(--color-line);
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-ink-2);
   font-size: 12.5px;
@@ -579,7 +579,7 @@ load();
   padding: 16px;
   margin-bottom: 16px;
   border: 1px solid var(--color-line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--color-canvas);
 }
 .wh-field {
@@ -665,7 +665,7 @@ load();
   gap: 12px;
   padding: 12px 14px;
   border: 1px solid var(--color-line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
 }
 .wh-row__main {

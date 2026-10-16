@@ -378,7 +378,7 @@ const abortAll = () => {
   width: min(380px, calc(100vw - 40px));
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-2);
   overflow: hidden;
   font-family: var(--font-sans);
@@ -406,7 +406,7 @@ html.dark .upload-dock {
 .upload-dock__icon {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--color-accent-soft);
   color: var(--color-accent-ink);
   display: inline-flex;
@@ -466,7 +466,7 @@ html.dark .upload-dock__icon.is-done {
   height: 28px;
   border: 0;
   background: transparent;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: var(--color-ink-3);
   display: inline-flex;
   align-items: center;
@@ -507,7 +507,7 @@ html.dark .upload-dock__btn--danger:hover {
   transition:
     width var(--dur-slow) ease,
     background-color var(--dur-slow) ease;
-  border-radius: 0 999px 999px 0;
+  border-radius: 0 var(--radius-full) var(--radius-full) 0;
 }
 .upload-dock__bar-fill.is-done {
   background: var(--status-success-fill);
@@ -555,7 +555,7 @@ html.dark .upload-dock__btn--danger:hover {
 }
 .upload-dock__list::-webkit-scrollbar-thumb {
   background: var(--color-line);
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
 }
 .upload-dock__list::-webkit-scrollbar-thumb:hover {
   background: var(--color-ink-3);
@@ -620,7 +620,7 @@ html.dark .upload-dock__btn--danger:hover {
   flex-shrink: 0;
   margin-left: 2px;
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-ink-3);
   display: inline-flex;
@@ -662,14 +662,14 @@ html.dark .upload-dock__file-remove:hover {
   height: 2px;
   width: 100%;
   background: var(--color-line);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   overflow: hidden;
 }
 .upload-dock__file-bar-fill {
   height: 100%;
   background: var(--accent-gradient);
   transition: width var(--dur-slow) ease;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
 }
 
 .tabular {

@@ -209,7 +209,7 @@ const onDrop = (e: DragEvent) => {
 .dropbox__icon {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -246,7 +246,7 @@ const onDrop = (e: DragEvent) => {
 }
 .dropbox__limits li {
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--color-elevated);
   font-size: 11px;
   color: var(--color-ink-2);
@@ -263,7 +263,7 @@ const onDrop = (e: DragEvent) => {
 .dropbox__input {
   height: 36px;
   padding: 0 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--color-line);
   background: var(--color-surface);
   color: var(--color-ink-1);
@@ -277,7 +277,7 @@ const onDrop = (e: DragEvent) => {
   gap: 6px;
   padding: 28px 16px;
   border: 1.5px dashed var(--color-line-strong);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   color: var(--color-ink-2);
   font-size: 13px;
   text-align: center;
@@ -309,7 +309,7 @@ const onDrop = (e: DragEvent) => {
 }
 .dropbox__item {
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--color-elevated);
   font-size: 12px;
 }
@@ -342,7 +342,7 @@ const onDrop = (e: DragEvent) => {
 .dropbox__bar {
   margin-top: 6px;
   height: 3px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--color-line);
   overflow: hidden;
 }

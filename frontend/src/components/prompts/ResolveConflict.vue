@@ -344,7 +344,7 @@ const toogleCheckAll = (e: Event) => {
   max-width: 520px;
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-2);
   overflow: hidden;
   font-family: var(--font-sans);
@@ -363,7 +363,7 @@ const toogleCheckAll = (e: Event) => {
 .rc-prompt__icon {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   /* V2 #26: a conflict needs attention → amber, not the neutral lilac accent.
      v2.7.x: the STATUS warning tokens (attention semantics, not the favorites
      gold — --c-amber is stars only now). */
@@ -402,7 +402,7 @@ const toogleCheckAll = (e: Event) => {
   gap: 6px;
   padding: 4px 8px;
   background: var(--color-elevated);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-variant-numeric: tabular-nums;
 }
 
@@ -478,7 +478,7 @@ const toogleCheckAll = (e: Event) => {
   display: inline-flex;
   align-items: center;
   padding: 1px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 11px;
   font-weight: 500;
   white-space: nowrap;
@@ -524,7 +524,7 @@ const toogleCheckAll = (e: Event) => {
   gap: 8px;
   padding: 8px 10px;
   border: 1px solid var(--color-line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   background: var(--color-surface);
   transition:
@@ -567,7 +567,7 @@ const toogleCheckAll = (e: Event) => {
   padding: 10px 12px;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   color: var(--color-ink-1);
   font: inherit;
   font-size: 13px;
@@ -645,7 +645,7 @@ const toogleCheckAll = (e: Event) => {
 .rc-btn {
   height: 30px;
   padding: 0 12px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-family: inherit;
   font-size: 13px;
   font-weight: 500;

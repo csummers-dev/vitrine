@@ -640,7 +640,7 @@ onBeforeUnmount(() => {
   background-repeat: no-repeat;
   background-color: var(--color-elevated);
   /* 2.1 #5: 10px squircle so the square art doesn't read as a flat slab. */
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 
 /* Fallback gradient when no embedded artwork was found in the file. */
@@ -699,13 +699,13 @@ onBeforeUnmount(() => {
   top: 50%;
   transform: translateY(-50%);
   height: 4px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--color-elevated);
 }
 .audio-viewer__scrubber:focus-visible {
   outline: 2px solid var(--color-accent-ring);
   outline-offset: 4px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 .audio-viewer__scrubber-progress {
   position: absolute;
@@ -713,7 +713,7 @@ onBeforeUnmount(() => {
   top: 50%;
   transform: translateY(-50%);
   height: 4px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--accent-gradient);
   pointer-events: none;
 }
@@ -724,9 +724,9 @@ onBeforeUnmount(() => {
   transform: translateY(-50%);
   width: 12px;
   height: 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--accent-gradient);
-  box-shadow: 0 0 0 4px var(--color-accent-soft);
+  box-shadow: var(--glow-accent);
 }
 
 .audio-viewer__time {
@@ -751,7 +751,7 @@ onBeforeUnmount(() => {
   height: 36px;
   border: 0;
   background: transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   color: var(--color-ink-2);
   display: inline-flex;
   align-items: center;
@@ -783,7 +783,7 @@ onBeforeUnmount(() => {
 .audio-viewer__btn--play {
   width: 48px;
   height: 48px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--accent-gradient);
   color: var(--color-on-accent);
   display: inline-flex;
@@ -824,7 +824,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   transition:
     background-color var(--dur-base) ease,
     color var(--dur-base) ease;
@@ -844,7 +844,7 @@ onBeforeUnmount(() => {
   appearance: none;
   -webkit-appearance: none;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: linear-gradient(
     to right,
     var(--color-accent) var(--volume-fill, 0%),
@@ -855,12 +855,12 @@ onBeforeUnmount(() => {
 }
 .audio-viewer__volume-bar::-moz-range-track {
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--color-elevated);
 }
 .audio-viewer__volume-bar::-moz-range-progress {
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--color-accent);
 }
 .audio-viewer__volume-bar::-webkit-slider-thumb {
@@ -868,7 +868,7 @@ onBeforeUnmount(() => {
   -webkit-appearance: none;
   width: 12px;
   height: 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--accent-gradient);
   border: 0;
   cursor: pointer;
@@ -876,7 +876,7 @@ onBeforeUnmount(() => {
 .audio-viewer__volume-bar::-moz-range-thumb {
   width: 12px;
   height: 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--accent-gradient);
   border: 0;
   cursor: pointer;

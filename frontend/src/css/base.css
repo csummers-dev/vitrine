@@ -75,8 +75,8 @@ i.spin,
   background-color: var(--color-accent);
   width: 0;
   transition: width 0.2s ease;
-  box-shadow: 0 0 8px var(--color-accent);
-  border-radius: 0 999px 999px 0;
+  box-shadow: var(--glow-progress);
+  border-radius: 0 var(--radius-full) var(--radius-full) 0;
 }
 
 .break-word {

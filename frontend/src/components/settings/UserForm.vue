@@ -324,7 +324,7 @@ watch(createUserDirData, () => {
   height: 30px;
   padding: 0 8px;
   border: 1px solid var(--color-line);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
   font-size: 12.5px;
   margin-bottom: 6px;

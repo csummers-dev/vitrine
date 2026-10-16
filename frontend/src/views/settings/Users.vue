@@ -196,7 +196,7 @@ const summaryPerms = (user: IUser) => {
 .users-card {
   display: block;
   padding: 10px 12px 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   text-decoration: none;
   color: inherit;
   transition: background-color 0.08s ease;
@@ -266,7 +266,7 @@ const summaryPerms = (user: IUser) => {
   align-items: center;
   gap: 3px;
   padding: 1px 7px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 10.5px;
   font-weight: 500;
   background: var(--color-elevated);
@@ -321,7 +321,7 @@ const summaryPerms = (user: IUser) => {
   align-items: center;
   gap: 4px;
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--color-canvas);
   border: 1px solid var(--color-line);
   color: var(--color-ink-2);
@@ -348,7 +348,7 @@ const summaryPerms = (user: IUser) => {
 .users-empty__icon {
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: var(--color-elevated);
   color: var(--color-ink-3);
   display: flex;

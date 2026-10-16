@@ -80,7 +80,7 @@ const posStyle = computed(() => {
   padding: 4px;
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-2);
 }
 html.dark .img-hover-preview {
@@ -96,7 +96,7 @@ html.dark .img-hover-preview {
   max-height: min(320px, 40vh);
   width: auto;
   height: auto;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   object-fit: contain;
   background: var(--color-elevated);
 }

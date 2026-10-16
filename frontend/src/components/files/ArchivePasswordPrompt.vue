@@ -114,7 +114,7 @@ const submit = () => {
   box-sizing: border-box;
   padding: 9px 38px 9px 12px;
   border: 1px solid var(--color-line-strong);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   color: var(--color-text, inherit);
   font-size: 0.9rem;
@@ -125,13 +125,13 @@ const submit = () => {
 }
 .archive-pw__input:focus {
   border-color: var(--c-lilac);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-lilac) 22%, transparent);
+  box-shadow: var(--focus-halo);
 }
 .archive-pw__input.is-invalid {
   border-color: var(--status-danger);
 }
 .archive-pw__input.is-invalid:focus {
-  box-shadow: 0 0 0 3px var(--status-danger-ring);
+  box-shadow: var(--focus-halo-danger);
 }
 
 .archive-pw__reveal {
@@ -144,7 +144,7 @@ const submit = () => {
   width: 28px;
   height: 28px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-ink-3);
   cursor: pointer;

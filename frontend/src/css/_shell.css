@@ -30,7 +30,7 @@
   overflow: auto;
   font-size: 1rem;
   cursor: text;
-  box-shadow: 0 0 5px var(--borderPrimary);
+  box-shadow: var(--shadow-1);
   transition: 0.2s ease transform;
 }
 

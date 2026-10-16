@@ -574,7 +574,7 @@ onBeforeUnmount(() => {
   width: min(340px, calc(100vw - 40px));
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-2);
   overflow: hidden;
   font-family: var(--font-sans);
@@ -593,7 +593,7 @@ html.dark .transfer-dock {
 .transfer-dock__icon {
   width: 30px;
   height: 30px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
@@ -631,7 +631,7 @@ html.dark .transfer-dock__icon.is-done {
   height: 28px;
   border: 0;
   background: transparent;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   color: var(--color-ink-3);
   cursor: pointer;
   display: inline-flex;
@@ -689,7 +689,7 @@ html.dark .transfer-dock__icon.is-done {
   height: 22px;
   border: 0;
   background: transparent;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: var(--color-ink-3);
   cursor: pointer;
   display: inline-flex;
@@ -754,13 +754,13 @@ html.dark .transfer-dock__icon.is-done {
 .transfer-dock__bar {
   height: 4px;
   margin-top: 7px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--color-elevated);
   overflow: hidden;
 }
 .transfer-dock__bar-fill {
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--color-accent);
   transition: width 0.3s ease;
 }

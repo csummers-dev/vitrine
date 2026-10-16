@@ -35,7 +35,7 @@ withDefaults(
 <style scoped>
 .settings-section {
   border: 1px solid var(--color-line);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
   overflow: hidden;
 }

@@ -134,7 +134,7 @@ export default {
   gap: 6px;
   padding: 6px;
   border: 1px solid var(--color-line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
 }
 
@@ -150,7 +150,7 @@ export default {
   gap: 4px;
   height: 24px;
   padding: 0 9px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 11.5px;
   font-weight: 600;
   border: 1px solid transparent;
@@ -187,7 +187,7 @@ export default {
   gap: 4px;
   height: 24px;
   padding: 0 9px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 11.5px;
   font-weight: 500;
   background: var(--color-elevated);
@@ -222,7 +222,7 @@ export default {
   height: 28px;
   padding: 0 10px;
   border: 1px solid var(--color-line);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--color-canvas);
   font: inherit;
   font-family: var(--font-mono);
@@ -237,14 +237,14 @@ export default {
 .rules__input:focus {
   background: var(--color-surface);
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-ring);
+  box-shadow: var(--focus-halo);
 }
 
 /* ── Delete icon button ─────────────────────────────────────────────── */
 .rules__delete {
   width: 28px;
   height: 28px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   background: transparent;
   color: var(--color-ink-3);
@@ -274,7 +274,7 @@ export default {
   text-align: center;
   background: var(--color-canvas);
   border: 1px dashed var(--color-line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   line-height: 1.4;
 }
 
@@ -289,7 +289,7 @@ export default {
   gap: 6px;
   height: 30px;
   padding: 0 12px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: 1px dashed var(--color-line-strong);
   background: transparent;
   color: var(--color-ink-2);

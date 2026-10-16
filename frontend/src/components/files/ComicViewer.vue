@@ -449,7 +449,7 @@ watch(
   width: 40px;
   height: 40px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--media-chrome);
   color: var(--media-ink);
   cursor: pointer;
@@ -479,7 +479,7 @@ watch(
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--media-chrome);
   backdrop-filter: blur(8px);
   color: var(--media-ink);
@@ -510,7 +510,7 @@ watch(
   gap: 5px;
   padding: 5px 9px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: transparent;
   color: var(--media-ink);
   font-size: 0.78rem;

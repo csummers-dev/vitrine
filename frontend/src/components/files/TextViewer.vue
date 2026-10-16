@@ -252,13 +252,13 @@ html.dark .text-viewer__pre {
   font-family: var(--font-mono);
   font-size: 0.88em;
   padding: 0.15em 0.4em;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--color-elevated);
   color: var(--color-ink-1);
 }
 .markdown-body :deep(pre) {
   padding: 14px 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--color-elevated);
   border: 1px solid var(--color-line);
   overflow-x: auto;
@@ -292,7 +292,7 @@ html.dark .text-viewer__pre {
 
 .markdown-body :deep(img) {
   max-width: 100%;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 }
 .markdown-body :deep(hr) {
   height: 1px;

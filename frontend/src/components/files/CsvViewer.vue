@@ -237,7 +237,7 @@ watch(selectedEncoding, () => {
   width: 28px;
   height: 28px;
   padding: 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: var(--color-elevated);
   color: var(--color-ink-3);
   box-sizing: content-box;
@@ -256,7 +256,7 @@ watch(selectedEncoding, () => {
   overflow: auto;
   background-color: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 
 /* Scrollbar styling for better visibility */
@@ -267,12 +267,12 @@ watch(selectedEncoding, () => {
 
 .csv-table-container::-webkit-scrollbar-track {
   background: var(--background);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 
 .csv-table-container::-webkit-scrollbar-thumb {
   background: var(--borderSecondary);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 
 .csv-table-container::-webkit-scrollbar-thumb:hover {
@@ -341,7 +341,7 @@ watch(selectedEncoding, () => {
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--color-accent-soft);
   color: var(--color-accent-ink);
   font-size: 11.5px;
@@ -404,7 +404,7 @@ watch(selectedEncoding, () => {
   color: var(--color-ink-1);
   text-align: left;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   white-space: nowrap;
   display: block;
   width: 100%;

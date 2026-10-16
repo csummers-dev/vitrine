@@ -1225,9 +1225,9 @@ export default {
   left: 6px;
   right: 6px;
   height: 2px;
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
   background: var(--accent-gradient);
-  box-shadow: 0 0 0 2px var(--color-canvas);
+  box-shadow: var(--ring-gap-canvas);
 }
 .fav-reorder-target::before {
   top: -1px;

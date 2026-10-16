@@ -115,7 +115,7 @@ const totalSize = computed(() => {
 .album-header__cover {
   width: 96px;
   height: 96px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   object-fit: cover;
   flex-shrink: 0;
   box-shadow: var(--shadow-2);
@@ -161,7 +161,7 @@ const totalSize = computed(() => {
   gap: 6px;
   height: 30px;
   padding: 0 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   border: 1px solid var(--color-line);
   background: var(--color-surface);
   color: var(--color-ink-1);

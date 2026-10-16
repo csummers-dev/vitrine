@@ -684,24 +684,24 @@ const updatePassword = async () => {
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 12px;
   font-weight: 500;
   /* Saving state uses the app accent (lilac). Saved keeps the calm
      green; error keeps red — both still readable on the same chrome. */
   background: var(--accent-gradient);
   color: var(--color-on-accent);
-  box-shadow: 0 8px 24px -8px var(--color-accent-ring);
+  box-shadow: var(--lift-accent);
 }
 
 .save-state.saved {
   background: var(--status-success-fill);
-  box-shadow: 0 8px 24px -8px var(--status-success-soft);
+  box-shadow: var(--lift-success);
 }
 
 .save-state.error {
   background: var(--status-danger-fill-strong);
-  box-shadow: 0 8px 24px -8px var(--status-danger-ring);
+  box-shadow: var(--lift-danger);
 }
 
 .save-state__spin {

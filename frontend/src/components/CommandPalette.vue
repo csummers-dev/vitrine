@@ -590,7 +590,7 @@ const run = async (cmd: Command) => {
   flex-direction: column;
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-2);
   overflow: hidden;
 }
@@ -630,7 +630,7 @@ const run = async (cmd: Command) => {
   font-size: 11px;
   font-weight: 500;
   padding: 2px 6px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--color-elevated);
   border: 1px solid var(--color-line);
   color: var(--color-ink-2);
@@ -660,7 +660,7 @@ const run = async (cmd: Command) => {
   gap: 10px;
   width: 100%;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: transparent;
   border: 0;
   cursor: pointer;
@@ -697,7 +697,7 @@ const run = async (cmd: Command) => {
   font-size: 11px;
   color: var(--color-ink-3);
   padding: 2px 6px;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   background: var(--color-elevated);
   border: 1px solid var(--color-line);
   flex-shrink: 0;
@@ -768,7 +768,7 @@ const run = async (cmd: Command) => {
   font-size: 10.5px;
   font-weight: 500;
   padding: 1px 5px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--color-surface);
   border: 1px solid var(--color-line);
   color: var(--color-ink-2);

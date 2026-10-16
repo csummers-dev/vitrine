@@ -830,7 +830,7 @@ const menuItems = computed<MenuItem[]>(() => {
   z-index: 1;
 }
 .storage-block:focus-visible {
-  box-shadow: inset 0 0 0 2px var(--color-accent-ink);
+  box-shadow: var(--ring-accent-ink-inset);
 }
 .storage-block--group {
   background: color-mix(in srgb, var(--k) 30%, var(--color-surface));
@@ -894,7 +894,7 @@ const menuItems = computed<MenuItem[]>(() => {
 .storage-legend__dot {
   width: 9px;
   height: 9px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   background: var(--k);
   flex: none;
 }

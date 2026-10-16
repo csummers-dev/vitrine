@@ -237,7 +237,7 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   letter-spacing: -0.005em;
   color: var(--color-ink-1);
   /* Subtle visual hint that the field is editable without adding chrome */
-  box-shadow: inset 0 -1px 0 var(--color-accent);
+  box-shadow: var(--underline-accent-thin);
   border-radius: 0;
 }
 
@@ -431,7 +431,7 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   font-weight: 700;
   line-height: 12px;
   text-align: center;
-  box-shadow: 0 0 0 1.5px var(--color-surface);
+  box-shadow: var(--ring-gap-surface);
   pointer-events: none;
 }
 .item__progress {
@@ -1088,7 +1088,7 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   box-shadow:
-    inset 0 0 0 1px var(--color-line),
+    var(--ring-line-inset),
     var(--shadow-1);
 }
 
@@ -1224,7 +1224,7 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
 }
 :is(#listing, .fb-listing).mosaic.gallery .item[aria-selected="true"] {
   border-color: var(--color-accent) !important;
-  box-shadow: 0 0 0 2px var(--color-accent-ring) !important;
+  box-shadow: var(--ring-selected) !important;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -1344,12 +1344,12 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
 
 /* Full accent ring around selected row, follows the row's rounded corners */
 :is(#listing, .fb-listing).list .item[aria-selected="true"] {
-  box-shadow: inset 0 0 0 1px var(--color-accent-ring);
+  box-shadow: var(--ring-selected-inset);
 }
 
 :is(#listing, .fb-listing).mosaic .item[aria-selected="true"] {
   border-color: var(--color-accent) !important;
-  box-shadow: 0 0 0 2px var(--color-accent-ring);
+  box-shadow: var(--ring-selected);
 }
 
 /* * * * * * * * * * * * * *
@@ -1596,7 +1596,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-line);
   background: var(--color-surface);
   color: var(--color-ink-2);
@@ -1648,7 +1648,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
   border: 0;
   background: transparent;
   color: var(--c-blue);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background-color 0.12s ease;
 }
@@ -1674,8 +1674,7 @@ html.dark :is(#listing, .fb-listing).mosaic .item[data-dir="true"] .item__icon {
   outline-offset: -2px;
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--color-accent-ink) 28%, transparent);
-  box-shadow: 0 0 0 4px
-    color-mix(in srgb, var(--color-accent-ink) 20%, transparent);
+  box-shadow: var(--glow-accent);
 }
 /* V2 #22: the target folder's icon lifts/brightens so it's obvious you're
    dropping INTO it (not just near it). */

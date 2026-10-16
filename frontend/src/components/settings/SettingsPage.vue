@@ -57,15 +57,14 @@ defineProps<{
   --page-accent: var(--color-accent);
   width: 40px;
   height: 40px;
-  border-radius: 11px;
+  border-radius: var(--radius-md);
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: var(--page-accent);
   background: color-mix(in srgb, var(--page-accent) 14%, var(--color-surface));
-  box-shadow: inset 0 0 0 1px
-    color-mix(in srgb, var(--page-accent) 24%, transparent);
+  border: 1px solid color-mix(in srgb, var(--page-accent) 24%, transparent);
 }
 
 .settings-page__heading {

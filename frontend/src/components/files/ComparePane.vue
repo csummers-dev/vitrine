@@ -1414,7 +1414,7 @@ onBeforeUnmount(() => {
   background: var(--color-accent-soft);
   /* Accent underline so the active pane reads clearly from its header alone
      (the edge ring was removed). Inset shadow → no layout shift. */
-  box-shadow: inset 0 -2px 0 0 var(--color-accent);
+  box-shadow: var(--underline-accent);
 }
 /* Parent spring-load drop target (#18): dragging a selection onto pane B's
    header navigates up a folder. Matches pane A's `.compare-head--drop`. The
@@ -1422,7 +1422,7 @@ onBeforeUnmount(() => {
 .compare-head--drop,
 .compare-pane--active .compare-head--drop {
   background: var(--color-accent-soft);
-  box-shadow: inset 0 0 0 2px var(--color-accent);
+  box-shadow: var(--ring-accent-inset);
 }
 
 /* Per-pane breadcrumb at the bottom of pane B (Request #3). Mirrors pane A's
@@ -1442,7 +1442,7 @@ onBeforeUnmount(() => {
   max-width: 100%;
   padding: 4px 10px;
   border: 1px solid var(--color-line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   overflow-x: auto;
   overflow-y: hidden;
@@ -1462,7 +1462,7 @@ onBeforeUnmount(() => {
   min-width: 0;
   max-width: 200px;
   padding: 3px 7px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: 0;
   background: transparent;
   font: inherit;
@@ -1518,7 +1518,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 3px;
   padding: 5px 6px 5px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--color-inverse-surface);
   color: var(--media-ink);
   box-shadow:
@@ -1568,7 +1568,7 @@ onBeforeUnmount(() => {
 .compare-body--drop {
   outline: 2px dashed var(--color-accent);
   outline-offset: -4px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--color-accent-soft);
 }
 
@@ -1627,7 +1627,7 @@ onBeforeUnmount(() => {
   margin-top: 2px;
   height: 30px;
   padding: 0 14px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--color-line);
   background: var(--color-surface);
   color: var(--color-ink-2);

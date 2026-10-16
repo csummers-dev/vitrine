@@ -241,7 +241,7 @@ const doneCodes = () => {
   height: 34px;
   padding: 0 10px;
   border: 1px solid var(--color-line);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
   font: inherit;
   font-size: 13px;
@@ -260,7 +260,7 @@ const doneCodes = () => {
 }
 .tf-qr {
   padding: 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--paper);
   line-height: 0;
 }

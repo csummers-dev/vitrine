@@ -229,7 +229,7 @@ defineEmits<{
 .preview-info__icon {
   width: 40px;
   height: 40px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -438,7 +438,7 @@ html.dark .preview-info .info-action--danger:hover {
   word-break: break-all;
   background: var(--color-elevated);
   border: 1px solid var(--color-line);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 6px 8px;
 }
 
@@ -463,7 +463,7 @@ html.dark .preview-info .info-action--danger:hover {
   font-family: var(--font-mono);
   font-size: 10px;
   padding: 1px 5px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--color-elevated);
   border: 1px solid var(--color-line);
   color: var(--color-ink-1);

@@ -599,7 +599,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-2);
 }
@@ -621,7 +621,7 @@ onBeforeUnmount(() => {
   height: 28px;
   border: 0;
   background: transparent;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: var(--color-ink-2);
   display: inline-flex;
   align-items: center;
@@ -648,7 +648,7 @@ onBeforeUnmount(() => {
   padding: 0 8px;
   border: 1px solid transparent;
   background: transparent;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   color: var(--color-ink-2);
   display: inline-flex;
   align-items: center;
@@ -711,7 +711,7 @@ html.dark .img-editor__stage {
   display: block;
   width: 100%;
   height: 100%;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   box-shadow: var(--shadow-2);
 }
 
@@ -720,7 +720,7 @@ html.dark .img-editor__stage {
   position: absolute;
   border: 1px solid var(--color-accent);
   /* Dims the image outside the crop. */
-  box-shadow: 0 0 0 4000px var(--scrim);
+  box-shadow: var(--mask-scrim);
   cursor: move;
   touch-action: none;
 }
@@ -759,7 +759,7 @@ html.dark .img-editor__stage {
   height: 12px;
   background: var(--color-surface);
   border: 1.5px solid var(--color-accent);
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
   touch-action: none;
 }
 .img-editor__handle--nw {
@@ -854,7 +854,7 @@ html.dark .img-editor__stage {
   height: 32px;
   padding: 0 10px;
   border: 1px solid var(--color-line);
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-ink-1);
   font-size: 13px;
@@ -866,7 +866,7 @@ html.dark .img-editor__stage {
 }
 .img-editor__name-input:focus {
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-ring);
+  box-shadow: var(--focus-halo);
 }
 .img-editor__save-error {
   font-size: 12px;
@@ -883,7 +883,7 @@ html.dark .img-editor__save-error {
 .img-editor__btn {
   height: 34px;
   padding: 0 14px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 13px;
   font-weight: 500;
   border: 1px solid transparent;
@@ -932,7 +932,7 @@ html.dark .img-editor__save-error {
   justify-content: space-between;
   gap: 12px;
   padding: 8px 10px 8px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--status-warning-soft);
   border: 1px solid var(--status-warning-ring);
 }

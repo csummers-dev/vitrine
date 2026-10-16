@@ -381,7 +381,7 @@ onBeforeUnmount(() => {
   background: transparent;
   font: inherit;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   padding-top: 4px;
   padding-bottom: 4px;
   transition:
@@ -400,7 +400,7 @@ onBeforeUnmount(() => {
 
 .breadcrumb-link {
   padding: 4px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   display: inline-flex;
   align-items: center;
   min-width: 0;
@@ -446,7 +446,7 @@ onBeforeUnmount(() => {
 
 .breadcrumb-link.is-drop-target {
   background: var(--color-accent-soft);
-  box-shadow: 0 0 0 2px var(--color-accent);
+  box-shadow: var(--glow-accent-strong);
   color: var(--color-accent-ink);
 }
 

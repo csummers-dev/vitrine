@@ -186,7 +186,7 @@ const submit = async () => {
   font-family: var(--font-mono);
   font-size: 10px;
   padding: 1px 5px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--color-elevated);
   border: 1px solid var(--color-line);
   color: var(--color-ink-2);

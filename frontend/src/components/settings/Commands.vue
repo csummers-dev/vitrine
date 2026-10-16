@@ -52,7 +52,7 @@ export default {
   font-family: var(--font-mono);
   font-size: 11px;
   padding: 1px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--color-elevated);
   color: var(--color-ink-1);
   border: 1px solid var(--color-line);

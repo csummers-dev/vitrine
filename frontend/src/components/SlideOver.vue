@@ -150,7 +150,7 @@ useFocusTrap(panel, toRef(props, "open"));
 .slideover__close {
   width: 26px;
   height: 26px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;

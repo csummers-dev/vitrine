@@ -248,7 +248,7 @@ const copyChecksum = async (text: string) => {
   max-width: 480px;
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-2);
   overflow: hidden;
   font-family: var(--font-sans);
@@ -267,7 +267,7 @@ const copyChecksum = async (text: string) => {
 .info-prompt__icon {
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -372,7 +372,7 @@ const copyChecksum = async (text: string) => {
 .info-prompt__show-btn {
   background: var(--color-elevated);
   border: 1px solid var(--color-line);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   padding: 2px 8px;
   font-family: inherit;
   font-size: 11px;
@@ -411,7 +411,7 @@ const copyChecksum = async (text: string) => {
   word-break: break-all;
   cursor: copy;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--color-canvas);
   border: 1px solid var(--color-line);
   line-height: 1.4;
@@ -435,7 +435,7 @@ const copyChecksum = async (text: string) => {
 .info-prompt__btn {
   height: 30px;
   padding: 0 14px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-family: inherit;
   font-size: 13px;
   font-weight: 500;

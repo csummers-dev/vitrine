@@ -267,7 +267,7 @@ watch(
   height: 260px;
   margin: 0 auto;
   overflow: hidden;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--color-elevated);
   cursor: grab;
   touch-action: none;
@@ -292,7 +292,7 @@ watch(
   inset: 0;
   border-radius: 50%;
   /* Dims everything outside the crop circle. */
-  box-shadow: 0 0 0 999px var(--scrim-strong);
+  box-shadow: var(--mask-scrim-strong);
   outline: 1px solid var(--media-ink-2);
   pointer-events: none;
 }
@@ -321,7 +321,7 @@ watch(
 .ac-btn {
   height: 34px;
   padding: 0 14px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font: inherit;
   font-size: 13px;
   font-weight: 500;

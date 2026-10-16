@@ -8,6 +8,9 @@
  *   node scripts/check-style-tokens.mjs --update  lower the baseline to today
  *   node scripts/check-style-tokens.mjs --report  print totals per kind
  *
+ * Since Phase 6 Step 6 the allowance is zero everywhere: any raw literal
+ * fails the check.
+ *
  * Counted, outside tokens.css: hex colours, rgb()/rgba()/hsl()/hsla()
  * literals, px border-radius values and box-shadow literals. A var(--x,
  * fallback) fallback counts too: the fallback is where drift hides.
@@ -17,8 +20,15 @@ import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const src = join(root, "src");
-const baselinePath = join(root, "scripts", "style-token-baseline.json");
+// --src <dir> and --baseline <file> point the check elsewhere (its own test).
+const argv = process.argv.slice(2);
+const opt = (name) => {
+  const i = argv.indexOf(name);
+  return i >= 0 ? argv[i + 1] : undefined;
+};
+const src = opt("--src") ?? join(root, "src");
+const baselinePath =
+  opt("--baseline") ?? join(root, "scripts", "style-token-baseline.json");
 const EXCLUDE = [/src\/css\/tokens\.css$/, /__tests__\//, /\.test\.ts$/];
 
 const KINDS = {
@@ -79,8 +89,10 @@ if (args.has("--report")) {
 }
 
 let base = {};
+let hasBaseline = false;
 try {
   base = JSON.parse(readFileSync(baselinePath, "utf8")).files ?? {};
+  hasBaseline = true;
 } catch {
   if (!args.has("--update")) {
     console.error(`No baseline at ${baselinePath}; run with --update.`);
@@ -92,7 +104,9 @@ if (args.has("--update")) {
   // Never raise an allowance: keep the lower of baseline and today, unless
   // there is no baseline yet. --force accepts today's numbers as they are.
   const files = {};
-  const force = args.has("--force") || !Object.keys(base).length;
+  // An empty baseline is the goal (Phase 6, 6.4), not a missing one: it is
+  // never re-seeded from today's numbers without --force.
+  const force = args.has("--force") || !hasBaseline;
   for (const [f, c] of Object.entries(now)) {
     const b = base[f];
     const kept = {};

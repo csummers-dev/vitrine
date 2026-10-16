@@ -568,7 +568,7 @@ onBeforeUnmount(() => {
 .share-btn {
   height: 30px;
   padding: 0 12px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-family: inherit;
   font-size: 12.5px;
   font-weight: 500;
@@ -619,7 +619,7 @@ onBeforeUnmount(() => {
 .share-btn__counter {
   background: var(--media-active);
   padding: 1px 7px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 11px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -666,7 +666,7 @@ onBeforeUnmount(() => {
   max-width: 400px;
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   padding: 26px 24px 22px;
   display: flex;
   flex-direction: column;
@@ -679,7 +679,7 @@ onBeforeUnmount(() => {
 .share__gate-icon {
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: var(--color-accent-soft);
   color: var(--color-accent-ink);
   display: flex;
@@ -717,7 +717,7 @@ onBeforeUnmount(() => {
   height: 36px;
   padding: 0 12px;
   border: 1px solid var(--color-line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   font: inherit;
   font-size: 14px;
@@ -732,12 +732,12 @@ onBeforeUnmount(() => {
 
 .share__gate-input:focus {
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-ring);
+  box-shadow: var(--focus-halo);
 }
 
 .share__gate-input.is-error {
   border-color: var(--status-danger-fill);
-  box-shadow: 0 0 0 3px var(--status-danger-soft);
+  box-shadow: var(--focus-halo-soft);
 }
 
 .share__gate-error {
@@ -794,7 +794,7 @@ onBeforeUnmount(() => {
 .share__info-card {
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 18px 18px 16px;
   display: flex;
   flex-direction: column;
@@ -804,7 +804,7 @@ onBeforeUnmount(() => {
 .share__info-icon {
   width: 52px;
   height: 52px;
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -874,7 +874,7 @@ onBeforeUnmount(() => {
   align-items: flex-start;
   margin: 0 0 12px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--color-elevated);
   color: var(--color-ink-2);
   font-size: 12px;
@@ -887,7 +887,7 @@ onBeforeUnmount(() => {
 
 .share__info-preview {
   border: 1px solid var(--color-line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--color-canvas);
   display: flex;
@@ -914,7 +914,7 @@ onBeforeUnmount(() => {
   padding: 14px;
   background: var(--color-canvas);
   border: 1px dashed var(--color-line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -928,14 +928,14 @@ onBeforeUnmount(() => {
 
 .share__info-qr :deep(canvas),
 .share__info-qr :deep(svg) {
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 
 /* ── File listing ──────────────────────────────────────────────────── */
 .share__list {
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 
@@ -993,7 +993,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 8px;
   padding: 6px 6px 6px 14px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   /* Use inverse-surface so the pill stays dark in both themes */
   background: var(--color-inverse-surface);
   color: var(--media-ink);
@@ -1021,7 +1021,7 @@ onBeforeUnmount(() => {
 .share__multi-close {
   width: 28px;
   height: 28px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: transparent;
   border: 0;
   color: var(--media-ink);
@@ -1048,7 +1048,7 @@ onBeforeUnmount(() => {
 .share__empty-icon {
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: var(--color-elevated);
   color: var(--color-ink-3);
   display: flex;

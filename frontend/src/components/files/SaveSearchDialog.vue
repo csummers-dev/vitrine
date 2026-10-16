@@ -192,7 +192,7 @@ const save = () => {
   width: 100%;
   height: 34px;
   padding: 0 10px;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-line);
   background: var(--color-canvas);
   color: var(--color-ink-1);
@@ -206,7 +206,7 @@ const save = () => {
 .save-search__input:focus {
   outline: none;
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-ring);
+  box-shadow: var(--focus-halo);
 }
 .save-search__reading {
   margin: 6px 0 0;
@@ -222,7 +222,7 @@ const save = () => {
 }
 .save-search__example {
   padding: 2px 7px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   border: 1px solid var(--color-line);
   background: var(--color-surface);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;

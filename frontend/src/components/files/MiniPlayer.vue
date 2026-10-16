@@ -248,7 +248,7 @@ const clearQueue = () => {
 .mini-player__cover {
   width: 40px;
   height: 40px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   object-fit: cover;
   flex-shrink: 0;
 }
@@ -295,7 +295,7 @@ const clearQueue = () => {
   width: 26px;
   height: 26px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: none;
   color: var(--color-ink-2);
   cursor: pointer;
@@ -370,7 +370,7 @@ const clearQueue = () => {
 .mini-player__row {
   display: flex;
   align-items: center;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 }
 .mini-player__row:hover {
   background: var(--color-elevated);

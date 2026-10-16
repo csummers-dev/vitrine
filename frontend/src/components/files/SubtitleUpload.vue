@@ -193,7 +193,7 @@ const upload = async () => {
   gap: 8px;
   padding: 10px 12px;
   border: 1.5px dashed var(--color-line-strong);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--color-canvas);
   color: var(--color-ink-3);
   font-size: 12px;
@@ -245,7 +245,7 @@ const upload = async () => {
   height: 30px;
   padding: 0 8px;
   border: 1px solid var(--color-line);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-ink-1);
   font-size: 12.5px;
@@ -257,14 +257,14 @@ const upload = async () => {
 }
 .sub-upload__lang-input:focus {
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-ring);
+  box-shadow: var(--focus-halo);
 }
 
 .sub-upload__btn {
   height: 30px;
   padding: 0 14px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--accent-gradient);
   color: var(--color-on-accent);
   font-size: 12.5px;
@@ -293,7 +293,7 @@ const upload = async () => {
   font-family: var(--font-mono);
   font-size: 10.5px;
   padding: 1px 4px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   background: var(--color-elevated);
   color: var(--color-ink-2);
   word-break: break-all;

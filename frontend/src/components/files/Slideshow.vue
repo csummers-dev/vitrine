@@ -254,7 +254,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--media-chrome-soft);
   color: var(--media-ink);
   cursor: pointer;
@@ -302,7 +302,7 @@ onBeforeUnmount(() => {
   width: 34px;
   height: 34px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--media-hover);
   color: var(--media-ink);
   cursor: pointer;
@@ -316,7 +316,7 @@ onBeforeUnmount(() => {
 .slideshow__interval select {
   height: 34px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 0 8px;
   background: var(--media-hover);
   color: var(--media-ink);

@@ -111,7 +111,7 @@ onBeforeUnmount(() => {
   padding: 8px;
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-2);
   /* Width sized to 4 swatches per row at 22px + 6px gap + 16px
      padding = ~128px. Two rows of 4. */

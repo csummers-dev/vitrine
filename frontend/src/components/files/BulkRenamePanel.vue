@@ -424,7 +424,7 @@ const onCancel = () => {
   padding: 6px 12px;
   background: var(--color-elevated);
   border: 1px solid var(--color-line);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 12.5px;
   color: var(--color-ink-2);
   margin-bottom: 14px;
@@ -441,7 +441,7 @@ const onCancel = () => {
   padding: 3px;
   background: var(--color-elevated);
   border: 1px solid var(--color-line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   margin-bottom: 14px;
 }
 .brp-mode {
@@ -454,7 +454,7 @@ const onCancel = () => {
   border: 0;
   background: transparent;
   color: var(--color-ink-3);
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition:
     background-color var(--dur-base) ease,
@@ -496,7 +496,7 @@ const onCancel = () => {
   font-family: var(--font-mono);
   font-size: 13px;
   border: 1px solid var(--color-line);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-ink-1);
   outline: none;
@@ -506,7 +506,7 @@ const onCancel = () => {
 }
 .brp-input:focus {
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-ring);
+  box-shadow: var(--focus-halo);
 }
 .brp-input:disabled {
   background: var(--color-elevated);
@@ -524,7 +524,7 @@ const onCancel = () => {
   font-family: var(--font-mono);
   font-size: 11px;
   padding: 1px 4px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   background: var(--color-elevated);
   color: var(--color-ink-2);
 }
@@ -532,7 +532,7 @@ const onCancel = () => {
 /* ── Preview list ──────────────────────────────────────────────── */
 .brp-preview {
   border: 1px solid var(--color-line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   overflow: hidden;
 }
@@ -560,7 +560,7 @@ const onCancel = () => {
 .brp-count {
   display: inline-block;
   padding: 1px 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 11px;
 }
 .brp-count--ok {
@@ -672,7 +672,7 @@ html.dark .brp-preview-row--conflict .brp-reason {
 }
 .brp-btn {
   padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 13px;
   font-weight: 500;
   border: 1px solid transparent;

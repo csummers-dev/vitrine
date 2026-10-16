@@ -157,6 +157,36 @@
   /* Text fields show focus as a soft halo round their own border. */
   --focus-halo: 0 0 0 3px var(--color-accent-ring);
   --focus-halo-danger: 0 0 0 3px var(--status-danger-ring);
+  --focus-halo-soft: 0 0 0 3px var(--status-danger-soft);
+
+  /* Rings and edges (Phase 6, 6.4). */
+  /* A selected tile or card: a soft accent ring outside it. */
+  --ring-selected: 0 0 0 2px var(--color-accent-ring);
+  /* Inside edges: a drop target, a keyboard-focused block. */
+  --ring-accent-inset: inset 0 0 0 2px var(--color-accent);
+  --ring-accent-ink-inset: inset 0 0 0 2px var(--color-accent-ink);
+  --ring-line-inset: inset 0 0 0 1px var(--color-line);
+  --ring-selected-inset: inset 0 0 0 1px var(--color-accent-ring);
+  /* The active tab or crumb: an accent line under it. */
+  --underline-accent: inset 0 -2px 0 0 var(--color-accent);
+  --underline-accent-thin: inset 0 -1px 0 var(--color-accent);
+  /* A gap round a badge or avatar so it reads over what it sits on. */
+  --ring-gap-canvas: 0 0 0 2px var(--color-canvas);
+  --ring-gap-surface: 0 0 0 1.5px var(--color-surface);
+  /* A soft glow round an active control (a play button, a PDF page). */
+  --glow-accent: 0 0 0 4px var(--color-accent-soft);
+  --glow-accent-sm: 0 0 0 2px var(--color-accent-soft);
+  --glow-accent-strong: 0 0 0 2px var(--color-accent);
+  --glow-progress: 0 0 8px var(--color-accent);
+  /* Coloured lifts under status cards. */
+  --lift-accent: 0 8px 24px -8px var(--color-accent-ring);
+  --lift-success: 0 8px 24px -8px var(--status-success-soft);
+  --lift-danger: 0 8px 24px -8px var(--status-danger-ring);
+  /* A crop or cut-out: everything outside the shape is dimmed. */
+  --mask-scrim: 0 0 0 4000px var(--scrim);
+  --mask-scrim-strong: 0 0 0 4000px var(--scrim-strong);
+  /* A keyboard key's bottom edge. */
+  --key-edge: 0 1px 0 var(--color-line);
 }
 
 /* ── Overlays and media ──────────────────────────────────────────────────
@@ -181,6 +211,18 @@
   /* Document paper (PDF pages, QR codes, switch knobs): white in both
      themes. */
   --paper: #ffffff;
+  /* The EPUB reader's own page colours (Phase 6, 6.1). A book can be read
+     dark or light whatever the app theme, so both sets live here. */
+  --reader-light-bg: #ffffff;
+  --reader-light-ink: #27272a;
+  --reader-dark-bg: #1f1f23;
+  --reader-dark-chrome: #18181b;
+  --reader-dark-ink: #e4e4e7;
+  --reader-dark-ink-2: #d4d4d8;
+  --reader-dark-ink-3: #a1a1aa;
+  --reader-dark-line: rgba(255, 255, 255, 0.08);
+  --reader-dark-hover: rgba(255, 255, 255, 0.05);
+  --reader-dark-selected: rgba(255, 255, 255, 0.1);
   /* Bottom-up fade behind captions on photo tiles and video. */
   --media-fade: linear-gradient(
     to top,

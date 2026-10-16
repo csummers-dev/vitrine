@@ -388,7 +388,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 10px;
   padding: 6px 8px 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--media-chrome);
   color: var(--media-ink);
   font-size: 12px;
@@ -396,7 +396,7 @@ onBeforeUnmount(() => {
 }
 .video-viewer__resume-btn {
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 3px 10px;
   background: var(--media-hover);
   color: var(--media-ink);
@@ -495,7 +495,7 @@ onBeforeUnmount(() => {
   gap: 6px;
   height: 34px;
   padding: 0 14px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 13px;
   font-weight: 500;
   text-decoration: none;

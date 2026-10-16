@@ -556,7 +556,7 @@ watch(
 
 .share-card {
   border: 1px solid var(--color-line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   padding: 10px;
 }
@@ -573,7 +573,7 @@ watch(
   height: 28px;
   padding: 0 8px;
   border: 1px solid var(--color-line);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--color-canvas);
   font-family: var(--font-mono);
   font-size: 11.5px;
@@ -583,13 +583,13 @@ watch(
 
 .share-card__link:focus {
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-ring);
+  box-shadow: var(--focus-halo);
 }
 
 .share-icon-btn {
   width: 28px;
   height: 28px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-line);
   background: var(--color-surface);
   color: var(--color-ink-2);
@@ -640,7 +640,7 @@ watch(
   align-items: center;
   gap: 4px;
   padding: 1px 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--color-elevated);
   color: var(--color-ink-2);
   font-weight: 500;
@@ -707,7 +707,7 @@ watch(
   height: 32px;
   padding: 0 10px;
   border: 1px solid var(--color-line);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
   font: inherit;
   font-size: 13px;
@@ -721,7 +721,7 @@ watch(
 
 .share-input:focus {
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-ring);
+  box-shadow: var(--focus-halo);
 }
 
 .share-input--num {
@@ -759,7 +759,7 @@ watch(
 .share-btn {
   height: 30px;
   padding: 0 12px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-family: inherit;
   font-size: 13px;
   font-weight: 500;

@@ -227,7 +227,7 @@ const buildLink = (share: Share) => api.getShareURL(share);
 
 .shares-card {
   border: 1px solid var(--color-line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--color-canvas);
   padding: 12px;
 }
@@ -281,7 +281,7 @@ const buildLink = (share: Share) => api.getShareURL(share);
   height: 28px;
   padding: 0 8px;
   border: 1px solid var(--color-line);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
   font-family: var(--font-mono);
   font-size: 11.5px;
@@ -291,7 +291,7 @@ const buildLink = (share: Share) => api.getShareURL(share);
 
 .shares-card__url:focus {
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-ring);
+  box-shadow: var(--focus-halo);
 }
 
 .shares-card__meta {
@@ -306,7 +306,7 @@ const buildLink = (share: Share) => api.getShareURL(share);
   align-items: center;
   gap: 4px;
   padding: 1px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--color-elevated);
   color: var(--color-ink-2);
   font-size: 11px;
@@ -341,7 +341,7 @@ const buildLink = (share: Share) => api.getShareURL(share);
 .shares-empty__icon {
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: var(--color-elevated);
   color: var(--color-ink-3);
   display: flex;

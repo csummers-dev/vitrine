@@ -125,7 +125,7 @@ const onCancel = () => emit("cancel");
   max-width: 420px;
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-2);
   overflow: hidden;
 }
@@ -139,7 +139,7 @@ const onCancel = () => emit("cancel");
 .confirm-dialog__icon {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -188,7 +188,7 @@ const onCancel = () => emit("cancel");
 .confirm-dialog__btn {
   height: 30px;
   padding: 0 12px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-family: inherit;
   font-size: 13px;
   font-weight: 500;

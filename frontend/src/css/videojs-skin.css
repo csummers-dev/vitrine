@@ -4,19 +4,14 @@
      - Control-bar gradient (no more black-on-black bar)
      - Accent scrubber + progress
      - Round play button on center load
-     - Tokenized button colors (white-on-rgba for in-frame contrast)
+     - Media tokens (tokens.css) for in-frame contrast
      - 36 px tap targets
    Lives at the global level (not scoped to a component) because video.js
    renders its controls into a deep tree of its own classes. */
 
 /* ── Control bar gradient + spacing ─────────────────────────────── */
 .video-js .vjs-control-bar {
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.72) 0%,
-    rgba(0, 0, 0, 0.36) 65%,
-    transparent 100%
-  );
+  background: var(--media-fade);
   height: 56px;
   padding: 0 8px;
   display: flex;
@@ -36,7 +31,7 @@
   line-height: 36px;
 }
 .video-js .vjs-button:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: var(--media-hover);
   border-radius: var(--radius-md);
 }
 .video-js .vjs-button:focus-visible {
@@ -47,7 +42,7 @@
 
 /* Center play button (shown before first play / on pause) */
 .video-js .vjs-big-play-button {
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--media-chrome);
   border: 0;
   border-radius: var(--radius-full);
   width: 64px;
@@ -65,7 +60,7 @@
 }
 .video-js:hover .vjs-big-play-button,
 .video-js .vjs-big-play-button:focus {
-  background: rgba(0, 0, 0, 0.68);
+  background: var(--media-chrome-strong);
 }
 
 /* ── Scrubber (the progress bar at the top of the control row) ── */
@@ -76,7 +71,7 @@
 .video-js .vjs-progress-holder {
   height: 4px;
   border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--media-line);
   margin: 0;
 }
 .video-js .vjs-play-progress {
@@ -90,7 +85,7 @@
   height: 12px;
   border-radius: var(--radius-full);
   background: var(--accent-gradient);
-  box-shadow: 0 0 0 4px rgba(110, 114, 217, 0.32);
+  box-shadow: var(--focus-halo);
   position: absolute;
   right: -6px;
   top: 50%;
@@ -98,20 +93,20 @@
   font-size: 0;
 }
 .video-js .vjs-load-progress {
-  background: rgba(255, 255, 255, 0.32);
+  background: var(--media-active);
   border-radius: var(--radius-full);
 }
 .video-js .vjs-load-progress div {
-  background: rgba(255, 255, 255, 0.32);
+  background: var(--media-active);
 }
 
 /* ── Volume slider ─────────────────────────────────────────────── */
 .video-js .vjs-volume-bar {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--media-line);
   border-radius: var(--radius-full);
 }
 .video-js .vjs-volume-level {
-  background: white;
+  background: var(--media-ink);
   border-radius: var(--radius-full);
 }
 
@@ -122,19 +117,19 @@
   font-variant-numeric: tabular-nums;
   line-height: 36px;
   padding: 0 6px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--media-ink);
 }
 .video-js .vjs-time-divider {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--media-ink-2);
 }
 
 /* ── Menus (speed, captions, etc.) ─────────────────────────────── */
 .video-js .vjs-menu .vjs-menu-content {
-  background: rgba(0, 0, 0, 0.8);
+  background: var(--media-chrome-strong);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--media-line);
   font-family: var(--font-sans);
   font-size: 12.5px;
   padding: 4px;
@@ -150,7 +145,7 @@
   color: var(--color-on-accent);
 }
 .video-js .vjs-menu li:hover:not(.vjs-selected) {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--media-hover);
 }
 
 /* ── Loading spinner: replace the spinning ring with our motion ── */
@@ -160,7 +155,7 @@
 
 /* ── Captions text background — softened so subs don't fight chrome */
 .video-js .vjs-text-track-display .vjs-text-track-cue {
-  background: rgba(0, 0, 0, 0.66) !important;
+  background: var(--media-chrome-strong) !important;
   font-family: var(--font-sans) !important;
   border-radius: var(--radius-xs);
   padding: 2px 6px !important;

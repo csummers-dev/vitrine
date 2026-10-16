@@ -416,7 +416,7 @@ const onCancel = () => emit("cancel");
   font: inherit;
   font-size: 13px;
   border: 1px solid var(--color-line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   color: var(--color-ink-1);
 }
@@ -445,7 +445,7 @@ const onCancel = () => emit("cancel");
 }
 
 .tag-picker__row {
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   transition: background-color 0.1s ease;
 }
 
@@ -548,7 +548,7 @@ const onCancel = () => emit("cancel");
   padding: 8px 10px;
   background: transparent;
   border: 1px dashed var(--color-line-strong);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: var(--color-accent-ink);
   font: inherit;
   font-size: 13px;
@@ -574,7 +574,7 @@ const onCancel = () => emit("cancel");
 .tag-picker__save {
   height: 32px;
   padding: 0 14px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font: inherit;
   font-size: 13px;
   font-weight: 500;

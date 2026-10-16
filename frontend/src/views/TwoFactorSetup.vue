@@ -92,7 +92,7 @@ const signOut = () => logout();
 .tf-setup__icon {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;

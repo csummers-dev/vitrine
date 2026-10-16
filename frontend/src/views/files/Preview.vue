@@ -1701,7 +1701,7 @@ const { lengthY } = useSwipe(stageEl, {
 .preview-blob__icon {
   width: 64px;
   height: 64px;
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   background: var(--color-elevated);
   color: var(--color-ink-3);
   display: inline-flex;
@@ -1743,7 +1743,7 @@ html.dark .preview-blob__icon--zip {
   gap: 6px;
   height: 32px;
   padding: 0 14px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font: inherit;
   font-size: 13px;
   font-weight: 500;
@@ -1777,7 +1777,7 @@ html.dark .preview-blob__icon--zip {
 .preview-page {
   height: 28px;
   padding: 0 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-line);
   background: var(--color-surface);
   display: inline-flex;
@@ -1794,7 +1794,7 @@ html.dark .preview-blob__icon--zip {
   text-align: center;
   color: var(--color-ink-1);
   outline: none;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 .preview-page__input:focus-visible {
   outline: 2px solid var(--color-accent-ring);
@@ -1809,7 +1809,7 @@ html.dark .preview-blob__icon--zip {
 .preview-zoom {
   height: 28px;
   padding: 0 4px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-line);
   background: var(--color-surface);
   display: inline-flex;
@@ -1821,7 +1821,7 @@ html.dark .preview-blob__icon--zip {
   height: 24px;
   border: 0;
   background: transparent;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   color: var(--color-ink-2);
   display: inline-flex;
   align-items: center;
@@ -1851,7 +1851,7 @@ html.dark .preview-blob__icon--zip {
 .preview-fit__btn {
   width: 28px;
   height: 28px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-line);
   background: var(--color-surface);
   color: var(--color-ink-2);
@@ -1884,7 +1884,7 @@ html.dark .preview-blob__icon--zip {
 .preview-toolbar-format__btn {
   height: 28px;
   padding: 0 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-line);
   background: var(--color-surface);
   color: var(--color-ink-2);
@@ -1931,7 +1931,7 @@ html.dark .preview-blob__icon--zip {
 .preview-info__artwork {
   width: 100%;
   aspect-ratio: 1 / 1;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   margin-bottom: 12px;
   background: var(--color-elevated);
@@ -1963,7 +1963,7 @@ html.dark .preview-info__artwork {
   margin: 0 auto 16px;
   height: 32px;
   padding: 0 14px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   border: 1px solid var(--color-line);
   background: var(--color-surface);
   color: var(--color-ink-2);
@@ -2001,7 +2001,7 @@ html.dark .preview-info__artwork {
   width: 100%;
   height: 34px;
   padding: 0 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--color-line);
   background: var(--color-surface);
   color: var(--color-ink-1);
@@ -2031,7 +2031,7 @@ html.dark .preview-info__artwork {
   max-height: 240px;
   width: auto;
   height: auto;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-2);
   background: var(--color-elevated);
 }
@@ -2063,7 +2063,7 @@ html.dark .preview-info__artwork {
   font-size: 12.5px;
   line-height: 1.4;
   padding: 6px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;

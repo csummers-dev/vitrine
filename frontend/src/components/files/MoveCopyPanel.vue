@@ -362,7 +362,7 @@ watch(
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--color-accent-soft);
   color: var(--color-accent-ink);
   font-size: 11.5px;
@@ -390,7 +390,7 @@ watch(
   gap: 10px;
   margin-bottom: 14px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--color-line);
   background: var(--color-surface);
   cursor: pointer;
@@ -438,7 +438,7 @@ watch(
 .mcp-btn {
   height: 30px;
   padding: 0 12px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-family: inherit;
   font-size: 13px;
   font-weight: 500;

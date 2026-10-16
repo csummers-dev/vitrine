@@ -573,7 +573,7 @@ onBeforeUnmount(() => {
   aspect-ratio: 8.5 / 11;
   border: 1px solid var(--color-line);
   background: var(--paper);
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   cursor: pointer;
   padding: 0;
   overflow: hidden;
@@ -589,7 +589,7 @@ onBeforeUnmount(() => {
 }
 .pdf-viewer__thumb.is-active {
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 2px var(--color-accent-soft);
+  box-shadow: var(--glow-accent-sm);
 }
 .pdf-viewer__thumb:focus-visible {
   outline: 2px solid var(--color-accent-ring);
@@ -680,7 +680,7 @@ html.dark .pdf-viewer__stage {
   gap: 6px;
   height: 32px;
   padding: 0 14px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--accent-gradient);
   color: var(--color-on-accent);
   font-size: 13px;

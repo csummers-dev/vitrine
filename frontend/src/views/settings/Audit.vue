@@ -357,7 +357,7 @@ onMounted(load);
 .audit-table-wrap {
   overflow-x: auto;
   border: 1px solid var(--color-line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 .audit-table {
   width: 100%;
@@ -417,7 +417,7 @@ onMounted(load);
 .audit-action-chip {
   display: inline-block;
   padding: 1px 8px;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   font-size: 11px;
   font-weight: 500;
   background: var(--color-elevated);

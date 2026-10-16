@@ -253,7 +253,7 @@ html.dark .preview-shell__stage {
   height: 30px;
   gap: 3px;
   padding: 0 10px 0 7px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--color-line);
   background: color-mix(in srgb, var(--color-surface) 82%, transparent);
   backdrop-filter: blur(8px);
@@ -279,7 +279,7 @@ html.dark .preview-shell__stage {
   right: 14px;
   gap: 4px;
   padding: 4px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--color-line);
   background: color-mix(in srgb, var(--color-surface) 82%, transparent);
   backdrop-filter: blur(8px);
@@ -312,7 +312,7 @@ html.dark .preview-shell__stage {
   transform: translateX(-50%);
   gap: 6px;
   padding: 6px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--color-line);
   background: color-mix(in srgb, var(--color-surface) 88%, transparent);
   backdrop-filter: blur(10px);
@@ -346,7 +346,7 @@ html.dark .preview-shell__stage {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   border: 0;
   background: transparent;
   color: var(--color-ink-2);

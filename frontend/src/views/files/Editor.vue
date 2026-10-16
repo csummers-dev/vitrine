@@ -333,7 +333,7 @@ onBeforeUnmount(() => {
 .editor-iconbtn {
   width: 30px;
   height: 30px;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   background: transparent;
   border: 0;
   color: var(--color-ink-2);
@@ -364,7 +364,7 @@ onBeforeUnmount(() => {
   gap: 6px;
   height: 30px;
   padding: 0 12px;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   border: 0;
   background: var(--accent-gradient);
   color: var(--color-on-accent);

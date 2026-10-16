@@ -100,7 +100,7 @@ const save = () => {
 .root-label__input:focus {
   outline: none;
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-ring);
+  box-shadow: var(--focus-halo);
 }
 
 .root-label__hint {

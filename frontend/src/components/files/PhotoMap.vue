@@ -308,7 +308,7 @@ onBeforeUnmount(() => {
   height: 30px;
   padding: 0 12px;
   border: 1px solid var(--color-line);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--color-surface);
   color: inherit;
   font-size: 12px;
@@ -321,7 +321,7 @@ onBeforeUnmount(() => {
   width: 30px;
   height: 30px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: none;
   color: inherit;
   cursor: pointer;
@@ -367,7 +367,7 @@ onBeforeUnmount(() => {
   position: relative;
   width: 44px;
   height: 44px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   border: 2px solid var(--paper);
   box-shadow: var(--shadow-2);
   background: var(--color-elevated);
@@ -377,7 +377,7 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   display: block;
 }
 :deep(.photo-map__count) {
@@ -387,7 +387,7 @@ onBeforeUnmount(() => {
   min-width: 20px;
   height: 20px;
   padding: 0 5px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--color-accent);
   color: var(--color-on-accent);
   font-size: 11px;

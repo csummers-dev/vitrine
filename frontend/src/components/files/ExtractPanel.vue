@@ -386,7 +386,7 @@ watch(
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--color-line);
   background: var(--color-canvas);
   margin-bottom: 10px;
@@ -395,7 +395,7 @@ watch(
 .extract-source__icon {
   width: 32px;
   height: 32px;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   background: var(--tint-archive-bg);
   color: var(--tint-archive-fg);
   display: inline-flex;
@@ -445,7 +445,7 @@ html.dark .extract-source__icon {
   gap: 6px;
   margin: 12px 0 0;
   padding: 8px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--color-accent-soft);
   color: var(--color-accent-ink);
   font-size: 11.5px;
@@ -468,7 +468,7 @@ html.dark .extract-source__icon {
   gap: 4px;
   margin: -2px 0 2px 10px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--color-line);
   background: var(--color-canvas);
 }
@@ -483,7 +483,7 @@ html.dark .extract-source__icon {
   width: 100%;
   height: 32px;
   padding: 0 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-line-strong);
   background: var(--color-surface);
   color: var(--color-ink-1);
@@ -496,7 +496,7 @@ html.dark .extract-source__icon {
 .extract-folder-name__input:focus {
   outline: none;
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-ring);
+  box-shadow: var(--focus-halo);
 }
 
 .extract-option {
@@ -504,7 +504,7 @@ html.dark .extract-source__icon {
   align-items: flex-start;
   gap: 10px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--color-line);
   background: var(--color-surface);
   cursor: pointer;
@@ -550,7 +550,7 @@ html.dark .extract-source__icon {
   font-family: var(--font-mono);
   font-size: 11px;
   padding: 1px 5px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--color-elevated);
   color: var(--color-ink-1);
 }
@@ -559,7 +559,7 @@ html.dark .extract-source__icon {
 .extract-btn {
   height: 30px;
   padding: 0 12px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-family: inherit;
   font-size: 13px;
   font-weight: 500;

@@ -99,7 +99,7 @@ const save = () => {
   width: 100%;
   height: 34px;
   padding: 0 10px;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-line);
   background: var(--color-canvas);
   color: var(--color-ink-1);
@@ -117,7 +117,7 @@ const save = () => {
 .fav-title__input:focus {
   outline: none;
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-ring);
+  box-shadow: var(--focus-halo);
 }
 
 .fav-title__hint {

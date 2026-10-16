@@ -390,7 +390,7 @@ defineExpose({
   padding: 6px 8px;
   background: var(--color-canvas);
   border: 1px solid var(--color-line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 
 .folder-picker__sort {
@@ -400,7 +400,7 @@ defineExpose({
   align-items: center;
   justify-content: center;
   border: 1px solid var(--color-line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   color: var(--color-ink-2);
   cursor: pointer;
@@ -422,7 +422,7 @@ defineExpose({
   align-items: center;
   gap: 4px;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: transparent;
   border: 0;
   font: inherit;
@@ -462,7 +462,7 @@ defineExpose({
   gap: 10px;
   width: 100%;
   padding: 6px 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: transparent;
   border: 0;
   font: inherit;
@@ -481,7 +481,7 @@ defineExpose({
   align-items: center;
   gap: 10px;
   padding: 6px 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--color-accent);
   background: var(--color-surface);
 }
@@ -508,7 +508,7 @@ defineExpose({
   font-family: var(--font-mono);
   font-size: 10px;
   padding: 1px 5px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--color-elevated);
   border: 1px solid var(--color-line);
   color: var(--color-ink-3);
@@ -518,7 +518,7 @@ defineExpose({
 .folder-picker__icon {
   width: 26px;
   height: 26px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   /* Colour comes from the accent utilities on the element. */
   display: flex;
   align-items: center;
@@ -556,7 +556,7 @@ defineExpose({
 
 .folder-picker__state--empty {
   border: 1px dashed var(--color-line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--color-canvas);
 }
 

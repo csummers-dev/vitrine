@@ -104,7 +104,7 @@ const isHome = computed(() => route.name === "Settings");
   align-items: center;
   gap: 6px;
   padding: 5px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 11.5px;
   font-weight: 500;
   background: var(--color-surface);

@@ -165,19 +165,17 @@ defineExpose({ goTo, nextPage, prevPage });
 const applyTheme = () => {
   const r = rendition.value;
   if (!r) return;
-  if (props.dark) {
-    // Warmer near-black instead of pitch #18181b — easier on the eyes
-    // for long reading sessions and matches the app's elevated dark
-    // surface. Ink at zinc-200 (#e4e4e7) reads as cleanly off-white
-    // without the raw-glare of pure #fff on dark.
-    r.themes.override("color", "#e4e4e7", true);
-    r.themes.override("background", "#1f1f23", true);
-    r.themes.override("background-color", "#1f1f23", true);
-  } else {
-    r.themes.override("color", "#27272a", true);
-    r.themes.override("background", "#ffffff", true);
-    r.themes.override("background-color", "#ffffff", true);
-  }
+  // The page colours come from tokens.css (--reader-*); the book's iframe
+  // can't see our custom properties, so read the values here. A warm
+  // near-black and an off-white ink in dark: easier on the eyes for long
+  // reading than pure black and white.
+  const css = getComputedStyle(document.documentElement);
+  const tone = props.dark ? "dark" : "light";
+  const ink = css.getPropertyValue(`--reader-${tone}-ink`).trim();
+  const bg = css.getPropertyValue(`--reader-${tone}-bg`).trim();
+  r.themes.override("color", ink, true);
+  r.themes.override("background", bg, true);
+  r.themes.override("background-color", bg, true);
   r.themes.fontSize(`${props.size}%`);
 };
 
@@ -526,8 +524,8 @@ onBeforeUnmount(() => {
   padding: 4px;
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.12);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-2);
 }
 
 .epub-viewer__btn {
@@ -535,7 +533,7 @@ onBeforeUnmount(() => {
   height: 24px;
   border: 0;
   background: transparent;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   color: var(--color-ink-2);
   display: inline-flex;
   align-items: center;
@@ -567,59 +565,47 @@ onBeforeUnmount(() => {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── vue-reader chrome (dark mode) ────────────────────────────────────
-   vue-reader hard-codes a white `.readerArea` background and a light
-   gray `.tocArea`, so in dark mode the book sits inside a glaring
-   white frame (the "large white border" the user noticed — the page
-   text inside the iframe is themed dark, but the 50 px inset margins
-   leave the white container visible). Repaint the chrome to the app
-   canvas in dark mode so the reader feels integrated. */
-.epub-viewer :deep(.readerArea) {
-  background-color: #1f1f23 !important;
-}
-.epub-viewer :deep(.tocArea) {
-  background: #18181b !important;
-}
-.epub-viewer :deep(.tocAreaButton) {
-  color: #d4d4d8 !important;
-  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
-}
-.epub-viewer :deep(.tocAreaButton:hover) {
-  background: rgba(255, 255, 255, 0.05) !important;
-}
-.epub-viewer :deep(.tocAreaButton:active) {
-  background: rgba(255, 255, 255, 0.1) !important;
-}
-.epub-viewer :deep(.tocButtonBar) {
-  background: #71717a !important;
-}
-.epub-viewer :deep(.arrow) {
-  color: #52525b !important;
-}
-.epub-viewer :deep(.arrow:hover:not(:disabled)) {
-  color: #a1a1aa !important;
-}
-.epub-viewer :deep(.titleArea) {
-  color: #71717a !important;
-}
-
-/* Light mode — keep the readerArea matching the app surface so the
-   page-edge gutter doesn't pop visually against a tinted canvas. */
+/* ── vue-reader chrome ────────────────────────────────────────────────
+   vue-reader hard-codes a white reading area and a grey contents list.
+   Paint them with the app's tokens so the book sits in the app; a book read
+   dark (the `--dark` modifier, which follows the book's own theme, not the
+   app's) swaps those tokens for the reader's dark set. */
 .epub-viewer :deep(.readerArea) {
   background-color: var(--color-surface) !important;
 }
 .epub-viewer :deep(.tocArea) {
   background: var(--color-elevated) !important;
 }
-
-/* Dark-mode chrome keys off the effective book theme (the `--dark` modifier
-   the parent sets), NOT the app's `html.dark` — so a per-book override themes
-   the reader gutter + TOC area to match the book content. Source order keeps
-   these last so they win over the light defaults above. */
-.epub-viewer--dark :deep(.readerArea) {
-  background-color: #1f1f23 !important;
+.epub-viewer :deep(.tocAreaButton) {
+  color: var(--color-ink-2) !important;
+  border-bottom-color: var(--color-line) !important;
 }
-.epub-viewer--dark :deep(.tocArea) {
-  background: #18181b !important;
+.epub-viewer :deep(.tocAreaButton:hover) {
+  background: var(--color-hover) !important;
+}
+.epub-viewer :deep(.tocAreaButton:active) {
+  background: var(--color-selected) !important;
+}
+.epub-viewer :deep(.tocButtonBar) {
+  background: var(--color-ink-3) !important;
+}
+.epub-viewer :deep(.arrow) {
+  color: var(--color-ink-3) !important;
+}
+.epub-viewer :deep(.arrow:hover:not(:disabled)) {
+  color: var(--color-ink-2) !important;
+}
+.epub-viewer :deep(.titleArea) {
+  color: var(--color-ink-3) !important;
+}
+.epub-viewer--dark {
+  --color-surface: var(--reader-dark-bg);
+  --color-elevated: var(--reader-dark-chrome);
+  --color-ink-1: var(--reader-dark-ink);
+  --color-ink-2: var(--reader-dark-ink-2);
+  --color-ink-3: var(--reader-dark-ink-3);
+  --color-line: var(--reader-dark-line);
+  --color-hover: var(--reader-dark-hover);
+  --color-selected: var(--reader-dark-selected);
 }
 </style>

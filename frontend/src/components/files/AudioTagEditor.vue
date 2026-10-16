@@ -614,7 +614,7 @@ const onSave = async () => {
   gap: 8px;
   margin-bottom: 16px;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--status-warning-soft);
   color: var(--color-ink-2);
   font-size: 12.5px;
@@ -641,7 +641,7 @@ const onSave = async () => {
   width: 104px;
   height: 104px;
   flex-shrink: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   border: 1px solid var(--color-line);
   background: var(--color-canvas);
@@ -679,7 +679,7 @@ const onSave = async () => {
   gap: 6px;
   height: 30px;
   padding: 0 12px;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-line);
   background: var(--color-surface);
   color: var(--color-ink-2);
@@ -737,7 +737,7 @@ const onSave = async () => {
   width: 100%;
   height: 34px;
   padding: 0 10px;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-line-strong);
   background: var(--color-surface);
   color: var(--color-ink-1);
@@ -750,7 +750,7 @@ const onSave = async () => {
 .atag-input:focus {
   outline: none;
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-ring);
+  box-shadow: var(--focus-halo);
 }
 .atag-textarea {
   height: auto;
@@ -772,7 +772,7 @@ const onSave = async () => {
 .atag-btn {
   height: 30px;
   padding: 0 12px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-family: inherit;
   font-size: 13px;
   font-weight: 500;

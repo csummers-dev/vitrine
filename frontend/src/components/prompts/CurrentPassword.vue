@@ -130,7 +130,7 @@ const cancel = () => {
   max-width: 420px;
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-2);
   overflow: hidden;
 }
@@ -144,7 +144,7 @@ const cancel = () => {
 .cpw__icon {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--color-accent-soft);
   color: var(--color-accent-ink);
   display: flex;
@@ -186,7 +186,7 @@ const cancel = () => {
   height: 34px;
   padding: 0 10px;
   border: 1px solid var(--color-line);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
   font: inherit;
   font-size: 13px;
@@ -199,17 +199,17 @@ const cancel = () => {
 
 .cpw__input:focus {
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-ring);
+  box-shadow: var(--focus-halo);
 }
 
 .cpw__input.is-error {
   border-color: var(--status-danger-fill);
-  box-shadow: 0 0 0 3px var(--status-danger-soft);
+  box-shadow: var(--focus-halo-soft);
 }
 
 .cpw__input.is-error:focus {
   border-color: var(--status-danger-fill);
-  box-shadow: 0 0 0 3px var(--status-danger-soft);
+  box-shadow: var(--focus-halo-soft);
 }
 
 .cpw__input:disabled {

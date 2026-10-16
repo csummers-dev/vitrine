@@ -198,7 +198,7 @@ const goBack = () => {
   max-width: 420px;
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   padding: 28px 24px 22px;
   box-shadow: var(--shadow-2);
   display: flex;
@@ -211,7 +211,7 @@ const goBack = () => {
 .error-page__icon {
   width: 48px;
   height: 48px;
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -273,7 +273,7 @@ const goBack = () => {
 .error-page__btn {
   flex: 1;
   height: 36px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-family: inherit;
   font-size: 13px;
   font-weight: 500;

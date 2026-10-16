@@ -289,7 +289,7 @@ const send = async (currentPassword: string) => {
   gap: 8px;
   margin: 16px 0;
   padding: 10px 14px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--color-line);
   background: var(--color-surface);
   font-size: 13px;

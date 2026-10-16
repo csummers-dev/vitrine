@@ -3112,7 +3112,7 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
 .scroll-section--drop {
   outline: 2px dashed var(--color-accent);
   outline-offset: -4px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--color-accent-soft);
 }
 
@@ -3220,7 +3220,7 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
   pointer-events: none;
   border: 1px solid var(--color-accent);
   background: var(--color-accent-soft);
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
 }
 
 /* ── Mobile selection toolbar (#file-selection) ───────────────────────
@@ -3265,7 +3265,7 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
   height: 36px;
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--color-ink-2);
   cursor: pointer;
@@ -3281,7 +3281,7 @@ const handleEmptyAreaClick = (e: MouseEvent) => {
   outline: none;
 }
 #file-selection :deep(.action:focus-visible) {
-  box-shadow: 0 0 0 2px var(--color-accent-ring);
+  box-shadow: var(--ring-selected);
 }
 /* The Action component renders a `<span>{{ label }}</span>` inside;
    in this mobile context we want icon-only tap targets, so hide the
@@ -3316,19 +3316,19 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   transition:
     background-color var(--dur-base) ease,
     box-shadow var(--dur-base) ease;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   margin: 0 4px;
 }
 .section-title--drop {
   background: var(--color-accent-soft);
-  box-shadow: inset 0 0 0 2px var(--color-accent);
+  box-shadow: var(--ring-accent-inset);
 }
 /* Split-header parent spring-load target (#18): dragging a selection onto pane
    A's compact header navigates up a folder, mirroring the single-pane
    section-title drop affordance above. */
 .compare-head--drop {
   background: var(--color-accent-soft);
-  box-shadow: inset 0 0 0 2px var(--color-accent);
+  box-shadow: var(--ring-accent-inset);
 }
 
 /* ── V2-J unified hero (title + control cluster) ─────────────────────────
@@ -3442,7 +3442,7 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
 .fb-hero__menu {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   align-items: center;
   justify-content: center;
   color: var(--color-ink-2);
@@ -3588,7 +3588,7 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
    (ComparePane's border-left). Mirrors pane B's `.compare-pane--active`. */
 .fb-primary--active .compare-head {
   background: var(--color-accent-soft);
-  box-shadow: inset 0 -2px 0 0 var(--color-accent);
+  box-shadow: var(--underline-accent);
 }
 
 .fb-breadcrumb-bar {
@@ -3612,7 +3612,7 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   max-width: 100%;
   padding: 4px 10px;
   border: 1px solid var(--color-line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
 }
 
@@ -3627,7 +3627,7 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
   height: 16px;
   padding: 0;
   border: 0;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: transparent;
   color: var(--color-ink-3);
   cursor: pointer;
@@ -3702,7 +3702,7 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
 .folder-rename-input {
   background: transparent;
   border: 1px solid var(--color-line);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 2px 8px;
   margin: -3px -9px;
   width: calc(100% + 18px);
@@ -3715,6 +3715,6 @@ html.dark #file-selection :deep(.action[title="Delete"]:focus-visible) {
 }
 .folder-rename-input:focus {
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-ring);
+  box-shadow: var(--focus-halo);
 }
 </style>

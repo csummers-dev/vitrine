@@ -229,7 +229,7 @@ watch(item, (v, old) => {
   justify-content: center;
   width: 26px;
   height: 26px;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   flex-shrink: 0;
 }
 
@@ -256,7 +256,7 @@ watch(item, (v, old) => {
   justify-content: center;
   height: 28px;
   padding: 0 12px;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-line-strong);
   background: transparent;
   color: var(--color-ink-2);
@@ -313,7 +313,7 @@ watch(item, (v, old) => {
   justify-content: center;
   width: 64px;
   height: 64px;
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
 }
 
 .quick-peek__doc {

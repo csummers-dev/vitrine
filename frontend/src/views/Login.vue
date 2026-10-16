@@ -494,7 +494,7 @@ onMounted(async () => {
   max-width: 400px;
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   padding: 24px 24px 20px;
   box-shadow: var(--shadow-2);
   display: flex;
@@ -512,7 +512,7 @@ onMounted(async () => {
 .login-card__logo {
   width: 28px;
   height: 28px;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -573,7 +573,7 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--color-accent-soft);
   color: var(--color-accent-ink);
   font-size: 12.5px;
@@ -599,7 +599,7 @@ onMounted(async () => {
   height: 36px;
   padding: 0 12px;
   border: 1px solid var(--color-line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   font: inherit;
   font-size: 14px;
@@ -613,7 +613,7 @@ onMounted(async () => {
 
 .login-input:focus {
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-ring);
+  box-shadow: var(--focus-halo);
 }
 
 .login-input:disabled {
@@ -624,12 +624,12 @@ onMounted(async () => {
 
 .login-input.is-error {
   border-color: var(--status-danger-fill);
-  box-shadow: 0 0 0 3px var(--status-danger-soft);
+  box-shadow: var(--focus-halo-soft);
 }
 
 .login-input.is-error:focus {
   border-color: var(--status-danger-fill);
-  box-shadow: 0 0 0 3px var(--status-danger-ring);
+  box-shadow: var(--focus-halo-danger);
 }
 
 .login-input.is-ok {
@@ -665,7 +665,7 @@ html[dir="rtl"] .login-input--has-toggle {
   width: 28px;
   height: 28px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-ink-3);
   display: inline-flex;
@@ -714,7 +714,7 @@ html[dir="rtl"] .login-password-toggle {
   align-items: center;
   gap: 8px;
   padding: 9px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--status-danger-soft);
   border: 1px solid var(--status-danger-ring);
   color: var(--status-danger);
@@ -748,7 +748,7 @@ html[dir="rtl"] .login-password-toggle {
 }
 .login-submit {
   height: 36px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--color-accent);
   background: var(--accent-gradient);
   color: var(--color-on-accent);
@@ -833,7 +833,7 @@ html[dir="rtl"] .login-password-toggle {
 .login-toggle__link:focus-visible {
   outline: 2px solid var(--color-accent-ring);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 
 /* ── Footer ─────────────────────────────────────────────────────────── */
@@ -868,7 +868,7 @@ html[dir="rtl"] .login-password-toggle {
   }
   .login-card {
     padding: 20px 18px 16px;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
   }
   .login-card__title {
     font-size: 18px;

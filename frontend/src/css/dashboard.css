@@ -161,7 +161,7 @@ table tr > *:last-child {
   margin: 0 0 1rem 0;
   background: var(--surfacePrimary);
   color: var(--textSecondary);
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
   box-shadow: var(--shadow-1);
   overflow: auto;
 }

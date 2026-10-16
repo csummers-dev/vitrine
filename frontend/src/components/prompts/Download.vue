@@ -56,7 +56,7 @@ const formats = {
   max-width: 440px;
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-2);
   overflow: hidden;
   font-family: var(--font-sans);
@@ -96,7 +96,7 @@ const formats = {
   height: 36px;
   padding: 0 10px;
   border: 1px solid var(--color-line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   cursor: pointer;
   font: inherit;
@@ -139,7 +139,7 @@ const formats = {
 .download-prompt__cancel {
   height: 30px;
   padding: 0 12px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
   border: 1px solid var(--color-line);
   color: var(--color-ink-2);

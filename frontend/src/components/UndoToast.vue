@@ -43,7 +43,7 @@ defineProps<{
   width: 26px;
   height: 26px;
   flex-shrink: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--media-hover);
   color: var(--media-ink);
 }
@@ -72,7 +72,7 @@ defineProps<{
   font-size: 12px;
   font-weight: 600;
   padding: 4px 12px;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background-color var(--dur-base) ease;
   flex-shrink: 0;

@@ -485,7 +485,7 @@ const onItemClick = (_event: MouseEvent) => {
 .sd__brand-mark {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   object-fit: contain;
   flex-shrink: 0;
 }
@@ -552,7 +552,7 @@ const onItemClick = (_event: MouseEvent) => {
   padding: 0 10px;
   border: 0;
   background: transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   color: var(--color-ink-2);
   font: inherit;
   font-size: 13.5px;
@@ -588,7 +588,7 @@ const onItemClick = (_event: MouseEvent) => {
   font-variant-numeric: tabular-nums;
   color: var(--color-ink-3);
   padding: 0 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--color-elevated);
 }
 
@@ -624,7 +624,7 @@ const onItemClick = (_event: MouseEvent) => {
 
 .sd__fav {
   position: relative;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 
 .sd__fav-btn {
@@ -636,7 +636,7 @@ const onItemClick = (_event: MouseEvent) => {
   padding: 0 10px;
   border: 0;
   background: transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   color: var(--color-ink-2);
   font: inherit;
   font-size: 13.5px;
@@ -670,9 +670,9 @@ const onItemClick = (_event: MouseEvent) => {
   left: 6px;
   right: 6px;
   height: 2px;
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
   background: var(--accent-gradient);
-  box-shadow: 0 0 0 2px var(--color-canvas);
+  box-shadow: var(--ring-gap-canvas);
 }
 .sd__fav--drop-before::before {
   top: -1px;
@@ -730,7 +730,7 @@ const onItemClick = (_event: MouseEvent) => {
 .sd__storage {
   margin: 8px;
   padding: 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--color-line);
   background: var(--color-surface);
 }
@@ -759,14 +759,14 @@ const onItemClick = (_event: MouseEvent) => {
 
 .sd__storage-bar {
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--color-elevated);
   overflow: hidden;
 }
 
 .sd__storage-fill {
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   /* RC-7: track the accent + its per-preset gradient end-stop. */
   background: linear-gradient(
     90deg,
@@ -816,7 +816,7 @@ const onItemClick = (_event: MouseEvent) => {
   padding: 6px 8px;
   border: 0;
   background: transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   min-width: 0;
   text-align: left;
@@ -875,7 +875,7 @@ const onItemClick = (_event: MouseEvent) => {
   width: 36px;
   height: 36px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--c-rose);
   display: inline-flex;
