@@ -411,11 +411,6 @@ onBeforeUnmount(() => {
   padding: 24px 16px;
   overflow: auto;
   background-color: var(--color-canvas);
-  background-image: radial-gradient(var(--checker) 1px, transparent 1px);
-  background-size: 24px 24px;
-}
-html.dark .text-editor__stage {
-  background-image: radial-gradient(var(--checker) 1px, transparent 1px);
 }
 
 .text-editor__card {

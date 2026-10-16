@@ -1,7 +1,7 @@
 .input {
-  background: var(--surfacePrimary);
-  color: var(--textSecondary);
-  border: 1px solid var(--borderPrimary);
+  background: var(--color-surface);
+  color: var(--color-ink-1);
+  border: 1px solid var(--color-line);
   border-radius: 0.1em;
   padding: 0.5em 1em;
   transition: 0.2s ease all;
@@ -10,5 +10,5 @@
 
 .input:hover,
 .input:focus {
-  border-color: var(--borderSecondary);
+  border-color: var(--color-line-strong);
 }

@@ -106,9 +106,9 @@ export default {
 
 <style scoped>
 .dropdown-modal-trigger {
-  background: var(--surfacePrimary);
-  color: var(--textSecondary);
-  border: 1px solid var(--borderPrimary);
+  background: var(--color-surface);
+  color: var(--color-ink-1);
+  border: 1px solid var(--color-line);
   border-radius: 0.1em;
   padding: 0.5em 1em;
   transition: 0.2s ease all;
@@ -125,10 +125,10 @@ export default {
 
 .dropdown-modal-list {
   padding: 0.25rem;
-  background-color: var(--surfacePrimary);
-  color: var(--textSecondary);
+  background-color: var(--color-surface);
+  color: var(--color-ink-1);
   display: none;
-  border: 1px solid var(--borderPrimary);
+  border: 1px solid var(--color-line);
   border-radius: 0.1em;
 }
 

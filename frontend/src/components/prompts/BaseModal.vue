@@ -62,7 +62,7 @@ onMounted(async () => {
   const root = modalContainer.value;
   if (root && !labelId.value) {
     const heading = root.querySelector<HTMLElement>(
-      "h1, h2, h3, .card-title, [data-dialog-title]"
+      "h1, h2, h3, [data-dialog-title]"
     );
     if (heading) {
       heading.id ||= autoId;

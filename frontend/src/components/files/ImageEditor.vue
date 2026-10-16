@@ -695,12 +695,7 @@ onBeforeUnmount(() => {
   justify-content: center;
   padding: 24px;
   background-color: var(--color-canvas);
-  background-image: radial-gradient(var(--checker) 1px, transparent 1px);
-  background-size: 20px 20px;
   overflow: hidden;
-}
-html.dark .img-editor__stage {
-  background-image: radial-gradient(var(--checker) 1px, transparent 1px);
 }
 
 .img-editor__canvas-wrap {

@@ -44,6 +44,7 @@ export function useListingDelete(deps: ListingDeleteDeps) {
 
   const confirmOpen = ref(false);
   const confirmTitle = ref("");
+  const confirmLabel = ref("Move to Trash");
   const confirmMessage = ref("");
   const pendingConfirm = ref<{ url: string; name: string }[]>([]);
   const pendingPermanent = ref(false);
@@ -178,6 +179,20 @@ export function useListingDelete(deps: ListingDeleteDeps) {
           ? `“${it.name}” can be restored from the Trash later.`
           : "They can be restored from the Trash later.";
     }
+    // The button names what will happen (Phase 6, 6.2).
+    const what =
+      items.length === 1
+        ? items[0].url.endsWith("/")
+          ? "folder"
+          : "file"
+        : `${items.length} items`;
+    confirmLabel.value = permanent
+      ? items.length === 1
+        ? `Delete this ${what} forever`
+        : `Delete ${what} forever`
+      : items.length === 1
+        ? `Move this ${what} to the Trash`
+        : `Move ${what} to the Trash`;
     confirmOpen.value = true;
   };
 
@@ -233,6 +248,7 @@ export function useListingDelete(deps: ListingDeleteDeps) {
 
   return {
     confirmOpen,
+    confirmLabel,
     confirmTitle,
     confirmMessage,
     pendingPermanent,

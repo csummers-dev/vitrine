@@ -3,10 +3,10 @@
   bottom: 0;
   left: 0;
   max-height: calc(100% - 4em);
-  background: var(--surfacePrimary);
-  color: var(--textPrimary);
+  background: var(--color-surface);
+  color: var(--color-ink-3);
   z-index: 9999;
-  background: var(--dividerSecondary);
+  background: var(--color-line-strong);
   transition: 0.2s ease background;
   cursor: ns-resize;
   touch-action: none;
@@ -41,18 +41,13 @@
   top: 0px;
   left: 0px;
   z-index: 9998;
-  background-color: var(--dividerPrimary);
+  background-color: var(--color-line);
 }
-
-body.rtl .shell-content {
-  direction: ltr;
-}
-
 .shell__result {
   display: flex;
   padding: 0.5em;
   align-items: flex-start;
-  border-top: 1px solid var(--divider);
+  border-top: 1px solid var(--color-line);
 }
 
 .shell--hidden {
@@ -74,7 +69,7 @@ body.rtl .shell-content {
 }
 
 .shell__prompt i {
-  color: var(--blue);
+  color: var(--color-accent);
 }
 
 .shell__text {
@@ -82,5 +77,5 @@ body.rtl .shell-content {
   font-family: inherit;
   white-space: pre-wrap;
   width: 100%;
-  color: var(--textSecondary);
+  color: var(--color-ink-1);
 }

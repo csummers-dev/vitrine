@@ -16,7 +16,7 @@
 }
 
 .epub-reader .readerArea {
-  background-color: var(--background) !important;
+  background-color: var(--color-canvas) !important;
 }
 
 .epub-reader .titleArea {
@@ -24,7 +24,7 @@
 }
 
 .epub-reader .tocButtonBar {
-  background: var(--divider);
+  background: var(--color-line);
 }
 
 .epub-reader .tocButton {
@@ -32,16 +32,16 @@
 }
 
 .epub-reader .tocButton.tocButtonExpanded {
-  background-color: var(--background);
+  background-color: var(--color-canvas);
 }
 
 .epub-reader .tocAreaButton.active {
-  color: var(--blue);
-  border-color: var(--dark-blue);
+  color: var(--color-accent);
+  border-color: var(--color-accent-strong);
 }
 
 .epub-reader .tocArea {
-  background-color: var(--background);
+  background-color: var(--color-canvas);
 }
 
 .epub-reader .readerArea .arrow {
@@ -49,7 +49,7 @@
 }
 
 .epub-reader .readerArea .arrow:hover {
-  color: var(--hover);
+  color: var(--color-hover);
 }
 
 .epub-reader .size {
@@ -64,7 +64,7 @@
 }
 
 .epub-reader .size span {
-  color: var(--textSecondary);
+  color: var(--color-ink-1);
 }
 
 .epub-reader .size button {
@@ -73,6 +73,6 @@
   border: none;
   width: 25px;
   height: 25px;
-  color: var(--textPrimary);
+  color: var(--color-ink-3);
   padding: 0;
 }

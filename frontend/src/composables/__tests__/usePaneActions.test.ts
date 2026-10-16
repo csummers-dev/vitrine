@@ -91,6 +91,7 @@ describe("usePaneActions", () => {
     a.remove();
     expect(a.confirm.open).toBe(true);
     expect(a.confirm.title).toBe("Move to Trash?");
+    expect(a.confirm.confirmLabel).toBe("Move 2 items to the Trash");
     a.confirmConfirm();
     await flush();
     expect(remove).toHaveBeenCalledTimes(2);
@@ -103,7 +104,7 @@ describe("usePaneActions", () => {
     const sel = [item("/files/B/a", "a")];
     const a = usePaneActions(makeTarget({ selectedItems: () => sel }));
     a.remove(undefined, true);
-    expect(a.confirm.confirmLabel).toBe("Delete forever");
+    expect(a.confirm.confirmLabel).toBe("Delete “a” forever");
     a.confirmConfirm();
     await flush();
     expect(remove).toHaveBeenCalledWith("/files/B/a", true);

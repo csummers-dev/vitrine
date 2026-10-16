@@ -49,10 +49,6 @@ textarea.settings-input {
 .settings-input--num {
   width: 110px;
 }
-.settings-input--compact {
-  width: auto;
-  min-width: 72px;
-}
 .settings-input--mono {
   font-family: var(--font-mono);
   font-size: var(--type-body);

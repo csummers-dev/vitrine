@@ -1012,7 +1012,7 @@
       :open="confirmOpen"
       :title="confirmTitle"
       :message="confirmMessage"
-      :confirm-label="pendingPermanent ? 'Delete forever' : 'Move to Trash'"
+      :confirm-label="confirmLabel"
       cancel-label="Cancel"
       destructive
       @confirm="onDeleteConfirm"
@@ -2222,6 +2222,17 @@ const keyEvent = (event: KeyboardEvent) => {
   if (layoutStore.currentPrompt !== null) {
     return;
   }
+  // Nor any other dialog or panel (a confirm, the share panel…): keys typed
+  // there are theirs — Enter on a dialog's Cancel must not open the file
+  // behind it.
+  if (
+    (event.target as HTMLElement | null)?.closest?.(
+      '[role="dialog"], [aria-modal="true"]'
+    ) ||
+    document.querySelector('[aria-modal="true"]')
+  ) {
+    return;
+  }
 
   // Dual-pane (R4): F6 toggles the active pane (the OS convention for cycling
   // panes). Handled here — before the bail below — so it works whichever pane
@@ -2587,7 +2598,7 @@ const {
   confirmOpen,
   confirmTitle,
   confirmMessage,
-  pendingPermanent,
+  confirmLabel,
   openDeleteConfirm,
   onDeleteConfirm,
   onDeleteCancel,

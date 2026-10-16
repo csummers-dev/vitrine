@@ -200,7 +200,10 @@ export function usePaneActions(target: PaneTarget) {
         message: permanent
           ? `Permanently delete ${label}? This can't be undone.`
           : `Move ${label} to the Trash? You can restore from there.`,
-        confirmLabel: permanent ? "Delete forever" : "Move to Trash",
+        // Named for what will happen (Phase 6, 6.2).
+        confirmLabel: permanent
+          ? `Delete ${label} forever`
+          : `Move ${label} to the Trash`,
       },
       async () => {
         try {

@@ -620,13 +620,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 24px;
   padding: 24px 16px;
-  background-color: var(--color-canvas);
-  background-image: radial-gradient(var(--checker) 1px, transparent 1px);
-  background-size: 24px 24px;
-}
-
-html.dark .pdf-viewer__stage {
-  background-image: radial-gradient(var(--checker) 1px, transparent 1px);
+  background-color: var(--color-panel);
 }
 
 .pdf-viewer__page-wrap {

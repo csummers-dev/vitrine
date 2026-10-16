@@ -55,7 +55,6 @@ header .action .counter {
   border-color: var(--color-canvas);
 }
 
-
 /* * * * * * * * * * * * * *
  *          SEARCH         *
  * * * * * * * * * * * * * */
@@ -428,56 +427,4 @@ html[dir="rtl"] #search #result ul > * {
   font-size: 11px;
   font-weight: 400;
   color: var(--color-ink-3);
-}
-
-#search .boxes {
-  border: 1px solid var(--borderPrimary);
-  border-radius: var(--radius-md);
-  background: var(--surfacePrimary);
-  margin: 1em 0;
-}
-
-#search .boxes h3 {
-  margin: 0;
-  font-weight: 600;
-  font-size: 0.95em;
-  color: var(--textSecondary);
-  padding: 0.5em 0.75em;
-}
-
-html[dir="rtl"] #search .boxes h3 {
-  text-align: right;
-}
-
-#search .boxes > div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75em;
-  padding: 0.5em 0.75em 0.75em;
-}
-
-#search .boxes > div > div {
-  background: var(--accent);
-  color: var(--color-on-accent);
-  text-align: center;
-  width: 10em;
-  padding: 1em;
-  cursor: pointer;
-  flex-grow: 1;
-  border-radius: var(--radius-md);
-  transition: 0.15s ease background;
-}
-
-#search .boxes > div > div:hover {
-  background: var(--accent-strong);
-}
-
-#search .boxes p {
-  margin: 0.5em 0 0;
-}
-
-#search .boxes svg {
-  color: var(--color-on-accent) !important;
-  width: 2.5em;
-  height: 2.5em;
 }

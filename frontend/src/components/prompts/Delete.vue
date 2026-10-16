@@ -5,23 +5,18 @@
         <Icon name="trash-2" :size="18" :stroke-width="1.6" />
       </div>
       <div class="confirm-prompt__text">
-        <h2 class="confirm-prompt__title">{{ $t("buttons.delete") }}</h2>
+        <h2 class="confirm-prompt__title">{{ title }}</h2>
         <p class="confirm-prompt__message">
-          <template v-if="!isListing || selectedCount === 1">
-            {{ $t("prompts.deleteMessageSingle") }}
-          </template>
-          <template v-else>
-            {{ $t("prompts.deleteMessageMultiple", { count: selectedCount }) }}
-          </template>
+          It can be restored from the Trash later.
         </p>
       </div>
     </div>
     <div class="confirm-prompt__actions">
-      <UiButton size="sm" @click="closeHovers">{{
+      <UiButton size="sm" data-autofocus @click="closeHovers">{{
         $t("buttons.cancel")
       }}</UiButton>
       <UiButton id="focus-prompt" size="sm" variant="danger" @click="submit">{{
-        $t("buttons.delete")
+        action
       }}</UiButton>
     </div>
   </div>
@@ -48,6 +43,20 @@ export default {
       "selected",
     ]),
     ...mapState(useLayoutStore, ["currentPrompt"]),
+    // Named for what will happen (Phase 6, 6.2).
+    count() {
+      return !this.isListing ? 1 : this.selectedCount;
+    },
+    title() {
+      return this.count === 1
+        ? "Move this to the Trash?"
+        : `Move ${this.count} items to the Trash?`;
+    },
+    action() {
+      return this.count === 1
+        ? "Move to the Trash"
+        : `Move ${this.count} items to the Trash`;
+    },
     ...mapWritableState(useFileStore, ["reload", "preselect"]),
   },
   methods: {

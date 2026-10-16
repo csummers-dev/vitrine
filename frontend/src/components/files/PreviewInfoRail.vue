@@ -1,152 +1,85 @@
 <template>
+  <!-- The preview's details rail (Phase 6, 6.1): laid out like the files
+       view's details panel — name, kind, the main actions with the rest in
+       a ⋯ menu, then Information, the format's own section and Where. -->
   <div class="preview-info">
-    <!-- ── Header: file-type squircle + filename ─────────────────── -->
-    <div class="preview-info__section">
-      <div class="preview-info__header">
-        <span class="preview-info__icon" :class="iconColorClass">
-          <Icon :name="iconName" :size="20" :stroke-width="1.8" />
-        </span>
-        <div class="preview-info__header-text">
-          <div class="preview-info__eyebrow">{{ typeLabel }}</div>
-          <div class="preview-info__name">{{ name }}</div>
-        </div>
-      </div>
-
-      <!-- Primary action grid — same chrome / shape as InfoPane
-           (Stage 11d). Share / Download / Rename / Delete. -->
-      <div class="preview-info__primary">
-        <button
-          v-if="canShare"
-          class="info-action info-action--share"
-          title="Share"
-          @click="$emit('share')"
-        >
-          <Icon name="share" :size="14" />
-          <span>Share</span>
-        </button>
-        <button
-          v-if="canDownload"
-          class="info-action info-action--download"
-          title="Download"
-          @click="$emit('download')"
-        >
-          <Icon name="download" :size="14" />
-          <span>Download</span>
-        </button>
-        <button
-          v-if="canRename"
-          class="info-action info-action--rename"
-          title="Rename"
-          @click="$emit('rename')"
-        >
-          <Icon name="pencil" :size="14" />
-          <span>Rename</span>
-        </button>
-        <button
-          v-if="canDelete"
-          class="info-action info-action--danger"
-          title="Delete"
-          @click="$emit('delete')"
-        >
-          <Icon name="trash-2" :size="14" />
-          <span>Delete</span>
-        </button>
-      </div>
-
-      <!-- Secondary action row — Move / Copy / Extract / Open direct.
-           Extract slides in only for supported archives (zip / 7z / rar /
-           tar family) where the user can create files (same gate as
-           InfoPane). This is the in-preview equivalent of the row-level
-           Extract button. -->
-      <div class="preview-info__secondary">
-        <button
-          v-if="canMove"
-          class="info-action info-action--move"
-          title="Move"
-          @click="$emit('move')"
-        >
-          <Icon name="forward" :size="14" />
-          <span>Move</span>
-        </button>
-        <button
-          v-if="canCopy"
-          class="info-action info-action--copy"
-          title="Copy"
-          @click="$emit('copy')"
-        >
-          <Icon name="copy" :size="14" />
-          <span>Copy</span>
-        </button>
-        <button
-          v-if="canExtract"
-          class="info-action info-action--extract"
-          title="Extract"
-          @click="$emit('extract')"
-        >
-          <Icon name="package-open" :size="14" />
-          <span>Extract</span>
-        </button>
-        <button
-          v-if="canEditTags"
-          class="info-action info-action--edit-tags"
-          title="Edit tags"
-          @click="$emit('editTags')"
-        >
-          <Icon name="music" :size="14" />
-          <span>Edit tags</span>
-        </button>
-        <button
-          v-if="canOpenDirect"
-          class="info-action info-action--open"
-          title="Open in new tab"
-          @click="$emit('openDirect')"
-        >
-          <Icon name="external-link" :size="14" />
-          <span>Open</span>
-        </button>
+    <div class="pi-head">
+      <span class="pi-head__tile" :class="iconColorClass" aria-hidden="true">
+        <Icon :name="iconName" :size="18" :stroke-width="1.8" />
+      </span>
+      <div class="pi-head__text">
+        <h2 class="pi-head__name">{{ name }}</h2>
+        <p class="pi-head__sub">
+          {{ typeLabel
+          }}<template v-if="sizeLabel"> · {{ sizeLabel }}</template>
+        </p>
       </div>
     </div>
 
-    <!-- ── Properties (size / modified / extension / etc.) ────────── -->
-    <div class="preview-info__section">
-      <div class="preview-info__label">Properties</div>
-      <dl class="preview-info__dl">
-        <div v-if="sizeLabel" class="preview-info__row">
+    <div class="pi-actions">
+      <UiButton v-if="canShare" size="sm" icon="share" @click="$emit('share')"
+        >Share</UiButton
+      >
+      <UiButton
+        v-if="canDownload"
+        size="sm"
+        icon="download"
+        @click="$emit('download')"
+        >Download</UiButton
+      >
+      <UiIconButton
+        v-if="menuItems.length > 0"
+        icon="ellipsis"
+        size="sm"
+        variant="secondary"
+        :label="`More actions for ${name}`"
+        @click="openMenu"
+      />
+    </div>
+
+    <section class="pi-section" aria-labelledby="pi-info">
+      <h3 id="pi-info" class="pi-section__title">Information</h3>
+      <dl class="pi-props">
+        <div v-if="sizeLabel">
           <dt>Size</dt>
           <dd class="tabular">{{ sizeLabel }}</dd>
         </div>
-        <div v-if="modifiedLabel" class="preview-info__row">
+        <div v-if="modifiedLabel">
           <dt>Modified</dt>
           <dd class="tabular">{{ modifiedLabel }}</dd>
         </div>
-        <div v-if="extensionLabel" class="preview-info__row">
+        <div v-if="extensionLabel">
           <dt>Extension</dt>
-          <dd class="mono preview-info__ext">{{ extensionLabel }}</dd>
+          <dd class="pi-mono">{{ extensionLabel }}</dd>
         </div>
         <slot name="extra-properties" />
       </dl>
-    </div>
+    </section>
 
-    <!-- ── Format-specific section (EXIF, ID3, tracks, etc.) ─────── -->
-    <div v-if="$slots['format-section']" class="preview-info__section">
+    <!-- Format-specific section (EXIF, ID3, tracks, text options…). -->
+    <section v-if="$slots['format-section']" class="pi-section">
       <slot name="format-section" />
-    </div>
+    </section>
 
-    <!-- ── Location (file path) ─────────────────────────────────── -->
-    <div v-if="path" class="preview-info__section">
-      <div class="preview-info__label">Location</div>
-      <div class="preview-info__path">{{ path }}</div>
-    </div>
+    <section v-if="path" class="pi-section" aria-labelledby="pi-where">
+      <h3 id="pi-where" class="pi-section__title">Where</h3>
+      <p class="pi-path">{{ path }}</p>
+    </section>
 
-    <!-- Anything else the viewer wants to pin to the bottom. -->
     <slot name="footer-section" />
 
-    <div class="preview-info__spacer"></div>
+    <div class="pi-spacer"></div>
 
-    <!-- ── Keyboard hint footer ──────────────────────────────────── -->
-    <div v-if="$slots['keyboard-hints']" class="preview-info__keyboard">
+    <div v-if="$slots['keyboard-hints']" class="pi-keys">
       <slot name="keyboard-hints" />
     </div>
+
+    <ContextMenu
+      :show="menu.show"
+      :pos="menu.pos"
+      :items="menuItems"
+      @hide="menu.show = false"
+    />
   </div>
 </template>
 
@@ -160,9 +93,13 @@
  * metadata (EXIF for images, tracks/codec for video, ID3 for audio,
  * document metadata for PDF, etc.). Everything else is generic.
  */
+import { computed, reactive } from "vue";
 import Icon from "@/components/Icon.vue";
+import ContextMenu, { type MenuItem } from "@/components/ContextMenu.vue";
+import UiButton from "@/components/ui/UiButton.vue";
+import UiIconButton from "@/components/ui/UiIconButton.vue";
 
-defineProps<{
+const props = defineProps<{
   name: string;
   iconName: string;
   iconColorClass?: string;
@@ -183,7 +120,7 @@ defineProps<{
   canOpenDirect?: boolean;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   (e: "share"): void;
   (e: "download"): void;
   (e: "rename"): void;
@@ -194,279 +131,161 @@ defineEmits<{
   (e: "editTags"): void;
   (e: "openDirect"): void;
 }>();
+
+// The less common actions live in a ⋯ menu, as in the details panel.
+const menu = reactive({ show: false, pos: { x: 0, y: 0 } });
+const openMenu = (e: MouseEvent) => {
+  const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+  menu.pos = { x: r.left, y: r.bottom + 4 };
+  menu.show = true;
+};
+const menuItems = computed<MenuItem[]>(() => {
+  const items: MenuItem[] = [];
+  if (props.canRename)
+    items.push({
+      label: "Rename",
+      icon: "pencil",
+      action: () => emit("rename"),
+    });
+  if (props.canMove)
+    items.push({ label: "Move", icon: "forward", action: () => emit("move") });
+  if (props.canCopy)
+    items.push({ label: "Copy", icon: "copy", action: () => emit("copy") });
+  if (props.canExtract)
+    items.push({
+      label: "Extract",
+      icon: "package-open",
+      action: () => emit("extract"),
+    });
+  if (props.canEditTags)
+    items.push({
+      label: "Edit audio tags",
+      icon: "music",
+      action: () => emit("editTags"),
+    });
+  if (props.canOpenDirect)
+    items.push({
+      label: "Open in a new tab",
+      icon: "external-link",
+      action: () => emit("openDirect"),
+    });
+  if (props.canDelete)
+    items.push(
+      { type: "separator" },
+      {
+        label: "Delete",
+        icon: "trash-2",
+        destructive: true,
+        action: () => emit("delete"),
+      }
+    );
+  return items.filter(
+    (it, i, all) => !(it.type === "separator" && i === 0 && all.length === 1)
+  );
+});
 </script>
 
 <style scoped>
 .preview-info {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 100%;
+  padding: var(--space-4);
 }
-
-/* No section dividers — the rail reads as one calm surface (less boxy).
-   Tighter vertical padding keeps the groups distinct via spacing alone. */
-.preview-info__section {
-  padding: 12px 16px;
-}
-.preview-info__section:first-of-type {
-  padding-top: 14px;
-}
-
-.preview-info__header {
+.pi-head {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: var(--space-3);
 }
-
-/* V3-E #13: match the list/grid `.item__icon` EXACTLY. The per-type Tailwind
-   class passed via :class (from fileIconColor — e.g. `bg-violet-600 text-white`)
-   paints a saturated background-color + white glyph; this sheen overlays it for
-   the same "app icon" gradient + lift. The base intentionally sets NO
-   background-color or color (scoped specificity would otherwise beat the
-   utility), so the rail icon is now identical to the row icon — not the old
-   dim translucent --tint-* chip. */
-.preview-info__icon {
-  width: 40px;
-  height: 40px;
+.pi-head__tile {
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-md);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  position: relative;
-  overflow: hidden;
-  background-image: none;
-  box-shadow: var(--shadow-1);
 }
-
-.preview-info__header-text {
+.pi-head__text {
   min-width: 0;
   flex: 1;
 }
-.preview-info__eyebrow {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--color-ink-3);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 2px;
-}
-.preview-info__name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-ink-1);
-  line-height: 1.25;
-  word-break: break-all;
-}
-
-/* ── Action grids ────────────────────────────────────────────────────── */
-/* RC-39: centered flex (not a fixed N-col grid) so a row with fewer than
-   its max actions centers its buttons instead of leaving empty trailing
-   columns. Each button caps at the N-up cell width, so 2 actions sit at
-   ~2/3 width centered rather than left-aligned with an empty 3rd slot
-   (repro: an image in preview where Open/Extract aren't shown). */
-.preview-info__primary,
-.preview-info__secondary {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-}
-.preview-info__primary {
-  margin-bottom: 6px;
-}
-.preview-info__primary > .info-action {
-  flex: 1 1 0;
-  min-width: 0;
-  max-width: calc((100% - 18px) / 4);
-}
-.preview-info__secondary > .info-action {
-  flex: 1 1 0;
-  min-width: 0;
-  max-width: calc((100% - 12px) / 3);
-}
-
-/* `info-action` is the same class FileListing's InfoPane uses, but Vue's
-   scoped CSS does NOT leak across components — InfoPane's per-action hue
-   rules are tagged with InfoPane's scope id and never reach these buttons.
-   So we replicate the chrome AND the color system here, mirroring
-   InfoPane.vue exactly, to keep the two rails consistent. (If you change a
-   hue, change it in both places.) */
-.preview-info :deep(.info-action),
-.preview-info .info-action {
-  --action-hue: var(--c-blue);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 4px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-line);
-  background: var(--color-surface);
-  color: var(--color-ink-2);
-  font-size: 11px;
-  font-weight: 500;
-  cursor: pointer;
-  transition:
-    background-color var(--dur-base) ease,
-    color var(--dur-base) ease,
-    border-color var(--dur-base) ease;
-  min-width: 0;
-}
-
-/* Per-action accent hue — identical mapping to InfoPane.vue so an action
-   reads the same color in the listing details pane and the preview rail. */
-.preview-info .info-action--share {
-  --action-hue: var(--c-teal);
-}
-.preview-info .info-action--download {
-  --action-hue: var(--c-blue);
-}
-.preview-info .info-action--rename {
-  /* Muted like its siblings (was --c-amber, a pre-collapse leftover that made
-     Rename read as gold — gold is the FAVORITES color, v2.7.x). */
-  --action-hue: var(--c-lilac);
-}
-.preview-info .info-action--move {
-  --action-hue: var(--c-blue);
-}
-.preview-info .info-action--copy {
-  --action-hue: var(--c-teal);
-}
-.preview-info .info-action--extract {
-  --action-hue: var(--c-green);
-}
-.preview-info .info-action--edit-tags {
-  --action-hue: var(--c-lilac);
-}
-.preview-info .info-action--open {
-  --action-hue: var(--c-lilac);
-}
-.preview-info .info-action--danger {
-  --action-hue: var(--c-rose);
-}
-
-/* Always-on colored glyph (Lucide svg paints with currentColor). The svg
-   lives inside the Icon child component, so it needs :deep() to pierce the
-   scope; the --action-hue custom property inherits into it from the button. */
-.preview-info .info-action :deep(svg) {
-  color: var(--color-ink-2);
-}
-
-/* Calm Minimal: hover tints with the single accent (was the per-action hue). */
-.preview-info .info-action:hover {
-  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
-  border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-line));
-  color: var(--color-ink-1);
-}
-.preview-info .info-action--danger:hover {
-  background: var(--status-danger-soft);
-  color: var(--status-danger);
-  border-color: var(--status-danger-ring);
-}
-html.dark .preview-info .info-action--danger:hover {
-  background: var(--status-danger-soft);
-  color: var(--status-danger);
-  border-color: var(--status-danger-ring);
-}
-
-/* ── Label + property rows ───────────────────────────────────────────────
-   Each rule is duplicated with `:slotted(...)` so the styles apply to
-   BOTH this component's own template (Properties, Location) AND the
-   format-section slot content (audio Track/Codec, image Camera EXIF,
-   video Tracks). Without `:slotted()`, slot content carries the parent
-   component's scope ID (Preview.vue's), not ours — Vue 3 scoped CSS
-   would skip it and the metadata rendered as unformatted dt/dd pairs. */
-.preview-info__label,
-:slotted(.preview-info__label) {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-ink-3);
-  margin-bottom: 10px;
-}
-
-.preview-info__dl,
-:slotted(.preview-info__dl) {
-  font-size: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.pi-head__name {
   margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--color-ink-1);
+  overflow-wrap: anywhere;
 }
-.preview-info__row,
-:slotted(.preview-info__row) {
+.pi-head__sub {
+  margin: 2px 0 0;
+  font-size: var(--type-small);
+  color: var(--color-ink-3);
+}
+.pi-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+.pi-section {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-line);
+}
+.pi-section__title,
+.pi-section :deep(.preview-info__label) {
+  margin: 0 0 var(--space-2);
+  font-size: var(--type-small);
+  font-weight: 600;
+  color: var(--color-ink-3);
+}
+.pi-props {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--type-small);
+}
+.pi-props > div,
+.pi-props :deep(.preview-info__row) {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-3);
 }
-.preview-info__row dt,
-:slotted(.preview-info__row dt) {
+.pi-props dt,
+.pi-props :deep(dt) {
   color: var(--color-ink-3);
   flex-shrink: 0;
 }
-.preview-info__row dd,
-:slotted(.preview-info__row dd) {
+.pi-props dd,
+.pi-props :deep(dd) {
+  margin: 0;
+  min-width: 0;
   color: var(--color-ink-1);
   text-align: right;
+  overflow-wrap: anywhere;
+}
+.pi-mono,
+.pi-path {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.pi-path {
   margin: 0;
-  /* Allow long values (titles with many words, file paths embedded in
-     metadata) to wrap rather than overflow the rail. */
-  min-width: 0;
-  word-break: break-word;
-}
-.preview-info__ext,
-:slotted(.preview-info__ext) {
-  font-size: 11px;
-}
-
-.tabular,
-:slotted(.tabular) {
-  font-variant-numeric: tabular-nums;
-}
-.mono,
-:slotted(.mono) {
-  font-family: var(--font-mono);
-}
-
-.preview-info__path {
-  font-family: var(--font-mono);
-  font-size: 11px;
   color: var(--color-ink-2);
-  word-break: break-all;
-  background: var(--color-elevated);
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-sm);
-  padding: 6px 8px;
+  overflow-wrap: anywhere;
 }
-
-.preview-info__spacer {
+.pi-spacer {
   flex: 1;
 }
-
-/* ── Keyboard hints footer ──────────────────────────────────────────── */
-.preview-info__keyboard {
-  padding: 12px 16px;
-  border-top: 1px solid var(--color-line);
-  font-size: 11px;
+.pi-keys {
+  margin-top: var(--space-4);
+  font-size: var(--type-small);
   color: var(--color-ink-3);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  flex-shrink: 0;
 }
-.preview-info__keyboard :deep(kbd),
-.preview-info__keyboard kbd {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  padding: 1px 5px;
-  border-radius: var(--radius-xs);
-  background: var(--color-elevated);
-  border: 1px solid var(--color-line);
-  color: var(--color-ink-1);
-  line-height: 1.4;
+.tabular {
+  font-variant-numeric: tabular-nums;
 }
 </style>

@@ -43,7 +43,7 @@
   margin: 4em auto;
   display: block !important;
   width: 95%;
-  color: var(--textPrimary);
+  color: var(--color-ink-3);
   font-weight: 500;
 }
 
@@ -342,8 +342,6 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   color: var(--color-on-accent);
   box-shadow: var(--shadow-1);
 }
-
-
 
 /* Header select-all checkbox is interactive */
 :is(#listing, .fb-listing).list .item.header .item__checkbox {
@@ -1087,9 +1085,7 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   height: 64px;
   border-radius: var(--radius-lg);
   background: var(--color-surface);
-  box-shadow:
-    var(--ring-line-inset),
-    var(--shadow-1);
+  box-shadow: var(--ring-line-inset), var(--shadow-1);
 }
 
 :is(#listing, .fb-listing).mosaic.gallery

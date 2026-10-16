@@ -57,7 +57,11 @@
             data-testid="details-text-preview"
             >{{ textPreview }}</pre
           >
-          <div v-else class="ip-preview__tile" :class="iconColorClass">
+          <div
+            v-else
+            class="ip-preview__tile"
+            :class="item.isDir ? 'ip-preview__tile--folder' : iconColorClass"
+          >
             <Icon
               :name="iconName"
               :size="40"
@@ -1046,6 +1050,10 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.ip-preview__tile--folder {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
 }
 .ip-preview__progress {
   position: absolute;

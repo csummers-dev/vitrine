@@ -38,7 +38,6 @@
     "check:bundle": "node scripts/bundle-report.mjs"
   },
   "dependencies": {
-    "@chenfengyuan/vue-number-input": "^2.0.1",
     "@fontsource-variable/figtree": "^5.3.0",
     "@fontsource/jetbrains-mono": "^5.2.8",
     "@lucide/vue": "^1.17.0",

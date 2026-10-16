@@ -212,10 +212,9 @@ watch(selectedEncoding, () => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background-color: var(--surfacePrimary);
-  color: var(--textSecondary);
-  padding: 1rem;
-  padding-top: 4em;
+  background-color: var(--color-surface);
+  color: var(--color-ink-1);
+  padding: var(--space-4);
   box-sizing: border-box;
 }
 
@@ -266,17 +265,17 @@ watch(selectedEncoding, () => {
 }
 
 .csv-table-container::-webkit-scrollbar-track {
-  background: var(--background);
+  background: var(--color-canvas);
   border-radius: var(--radius-xs);
 }
 
 .csv-table-container::-webkit-scrollbar-thumb {
-  background: var(--borderSecondary);
+  background: var(--color-line-strong);
   border-radius: var(--radius-xs);
 }
 
 .csv-table-container::-webkit-scrollbar-thumb:hover {
-  background: var(--textPrimary);
+  background: var(--color-ink-3);
 }
 
 .csv-table {
@@ -371,10 +370,9 @@ watch(selectedEncoding, () => {
 }
 
 .header-select > label {
-  font-size: small;
-  @media (width >= 640px) {
-    max-width: 70px;
-  }
+  font-size: var(--type-small);
+  color: var(--color-ink-2);
+  white-space: nowrap;
 }
 
 .header-select > select,
@@ -384,7 +382,7 @@ watch(selectedEncoding, () => {
 
 .csv-info i {
   font-size: 1.2rem;
-  color: var(--blue);
+  color: var(--color-accent);
 }
 
 .encoding-list {

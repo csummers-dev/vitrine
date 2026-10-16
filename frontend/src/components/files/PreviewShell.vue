@@ -12,64 +12,74 @@
          action cluster (download / share / details / close) floats top-right,
          and the per-format controls float in a bottom-centre pill — all over
          the media, so the rail can run edge-to-edge on the right. -->
+    <!-- Phase 6, 6.1: the stage and the details rail are panels, like the
+         files view. The stage's header holds the way back to the folder,
+         the file's name, previous / next and the details toggle; per-format
+         controls float in a pill at the bottom of the media. -->
     <div class="preview-shell__body">
       <section class="preview-shell__stage">
-        <!-- Floating Back (top-left) -->
-        <button
-          class="preview-float preview-float--back"
-          :class="{ 'is-idle-hidden': fadeChrome && !controlsVisible }"
-          :title="$t('buttons.close')"
-          :aria-label="$t('buttons.close')"
-          @click="$emit('close')"
-        >
-          <Icon name="arrow-left" :size="16" />
-          <span class="max-md:hidden">Exit</span>
-        </button>
-
-        <!-- Floating action cluster (top-right). V3-D #9: download / share /
-             close were removed here — every action lives in the details rail,
-             and Exit (top-left) + Esc already close. Only the details toggle
-             remains, so the user has one obvious "show me the controls" affordance. -->
-        <div
-          class="preview-float preview-float--actions"
+        <header
+          class="preview-head"
           :class="{ 'is-idle-hidden': fadeChrome && !controlsVisible }"
         >
-          <button
-            class="preview-float__btn"
-            :class="{ 'is-active': infoOpen }"
-            :title="infoOpen ? 'Hide details' : 'Show details'"
-            :aria-label="infoOpen ? 'Hide details' : 'Show details'"
-            :aria-pressed="infoOpen"
-            @click="$emit('toggleInfo')"
+          <UiButton
+            variant="ghost"
+            size="sm"
+            icon="arrow-left"
+            class="preview-head__back"
+            :aria-label="`Back to ${folder || 'the folder'}`"
+            :title="`Back to ${folder || 'the folder'} (Esc)`"
+            @click="$emit('close')"
+            ><span class="preview-head__folder">{{
+              folder || "Back"
+            }}</span></UiButton
           >
-            <Icon
-              :name="infoOpen ? 'panel-right-close' : 'panel-right-open'"
-              :size="16"
+          <h1 class="preview-head__name" :title="name">{{ name }}</h1>
+          <div class="preview-head__actions">
+            <UiIconButton
+              icon="chevron-left"
+              size="sm"
+              label="Previous file"
+              tooltip="Previous file (←)"
+              :disabled="!hasPrevious"
+              @click="$emit('prev')"
             />
-          </button>
-        </div>
+            <UiIconButton
+              icon="chevron-right"
+              size="sm"
+              label="Next file"
+              tooltip="Next file (→)"
+              :disabled="!hasNext"
+              @click="$emit('next')"
+            />
+            <UiIconButton
+              icon="panel-right"
+              size="sm"
+              label="Details"
+              :tooltip="infoOpen ? 'Hide details' : 'Show details'"
+              :pressed="infoOpen"
+              @click="$emit('toggleInfo')"
+            />
+          </div>
+        </header>
 
-        <slot name="stage" />
+        <div class="preview-shell__media">
+          <slot name="stage" />
 
-        <!-- Floating per-format controls (bottom-centre): zoom / fit / page /
-             edit. The viewer fills this via the toolbar-format slot.
-             V3-D #15: gate on REAL content — audio/comic/video provide the slot
-             but all its v-if branches are false, leaving only comment vnodes,
-             which used to render as an empty pill (the "small circle" at
-             bottom-centre). V3-D #11: fade out after inactivity so the size
-             pill in PDF behaves like a media player's chrome. -->
-        <div
-          v-if="hasFormatControls"
-          class="preview-float preview-float--format"
-          :class="{ 'is-idle-hidden': !controlsVisible }"
-        >
-          <slot name="toolbar-format" />
+          <!-- Floating per-format controls (bottom-centre): zoom / fit / page /
+               edit. Shown only when the viewer puts real content in the slot,
+               and faded after inactivity. -->
+          <div
+            v-if="hasFormatControls"
+            class="preview-float preview-float--format"
+            :class="{ 'is-idle-hidden': !controlsVisible }"
+          >
+            <slot name="toolbar-format" />
+          </div>
         </div>
       </section>
 
-      <!-- Info rail (right side, desktop). Slot is optional — the
-           shell renders a placeholder if the parent doesn't pass one,
-           but every real viewer should pass <PreviewInfoRail>. -->
+      <!-- Details rail (desktop); a drawer on phones, below. -->
       <aside v-if="infoOpen" class="preview-shell__info">
         <slot name="info" />
       </aside>
@@ -109,8 +119,9 @@ import {
   ref,
   useSlots,
 } from "vue";
-import Icon from "@/components/Icon.vue";
 import Drawer from "@/components/Drawer.vue";
+import UiButton from "@/components/ui/UiButton.vue";
+import UiIconButton from "@/components/ui/UiIconButton.vue";
 
 // V3-I: trimmed to what the floating-controls shell actually consumes. The old
 // 48px toolbar (V2-J) and its top-right download/share/close cluster (V3-D #9)
@@ -122,15 +133,21 @@ const props = defineProps<{
   name: string;
   /** Whether the right-side info rail is currently visible. */
   infoOpen: boolean;
-  /** 2.1 #6: when true (comic & PDF), the Exit + details floats fade with the
-   *  controls pill on inactivity. Other previews keep them always visible. */
+  /** 2.1 #6: when true (comic & PDF), the header fades with the controls
+   *  pill on inactivity. Other previews keep it always visible. */
   fadeChrome?: boolean;
+  /** The folder the file is in (the Back button's label). */
+  folder?: string;
+  hasPrevious?: boolean;
+  hasNext?: boolean;
 }>();
 void props;
 
 const emit = defineEmits<{
   (e: "close"): void;
   (e: "toggleInfo"): void;
+  (e: "prev"): void;
+  (e: "next"): void;
   (e: "userActivity"): void;
 }>();
 
@@ -211,10 +228,12 @@ onBeforeUnmount(() => {
   font-family: var(--font-sans);
 }
 
-/* ── Body ────────────────────────────────────────────────────────────── */
+/* ── Body: stage and rail as panels (Phase 6, 6.1) ───────────────────── */
 .preview-shell__body {
   flex: 1;
   display: flex;
+  gap: 10px;
+  padding: 10px;
   min-height: 0;
   overflow: hidden;
 }
@@ -225,86 +244,73 @@ onBeforeUnmount(() => {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+
+.preview-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 48px;
+  padding: 0 var(--space-2);
+  border-bottom: 1px solid var(--color-line);
+  flex-shrink: 0;
+  transition:
+    opacity var(--dur-base) ease,
+    transform var(--dur-base) ease;
+}
+.preview-head.is-idle-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.preview-head__back {
+  flex-shrink: 0;
+  max-width: 30%;
+}
+.preview-head__folder {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.preview-head__name {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--type-ui);
+  font-weight: 600;
+  color: var(--color-ink-1);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.preview-head__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.preview-shell__media {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
   position: relative;
-  background-color: var(--color-canvas);
-  background-image: radial-gradient(var(--checker) 1px, transparent 1px);
-  background-size: 24px 24px;
+  background: var(--color-panel);
 }
 
-html.dark .preview-shell__stage {
-  background-color: var(--color-canvas);
-  background-image: radial-gradient(var(--checker) 1px, transparent 1px);
-}
-
-/* ── V2-J floating preview controls (overlay the stage) ──────────────────
-   Glassy translucent pills with a blur so they stay legible on any media,
-   freeing the header space entirely. */
 .preview-float {
   position: absolute;
   z-index: 5;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-}
-.preview-float--back {
-  top: 14px;
-  left: 14px;
-  /* 2.1 #4: slightly smaller + tighter so the arrow sits closer to "Exit". */
-  height: 30px;
-  gap: 3px;
-  padding: 0 10px 0 7px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-line);
-  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
-  backdrop-filter: blur(8px);
-  color: var(--color-ink-1);
-  font-size: 12.5px;
-  font-weight: 550;
-  cursor: pointer;
-  transition:
-    background-color var(--dur-base) ease,
-    opacity var(--dur-base) ease,
-    transform var(--dur-base) ease;
-}
-.preview-float--back:hover {
-  background: var(--color-elevated);
-}
-/* Calm Minimal: the Exit arrow is ink — uniform with the "Exit" label, no color
-   pop (was the brand accent). :deep() reaches the svg inside the Icon child. */
-.preview-float--back :deep(svg) {
-  color: var(--color-ink-1);
-}
-.preview-float--actions {
-  top: 14px;
-  right: 14px;
-  gap: 4px;
-  padding: 4px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-line);
-  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
-  backdrop-filter: blur(8px);
-  transition:
-    opacity var(--dur-base) ease,
-    transform var(--dur-base) ease;
-}
-/* 2.1 #6: in comic & PDF previews the Exit + details floats fade together with
-   the controls pill on inactivity (gated by the fadeChrome prop). They slide up
-   a touch and drop pointer events so they can't be clicked while invisible. */
-.preview-float--back.is-idle-hidden {
-  opacity: 0;
-  transform: translateY(-6px);
-  pointer-events: none;
-}
-.preview-float--actions.is-idle-hidden {
-  opacity: 0;
-  transform: translateY(-6px);
-  pointer-events: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  .preview-float--back.is-idle-hidden,
-  .preview-float--actions.is-idle-hidden {
-    transform: none;
-  }
 }
 .preview-float--format {
   bottom: 16px;
@@ -340,37 +346,11 @@ html.dark .preview-shell__stage {
     transform: translateX(-50%);
   }
 }
-.preview-float__btn {
-  width: 32px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-sm);
-  border: 0;
-  background: transparent;
-  color: var(--color-ink-2);
-  cursor: pointer;
-  transition:
-    background-color var(--dur-base) ease,
-    color var(--dur-base) ease;
-}
-.preview-float__btn:hover {
-  background: var(--color-hover);
-  color: var(--color-ink-1);
-}
-.preview-float__btn.is-active {
-  background: var(--color-selected);
-  color: var(--color-accent-ink);
-}
-.preview-float__btn--close:hover {
-  color: var(--c-rose);
-}
-
 .preview-shell__info {
   width: 320px;
-  border-left: 1px solid var(--color-line);
-  background: var(--color-canvas);
+  background: var(--color-panel);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-xl);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -378,6 +358,15 @@ html.dark .preview-shell__stage {
 }
 
 @media (max-width: 767px) {
+  .preview-shell__body {
+    padding: 0;
+    gap: 0;
+  }
+  .preview-shell__stage {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
   .preview-shell__info {
     /* Info rail collapses on mobile — P7 wires a bottom sheet instead. */
     display: none;

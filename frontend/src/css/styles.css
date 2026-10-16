@@ -2,7 +2,6 @@
 @import "normalize.css/normalize.css" layer(reset);
 @import "vue-toastification/dist/index.css" layer(components);
 @import "./tokens.css";
-@import "./_variables.css";
 @import "./_inputs.css";
 @import "./_forms.css";
 @import "./_shell.css";
@@ -12,9 +11,7 @@
 @import "./listing.css";
 @import "./listing-icons.css";
 @import "./upload-files.css";
-@import "./dashboard.css";
 @import "./epubReader.css";
-@import "./mdPreview.css";
 @import "./context-menu.css";
 @import "./videojs-skin.css";
 
@@ -25,14 +22,14 @@
 } */
 
 .link {
-  color: var(--blue);
+  color: var(--color-accent);
 }
 
 #loading {
-  background: var(--background);
+  background: var(--color-canvas);
 }
 #loading .spinner > div {
-  background: var(--iconPrimary);
+  background: var(--color-accent);
 }
 
 main .spinner {
@@ -47,7 +44,7 @@ main .spinner > div {
   height: 0.8em;
   margin: 0 0.1em;
   font-size: 1em;
-  background: var(--iconPrimary);
+  background: var(--color-accent);
   border-radius: 100%;
   display: inline-block;
   animation: sk-bouncedelay 1.4s infinite ease-in-out both;
@@ -87,7 +84,7 @@ main .spinner .bounce2 {
   transition: 0.2s ease all;
   border: 0;
   margin: 0;
-  color: var(--action);
+  color: var(--color-ink-2);
   border-radius: 50%;
   background: transparent;
   padding: 0;
@@ -110,7 +107,7 @@ main .spinner .bounce2 {
 }
 
 .action:hover {
-  background-color: var(--hover);
+  background-color: var(--color-hover);
 }
 
 .action ul {
@@ -131,7 +128,7 @@ main .spinner .bounce2 {
 }
 
 .action ul li:hover {
-  background-color: var(--divider);
+  background-color: var(--color-line);
 }
 
 #click-overlay {
@@ -153,8 +150,8 @@ main .spinner .bounce2 {
   position: absolute;
   bottom: 0;
   right: 0;
-  background: var(--blue);
-  color: var(--iconSecondary);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
   border-radius: 50%;
   font-size: 0.75em;
   width: 1.8em;
@@ -162,7 +159,7 @@ main .spinner .bounce2 {
   text-align: center;
   line-height: 1.55em;
   font-weight: bold;
-  border: 2px solid var(--borderPrimary);
+  border: 2px solid var(--color-line);
 }
 
 /* The text editor (Editor.vue) is self-contained with scoped styles —
@@ -290,8 +287,14 @@ html[dir="rtl"] .card.floating .card-content .file-list {
 /* Semantic colors — the feeling matches the color: green = success,
    red = failure, amber = needs-attention, accent = informational, and a
    neutral zinc for bare/generic toasts. */
+/* Soft native (Phase 6, 6.3): confirmations and notes are calm — the neutral
+   inverse surface with a coloured icon; only errors and warnings fill with
+   their status colour. */
 .Vue-Toastification__toast--success {
-  background: var(--status-success-fill) !important;
+  background: var(--color-inverse-surface) !important;
+}
+.Vue-Toastification__toast--success .Vue-Toastification__icon {
+  color: var(--status-success-fill) !important;
 }
 
 .Vue-Toastification__toast--error {
@@ -299,8 +302,7 @@ html[dir="rtl"] .card.floating .card-content .file-list {
 }
 
 .Vue-Toastification__toast--info {
-  background: var(--color-accent) !important;
-  color: var(--color-on-accent) !important;
+  background: var(--color-inverse-surface) !important;
 }
 
 .Vue-Toastification__toast--warning {
@@ -639,20 +641,4 @@ html.dark .confirm-prompt__icon.is-warn {
   /* Calm Minimal: the folder title is plain ink so it doesn't compete with the
      single accent (was a lilac→rose gradient). */
   color: var(--color-ink-1);
-}
-
-/* Primary action buttons (New folder, Upload) — lilac gradient, not flat. */
-.btn-accent-gradient {
-  /* Calm Minimal: content uses the theme-correct on-accent color (dark on the
-     light accents amber/cyan, white on violet) — overrides the `text-white`
-     utility on the markup, which was wrong for amber/cyan. */
-  color: var(--color-on-accent);
-  background-image: linear-gradient(
-    135deg,
-    var(--color-accent),
-    var(--color-accent-grad)
-  );
-}
-.btn-accent-gradient:hover {
-  filter: brightness(1.06);
 }

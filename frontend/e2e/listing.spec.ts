@@ -34,7 +34,11 @@ test.describe("file listing", () => {
     await contextAction(app, "photo.jpg", "Delete");
     const dialog = app.getByRole("dialog");
     await expect(dialog).toContainText("Move this file to the Trash?");
-    await dialog.getByRole("button", { name: "Move to Trash" }).click();
+    // The button names what will happen; focus starts on Cancel.
+    await expect(dialog.getByRole("button", { name: "Cancel" })).toBeFocused();
+    await dialog
+      .getByRole("button", { name: "Move this file to the Trash" })
+      .click();
 
     await expect(row(app, "photo.jpg")).toHaveCount(0);
     expect(fake.exists("/photo.jpg")).toBe(false);
@@ -48,7 +52,7 @@ test.describe("file listing", () => {
     await contextAction(app, "Music", "Delete");
     await app
       .getByRole("dialog")
-      .getByRole("button", { name: "Move to Trash" })
+      .getByRole("button", { name: "Move this folder to the Trash" })
       .click();
     await expect(row(app, "Music")).toHaveCount(0);
 

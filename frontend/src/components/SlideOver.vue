@@ -24,15 +24,12 @@
                 {{ title }}
               </h2>
             </div>
-            <button
-              type="button"
-              class="slideover__close"
-              :aria-label="closeLabel"
-              :title="closeLabel"
+            <UiIconButton
+              icon="x"
+              size="sm"
+              :label="closeLabel"
               @click="onCancel"
-            >
-              <Icon name="x" :size="14" />
-            </button>
+            />
           </header>
 
           <!-- Body: the actual panel content. Scrollable. -->
@@ -52,7 +49,7 @@
 
 <script setup lang="ts">
 import { computed, ref, toRef } from "vue";
-import Icon from "@/components/Icon.vue";
+import UiIconButton from "@/components/ui/UiIconButton.vue";
 import { useFocusTrap } from "@/composables/useFocusTrap";
 
 const props = withDefaults(
@@ -101,12 +98,16 @@ useFocusTrap(panel, toRef(props, "open"));
   z-index: 1001; /* above InfoPane (z-40) and palette scrim (1000) */
 }
 
+/* Soft native (Phase 6, 6.2): the side panel floats at the right edge,
+   inset like the content panels, rounded and lifted. */
 .slideover {
-  width: min(420px, 100vw);
-  height: 100%;
+  width: min(420px, calc(100vw - 20px));
+  height: calc(100% - 20px);
+  margin: 10px;
   background: var(--color-surface);
-  border-left: 1px solid var(--color-line);
-  box-shadow: var(--shadow-1);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-2);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -137,7 +138,7 @@ useFocusTrap(panel, toRef(props, "open"));
 }
 
 .slideover__title {
-  font-size: 15px;
+  font-size: var(--type-title);
   font-weight: 600;
   color: var(--color-ink-1);
   margin: 0;
@@ -145,28 +146,6 @@ useFocusTrap(panel, toRef(props, "open"));
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.slideover__close {
-  width: 26px;
-  height: 26px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  color: var(--color-ink-3);
-  flex-shrink: 0;
-  transition:
-    background-color 0.1s ease,
-    color 0.1s ease;
-}
-
-.slideover__close:hover {
-  background: var(--color-elevated);
-  color: var(--color-ink-1);
 }
 
 .slideover__body {
@@ -178,7 +157,7 @@ useFocusTrap(panel, toRef(props, "open"));
 .slideover__footer {
   padding: 12px 16px;
   border-top: 1px solid var(--color-line);
-  background: var(--color-canvas);
+  background: var(--color-panel);
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -207,6 +186,10 @@ useFocusTrap(panel, toRef(props, "open"));
 @media (max-width: 540px) {
   .slideover {
     width: 100vw;
+    height: 100%;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
   }
 }
 </style>

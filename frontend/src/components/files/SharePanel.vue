@@ -97,23 +97,29 @@
         <div class="share-section__title">
           {{ links.length === 0 ? "Create a share link" : "Add another link" }}
         </div>
+        <!-- Phase 6, 6.2: app controls throughout (no native selects). -->
         <div class="share-field">
-          <label class="share-field__label">Expires after</label>
+          <span id="share-expire-label" class="share-field__label"
+            >Expires after</span
+          >
           <div class="share-field__expire">
-            <input
-              v-model.number="time"
+            <UiTextField
+              class="share-field__num"
               type="number"
-              min="0"
-              max="2147483647"
-              class="share-input share-input--num"
+              inputmode="numeric"
+              aria-label="Expires after"
+              :model-value="String(time)"
+              @update:model-value="
+                (v: string) => (time = Math.max(0, Number(v) || 0))
+              "
               @keyup.enter="onCreate"
             />
-            <select v-model="unit" class="share-input share-input--select">
-              <option value="seconds">seconds</option>
-              <option value="minutes">minutes</option>
-              <option value="hours">hours</option>
-              <option value="days">days</option>
-            </select>
+            <UiSelect
+              v-model="unit"
+              class="share-field__unit"
+              aria-label="Unit"
+              :options="UNITS"
+            />
           </div>
           <div class="share-field__hint">Leave 0 for a permanent link.</div>
         </div>
@@ -148,83 +154,47 @@
         </div>
         <template v-if="mode === 'upload'">
           <div class="share-field">
-            <label class="share-field__label" for="share-max-file">
-              Largest file
-            </label>
-            <select
-              id="share-max-file"
-              v-model.number="maxFileSize"
-              class="share-input share-input--select"
-            >
-              <option :value="0">No limit</option>
-              <option :value="100 * MB">100 MB</option>
-              <option :value="GB">1 GB</option>
-              <option :value="10 * GB">10 GB</option>
-            </select>
+            <UiSelect
+              v-model="maxFileSize"
+              label="Largest file"
+              :options="MAX_FILE"
+            />
           </div>
           <div class="share-field">
-            <label class="share-field__label" for="share-max-total">
-              Total for this link
-            </label>
-            <select
-              id="share-max-total"
-              v-model.number="maxTotalSize"
-              class="share-input share-input--select"
-            >
-              <option :value="0">No limit</option>
-              <option :value="GB">1 GB</option>
-              <option :value="10 * GB">10 GB</option>
-              <option :value="50 * GB">50 GB</option>
-            </select>
+            <UiSelect
+              v-model="maxTotalSize"
+              label="Total for this link"
+              :options="MAX_TOTAL"
+            />
           </div>
           <div class="share-field">
-            <label class="share-field__label" for="share-exts">
-              Allowed file types
-              <span class="share-field__label-hint">(optional)</span>
-            </label>
-            <input
-              id="share-exts"
+            <UiTextField
               v-model.trim="allowedExts"
-              type="text"
-              class="share-input"
+              label="Allowed file types (optional)"
               placeholder="e.g. jpg, png, pdf"
             />
           </div>
-          <label class="share-check">
-            <input v-model="perUploaderFolder" type="checkbox" />
-            <span>Put each person's files in a folder named after them</span>
-          </label>
+          <UiCheckbox
+            v-model="perUploaderFolder"
+            class="share-check"
+            label="Put each person's files in a folder named after them"
+          />
         </template>
-        <div v-if="mode !== 'upload'" class="share-field">
-          <label class="share-field__label" for="share-limit">
-            Download limit
-          </label>
-          <select
-            id="share-limit"
-            v-model.number="maxDownloads"
-            class="share-input share-input--select"
-          >
-            <option :value="0">Unlimited</option>
-            <option :value="1">One-time link</option>
-            <option :value="5">5 downloads</option>
-            <option :value="10">10 downloads</option>
-            <option :value="25">25 downloads</option>
-          </select>
-          <div class="share-field__hint">
-            The link stops working once it has been downloaded this many times.
-            Previews count too.
-          </div>
+        <div class="share-field" v-if="mode !== 'upload'">
+          <UiSelect
+            v-model="maxDownloads"
+            label="Download limit"
+            hint="The link stops working once it has been downloaded this many times. Previews count too."
+            :options="DOWNLOAD_LIMITS"
+          />
         </div>
         <div class="share-field">
-          <label class="share-field__label">
-            Password
-            <span class="share-field__label-hint">(optional)</span>
-          </label>
-          <input
+          <UiTextField
             v-model.trim="password"
             type="password"
+            label="Password (optional)"
             placeholder="Leave blank for no password"
-            class="share-input"
+            autocomplete="new-password"
             @keyup.enter="onCreate"
           />
         </div>
@@ -235,32 +205,25 @@
       <!-- Copy the item's in-app path to the clipboard. Pushed to the far
            left (margin-right:auto) so it reads as a utility, separate from
            the Close / Create flow on the right. -->
-      <button
-        type="button"
-        class="share-btn share-btn--ghost share-btn--copy-path"
+      <UiButton
+        variant="ghost"
+        size="sm"
+        class="share-btn--copy-path"
+        :icon="copiedPath ? 'check' : 'copy'"
         :disabled="!targetPath"
         :title="copiedPath ? 'Copied!' : 'Copy the file path to the clipboard'"
         @click="copyPath"
+        >{{ copiedPath ? "Copied" : "Copy path" }}</UiButton
       >
-        <Icon :name="copiedPath ? 'check' : 'copy'" :size="13" />
-        {{ copiedPath ? "Copied" : "Copy path" }}
-      </button>
-      <button
-        type="button"
-        class="share-btn share-btn--ghost"
-        @click="onCancel"
-      >
-        Close
-      </button>
-      <button
-        type="button"
-        class="share-btn share-btn--primary"
-        :disabled="loading"
+      <UiButton size="sm" @click="onCancel">Close</UiButton>
+      <UiButton
+        size="sm"
+        variant="primary"
+        icon="link"
+        :loading="loading"
         @click="onCreate"
+        >Create link</UiButton
       >
-        <Icon name="link" :size="13" />
-        Create link
-      </button>
     </template>
   </SlideOver>
 </template>
@@ -275,6 +238,10 @@ import dayjs from "dayjs";
 import SlideOver from "@/components/SlideOver.vue";
 import Icon from "@/components/Icon.vue";
 import UiSegmented from "@/components/ui/UiSegmented.vue";
+import UiButton from "@/components/ui/UiButton.vue";
+import UiCheckbox from "@/components/ui/UiCheckbox.vue";
+import UiSelect from "@/components/ui/UiSelect.vue";
+import UiTextField from "@/components/ui/UiTextField.vue";
 import { useServerEvents } from "@/composables/useServerEvents";
 import { isExhausted, usageSummary } from "@/api/share";
 import { uploadSharesEnabled } from "@/utils/constants";
@@ -315,6 +282,31 @@ const maxDownloads = ref<number>(0);
 // 4.1 drop-box options.
 const MB = 1024 * 1024;
 const GB = 1024 * MB;
+const UNITS = [
+  { value: "seconds" as const, label: "seconds" },
+  { value: "minutes" as const, label: "minutes" },
+  { value: "hours" as const, label: "hours" },
+  { value: "days" as const, label: "days" },
+];
+const MAX_FILE = [
+  { value: 0, label: "No limit" },
+  { value: 100 * MB, label: "100 MB" },
+  { value: GB, label: "1 GB" },
+  { value: 10 * GB, label: "10 GB" },
+];
+const MAX_TOTAL = [
+  { value: 0, label: "No limit" },
+  { value: GB, label: "1 GB" },
+  { value: 10 * GB, label: "10 GB" },
+  { value: 50 * GB, label: "50 GB" },
+];
+const DOWNLOAD_LIMITS = [
+  { value: 0, label: "Unlimited" },
+  { value: 1, label: "One-time link" },
+  { value: 5, label: "5 downloads" },
+  { value: 10, label: "10 downloads" },
+  { value: 25, label: "25 downloads" },
+];
 const mode = ref<"" | "upload">("");
 const maxFileSize = ref<number>(0);
 const maxTotalSize = ref<number>(0);
@@ -650,11 +642,6 @@ watch(
   background: var(--status-danger-soft);
   color: var(--status-danger);
 }
-.share-kinds {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 16px;
-}
 .share-kind,
 .share-check {
   display: inline-flex;
@@ -701,37 +688,6 @@ watch(
   margin-top: 4px;
   font-size: 11px;
   color: var(--color-ink-3);
-}
-
-.share-input {
-  height: 32px;
-  padding: 0 10px;
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  font: inherit;
-  font-size: 13px;
-  color: var(--color-ink-1);
-  outline: none;
-  transition:
-    border-color 0.1s ease,
-    box-shadow 0.1s ease;
-  width: 100%;
-}
-
-.share-input:focus {
-  border-color: var(--color-accent);
-  box-shadow: var(--focus-halo);
-}
-
-.share-input--num {
-  width: 100px;
-  flex-shrink: 0;
-}
-
-.share-input--select {
-  flex: 1;
-  cursor: pointer;
 }
 
 /* States */

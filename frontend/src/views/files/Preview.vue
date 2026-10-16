@@ -3,6 +3,11 @@
     :name="name"
     :info-open="infoOpen"
     :fade-chrome="isComic || isPdf"
+    :folder="folderLabel"
+    :has-previous="hasPrevious"
+    :has-next="hasNext"
+    @prev="prev"
+    @next="next"
     @close="close"
     @toggle-info="infoOpen = !infoOpen"
     @user-activity="toggleNavigation"
@@ -657,6 +662,7 @@ import { useTouchDevice } from "@/composables/useTouchDevice";
 import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
 import { useRecents } from "@/composables/useRecents";
+import { useRootLabel } from "@/composables/useRootLabel";
 import { useEpubProgress } from "@/composables/useEpubProgress";
 import { usePreferences } from "@/composables/usePreferences";
 import ImageEditor from "@/components/files/ImageEditor.vue";
@@ -886,7 +892,18 @@ const csvError = ref<string>("");
 // Info rail open/close — persisted across navigations so the user's
 // preference sticks. Defaults to true so first-time users see the
 // metadata without having to discover the toggle.
-const infoOpen = useStorage("preview-info-open", true);
+// The details rail's open state is remembered for wide screens; on phones
+// it's a drawer over the file, so it starts closed every time (6.1).
+const infoOpenWide = useStorage("preview-info-open", true);
+const infoOpenPhone = ref(false);
+const infoOpen = computed({
+  get: () =>
+    window.innerWidth < 768 ? infoOpenPhone.value : infoOpenWide.value,
+  set: (v: boolean) => {
+    if (window.innerWidth < 768) infoOpenPhone.value = v;
+    else infoOpenWide.value = v;
+  },
+});
 
 // ── Image zoom state (P2). Persisted so the user's preferred zoom
 // carries between images in a session. Fit-to-screen defaults to true
@@ -1610,6 +1627,17 @@ const toggleNavigation = throttle(function () {
 // as a no-op `.value` read until the auto-fade is either wired into
 // the new shell or formally removed.
 void showNav.value;
+
+// The folder the file is in: the preview header's Back label (6.1).
+const { rootLabel: previewRootLabel } = useRootLabel();
+const folderLabel = computed(() => {
+  const dir = decodeURIComponent(url.removeLastDir(route.path)).replace(
+    /^\/files\/?/,
+    ""
+  );
+  const last = dir.split("/").filter(Boolean).pop();
+  return last || previewRootLabel.value || "My files";
+});
 
 const close = () => {
   const uri = url.removeLastDir(route.path) + "/";

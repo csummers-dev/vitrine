@@ -356,6 +356,142 @@ const SCREENS: Screen[] = [
     },
   },
   {
+    name: "preview-markdown",
+    sizes: ["desktop", "phone"],
+    open: async (c) => {
+      await signedIn(c);
+      await c.page.goto("/files/readme.md");
+      await expect(
+        c.page.getByRole("heading", { name: "vitrine" })
+      ).toBeVisible();
+    },
+  },
+  {
+    name: "preview-text",
+    sizes: ["desktop"],
+    open: async (c) => {
+      await signedIn(c);
+      await c.page.goto("/files/Documents/notes.txt");
+      await expect(c.page.getByText("hello from notes").first()).toBeVisible();
+    },
+  },
+  {
+    name: "preview-csv",
+    sizes: ["desktop"],
+    open: async (c) => {
+      await signedIn(c);
+      await c.page.goto("/files/Documents/budget.csv");
+      await expect(c.page.getByRole("table")).toBeVisible();
+    },
+  },
+  {
+    name: "preview-image",
+    sizes: ["desktop", "phone"],
+    open: async (c) => {
+      await signedIn(c);
+      await c.page.goto("/files/photo.jpg");
+      await expect(
+        c.page.getByRole("heading", { name: "photo.jpg", level: 1 })
+      ).toBeVisible();
+    },
+  },
+  {
+    name: "preview-audio",
+    sizes: ["desktop"],
+    open: async (c) => {
+      await signedIn(c);
+      await c.page.goto("/files/Music/Evening/track%2001.mp3");
+      await expect(
+        c.page.getByRole("button", { name: "Play" }).first()
+      ).toBeVisible();
+    },
+  },
+  {
+    name: "prompt-delete",
+    sizes: ["desktop", "phone"],
+    open: async (c) => {
+      await signedIn(c);
+      await row(c.page, "readme.md").click();
+      await c.page.keyboard.press("Delete");
+      await expect(c.page.getByRole("dialog")).toBeVisible();
+    },
+  },
+  {
+    name: "panel-move",
+    sizes: ["desktop"],
+    open: async (c) => {
+      await signedIn(c);
+      await row(c.page, "readme.md").click({ button: "right" });
+      await c.page.getByRole("menuitem", { name: "Move file to…" }).click();
+      await expect(c.page.getByRole("dialog")).toBeVisible();
+    },
+  },
+  {
+    name: "prompt-download",
+    sizes: ["desktop"],
+    open: async (c) => {
+      await signedIn(c);
+      await row(c.page, "Documents").click({ button: "right" });
+      await c.page
+        .getByRole("menuitem", { name: "Download", exact: true })
+        .click();
+      await expect(c.page.getByRole("dialog")).toBeVisible();
+    },
+  },
+  {
+    name: "palette",
+    sizes: ["desktop", "phone"],
+    open: async (c) => {
+      await signedIn(c);
+      await expect(row(c.page, "readme.md")).toBeVisible();
+      await c.page.keyboard.press("ControlOrMeta+k");
+      await expect(
+        c.page.getByRole("dialog", { name: "Command palette" })
+      ).toBeVisible();
+    },
+  },
+  {
+    name: "shortcuts",
+    sizes: ["desktop"],
+    open: async (c) => {
+      await signedIn(c);
+      await expect(row(c.page, "readme.md")).toBeVisible();
+      await c.page.keyboard.press("F1");
+      await expect(c.page.getByText("Keyboard shortcuts")).toBeVisible();
+    },
+  },
+  {
+    name: "quick-peek",
+    sizes: ["desktop"],
+    open: async (c) => {
+      await signedIn(c);
+      await row(c.page, "photo.jpg").click();
+      await c.page.keyboard.press(" ");
+      await expect(
+        c.page
+          .getByRole("dialog", { name: "Preview of photo.jpg" })
+          .getByRole("img")
+      ).toBeVisible();
+    },
+  },
+  {
+    name: "slideshow",
+    sizes: ["desktop"],
+    open: async (c) => {
+      await signedIn(c);
+      await c.page.goto("/files/Photos/2026/");
+      await row(c.page, "harbour.jpg").click({ button: "right" });
+      await c.page
+        .getByRole("menuitem", { name: "Slideshow from here" })
+        .click();
+      await expect(c.page.getByTestId("slideshow")).toBeVisible();
+      await c.page.keyboard.press(" ");
+      await expect(
+        c.page.getByTestId("slideshow").getByRole("button", { name: "Play" })
+      ).toBeVisible();
+    },
+  },
+  {
     name: "shell-collapsed",
     sizes: ["desktop"],
     open: async (c) => {
