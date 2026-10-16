@@ -73,7 +73,7 @@ Every screen and overlay with the states it must be checked in. "Shot" marks sta
 | Files | split view, saved search, drag over, selection | split view, saved search, selection | Step 4 |
 | Details panel | one item, several, the folder, over the list (768–1099 px), phone sheet | one, several, over the list, sheet | Step 4 |
 | Files | inline rename, new folder | | |
-| Preview | image, video, audio, PDF, EPUB, comic, CSV, text, editor | image, audio, CSV, text, Markdown; phone image and Markdown | Step 6 |
+| Preview | image, video, audio, PDF, EPUB, comic, CSV, text, editor | image, video (can't play), audio, PDF, CSV, text, Markdown, editor; phone image, video, Markdown, editor | Step 6 |
 | Trash | empty, with items | empty, with items | Step 5 |
 | Storage | treemap, largest files, loading, error, duplicates pill | treemap, duplicates pill | Step 5 |
 | Duplicates | idle, scanning, results, none found, failed, canceled | idle, results, none found | Step 5 |
@@ -95,9 +95,9 @@ Every screen and overlay with the states it must be checked in. "Shot" marks sta
 | Prompts: Delete, Replace, Resolve conflict, Upload, Info, Download, Current password, Discard changes, Share delete, Delete user | Delete (desktop, phone sheet), Download | Step 6 |
 | Panels: Share, Move/Copy, Extract, Bulk rename, Tag picker, Audio tags, Folder picker, Save search, Favorite title, Root label | Move | Step 6 |
 | Transfer dock | | |
-| Mini player | | |
+| Mini player | desktop, phone | Step 6 |
 | Slideshow | yes | Step 6 |
-| Photo map | | |
+| Photo map | yes | Step 6 |
 | Quick peek | image | Step 6 |
 | Shortcuts overlay | yes | Step 6 |
 | Offline banner | | |

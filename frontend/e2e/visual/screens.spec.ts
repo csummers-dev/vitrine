@@ -4,6 +4,8 @@
  * `<screen>-<theme>-<size>.png`. Update with the "Update screenshots"
  * workflow or scripts/visual-docker.sh --update-snapshots.
  */
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import type { Page } from "@playwright/test";
 import { login } from "../support/fakeServer";
 import type { FakeServer } from "../support/fakeServer";
@@ -17,6 +19,10 @@ import {
   THEMES,
   type SizeName,
 } from "./fixtures";
+
+const GPS_JPEG = readFileSync(
+  fileURLToPath(new URL("../fixtures/gps.jpg", import.meta.url))
+);
 
 type Ctx = { page: Page; fake: FakeServer };
 
@@ -404,6 +410,67 @@ const SCREENS: Screen[] = [
       await expect(
         c.page.getByRole("button", { name: "Play" }).first()
       ).toBeVisible();
+    },
+  },
+  {
+    name: "preview-video",
+    sizes: ["desktop", "phone"],
+    open: async (c) => {
+      await signedIn(c);
+      await c.page.goto("/files/Videos/holiday.mp4");
+      await expect(
+        c.page.getByRole("heading", { name: "holiday.mp4", level: 1 })
+      ).toBeVisible();
+    },
+  },
+  {
+    name: "preview-pdf",
+    sizes: ["desktop"],
+    open: async (c) => {
+      await signedIn(c);
+      await c.page.goto("/files/Documents/Reports/q3.pdf");
+      await expect(
+        c.page.getByRole("heading", { name: "q3.pdf", level: 1 })
+      ).toBeVisible();
+    },
+  },
+  {
+    name: "editor",
+    sizes: ["desktop", "phone"],
+    open: async (c) => {
+      await signedIn(c);
+      await c.page.goto("/files/Documents/notes.txt?edit=true");
+      await expect(
+        c.page.locator(".cm-editor, .ace_editor, textarea").first()
+      ).toBeVisible();
+    },
+  },
+  {
+    name: "mini-player",
+    sizes: ["desktop", "phone"],
+    open: async (c) => {
+      await signedIn(c);
+      await c.page.goto("/files/Music/Evening/");
+      await row(c.page, "track 01.mp3").click({ button: "right" });
+      await c.page.getByRole("menuitem", { name: "Play", exact: true }).click();
+      await expect(c.page.getByTestId("mini-player")).toContainText("track 01");
+    },
+  },
+  {
+    name: "photo-map",
+    sizes: ["desktop"],
+    open: async (c) => {
+      c.fake.putBinary("/Photos/2026/eiffel.jpg", GPS_JPEG);
+      await signedIn(c);
+      await c.page.goto("/files/Photos/2026/");
+      await expect(row(c.page, "harbour.jpg")).toBeVisible();
+      await c.page
+        .locator("#listing")
+        .click({ button: "right", position: { x: 400, y: 400 } });
+      await c.page.getByRole("menuitem", { name: "Photo map" }).click();
+      await expect(
+        c.page.getByTestId("photo-map").locator(".photo-map__pin")
+      ).toHaveCount(1);
     },
   },
   {

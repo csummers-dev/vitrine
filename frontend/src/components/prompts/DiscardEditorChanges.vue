@@ -12,7 +12,7 @@
       </div>
     </div>
     <div class="confirm-prompt__actions">
-      <UiButton size="sm" @click="layoutStore.closeHovers">
+      <UiButton size="sm" data-autofocus @click="layoutStore.closeHovers">
         {{ $t("buttons.cancel") }}
       </UiButton>
       <UiButton

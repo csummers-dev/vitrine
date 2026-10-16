@@ -16,24 +16,19 @@
           <span class="photo-map__status" data-testid="photo-map-status">{{
             status
           }}</span>
-          <button
+          <UiButton
             v-if="located.length > 0"
-            type="button"
-            class="photo-map__btn"
+            size="sm"
+            icon="play"
             @click="slideshowAll"
+            >Slideshow</UiButton
           >
-            <Icon name="play" :size="13" />
-            <span>Slideshow</span>
-          </button>
-          <button
+          <UiIconButton
             ref="closeBtn"
-            type="button"
-            class="photo-map__icon"
-            aria-label="Close map"
+            icon="x"
+            label="Close map"
             @click="close"
-          >
-            <Icon name="x" :size="16" />
-          </button>
+          />
         </header>
         <div v-if="loading" class="photo-map__progress" aria-hidden="true">
           <span :style="{ width: `${progressPct}%` }" />
@@ -54,6 +49,8 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import type * as Leaflet from "leaflet";
 import Icon from "@/components/Icon.vue";
+import UiButton from "@/components/ui/UiButton.vue";
+import UiIconButton from "@/components/ui/UiIconButton.vue";
 import {
   clusterPoints,
   locatePhotos,
@@ -69,7 +66,7 @@ const pm = usePhotoMap();
 const slideshow = useSlideshow();
 const router = useRouter();
 const mapEl = ref<HTMLElement | null>(null);
-const closeBtn = ref<HTMLElement | null>(null);
+const closeBtn = ref<{ $el: HTMLElement } | null>(null);
 
 const loading = ref(false);
 const done = ref(0);
@@ -202,7 +199,7 @@ async function start() {
   total.value = pm.photos.value.length;
   loading.value = true;
   await nextTick();
-  closeBtn.value?.focus();
+  closeBtn.value?.$el.focus();
   await ensureMap();
   const res = await locatePhotos(pm.photos.value, {
     signal,
@@ -277,7 +274,7 @@ onBeforeUnmount(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   overflow: hidden;
   background: var(--color-surface);
   box-shadow: var(--shadow-2);
@@ -286,49 +283,21 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px 10px 16px;
+  min-height: 52px;
+  padding: 8px 10px 8px 16px;
   border-bottom: 1px solid var(--color-line);
   color: var(--color-ink-1);
 }
 .photo-map__title {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--type-ui);
   font-weight: 600;
   min-width: 0;
 }
 .photo-map__status {
   flex: 1;
-  font-size: 12px;
+  font-size: var(--type-small);
   color: var(--color-ink-3);
-}
-.photo-map__btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 12px;
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-full);
-  background: var(--color-surface);
-  color: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-.photo-map__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: 0;
-  border-radius: var(--radius-md);
-  background: none;
-  color: inherit;
-  cursor: pointer;
-}
-.photo-map__icon:hover,
-.photo-map__btn:hover {
-  background: var(--color-elevated);
 }
 .photo-map__progress {
   height: 3px;
@@ -394,6 +363,44 @@ onBeforeUnmount(() => {
   font-weight: 700;
   line-height: 20px;
   text-align: center;
+}
+/* Leaflet's own controls, on the app's tokens (6.1). */
+.photo-map__map :deep(.leaflet-bar) {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+.photo-map__map :deep(.leaflet-bar a) {
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  background: var(--color-surface);
+  color: var(--color-ink-1);
+  border-bottom-color: var(--color-line);
+}
+.photo-map__map :deep(.leaflet-bar a:hover) {
+  background: var(--color-hover);
+}
+.photo-map__map :deep(.leaflet-bar a.leaflet-disabled) {
+  color: var(--color-ink-4);
+  background: var(--color-surface);
+}
+.photo-map__map :deep(.leaflet-control-attribution) {
+  margin: 0 8px 8px 0;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
+  font-family: var(--font-sans);
+  font-size: var(--type-caption);
+  box-shadow: var(--shadow-1);
+}
+.photo-map__map :deep(.leaflet-control-attribution a) {
+  color: var(--color-accent-ink);
+}
+.photo-map__map :deep(.leaflet-attribution-flag) {
+  display: none !important;
 }
 @media (max-width: 767px) {
   .photo-map {
