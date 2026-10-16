@@ -7,9 +7,9 @@
     <div class="upload-prompt__choices">
       <button
         id="focus-prompt"
+        data-autofocus
         type="button"
         class="upload-prompt__choice"
-        tabindex="1"
         @click="uploadFile"
         @keydown.enter.prevent="uploadFile"
       >
@@ -24,7 +24,6 @@
       <button
         type="button"
         class="upload-prompt__choice"
-        tabindex="2"
         @click="uploadFolder"
         @keydown.enter.prevent="uploadFolder"
       >

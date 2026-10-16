@@ -64,7 +64,15 @@
       <Icon name="file-text" />
       <p>{{ $t("files.lonely") }}</p>
     </div>
-    <div v-else class="csv-table-container" @wheel.stop @touchmove.stop>
+    <div
+      v-else
+      class="csv-table-container"
+      tabindex="0"
+      role="region"
+      aria-label="Table"
+      @wheel.stop
+      @touchmove.stop
+    >
       <table class="csv-table">
         <thead>
           <tr>
@@ -421,5 +429,9 @@ watch(selectedEncoding, () => {
 
 .message {
   font-size: 1.25em;
+}
+.csv-table-container:focus-visible {
+  outline: 2px solid var(--color-accent-ring);
+  outline-offset: -2px;
 }
 </style>

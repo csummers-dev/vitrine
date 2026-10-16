@@ -1121,6 +1121,7 @@ import { useListingNavigation } from "@/composables/useListingNavigation";
 import { useTouchDevice } from "@/composables/useTouchDevice";
 import { usePullToRefresh } from "@/composables/usePullToRefresh";
 import { copy } from "@/utils/clipboard";
+import { removeLastDir } from "@/utils/url";
 import { sortListing } from "@/utils/secondarySort";
 import { useFolderSizes } from "@/composables/useFolderSizes";
 import { useFolderRename } from "@/composables/listing/useFolderRename";
@@ -1514,14 +1515,24 @@ const scrollActiveIntoView = (reqIndex: number) => {
     const sc = scrollSection.value;
     if (!sc) return;
     const sel = `[data-index="${reqIndex}"]`;
-    const found = sc.querySelector(sel) as HTMLElement | null;
-    if (found) {
-      found.scrollIntoView({ block: "nearest" });
-      return;
-    }
+    // The live row (the list recycler parks old views at -9999px with their
+    // content still in the DOM). Keyboard focus follows the cursor (7.1), so
+    // a screen reader announces the row and Tab carries on from it.
+    const live = () =>
+      [...sc.querySelectorAll<HTMLElement>(sel)].find(
+        (el) => !el.closest('[style*="-9999px"]')
+      ) ?? null;
+    const land = (el: HTMLElement | null) => {
+      if (!el) return;
+      el.scrollIntoView({ block: "nearest" });
+      el.focus({ preventScroll: true });
+    };
+    const found = live();
+    if (found) return land(found);
     if (viewMode.value === "list") {
       const pos = listRows.value.findIndex((r) => r.item?.index === reqIndex);
       if (pos >= 0) listScroller.value?.scrollToItem(pos);
+      requestAnimationFrame(() => land(live()));
       return;
     }
     // Grid/gallery target windowed-out of the DOM: jump proportionally, then
@@ -1531,13 +1542,28 @@ const scrollActiveIntoView = (reqIndex: number) => {
     if (vpos < 0) return;
     const frac = order.length > 1 ? vpos / (order.length - 1) : 0;
     sc.scrollTop = frac * Math.max(0, sc.scrollHeight - sc.clientHeight);
-    requestAnimationFrame(() => {
-      (sc.querySelector(sel) as HTMLElement | null)?.scrollIntoView({
-        block: "nearest",
-      });
-    });
+    requestAnimationFrame(() => land(live()));
   });
 };
+
+// After a reload (a rename, a move, coming back up from a folder) the row
+// that had focus is gone. If focus was lost with it, put it on the selected
+// row — the renamed file, the folder just left — so the keyboard carries on
+// from there (7.1).
+watch(
+  () => fileStore.req,
+  () => {
+    void nextTick(() => {
+      const active = document.activeElement as HTMLElement | null;
+      const lost = !active || active === document.body || active.id === "main";
+      if (!lost || fileStore.selected.length === 0) return;
+      const idx = fileStore.selected[0];
+      fileStore.activeIndex = idx;
+      scrollActiveIntoView(idx);
+    });
+  },
+  { flush: "post" }
+);
 
 const listingNav = useListingNavigation({
   ordered: () => orderedItems.value,
@@ -1546,6 +1572,31 @@ const listingNav = useListingNavigation({
   grid: () => viewMode.value !== "list",
   reveal: scrollActiveIntoView,
 });
+
+// Shift+F10 / the Menu key: the row menu for the focused item (or the
+// selection), else the folder menu, placed where a right-click would be.
+const openMenuFromKeyboard = () => {
+  const sc = scrollSection.value;
+  if (!sc) return;
+  let idx = fileStore.activeIndex;
+  if (idx < 0 && fileStore.selected.length > 0) idx = fileStore.selected[0];
+  const rowEl =
+    idx >= 0
+      ? ([...sc.querySelectorAll<HTMLElement>(`[data-index="${idx}"]`)].find(
+          (el) => !el.closest('[style*="-9999px"]')
+        ) ?? null)
+      : null;
+  const target = rowEl ?? sc;
+  const r = target.getBoundingClientRect();
+  target.dispatchEvent(
+    new MouseEvent("contextmenu", {
+      bubbles: true,
+      cancelable: true,
+      clientX: r.left + Math.min(48, r.width / 2),
+      clientY: rowEl ? r.top + r.height / 2 : r.top + 24,
+    })
+  );
+};
 
 // Enter → open the focused item (folder navigates in, file opens its preview).
 // Falls back to the first selected item so Enter works after a plain click too.
@@ -2267,6 +2318,28 @@ const keyEvent = (event: KeyboardEvent) => {
     typeahead.reset();
   }
 
+  // Keyboard routes to things the mouse reaches (7.1): Shift+F10 opens the
+  // menu for the focused item, Alt+↑ goes to the parent folder.
+  {
+    const t = event.target as HTMLElement | null;
+    const tg = t?.tagName?.toLowerCase();
+    const inField =
+      tg === "input" || tg === "textarea" || t?.isContentEditable === true;
+    if (!inField && event.shiftKey && event.key === "F10") {
+      event.preventDefault();
+      openMenuFromKeyboard();
+      return;
+    }
+    if (!inField && event.altKey && event.key === "ArrowUp") {
+      const up = removeLastDir(route.path) + "/";
+      if (up !== route.path && up.startsWith("/files/")) {
+        event.preventDefault();
+        void router.push(up);
+      }
+      return;
+    }
+  }
+
   // ── Finder-style keyboard navigation (arrows / Home / End / Enter /
   //    type-ahead). WS10 removed the bare-key Delete/F2/Space actions + the
   //    global dispatcher shortcuts; these navigation keys are the only ones the
@@ -2280,7 +2353,14 @@ const keyEvent = (event: KeyboardEvent) => {
       navTag === "textarea" ||
       navTarget?.isContentEditable === true;
     const noChord = !event.metaKey && !event.ctrlKey && !event.altKey;
-    if (!typing && noChord) {
+    // A focused link, button or other control keeps its own keys (Enter on
+    // the skip link, arrows in a radio group); only the rows, the listing
+    // itself or nothing in particular get the listing's keys (7.1).
+    const onControl =
+      navTarget?.closest?.(
+        'a[href], button, select, summary, [role="button"], [role="link"], [role="menuitem"], [role="radio"], [role="tab"], [role="checkbox"], [role="switch"], [role="slider"], [role="option"], [role="menu"], [role="listbox"]'
+      ) != null;
+    if (!typing && noChord && !onControl) {
       switch (event.key) {
         case "ArrowDown":
           event.preventDefault();
@@ -2310,6 +2390,19 @@ const keyEvent = (event: KeyboardEvent) => {
           event.preventDefault();
           openActiveItem();
           return;
+        case "ContextMenu":
+          event.preventDefault();
+          openMenuFromKeyboard();
+          return;
+        case "F2": {
+          // Rename the one selected item inline (7.1: the palette and
+          // menus have long shown F2 for this).
+          if (!authStore.user?.perm.rename || fileStore.selectedCount !== 1)
+            return;
+          event.preventDefault();
+          layoutStore.showHover("rename");
+          return;
+        }
         case "/":
           // V2 #3: "/" reloads the current folder (was the "R" shortcut). Sits
           // before the type-ahead default so it isn't swallowed as a search key.

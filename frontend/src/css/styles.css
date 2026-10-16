@@ -642,3 +642,38 @@ html.dark .confirm-prompt__icon.is-warn {
      single accent (was a lilac→rose gradient). */
   color: var(--color-ink-1);
 }
+
+/* ── Forced colours (Windows high contrast), 7.1 ──────────────────────────
+   The system replaces our colours and drops box-shadows, which is where most
+   focus halos, selection tints and panel edges live. Put them back with
+   system colours: a real outline for focus, Highlight for what is selected,
+   and a border round every floating surface. */
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 2px solid CanvasText !important;
+    outline-offset: 2px;
+  }
+  .item[aria-selected="true"],
+  .ui-seg__option.is-selected,
+  .context-menu__item--focused,
+  .cmd-palette__row--selected,
+  [role="option"][aria-selected="true"] {
+    forced-color-adjust: none;
+    background: Highlight !important;
+    color: HighlightText !important;
+  }
+  .ui-toggle {
+    border: 1px solid ButtonText;
+  }
+  .ui-toggle.is-on {
+    forced-color-adjust: none;
+    background: Highlight;
+  }
+  .ui-dialog,
+  .slideover,
+  .context-menu,
+  .cmd-palette,
+  .Vue-Toastification__toast {
+    border: 1px solid CanvasText !important;
+  }
+}

@@ -110,7 +110,7 @@ test.describe("with a saved search", () => {
     await app.keyboard.type("recent photos");
     await app
       .getByRole("dialog", { name: "Command palette" })
-      .getByRole("button", { name: /Recent photos/ })
+      .getByRole("option", { name: /Recent photos/ })
       .click();
     await expect(app).toHaveURL(/\/files\/\?saved=s1$/);
     await expect(app.getByTestId("saved-search-head")).toContainText(

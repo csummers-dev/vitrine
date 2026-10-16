@@ -1,5 +1,5 @@
 <template>
-  <div class="folder-picker">
+  <div ref="rootEl" class="folder-picker">
     <!-- Path + sort. Breadcrumb takes the row; a compact Sort control on the
          right lets the user order the destination list (v2.8) — it used to be
          locked to whatever order the server returned. -->
@@ -262,7 +262,12 @@ const segments = computed<{ name: string; url: string }[]>(() => {
   });
 });
 
+const rootEl = ref<HTMLElement | null>(null);
+
 const navigate = async (path: string) => {
+  // Opening a folder from the keyboard replaces the row that had focus;
+  // keep focus in the picker, on the folder now shown (7.1).
+  const hadFocus = rootEl.value?.contains(document.activeElement) === true;
   if (abortCtrl) abortCtrl.abort();
   abortCtrl = new AbortController();
   loading.value = true;
@@ -283,6 +288,13 @@ const navigate = async (path: string) => {
     folders.value = [];
   } finally {
     loading.value = false;
+  }
+  if (hadFocus) {
+    await nextTick();
+    if (!rootEl.value?.contains(document.activeElement))
+      rootEl.value
+        ?.querySelector<HTMLElement>(".folder-picker__crumb.is-current")
+        ?.focus();
   }
 };
 

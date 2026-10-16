@@ -3,9 +3,19 @@
     <!-- Skip-to-content link: invisible until focused via Tab. Must be the
          first focusable element so a keyboard user reaches it before the
          sidebar's full nav tree. -->
-    <a href="#main" class="skip-link">Skip to content</a>
+    <a href="#main" class="skip-link" @click.prevent="skipToMain"
+      >Skip to content</a
+    >
 
-    <div v-if="uploadStore.totalBytes" class="progress">
+    <div
+      v-if="uploadStore.totalBytes"
+      class="progress"
+      role="progressbar"
+      aria-label="Upload progress"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      :aria-valuenow="Math.round(uploadStore.displayedPercent)"
+    >
       <!-- Width drives off the store's displayedPercent (v1.3 H10) —
            a phantom-counter-backed value that doesn't regress when
            files are added to an in-progress queue. -->
@@ -35,7 +45,12 @@
       <SidebarDrawer @click="onDrawerNavClick" />
     </Drawer>
 
-    <main id="main" class="relative flex-1 flex flex-col min-w-0 min-h-0">
+    <main
+      id="main"
+      ref="mainEl"
+      tabindex="-1"
+      class="relative flex-1 flex flex-col min-w-0 min-h-0 outline-none"
+    >
       <UpgradeBanner v-if="authStore.isLoggedIn" />
       <router-view />
       <!-- 4.0 3.5: the play queue keeps playing while you browse. -->
@@ -76,7 +91,14 @@ import Drawer from "@/components/Drawer.vue";
 import UpgradeBanner from "@/components/UpgradeBanner.vue";
 import { useMobileNav } from "@/composables/useMobileNav";
 import { enableExec, mapEnabled } from "@/utils/constants";
-import { computed, defineAsyncComponent, watch } from "vue";
+import {
+  computed,
+  defineAsyncComponent,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import { useRoute } from "vue-router";
 
 const layoutStore = useLayoutStore();
@@ -125,4 +147,36 @@ watch(route, () => {
   // where the user picks a sidebar item, hits browser back, etc.
   mobileNav.close();
 });
+
+// Skip link (7.1): move focus into the main area, so the next Tab starts
+// there instead of at the top of the sidebar.
+const mainEl = ref<HTMLElement | null>(null);
+const skipToMain = () => mainEl.value?.focus();
+
+// When the focused element is removed (a folder opened from the keyboard,
+// a row that was deleted, a closed panel that didn't hand focus back),
+// the browser drops focus to <body> and the next Tab starts from the top.
+// Catch that and land in the main area instead (7.1: focus never lost).
+const onFocusOut = (e: FocusEvent) => {
+  const lost = e.target as HTMLElement | null;
+  if (e.relatedTarget || !lost) return;
+  setTimeout(() => {
+    if (lost.isConnected) return;
+    const active = document.activeElement;
+    if (active && active !== document.body) return;
+    // Inside an open dialog or panel, stay in it.
+    const dialogs = document.querySelectorAll<HTMLElement>(
+      '[role="dialog"], [aria-modal="true"]'
+    );
+    const dialog = dialogs[dialogs.length - 1];
+    const target = dialog
+      ? (dialog.querySelector<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])'
+        ) ?? dialog)
+      : mainEl.value;
+    target?.focus({ preventScroll: true });
+  }, 0);
+};
+onMounted(() => document.addEventListener("focusout", onFocusOut));
+onBeforeUnmount(() => document.removeEventListener("focusout", onFocusOut));
 </script>

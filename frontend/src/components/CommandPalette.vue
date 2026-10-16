@@ -25,6 +25,16 @@
               autocomplete="off"
               spellcheck="false"
               :placeholder="placeholder"
+              :aria-label="placeholder"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded="true"
+              aria-controls="cmd-palette-list"
+              :aria-activedescendant="
+                selectedIndex >= 0 && flatResults.length
+                  ? `cmd-palette-opt-${selectedIndex}`
+                  : undefined
+              "
               class="cmd-palette__input"
               @keydown="onInputKeydown"
             />
@@ -32,7 +42,12 @@
           </div>
 
           <!-- Results -->
-          <div ref="resultsEl" class="cmd-palette__results">
+          <div
+            ref="resultsEl"
+            class="cmd-palette__results"
+            tabindex="0"
+            aria-label="Results"
+          >
             <!-- G7: while a backend search is in flight, render an
                  inline loading row at the top so the palette doesn't
                  look empty during slow searches. Sits ABOVE static
@@ -42,6 +57,7 @@
             <div
               v-if="isSearching && flatResults.length === 0"
               class="cmd-palette__searching"
+              role="status"
             >
               <Icon
                 name="loader-circle"
@@ -53,41 +69,61 @@
             <div
               v-else-if="flatResults.length === 0"
               class="cmd-palette__empty"
+              role="status"
             >
               <Icon name="search-x" :size="18" :stroke-width="1.4" />
               <span>No results for &ldquo;{{ query }}&rdquo;</span>
             </div>
 
-            <template v-for="group in groupedResults" :key="group.id">
-              <div class="cmd-palette__group-header">
-                {{ group.label }}
-              </div>
-              <button
-                v-for="cmd in group.items"
-                :key="cmd.id"
-                type="button"
-                :class="[
-                  'cmd-palette__row',
-                  selectedIndex === cmd._flatIndex &&
-                    'cmd-palette__row--selected',
-                ]"
-                :data-flat-index="cmd._flatIndex"
-                @click="run(cmd)"
-                @mousemove="selectedIndex = cmd._flatIndex"
+            <!-- A combobox list (7.1): the input keeps focus, the
+                 highlighted row is its active descendant. -->
+            <div
+              id="cmd-palette-list"
+              role="listbox"
+              aria-label="Results"
+              class="cmd-palette__list"
+            >
+              <div
+                v-for="group in groupedResults"
+                :key="group.id"
+                role="group"
+                :aria-labelledby="`cmd-palette-group-${group.id}`"
               >
-                <Icon
-                  :name="cmd.icon"
-                  :size="15"
-                  :stroke-width="1.6"
-                  class="cmd-palette__row-icon"
-                  :style="{ color: 'var(--color-ink-2)' }"
-                />
-                <span class="cmd-palette__row-label">{{ cmd.label }}</span>
-                <span v-if="cmd.hint" class="cmd-palette__row-hint">{{
-                  cmd.hint
-                }}</span>
-              </button>
-            </template>
+                <div
+                  :id="`cmd-palette-group-${group.id}`"
+                  class="cmd-palette__group-header"
+                >
+                  {{ group.label }}
+                </div>
+                <div
+                  v-for="cmd in group.items"
+                  :id="`cmd-palette-opt-${cmd._flatIndex}`"
+                  :key="cmd.id"
+                  role="option"
+                  :aria-selected="selectedIndex === cmd._flatIndex"
+                  :class="[
+                    'cmd-palette__row',
+                    selectedIndex === cmd._flatIndex &&
+                      'cmd-palette__row--selected',
+                  ]"
+                  :data-flat-index="cmd._flatIndex"
+                  @click="run(cmd)"
+                  @mousemove="selectedIndex = cmd._flatIndex"
+                >
+                  <Icon
+                    :name="cmd.icon"
+                    :size="15"
+                    :stroke-width="1.6"
+                    class="cmd-palette__row-icon"
+                    :style="{ color: 'var(--color-ink-2)' }"
+                  />
+                  <span class="cmd-palette__row-label">{{ cmd.label }}</span>
+                  <span v-if="cmd.hint" class="cmd-palette__row-hint">{{
+                    cmd.hint
+                  }}</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Footer -->

@@ -306,7 +306,7 @@ export function buildStaticCommands(ctx: CommandContext): Command[] {
         id: "action.deleteSelection",
         group: "actions",
         label: `Delete ${selCount} selected`,
-        hint: "⌫",
+        hint: "Del",
         icon: "trash-2",
         keywords: ["remove", "trash"],
         run: () => layoutStore.showHover("delete"),

@@ -33,7 +33,7 @@
             </button>
           </header>
 
-          <div class="shortcuts__body">
+          <div class="shortcuts__body" tabindex="0">
             <section
               v-for="group in groups"
               :key="group.id"
@@ -433,5 +433,9 @@ const groups = computed(() => GROUPS.filter((g) => g.items.length > 0));
 .shortcuts-leave-to .shortcuts {
   opacity: 0;
   transform: translateY(-6px) scale(0.98);
+}
+.shortcuts__body:focus-visible {
+  outline: 2px solid var(--color-accent-ring);
+  outline-offset: -2px;
 }
 </style>

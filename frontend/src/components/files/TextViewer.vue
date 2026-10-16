@@ -17,6 +17,8 @@
       <pre
         v-if="content"
         class="text-viewer__pre"
+        tabindex="0"
+        aria-label="File contents"
         :class="{ 'text-viewer__pre--wrap': softWrap }"
       ><code class="text-viewer__code">{{ content }}</code></pre>
       <div v-else class="text-viewer__empty">
@@ -304,5 +306,9 @@ html.dark .text-viewer__pre {
 .markdown-body :deep(h1),
 .markdown-body :deep(h2) {
   border-color: var(--color-line);
+}
+.text-viewer__pre:focus-visible {
+  outline: 2px solid var(--color-accent-ring);
+  outline-offset: -2px;
 }
 </style>

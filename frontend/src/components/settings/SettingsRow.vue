@@ -1,5 +1,5 @@
 <template>
-  <div class="settings-row" :class="{ 'is-stacked': stacked }">
+  <div ref="rowEl" class="settings-row" :class="{ 'is-stacked': stacked }">
     <div class="settings-row__label">
       <label
         v-if="label"
@@ -35,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { useId } from "vue";
+import { onMounted, onUpdated, ref, useId } from "vue";
 import Icon from "@/components/Icon.vue";
 import { provideFieldContext } from "@/components/ui/fieldContext";
 
@@ -66,6 +66,24 @@ const ctx = provideFieldContext({
   labelId: props.label ? labelId : "",
   descriptionId: props.description ? descriptionId : null,
 });
+
+// A plain <input>, <select> or <textarea> in the row (not one of the Ui
+// controls, which register themselves) is named by the row's label too
+// (7.1: axe "label").
+const rowEl = ref<HTMLElement | null>(null);
+const nameNativeControl = () => {
+  if (!props.label || props.htmlFor || ctx.controlId.value) return;
+  const el = rowEl.value?.querySelector<HTMLElement>(
+    ".settings-row__control input:not([type=hidden]), .settings-row__control select, .settings-row__control textarea"
+  );
+  if (!el) return;
+  if (!el.hasAttribute("aria-label") && !el.hasAttribute("aria-labelledby"))
+    el.setAttribute("aria-labelledby", labelId);
+  if (props.description && !el.hasAttribute("aria-describedby"))
+    el.setAttribute("aria-describedby", descriptionId);
+};
+onMounted(nameNativeControl);
+onUpdated(nameNativeControl);
 </script>
 
 <style scoped>

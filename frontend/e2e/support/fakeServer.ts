@@ -975,7 +975,29 @@ export class FakeServer {
         }));
       return json(hits);
     }
-    if (api.startsWith("/search")) return text("", 200);
+    // Plain name search (the palette, the header search): NDJSON, one hit
+    // per line, paths relative to the folder searched.
+    if (api.startsWith("/search")) {
+      const root = norm(decodeURIComponent(api.slice("/search".length)) || "/");
+      const q = (query.query ?? "").toLowerCase();
+      if (!q) return text("", 200);
+      const prefix = root === "/" ? "/" : root + "/";
+      const lines = [...this.fs.keys()]
+        .filter((p) => p !== root && p.startsWith(prefix))
+        .map((p) => this.item(p))
+        .filter((i) => i.name.toLowerCase().includes(q))
+        .map((i) =>
+          JSON.stringify({
+            path: i.path.slice(prefix.length),
+            name: i.name,
+            isDir: i.isDir,
+            size: i.size,
+            modified: i.modified,
+            type: i.type,
+          })
+        );
+      return text(lines.map((l) => l + "\n").join(""), 200);
+    }
 
     this.unhandled.push(`${method} ${api}`);
     return text("404 Not Found", 404);

@@ -857,7 +857,7 @@ const menuItems = computed<MenuItem[]>(() => {
 }
 .storage-block__strip .storage-block__size {
   flex: none;
-  color: var(--color-ink-3);
+  color: var(--color-ink-2);
 }
 .storage-block__label {
   display: flex;

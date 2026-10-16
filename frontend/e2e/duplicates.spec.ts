@@ -59,7 +59,7 @@ test("the palette opens it on the current folder", async ({ app }) => {
   await app.keyboard.type("find duplicates");
   await app
     .getByRole("dialog", { name: "Command palette" })
-    .getByRole("button", { name: /Find duplicates/ })
+    .getByRole("option", { name: /Find duplicates/ })
     .click();
   await expect(app).toHaveURL(/\/duplicates\?path=\/Backup$/);
   await expect(app.getByLabel("Folder", { exact: true })).toHaveValue(

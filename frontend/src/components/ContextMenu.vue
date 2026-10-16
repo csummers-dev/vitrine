@@ -145,6 +145,7 @@ const emit = defineEmits<{
 
 const contextMenu = ref<HTMLElement | null>(null);
 const focusedIndex = ref<number>(-1);
+let opener: HTMLElement | null = null;
 
 // ── Positioning ─────────────────────────────────────────────────────
 // Both axes are clamped/flipped based on the rendered size. We measure
@@ -175,6 +176,10 @@ watch(
   () => props.show,
   async (val) => {
     if (val) {
+      opener =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
       // Measure after the DOM paints so width/height are real.
       await nextTick();
       const el = contextMenu.value;
@@ -199,6 +204,15 @@ watch(
       document.removeEventListener("click", onDocClick);
       document.removeEventListener("contextmenu", onDocContextMenu);
       focusedIndex.value = -1;
+      // Give focus back to what opened the menu (7.1), unless the user has
+      // already moved it somewhere else (an action's dialog, a click).
+      const active = document.activeElement;
+      const lost =
+        !active ||
+        active === document.body ||
+        contextMenu.value?.contains(active) === true;
+      if (lost && opener?.isConnected) opener.focus({ preventScroll: true });
+      opener = null;
     }
   }
 );
@@ -289,6 +303,9 @@ const onTypeahead = (key: string) => {
 
 const onKeydown = (event: KeyboardEvent) => {
   if (!props.items || !props.items.length) return;
+  // Keys typed in an open menu are the menu's: they must not also reach the
+  // listing behind it (its type-ahead and Enter-to-open), except Tab.
+  if (event.key !== "Tab") event.stopPropagation();
 
   switch (event.key) {
     case "ArrowDown":
@@ -320,7 +337,10 @@ const onKeydown = (event: KeyboardEvent) => {
       }
       return;
     case "Escape":
+      // The menu owns this Escape: it must not also clear the listing's
+      // selection behind it.
       event.preventDefault();
+      event.stopPropagation();
       emit("hide");
       return;
   }

@@ -2,6 +2,8 @@
   <div
     class="shell"
     :class="{ ['shell--hidden']: !showShell }"
+    :inert="!showShell"
+    :aria-hidden="!showShell ? 'true' : undefined"
     :style="{ height: `${this.shellHeight}em`, direction: 'ltr' }"
   >
     <div
@@ -28,6 +30,8 @@
         <pre
           tabindex="0"
           ref="input"
+          role="textbox"
+          aria-label="Command"
           class="shell__text"
           :contenteditable="true"
           @keydown.prevent.arrow-up="historyUp"
