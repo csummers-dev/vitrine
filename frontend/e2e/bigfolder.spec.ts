@@ -1,4 +1,4 @@
-import { test, expect } from "./support/test";
+import { test, expect, row } from "./support/test";
 
 // Phase 6, 4.3: a 10,000-item folder scrolls smoothly in Icons view — the
 // tiles stay virtualised and no main-thread task runs over 200 ms.
@@ -46,3 +46,73 @@ test("10,000 items scroll smoothly in Icons view", async ({ app, fake }) => {
   await expect(app.locator("[data-index]").first()).toBeVisible();
   expect(await app.locator("[data-index]").count()).toBeLessThan(400);
 });
+
+// 7.2: a 1,000-item folder renders in under 300 ms, from the data arriving
+// to the rows painted (the app's own "vitrine:listing-render" measure), in
+// every view; and 10,000 items stay virtualised in all three.
+const fill = (
+  fake: import("./support/fakeServer").FakeServer,
+  dir: string,
+  n: number
+) => {
+  const when = new Date("2026-09-01T10:00:00Z").toISOString();
+  fake.fs.set(dir, { isDir: true, modified: when });
+  for (let i = 0; i < n; i++)
+    fake.fs.set(`${dir}/file-${String(i).padStart(5, "0")}.txt`, {
+      isDir: false,
+      content: "x",
+      modified: when,
+    });
+};
+
+const renderTime = async (app: import("@playwright/test").Page) =>
+  (await app.evaluate(`new Promise((resolve) => {
+    const read = () => {
+      const m = performance.getEntriesByName("vitrine:listing-render");
+      if (m.length) return resolve(m[m.length - 1].duration);
+      setTimeout(read, 20);
+    };
+    read();
+  })`)) as number;
+
+for (const view of ["List", "Icons", "Gallery"] as const) {
+  test(`1,000 items render in under 300 ms (${view})`, async ({
+    app,
+    fake,
+  }) => {
+    fill(fake, "/Thousand", 1000);
+    await app.reload();
+    if (view !== "List") {
+      await app.getByRole("radio", { name: view }).click();
+      await expect(app.getByRole("radio", { name: view })).toBeChecked();
+    }
+    // Opened from the listing, as a person would.
+    await app.evaluate(`performance.clearMeasures()`);
+    await row(app, "Thousand").dblclick();
+    await expect(app).toHaveURL(/\/files\/Thousand\/$/);
+    await expect(app.locator("[data-index]").first()).toBeVisible();
+    const ms = await renderTime(app);
+    test
+      .info()
+      .annotations.push({ type: "render ms", description: ms.toFixed(0) });
+    expect(ms).toBeLessThan(300);
+    expect(await app.locator("[data-index]").count()).toBeLessThan(400);
+  });
+}
+
+for (const view of ["List", "Gallery"] as const) {
+  test(`10,000 items stay virtualised (${view})`, async ({ app, fake }) => {
+    test.setTimeout(90_000);
+    fill(fake, "/Big", 10_000);
+    await app.goto("/files/Big/");
+    if (view !== "List") await app.getByRole("radio", { name: view }).click();
+    await expect(app.locator("[data-index]").first()).toBeVisible();
+    expect(await app.locator("[data-index]").count()).toBeLessThan(400);
+    await app.evaluate(`(() => {
+      const sc = document.querySelector("section.ptr-host");
+      sc.scrollTop = sc.scrollHeight / 2;
+    })()`);
+    await app.waitForTimeout(300);
+    expect(await app.locator("[data-index]").count()).toBeLessThan(400);
+  });
+}

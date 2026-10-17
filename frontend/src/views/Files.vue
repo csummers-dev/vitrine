@@ -47,6 +47,7 @@
 import {
   computed,
   defineAsyncComponent,
+  nextTick,
   onBeforeUnmount,
   onMounted,
   onUnmounted,
@@ -341,7 +342,24 @@ const fetchData = async (opts: { silent?: boolean } = {}) => {
       fileStore.selected = [];
       fileStore.multiple = false;
     }
+    // 7.2: time from the data arriving to the rows painted, as a
+    // performance measure ("vitrine:listing-render") the e2e budget reads.
+    performance.mark("vitrine:listing-data");
     fileStore.updateRequest(res);
+    void nextTick(() =>
+      requestAnimationFrame(() =>
+        setTimeout(() => {
+          try {
+            performance.measure(
+              "vitrine:listing-render",
+              "vitrine:listing-data"
+            );
+          } catch {
+            /* the mark was cleared by a newer fetch */
+          }
+        }, 0)
+      )
+    );
     // Title format: "<folder | root label | My files> - vitrine".
     // At the storage root the listing has no folder name, so fall back to the
     // user's custom root label (nav.rootLabel pref) and finally "My files" —

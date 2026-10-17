@@ -339,6 +339,9 @@ export class FakeServer {
     }
   }
 
+  /** Slow endpoints, by path prefix (ms): `fake.delays["/preview/"] = 600`. */
+  delays: Record<string, number> = {};
+
   async install(page: Page): Promise<void> {
     // Only the API: vite dev also serves source modules under /src/api/.
     await page.route(
@@ -354,6 +357,8 @@ export class FakeServer {
     const query = Object.fromEntries(url.searchParams.entries());
     const api = url.pathname.slice("/api".length);
     this.calls.push({ method, path: api, query });
+    for (const [prefix, ms] of Object.entries(this.delays))
+      if (api.startsWith(prefix)) await new Promise((r) => setTimeout(r, ms));
 
     const json = (body: unknown, status = 200) =>
       route.fulfill({
