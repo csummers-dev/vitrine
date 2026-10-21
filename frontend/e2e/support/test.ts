@@ -27,6 +27,31 @@ type Fixtures = {
   prefs: Record<string, unknown>;
 };
 
+/**
+ * Collects uncaught page errors, leaving out the ones a page navigation
+ * causes by cutting off work in flight. Firefox and WebKit report a dynamic
+ * import, a fetch or the event stream that a `goto` aborts as an uncaught
+ * error (Chromium stays quiet), so a test that navigates while lazy code is
+ * still loading would fail on noise. Only those messages, and only within
+ * two seconds of a navigation starting, are dropped.
+ */
+const ABORTED =
+  /error loading dynamically imported module|Importing a module script failed|Failed to fetch dynamically imported module|000 No connection|due to access control checks|NetworkError when attempting to fetch|Load failed|The operation was aborted/;
+
+export function trackPageErrors(page: Page): string[] {
+  const errors: string[] = [];
+  let lastNavigation = 0;
+  page.on("request", (r) => {
+    if (r.isNavigationRequest() && r.frame() === page.mainFrame())
+      lastNavigation = Date.now();
+  });
+  page.on("pageerror", (e) => {
+    if (ABORTED.test(e.message) && Date.now() - lastNavigation < 2000) return;
+    errors.push(e.message);
+  });
+  return errors;
+}
+
 export const test = base.extend<Fixtures>({
   prefs: [{}, { option: true }],
   fake: async ({ prefs }, use) => {
@@ -35,8 +60,7 @@ export const test = base.extend<Fixtures>({
     await use(fake);
   },
   app: async ({ page, fake }, use) => {
-    const pageErrors: string[] = [];
-    page.on("pageerror", (e) => pageErrors.push(e.message));
+    const pageErrors = trackPageErrors(page);
     await fake.install(page);
     await login(page);
     await use(page);

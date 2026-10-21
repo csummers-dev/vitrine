@@ -5,7 +5,7 @@
  * scripts/visual-docker.sh); pixels from other machines won't match.
  */
 import type { Page } from "@playwright/test";
-import { test as base, expect } from "../support/test";
+import { test as base, expect, trackPageErrors } from "../support/test";
 import { FakeServer } from "../support/fakeServer";
 
 /** "Now" for every visual test: a week after the newest file. */
@@ -58,8 +58,7 @@ export const test = base.extend({
     await use(fake);
   },
   page: async ({ page, fake }, use) => {
-    const pageErrors: string[] = [];
-    page.on("pageerror", (e) => pageErrors.push(e.message));
+    const pageErrors = trackPageErrors(page);
     // Start the page clock at NOW and let it run: relative times are stable
     // ("1h ago"), and code that measures elapsed time still works (a frozen
     // Date.now() stops the row context menu from opening).

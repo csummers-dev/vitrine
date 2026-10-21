@@ -15,6 +15,9 @@ for (const screen of SCREENS) {
   const size = screen.sizes[0];
   test(`a11y ${screen.name} ${size}`, async ({ page, fake }) => {
     await page.setViewportSize(SIZES[size]);
+    // No colour transitions: switching to dark mid-run must not be read
+    // half-way through a fade.
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await screen.open({ page, fake });
     await test.step("light", () => expectAccessible(page));
     await page.emulateMedia({ colorScheme: "dark" });
