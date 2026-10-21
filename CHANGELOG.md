@@ -21,7 +21,50 @@ All notable changes to **vitrine**.
 > skip second factors. New files to back up with the database:
 > `vitrine-2fa.key` (two-factor secrets) and `vitrine-hashes.db` (only a
 > cache; safe to lose).
+>
+> **Custom CSS:** the interface was rebuilt for 4.0, so most class names
+> and the old colour variables (`--blue`, `--surfacePrimary`,
+> `--textPrimary` and the rest) are gone. A `custom.css` in your branding
+> folder still loads, but rules written for 3.x will mostly stop matching.
+> Restyle with the new tokens instead (`--color-accent`, `--color-canvas`,
+> `--color-surface`, `--color-ink-1` … `--color-ink-4`, `--radius-*`; the
+> full list is at the top of `frontend/src/css/tokens.css`). The `fb-`
+> class names that still exist were kept.
 
+- **Interface.** A rebuilt, calmer interface, in light and dark:
+  - **Look.** A new type face (Figtree), one accent colour (Green by
+    default; the 3.x presets and your admin branding colour still apply,
+    and every accent is adjusted to stay readable), panels with soft
+    corners and two shadow levels, and a colour for each kind of file. The
+    background gradient and see-through surfaces are gone.
+  - **Sidebar.** Places (My files, Recent, Storage, Duplicates, Trash),
+    favourites with colour dots you can change, and Smart folders (the
+    old saved searches).
+  - **Files.** Back and Forward buttons that survive a reload, List /
+    Icons / Gallery as one switch with each folder remembering its own
+    view, a labelled Upload button, and 44 px rows. Long names keep their
+    extension visible.
+  - **Details panel.** A preview, information, tags and actions for one
+    item, a summary for several or for the folder. Open by default on wide
+    screens, over the list on smaller ones, a sheet on phones; ⌘I / Ctrl+I
+    toggles it.
+  - **Recent** is its own page.
+  - **Previews** have a header with the way back to the folder, previous
+    and next, and the same details rail.
+  - **Storage, Duplicates, Trash and Settings** are redesigned. Settings
+    is a list of sections on phones. Public share and drop-box pages carry
+    your branding.
+  - **Dialogs** name what they'll do ("Move 3 items to the Trash"), start
+    on Cancel, and are bottom sheets on phones. Side panels float.
+  - **Keyboard.** Arrow keys move focus as well as the selection; F2
+    renames; Shift+F10 or the Menu key opens an item's menu; Alt+↑ goes
+    to the parent folder; Skip to content works; menus and dialogs give
+    focus back when they close.
+  - **Accessibility.** Every screen is checked for WCAG 2.1 AA problems in
+    both themes. The command palette works with screen readers, and
+    Windows high-contrast mode keeps focus and selection visible.
+  - **Admins** see a notice after the upgrade, naming the database backup
+    it made, until they dismiss it.
 - **Live updates.** vitrine now watches the folders it serves. Files added,
   renamed or removed by anything — a downloader, an SMB copy, the host shell,
   another user — appear in open tabs (both panes in split view), in search and

@@ -30,20 +30,35 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     trace: "retain-on-failure",
-    launchOptions: { executablePath },
   },
   projects: [
     {
       name: "desktop",
-      use: { ...devices["Desktop Chrome"] },
+      use: { ...devices["Desktop Chrome"], launchOptions: { executablePath } },
       testIgnore: /visual\//,
     },
     {
       name: "mobile",
-      use: { ...devices["Pixel 7"] },
+      use: { ...devices["Pixel 7"], launchOptions: { executablePath } },
       grep: /@mobile/,
       testIgnore: /visual\//,
     },
+    // Other engines (7.3): the behaviour suite on Firefox and WebKit. Left
+    // out: screenshots (Chromium-only by design), the per-screen axe sweep
+    // (engine-independent, and slow), and the checks that read Chromium-only
+    // APIs (long tasks, layout shift, the DevTools heap).
+    ...(["firefox", "webkit"] as const).map((engine) => ({
+      name: engine,
+      use: {
+        ...devices[engine === "firefox" ? "Desktop Firefox" : "Desktop Safari"],
+      },
+      testIgnore: [
+        /visual\//,
+        /a11y-screens\.spec\.ts$/,
+        /memory\.spec\.ts$/,
+        /layoutshift\.spec\.ts$/,
+      ],
+    })),
     // Screenshot baselines (Phase 6). Pixels differ between machines, so
     // baselines are only made and checked in the Playwright Docker image:
     // `pnpm run e2e:visual` there, or the "Update screenshots" workflow.
@@ -52,6 +67,7 @@ export default defineConfig({
       testMatch: /visual\/.*\.spec\.ts$/,
       use: {
         ...devices["Desktop Chrome"],
+        launchOptions: { executablePath },
         deviceScaleFactor: 1,
         contextOptions: { reducedMotion: "reduce" },
       },

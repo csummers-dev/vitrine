@@ -72,6 +72,38 @@ jobs:
           path: frontend/test-results/
           retention-days: 7
 
+  # The behaviour suite on Firefox and WebKit (Phase 6, 7.3). Screenshots
+  # stay Chromium-only.
+  e2e-engines:
+    name: UI smoke tests (${{ matrix.engine }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [firefox, webkit]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: "frontend/package.json"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+          cache: "pnpm"
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
+      - working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps ${{ matrix.engine }}
+          pnpm exec playwright test --project=${{ matrix.engine }}
+      - name: Upload traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-${{ matrix.engine }}
+          path: frontend/test-results/
+          retention-days: 7
+
   # Screenshot comparison (Phase 6). Runs in the Playwright image so pixels
   # match the committed baselines; skipped until baselines exist (make them
   # with the "Update screenshots" workflow).

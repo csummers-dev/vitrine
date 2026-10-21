@@ -71,7 +71,11 @@ for (const scheme of ["light", "dark"] as const) {
 test.describe("forced colours", () => {
   test.use({ forcedColors: "active" });
 
-  test("focus and selection stay visible", async ({ app }) => {
+  test("focus and selection stay visible", async ({ app, browserName }) => {
+    test.skip(
+      browserName !== "chromium",
+      "Playwright emulates forced colours in Chromium only"
+    );
     const r = app.locator('[data-index][aria-label="readme.md"]');
     await app.locator("#main").focus();
     await app.keyboard.type("readme");

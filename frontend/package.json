@@ -34,6 +34,7 @@
     "test": "vitest run",
     "e2e": "playwright test --project=desktop --project=mobile",
     "e2e:visual": "playwright test --project=visual",
+    "e2e:engines": "playwright test --project=firefox --project=webkit",
     "check:tokens": "node scripts/check-style-tokens.mjs",
     "check:bundle": "node scripts/bundle-report.mjs"
   },
