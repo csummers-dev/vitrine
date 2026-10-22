@@ -33,8 +33,10 @@ test("a dialog traps focus, closes on Escape and returns focus", async ({
   await expect(dialog).toHaveCount(0);
   await expect(row(app, "photo.jpg")).toBeVisible();
 
-  // Escape closes too, and focus goes back to where it was.
-  await row(app, "photo.jpg").click();
+  // Focus is back on the row, still selected (clicking it again would
+  // toggle it off). Escape closes too, and focus goes back to where it was.
+  await expect(row(app, "photo.jpg")).toBeFocused();
+  await expect(row(app, "photo.jpg")).toHaveAttribute("aria-selected", "true");
   await app.keyboard.press("Delete");
   await expect(app.getByRole("dialog")).toBeVisible();
   await app.keyboard.press("Escape");

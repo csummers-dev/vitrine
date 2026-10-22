@@ -65,7 +65,7 @@ export const test = base.extend({
     await page.clock.install({ time: new Date(NOW) });
     await page.clock.resume();
     await use(page);
-    expect(pageErrors, "uncaught errors in the page").toEqual([]);
+    expect(pageErrors(), "uncaught errors in the page").toEqual([]);
     expect(
       fake.unhandled,
       "API calls the fake server doesn't implement"

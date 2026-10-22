@@ -85,6 +85,14 @@ export default defineConfig(({ command }) => {
       plugins,
       resolve,
       customLogger: logger,
+      // Crawl every source file for dependencies at start-up. Otherwise vite
+      // finds a lazily imported dependency (leaflet, music-metadata, …) only
+      // when a page first loads it, re-bundles, and fails the imports in
+      // flight while it reloads the page — noise in the e2e runs, where every
+      // test starts on a cold page.
+      optimizeDeps: {
+        entries: ["src/main.ts", "src/**/*.vue"],
+      },
       server: {
         proxy: {
           "/api/command": {

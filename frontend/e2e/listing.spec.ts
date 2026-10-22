@@ -125,7 +125,17 @@ test.describe("sorting and layout", () => {
   });
 });
 
-test("uploads a file from the file picker", async ({ app, fake }) => {
+// Playwright's WebKit doesn't route the upload's requests (tus) to the fake
+// server: they go past it to the dev server's proxy, so there is nothing to
+// test against there.
+const NO_UPLOAD_ROUTING = "WebKit requests for tus uploads bypass page.route";
+
+test("uploads a file from the file picker", async ({
+  app,
+  fake,
+  browserName,
+}) => {
+  test.skip(browserName === "webkit", NO_UPLOAD_ROUTING);
   await app.locator("#upload-input").setInputFiles({
     name: "hello.txt",
     mimeType: "text/plain",

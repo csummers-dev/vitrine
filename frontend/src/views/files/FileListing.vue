@@ -2353,13 +2353,22 @@ const keyEvent = (event: KeyboardEvent) => {
       navTag === "textarea" ||
       navTarget?.isContentEditable === true;
     const noChord = !event.metaKey && !event.ctrlKey && !event.altKey;
-    // A focused link, button or other control keeps its own keys (Enter on
-    // the skip link, arrows in a radio group); only the rows, the listing
-    // itself or nothing in particular get the listing's keys (7.1).
-    const onControl =
+    // A focused control keeps the keys it uses itself: Enter and Space
+    // activate a link or button (the skip link, a row's ☆), and arrows move
+    // inside a radio group, menu or list. Every other listing key (Delete,
+    // F2, type-ahead, arrows from a plain button) still reaches the listing,
+    // so a click that lands on a button inside a row doesn't disarm them.
+    const activates =
       navTarget?.closest?.(
-        'a[href], button, select, summary, [role="button"], [role="link"], [role="menuitem"], [role="radio"], [role="tab"], [role="checkbox"], [role="switch"], [role="slider"], [role="option"], [role="menu"], [role="listbox"]'
+        'a[href], button, select, summary, [role="button"], [role="link"], [role="menuitem"], [role="checkbox"], [role="switch"], [role="option"], [role="tab"], [role="radio"]'
       ) != null;
+    const ownsArrows =
+      navTarget?.closest?.(
+        'select, [role="radiogroup"], [role="radio"], [role="menu"], [role="menuitem"], [role="listbox"], [role="option"], [role="tablist"], [role="tab"], [role="slider"]'
+      ) != null;
+    const isActivation = event.key === "Enter" || event.key === " ";
+    const isArrow = /^(Arrow(Up|Down|Left|Right)|Home|End)$/.test(event.key);
+    const onControl = (isActivation && activates) || (isArrow && ownsArrows);
     if (!typing && noChord && !onControl) {
       switch (event.key) {
         case "ArrowDown":

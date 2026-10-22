@@ -30,26 +30,35 @@ type Fixtures = {
 /**
  * Collects uncaught page errors, leaving out the ones a page navigation
  * causes by cutting off work in flight. Firefox and WebKit report a dynamic
- * import, a fetch or the event stream that a `goto` aborts as an uncaught
- * error (Chromium stays quiet), so a test that navigates while lazy code is
- * still loading would fail on noise. Only those messages, and only within
- * two seconds of a navigation starting, are dropped.
+ * import, a fetch or the event stream that a navigation (a `goto`, a reload)
+ * aborts as an uncaught error, sometimes just before the navigation request
+ * goes out; Chromium stays quiet. Only those messages, and only within two
+ * seconds either side of a navigation, are dropped. Read the result with
+ * `errors()` after the test.
  */
 const ABORTED =
   /error loading dynamically imported module|Importing a module script failed|Failed to fetch dynamically imported module|000 No connection|due to access control checks|NetworkError when attempting to fetch|Load failed|The operation was aborted/;
 
-export function trackPageErrors(page: Page): string[] {
-  const errors: string[] = [];
-  let lastNavigation = 0;
+export function trackPageErrors(page: Page): () => string[] {
+  const seen: { at: number; message: string }[] = [];
+  const navigations: number[] = [];
   page.on("request", (r) => {
     if (r.isNavigationRequest() && r.frame() === page.mainFrame())
-      lastNavigation = Date.now();
+      navigations.push(Date.now());
   });
-  page.on("pageerror", (e) => {
-    if (ABORTED.test(e.message) && Date.now() - lastNavigation < 2000) return;
-    errors.push(e.message);
-  });
-  return errors;
+  page.on("pageerror", (e) =>
+    seen.push({ at: Date.now(), message: e.message })
+  );
+  return () =>
+    seen
+      .filter(
+        (e) =>
+          !(
+            ABORTED.test(e.message) &&
+            navigations.some((n) => Math.abs(n - e.at) < 2000)
+          )
+      )
+      .map((e) => e.message);
 }
 
 export const test = base.extend<Fixtures>({
@@ -64,7 +73,7 @@ export const test = base.extend<Fixtures>({
     await fake.install(page);
     await login(page);
     await use(page);
-    expect(pageErrors, "uncaught errors in the page").toEqual([]);
+    expect(pageErrors(), "uncaught errors in the page").toEqual([]);
     expect(
       fake.unhandled,
       "API calls the fake server doesn't implement"
