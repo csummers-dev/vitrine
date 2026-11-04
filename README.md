@@ -248,6 +248,25 @@ Search answers from an in-memory index that updates as changes are reported. As 
 - **Photo map.** Right-click empty space → *Photo map* to see the folder's photos where they were taken (from their EXIF GPS position). Map tiles are fetched and cached by the vitrine server, so browsers only ever talk to vitrine. The map is off until an admin picks a tile source with `--mapTiles` (env `VITRINE_MAP_TILES`): `osm` for OpenStreetMap's public tiles, or a `{z}/{x}/{y}` URL of your own tile server. It's off by default because the tiles requested reveal roughly where your photos were taken to whoever serves them, and OpenStreetMap's servers are donation-run (see their tile usage policy).
 - **Resume and watched.** Videos of five minutes or more resume where you stopped (with a *Start over* button); reaching 98% marks a video watched. Right-click videos to mark them watched or unwatched. Positions, like book and comic positions, are saved to your account and follow renames and moves.
 
+#### Extracting archives
+
+Right-click a zip, 7z, rar (including split `.partN.rar` sets) or tar archive (`.tar`, `.tar.gz`, `.tar.bz2`, `.tar.xz`, `.tar.zst`) → *Extract*. Archives of any size extract as long as they fit on the disk; a 50 GB disk image in a rar is fine. vitrine protects the server in three ways:
+
+- **Free space.** Before writing anything it adds up what the archive says it contains (zip, 7z, rar and plain tar list this up front) and refuses if it wouldn't fit while keeping a margin free: "Not enough space: needs 48.2 GB, 31.0 GB free". Compressed tars can't say up front, so each file is checked before it's written, and free space is re-checked as extraction goes.
+- **Compression ratio.** An archive (and each zip entry) may unpack to at most 100 times its size on disk, so a "zip bomb" is stopped however it's packed, while ordinary archives, which rarely pass 10:1, and near-1:1 disk images pass. Small files are exempt up to 100 MB, so a compressed text file or an empty disk image still extracts.
+- **Honest headers.** An entry that writes more than its header claimed, or an archive that writes more than its headers add up to, is stopped.
+
+If extraction stops part-way, everything it created is removed. Files it replaces (when you choose to overwrite) are only swapped out once the new copy is complete, so an existing file is never lost. Paths that point outside the destination are refused, and links and device files are skipped.
+
+| Setting | Flag / environment | Default |
+|---|---|---|
+| Ratio limit (0 turns it off) | `--extractMaxRatio` / `VITRINE_EXTRACT_MAX_RATIO` | `100` |
+| Space kept free on the disk | `--extractFreeSpaceMargin` / `VITRINE_EXTRACT_FREE_SPACE_MARGIN` | 1 GiB (`1073741824`) |
+| Largest single extracted file | `--maxUncompressedFileSize` / `VITRINE_MAX_UNCOMPRESSED_FILE_SIZE` | none (`0`) |
+| Most entries in one archive | `maxZipFileEntries` (config file) | `100000` |
+
+`maxTotalUncompressedSize` and `maxZipFileSize` in the config file still set optional caps on an archive's unpacked and packed size; both are off by default.
+
 #### Two-factor sign-in
 
 Each user can turn on two-factor sign-in under Settings → Profile: scan the QR code with an authenticator app (1Password, Aegis, Google Authenticator…), confirm a code, and save the ten recovery codes, each of which works once. Signing in then asks for a code after the password; failed codes count toward the same lockout as wrong passwords. An admin can reset a user's second factor from the user's page in Settings → Users.
@@ -280,7 +299,7 @@ Sessions from SSO are ordinary vitrine sessions: they show under Settings → Se
 #### Shares and webhooks
 
 - **Share usage.** Each link shows its views, downloads and when it was last opened, updating live. A download limit (one-time, 5, 10 or 25) ends the link once it's used up; the visitor then sees "This link is no longer available". On limited links every download counts, previews included, so the public page doesn't preview them.
-- **File requests (upload-only links).** Share a folder as *Upload only* and anyone with the link can send you files without seeing what's already there. Optional limits: largest file, total size, allowed file types, and a subfolder per sender (named after what they type). Files never overwrite each other — a clash gets a " (2)" suffix — and are written with your permissions and rules. Each IP can send up to 300 files an hour and each link takes 3 uploads at a time; wrong passwords are throttled like logins. File requests are off until an admin turns them on in Settings → Global, since they let anyone with a link write to your server; turning them off again stops existing links accepting files. Uploads don't resume after a dropped connection yet.
+- **File requests (upload-only links).** Share a folder as *Upload only* and anyone with the link can send you files without seeing what's already there. Optional limits: largest file, total size, allowed file types, and a subfolder per sender (named after what they type). Files never overwrite each other — a clash gets a " (2)" suffix — and are written with your permissions and rules. Each IP can send up to 300 files an hour and each link takes 3 uploads at a time; wrong passwords are throttled like logins. File requests are off until an admin turns them on in Settings → Global, since they let anyone with a link write to your server; turning them off again stops existing links accepting files. Uploads don't resume after a dropped connection.
 - **Signed webhooks.** In Settings → Webhooks, edit an endpoint and choose *Generate* under *Signing secret*. Each delivery then carries `X-Vitrine-Signature: t=<unix time>,v1=<hex>`, where `v1` is HMAC-SHA256 with the secret over `<t>.<raw body>`. Check it in constant time and reject old timestamps:
 
   ```python

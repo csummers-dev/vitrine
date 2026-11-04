@@ -340,6 +340,9 @@ export class FakeServer {
     }
   }
 
+  /** How POST /api/unzip answers; unset = success (nothing is unpacked). */
+  unzipResponse?: { status: number; body: string };
+
   /** Slow endpoints, by path prefix (ms): `fake.delays["/preview/"] = 600`. */
   delays: Record<string, number> = {};
 
@@ -980,6 +983,11 @@ export class FakeServer {
           type: i.type,
         }));
       return json(hits);
+    }
+    // Extraction (the real server unpacks on disk; here only the answer).
+    if (api.startsWith("/unzip") && method === "POST") {
+      const r = this.unzipResponse;
+      return r ? text(r.body, r.status) : text("", 200);
     }
     // Plain name search (the palette, the header search): NDJSON, one hit
     // per line, paths relative to the folder searched.

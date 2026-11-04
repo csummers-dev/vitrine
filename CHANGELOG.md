@@ -22,6 +22,12 @@ All notable changes to **vitrine**.
 > `vitrine-2fa.key` (two-factor secrets) and `vitrine-hashes.db` (only a
 > cache; safe to lose).
 >
+> **Archive extraction limits:** the fixed caps on extraction (5 GB per
+> file, 20 GB per archive, 5 GB archives) are replaced by a free-space
+> check and a compression-ratio limit. The upgrade clears those caps where
+> they still hold their old defaults; a value you set yourself is kept and
+> still applies. See "Extracting archives" in the README.
+>
 > **Custom CSS:** the interface was rebuilt for 4.0, so most class names
 > and the old colour variables (`--blue`, `--surfacePrimary`,
 > `--textPrimary` and the rest) are gone. A `custom.css` in your branding
@@ -65,6 +71,19 @@ All notable changes to **vitrine**.
     Windows high-contrast mode keeps focus and selection visible.
   - **Admins** see a notice after the upgrade, naming the database backup
     it made, until they dismiss it.
+- **Large archives extract.** Extracting failed for archives holding
+  single files over 5 GB, such as disk images, with "one of the files has
+  too high a decompression size", and the page only said to check the
+  logs. Extraction is now limited by free space and compression ratio
+  instead of fixed sizes: it checks the archive fits before writing
+  anything (zip, 7z, rar and plain tar), stops a "zip bomb" in any format
+  (default 100:1), and stops an entry that writes more than its header
+  claimed. If it stops part-way it removes what it created, and a file
+  being overwritten is only replaced once the new copy is complete. The
+  reason shows in the page: "Not enough space: needs 48.2 GB, 31.0 GB
+  free" or "Archive entry … exceeds safe compression ratio" (HTTP 507 and
+  422). New settings: `--extractMaxRatio`, `--extractFreeSpaceMargin`,
+  and `--maxUncompressedFileSize` for an optional per-file cap.
 - **Folder downloads skip the format question.** Downloading a folder or
   several items now gives you a zip straight away, everywhere: the
   selection bar, right-click menus, ⌘S / Ctrl+S, the command palette, the

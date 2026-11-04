@@ -83,11 +83,14 @@ func handle(fn handleFunc, prefix string, store *storage.Storage, tagsStore *tag
 		if status != 0 {
 			txt := http.StatusText(status)
 			// Surface the handler's specific message for client-correctable
-			// errors (bad request, conflict) so the UI shows what's actually
+			// errors (bad request, conflict, a refused archive, not enough
+			// space to extract) so the UI shows what's actually
 			// wrong — e.g. WHICH name already exists on a move/copy — instead of
 			// a bare "409 Conflict". Other statuses keep the generic text so
 			// internal error detail never leaks.
-			if (status == http.StatusBadRequest || status == http.StatusConflict) &&
+			if (status == http.StatusBadRequest || status == http.StatusConflict ||
+				status == http.StatusUnprocessableEntity ||
+				status == http.StatusInsufficientStorage) &&
 				err != nil {
 				txt += " (" + err.Error() + ")"
 			}

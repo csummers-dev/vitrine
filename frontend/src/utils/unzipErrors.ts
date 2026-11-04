@@ -4,10 +4,10 @@ import { archiveBaseName } from "@/utils/archive";
 /**
  * Map a zip-extraction failure into a single line of user-facing copy.
  *
- * The backend (PR #5746, `http/unzip.go`) returns plain-text error bodies
- * pulled from `errors/errors.go` (e.g. "the zip file is too large"). We
- * match on those strings so the UI can surface something more meaningful
- * than the raw backend text. Falls back to a generic catch-all for
+ * Since 4.0 the server explains not-enough-space (507) and refused (422)
+ * extractions itself, and those reasons are shown as they are. Older
+ * plain-text bodies from `errors/errors.go` are matched on below so the UI
+ * can surface something more meaningful than the raw backend text. Falls back to a generic catch-all for
  * unknown payloads so a bug in the mapper can't silence the error
  * entirely.
  *
@@ -19,6 +19,17 @@ export function mapUnzipError(err: unknown): string {
   // Network / transport-level failures land here as plain Error.
   if (err instanceof StatusError) {
     const msg = (err.message ?? "").toLowerCase();
+
+    // 4.0: not enough space (507) and a refused archive (422) carry the
+    // server's own reason, e.g. "507 Insufficient Storage (not enough
+    // space: needs 48.2 GB, 31.0 GB free)". Show it as it is.
+    if (
+      err.status === 507 ||
+      (err.status === 422 && !isArchivePasswordError(err))
+    ) {
+      const reason = serverReason(err.message ?? "");
+      if (reason) return reason;
+    }
 
     if (msg.includes("the archive is too large")) {
       return "Archive is too large to extract (server limit reached).";
@@ -61,8 +72,14 @@ export function mapUnzipError(err: unknown): string {
     if (status === 404) {
       return "Archive not found.";
     }
+    if (status === 507) {
+      return "Not enough space on the server to extract this archive.";
+    }
+    if (status === 422) {
+      return "This archive was refused as unsafe.";
+    }
     if (status >= 500) {
-      return "Extraction failed — check the server logs for details.";
+      return "Extraction failed because of a server error.";
     }
     if (status === 400) {
       return "The archive couldn't be extracted.";
@@ -84,7 +101,24 @@ export function mapUnzipError(err: unknown): string {
  * alone is an unambiguous trigger.
  */
 export function isArchivePasswordError(err: unknown): boolean {
-  return err instanceof StatusError && err.status === 422;
+  // 422 also means "refused as unsafe" (4.0): only a password message asks
+  // for a password.
+  return (
+    err instanceof StatusError &&
+    err.status === 422 &&
+    /password/i.test(err.message ?? "")
+  );
+}
+
+/** "507 Insufficient Storage (not enough space: …)" → "Not enough space: …." */
+function serverReason(body: string): string {
+  const open = body.indexOf("(");
+  const close = body.lastIndexOf(")");
+  if (open < 0 || close <= open) return "";
+  const reason = body.slice(open + 1, close).trim();
+  if (!reason) return "";
+  const sentence = reason.charAt(0).toUpperCase() + reason.slice(1);
+  return /[.!?]$/.test(sentence) ? sentence : sentence + ".";
 }
 
 /**

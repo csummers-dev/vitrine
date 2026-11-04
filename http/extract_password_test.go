@@ -19,15 +19,15 @@ import (
 // so the password behaviour is what's under test (not the zip-bomb guards).
 func testExtractOpts(fsys afero.Fs) extractOpts {
 	return extractOpts{
-		Fs:                      fsys,
-		Check:                   func(string) bool { return true },
-		Override:                true,
-		DirMode:                 0o755,
-		FileMode:                0o644,
-		MaxEntries:              10000,
-		MaxUncompressedFileSize: 100 << 20,
-		MaxTotalUncompressed:    1 << 30,
-		MaxUncompressedRate:     0, // disable the ratio guard for these tests
+		Fs:          fsys,
+		Check:       func(string) bool { return true },
+		Override:    true,
+		DirMode:     0o755,
+		FileMode:    0o644,
+		MaxEntries:  10000,
+		MaxFileSize: 100 << 20,
+		MaxTotal:    1 << 30,
+		MaxRatio:    0, // disable the ratio guard for these tests
 	}
 }
 

@@ -53,6 +53,15 @@ func errToStatus(err error) int {
 	case errors.Is(err, libErrors.ErrArchivePasswordRequired),
 		errors.Is(err, libErrors.ErrArchivePasswordIncorrect):
 		return http.StatusUnprocessableEntity
+	case errors.As(err, new(*libErrors.InsufficientSpaceError)):
+		return http.StatusInsufficientStorage
+	case errors.As(err, new(*libErrors.UnsafeArchiveError)),
+		errors.Is(err, libErrors.ErrInvalidZipFilePath),
+		errors.Is(err, libErrors.ErrInvalidZipEntry),
+		errors.Is(err, libErrors.ErrCompressionRateIsTooLarge),
+		errors.Is(err, libErrors.ErrUncompressSizeIsTooLarge),
+		errors.Is(err, libErrors.ErrZipFileIsTooLarge):
+		return http.StatusUnprocessableEntity
 	case errors.Is(err, libErrors.ErrRootUserDeletion):
 		return http.StatusForbidden
 	case errors.Is(err, imgErrors.ErrImageTooLarge):

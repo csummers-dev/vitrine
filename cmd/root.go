@@ -131,6 +131,9 @@ func addServerFlags(flags *pflag.FlagSet) {
 	// `--unzipEnabled=false`; the UI exposes no toggle so end-users can't
 	// disable it themselves.
 	flags.Bool("unzipEnabled", true, "enable zip file extraction")
+	flags.Float64("extractMaxRatio", settings.DefaultExtractMaxRatio, "largest uncompressed-to-compressed ratio an extracted archive (and each zip entry) may have; 0 turns the check off")
+	flags.Uint64("extractFreeSpaceMargin", settings.DefaultExtractFreeSpaceMargin, "bytes to keep free on the destination disk when extracting an archive")
+	flags.Uint64("maxUncompressedFileSize", 0, "optional cap on the size of one extracted file, in bytes (0: none)")
 }
 
 var rootCmd = &cobra.Command{
@@ -558,10 +561,10 @@ func getServerSettings(v *viper.Viper, st *storage.Storage) (*settings.Server, e
 		server.UnzipEnabled = true
 	}
 
+	// Extraction limits (4.0): free space and ratio guard extraction; the
+	// absolute caps are optional and 0 (off) unless set.
 	if v.IsSet("maxZipFileSize") {
 		server.MaxZipFileSize = v.GetInt64("maxZipFileSize")
-	} else if server.MaxZipFileSize == 0 {
-		server.MaxZipFileSize = settings.DefaultMaxZipFileSize
 	}
 
 	if v.IsSet("maxZipFileEntries") {
@@ -572,20 +575,32 @@ func getServerSettings(v *viper.Viper, st *storage.Storage) (*settings.Server, e
 
 	if v.IsSet("maxTotalUncompressedSize") {
 		server.MaxTotalUncompressedSize = v.GetUint64("maxTotalUncompressedSize")
-	} else if server.MaxTotalUncompressedSize == 0 {
-		server.MaxTotalUncompressedSize = settings.DefaultMaxTotalUncompressedSize
-	}
-
-	if v.IsSet("maxUncompressedSizeRate") {
-		server.MaxUncompressedSizeRate = v.GetFloat64("maxUncompressedSizeRate")
-	} else if server.MaxUncompressedSizeRate == 0 {
-		server.MaxUncompressedSizeRate = settings.DefaultMaxUncompressedSizeRate
 	}
 
 	if v.IsSet("maxUncompressedFileSize") {
 		server.MaxUncompressedFileSize = v.GetUint64("maxUncompressedFileSize")
-	} else if server.MaxUncompressedFileSize == 0 {
-		server.MaxUncompressedFileSize = settings.DefaultMaxUncompressedFileSize
+	}
+
+	if v.IsSet("maxUncompressedSizeRate") {
+		server.MaxUncompressedSizeRate = v.GetFloat64("maxUncompressedSizeRate")
+	}
+
+	switch {
+	case v.IsSet("extractMaxRatio"):
+		server.ExtractMaxRatio = v.GetFloat64("extractMaxRatio")
+	case server.ExtractMaxRatio == 0:
+		server.ExtractMaxRatio = settings.DefaultExtractMaxRatio
+		// A 3.x ratio someone changed carries over: it was compressed
+		// divided by uncompressed, so 0.01 meant 100:1.
+		if r := server.MaxUncompressedSizeRate; r > 0 && r != 0.01 {
+			server.ExtractMaxRatio = 1 / r
+		}
+	}
+
+	if v.IsSet("extractFreeSpaceMargin") {
+		server.ExtractFreeSpaceMargin = v.GetUint64("extractFreeSpaceMargin")
+	} else if server.ExtractFreeSpaceMargin == 0 {
+		server.ExtractFreeSpaceMargin = settings.DefaultExtractFreeSpaceMargin
 	}
 
 	if isAddrSet && isSocketSet {
@@ -701,12 +716,10 @@ func quickSetup(v *viper.Viper, s *storage.Storage) error {
 		// Upstream PR used `v.GetBool("UnzipEnabled")` (TitleCase) — viper
 		// normalizes keys lowercase, so that always returned false at
 		// quickSetup time. Use the lowercase form like every sibling key.
-		UnzipEnabled:             v.GetBool("unzipEnabled"),
-		MaxZipFileSize:           settings.DefaultMaxZipFileSize,
-		MaxZipFileEntries:        settings.DefaultMaxZipFileEntries,
-		MaxTotalUncompressedSize: settings.DefaultMaxTotalUncompressedSize,
-		MaxUncompressedSizeRate:  settings.DefaultMaxUncompressedSizeRate,
-		MaxUncompressedFileSize:  settings.DefaultMaxUncompressedFileSize,
+		UnzipEnabled:           v.GetBool("unzipEnabled"),
+		MaxZipFileEntries:      settings.DefaultMaxZipFileEntries,
+		ExtractMaxRatio:        settings.DefaultExtractMaxRatio,
+		ExtractFreeSpaceMargin: settings.DefaultExtractFreeSpaceMargin,
 	}
 
 	err = s.Settings.SaveServer(ser)

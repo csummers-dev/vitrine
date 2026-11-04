@@ -151,7 +151,8 @@ func backupDatabase(db *storm.DB, path string, version int) (string, error) {
 // migrate40 prepares a 3.x database for 4.0. New fields read as their zero
 // values, which are the 4.0 defaults (download shares with no limits or
 // counts; file requests, map tiles and required two-factor off), so this
-// step only tidies values 4.0 checks and creates the two-factor bucket.
+// step only tidies values 4.0 checks, clears the old fixed extraction caps
+// and creates the two-factor bucket.
 func migrate40(db *storm.DB) error {
 	var links []*share.Link
 	if err := db.All(&links); err != nil && !errors.Is(err, storm.ErrNotFound) {
@@ -183,6 +184,33 @@ func migrate40(db *storm.DB) error {
 		set.UploadConcurrencyMax = 10
 		if err := save(db, "settings", &set); err != nil {
 			return fmt.Errorf("update settings: %w", err)
+		}
+	}
+
+	// Extraction is guarded by free space and compression ratio since 4.0.
+	// Clear the 3.x fixed caps where they still hold their old defaults
+	// (refusing the multi-gigabyte disk images a NAS holds); a value an
+	// admin chose is kept.
+	var srv settings.Server
+	switch err := get(db, "server", &srv); {
+	case errors.Is(err, fberrors.ErrNotExist):
+	case err != nil:
+		return fmt.Errorf("read server settings: %w", err)
+	default:
+		changed := false
+		if srv.MaxZipFileSize == settings.OldDefaultMaxZipFileSize {
+			srv.MaxZipFileSize, changed = 0, true
+		}
+		if srv.MaxTotalUncompressedSize == settings.OldDefaultMaxTotalUncompressedSize {
+			srv.MaxTotalUncompressedSize, changed = 0, true
+		}
+		if srv.MaxUncompressedFileSize == settings.OldDefaultMaxUncompressedFileSize {
+			srv.MaxUncompressedFileSize, changed = 0, true
+		}
+		if changed {
+			if err := save(db, "server", &srv); err != nil {
+				return fmt.Errorf("update server settings: %w", err)
+			}
 		}
 	}
 

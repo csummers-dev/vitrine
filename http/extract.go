@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -85,10 +86,12 @@ func extractHandler() handleFunc {
 			return errToStatus(err), err
 		}
 
-		// Outer archive size cap (pre-open). For a multi-volume set this only
-		// caps the clicked volume — a cheap pre-filter, not the real defense.
-		if file.Size > d.server.MaxZipFileSize {
-			return http.StatusBadRequest, fberrors.ErrZipFileIsTooLarge
+		// Optional cap on the archive itself (off by default since 4.0; the
+		// free-space and ratio checks are the real defense). For a
+		// multi-volume set it only caps the clicked volume.
+		if d.server.MaxZipFileSize > 0 && file.Size > d.server.MaxZipFileSize {
+			return http.StatusUnprocessableEntity, &fberrors.UnsafeArchiveError{Reason: fmt.Sprintf(
+				"is over this server's limit of %s", fberrors.HumanBytes(uint64(d.server.MaxZipFileSize)))}
 		}
 
 		dirMode := d.settings.DirMode
@@ -101,18 +104,32 @@ func extractHandler() handleFunc {
 		}
 
 		opts := extractOpts{
-			Fs:                      d.user.Fs,
-			Check:                   d.Check,
-			Override:                override,
-			DirMode:                 dirMode,
-			FileMode:                fileMode,
-			MaxEntries:              d.server.MaxZipFileEntries,
-			MaxUncompressedFileSize: d.server.MaxUncompressedFileSize,
-			MaxTotalUncompressed:    d.server.MaxTotalUncompressedSize,
-			MaxUncompressedRate:     d.server.MaxUncompressedSizeRate,
+			Fs:          d.user.Fs,
+			Check:       d.Check,
+			Override:    override,
+			DirMode:     dirMode,
+			FileMode:    fileMode,
+			MaxEntries:  d.server.MaxZipFileEntries,
+			MaxRatio:    d.server.ExtractMaxRatio,
+			MaxFileSize: d.server.MaxUncompressedFileSize,
+			MaxTotal:    d.server.MaxTotalUncompressedSize,
+			FreeMargin:  d.server.ExtractFreeSpaceMargin,
+			FreeSpace:   destFreeSpace(d.user.Fs, filepath.Clean(dst)),
 		}
 
 		if err := extractArchive(r.Context(), file.RealPath(), filepath.Clean(dst), password, opts); err != nil {
+			// Report the specific reason (the archive library wraps it in
+			// "handling file: …"), and keep the full chain in the log.
+			var space *fberrors.InsufficientSpaceError
+			var unsafe *fberrors.UnsafeArchiveError
+			switch {
+			case errors.As(err, &space):
+				log.Printf("extract %s: %v", src, err)
+				return http.StatusInsufficientStorage, space
+			case errors.As(err, &unsafe):
+				log.Printf("extract %s: %v", src, err)
+				return http.StatusUnprocessableEntity, unsafe
+			}
 			return errToStatus(err), err
 		}
 		// Extraction added content under the destination folder. Emit FileCreated
@@ -151,16 +168,22 @@ type extractOpts struct {
 	DirMode  fs.FileMode
 	FileMode fs.FileMode
 
-	MaxEntries              int
-	MaxUncompressedFileSize uint64
-	MaxTotalUncompressed    uint64
-	MaxUncompressedRate     float64
-}
-
-// extractCounters are the running zip-bomb guards (no pre-scan; archives stream).
-type extractCounters struct {
-	entryCount int
-	totalBytes uint64
+	MaxEntries int
+	// MaxRatio is the largest uncompressed/compressed ratio allowed, per
+	// entry where the compressed size is known and for the whole archive;
+	// 0 turns the ratio checks off.
+	MaxRatio float64
+	// MaxFileSize and MaxTotal are optional absolute caps; 0 means none.
+	MaxFileSize uint64
+	MaxTotal    uint64
+	// FreeMargin is kept free on the destination's disk.
+	FreeMargin uint64
+	// FreeSpace reports free bytes on the destination's disk; nil skips the
+	// free-space checks.
+	FreeSpace func() (uint64, error)
+	// ArchiveSize is the archive's size on disk (all volumes); set by
+	// extractArchive when zero.
+	ArchiveSize uint64
 }
 
 // normalizedEntry abstracts a single archive member over both the mholt
@@ -189,9 +212,14 @@ type normalizedEntry struct {
 //   - Everything else (incl. UNENCRYPTED zip) → the mholt streaming walk,
 //     unchanged, with the password threaded into 7z / rar.
 func extractArchive(ctx context.Context, realPath, cleanDst, password string, opts extractOpts) error {
+	if opts.ArchiveSize == 0 {
+		opts.ArchiveSize = archiveDiskSize(realPath)
+	}
+	job := &extractJob{opts: opts}
+
 	if isZipPath(realPath) {
 		if encrypted, _ := zipIsEncrypted(realPath); encrypted {
-			return extractEncryptedZip(realPath, cleanDst, password, opts)
+			return job.finish(extractEncryptedZip(realPath, cleanDst, password, job))
 		}
 	}
 
@@ -207,13 +235,18 @@ func extractArchive(ctx context.Context, realPath, cleanDst, password string, op
 		}
 	}
 
+	// Before writing anything: will it fit, and does it look like a bomb?
+	job.declared = readDeclaredSizes(realPath, password)
+	if err := preflight(job.declared, opts); err != nil {
+		return err
+	}
+
 	extractor, reader, closeFn, err := detectArchive(ctx, realPath, password)
 	if err != nil {
 		return err
 	}
 	defer closeFn()
 
-	c := &extractCounters{}
 	walkErr := extractor.Extract(ctx, reader, func(_ context.Context, entry archives.FileInfo) error {
 		entryRef := entry // capture for the open closure
 		e := normalizedEntry{
@@ -226,22 +259,29 @@ func extractArchive(ctx context.Context, realPath, cleanDst, password string, op
 			// io.ReadCloser, so the interface conversion on return is implicit.
 			open: func() (io.ReadCloser, error) { return entryRef.Open() },
 		}
-		// Only zip exposes per-entry compressed size uniformly (zip-bomb ratio).
+		// Only zip exposes a reliable per-entry compressed size (rar's packed
+		// size is per volume, 7z's per solid block); the other formats get
+		// the whole-archive ratio check.
 		if zh, ok := entry.Header.(zip.FileHeader); ok {
 			e.hasZipSizes = true
 			e.zipCompressed = zh.CompressedSize64
 			e.zipUncompressed = zh.UncompressedSize64
 		}
-		return materializeEntry(e, cleanDst, c, opts)
+		return materializeEntry(e, cleanDst, job)
 	})
-	if walkErr != nil {
-		// A password / encryption failure (7z / rar) → friendly typed error.
-		if isEncryptionErr(walkErr) {
-			return passwordErr(password)
-		}
-		return walkErr
+	// A password / encryption failure (7z / rar) → friendly typed error.
+	if walkErr != nil && isEncryptionErr(walkErr) {
+		walkErr = passwordErr(password)
 	}
-	return nil
+	return job.finish(walkErr)
+}
+
+// finish cleans up after a failed extraction and passes the error on.
+func (j *extractJob) finish(err error) error {
+	if err != nil {
+		j.cleanup()
+	}
+	return err
 }
 
 // archiveMayBeEncrypted reports whether the format at realPath can carry a
@@ -299,7 +339,7 @@ func validateArchivePassword(ctx context.Context, realPath, password string) err
 }
 
 // extractEncryptedZip handles a confirmed-encrypted .zip via yeka/zip.
-func extractEncryptedZip(realPath, cleanDst, password string, opts extractOpts) error {
+func extractEncryptedZip(realPath, cleanDst, password string, job *extractJob) error {
 	if password == "" {
 		return fberrors.ErrArchivePasswordRequired
 	}
@@ -313,10 +353,9 @@ func extractEncryptedZip(realPath, cleanDst, password string, opts extractOpts) 
 	// Validate the password against the FIRST encrypted entry before writing
 	// anything — a wrong password leaves no partial output (all-or-nothing).
 	// A wrong password fails at Open() (AES verifier / ZipCrypto check byte) or
-	// within the first bytes, so the read is bounded to the per-file cap: that
-	// keeps a zip-bomb first entry from turning validation into an unbounded
-	// inflate, without weakening detection. (An over-cap entry is rejected by
-	// materializeEntry's declared-size check before any write anyway.)
+	// within the first bytes, so the read is bounded to 64 KiB: that keeps a
+	// zip-bomb first entry from turning validation into an unbounded inflate,
+	// without weakening detection.
 	for _, f := range r.File {
 		if !f.IsEncrypted() {
 			continue
@@ -326,7 +365,7 @@ func extractEncryptedZip(realPath, cleanDst, password string, opts extractOpts) 
 		if openErr != nil {
 			return classifyZipPasswordErr(openErr)
 		}
-		_, copyErr := io.Copy(io.Discard, io.LimitReader(rc, int64(opts.MaxUncompressedFileSize)))
+		_, copyErr := io.Copy(io.Discard, io.LimitReader(rc, 64<<10))
 		_ = rc.Close()
 		if copyErr != nil {
 			return classifyZipPasswordErr(copyErr)
@@ -334,7 +373,12 @@ func extractEncryptedZip(realPath, cleanDst, password string, opts extractOpts) 
 		break
 	}
 
-	c := &extractCounters{}
+	// Before writing anything: will it fit, and does it look like a bomb?
+	job.declared = readDeclaredSizes(realPath, password)
+	if err := preflight(job.declared, job.opts); err != nil {
+		return err
+	}
+
 	for _, f := range r.File {
 		fileRef := f // capture for the open closure
 		e := normalizedEntry{
@@ -352,22 +396,25 @@ func extractEncryptedZip(realPath, cleanDst, password string, opts extractOpts) 
 				return fileRef.Open()
 			},
 		}
-		if err := materializeEntry(e, cleanDst, c, opts); err != nil {
+		if err := materializeEntry(e, cleanDst, job); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// materializeEntry writes one archive member to disk, enforcing every security
-// guard: link/device skip, zip-bomb ratio, both Zip-Slip passes, per-entry
-// permission, per-file + cumulative size caps, bounded copy, and the
-// lying-header check. Shared by the mholt and yeka walks.
-func materializeEntry(e normalizedEntry, cleanDst string, c *extractCounters, opts extractOpts) error {
+// materializeEntry writes one archive member to disk, enforcing every
+// security guard: entry count, link/device skip, both Zip-Slip passes,
+// per-entry permission, and (in writeEntry) the size, ratio and free-space
+// checks while writing. Shared by the mholt and yeka walks.
+func materializeEntry(e normalizedEntry, cleanDst string, job *extractJob) error {
+	opts := job.opts
+
 	// Entry-count cap.
-	c.entryCount++
-	if c.entryCount > opts.MaxEntries {
-		return fberrors.ErrZipFileIsTooLarge
+	job.entryCount++
+	if opts.MaxEntries > 0 && job.entryCount > opts.MaxEntries {
+		return &fberrors.UnsafeArchiveError{Reason: fmt.Sprintf(
+			"has more than %d entries, this server's limit", opts.MaxEntries)}
 	}
 
 	// Skip symlinks / hard links / devices / fifos / sockets — only plain
@@ -377,18 +424,9 @@ func materializeEntry(e normalizedEntry, cleanDst string, c *extractCounters, op
 		return nil
 	}
 
-	// Zip-only compression-ratio (zip-bomb) check.
-	if e.hasZipSizes {
-		if e.zipUncompressed == 0 {
-			if e.zipCompressed > 0 {
-				return fberrors.ErrInvalidZipEntry
-			}
-		} else {
-			ratio := float64(e.zipCompressed) / float64(e.zipUncompressed)
-			if ratio < opts.MaxUncompressedRate {
-				return fberrors.ErrCompressionRateIsTooLarge
-			}
-		}
+	// A zip entry that claims to be empty but carries compressed data lies.
+	if e.hasZipSizes && e.zipUncompressed == 0 && e.zipCompressed > 0 {
+		return &fberrors.UnsafeArchiveError{Entry: e.name, Reason: "is larger than its header says"}
 	}
 
 	// Zip-Slip defense — string-prefix pass first.
@@ -396,14 +434,14 @@ func materializeEntry(e normalizedEntry, cleanDst string, c *extractCounters, op
 	if strings.HasPrefix(cleanName, "/") ||
 		strings.HasPrefix(cleanName, "../") ||
 		strings.Contains(cleanName, "/../") {
-		return fberrors.ErrInvalidZipFilePath
+		return &fberrors.UnsafeArchiveError{Entry: e.name, Reason: "points outside the destination folder"}
 	}
 	outPath := filepath.Join(cleanDst, cleanName)
 
 	// Zip-Slip defense — second pass via filepath.Rel (mixed separators, etc.).
 	rel, relErr := filepath.Rel(cleanDst, outPath)
 	if relErr != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
-		return fberrors.ErrInvalidZipFilePath
+		return &fberrors.UnsafeArchiveError{Entry: e.name, Reason: "points outside the destination folder"}
 	}
 
 	// Per-entry destination permission check.
@@ -413,68 +451,21 @@ func materializeEntry(e normalizedEntry, cleanDst string, c *extractCounters, op
 
 	// Directory entry.
 	if e.isDir {
-		if mkErr := opts.Fs.MkdirAll(outPath, opts.DirMode); mkErr != nil {
-			return mkErr
-		}
-		return nil
+		return job.mkdirAll(outPath)
 	}
 
 	// Ensure parent dirs exist.
-	if mkErr := opts.Fs.MkdirAll(filepath.Dir(outPath), opts.DirMode); mkErr != nil {
-		return mkErr
+	if err := job.mkdirAll(filepath.Dir(outPath)); err != nil {
+		return err
 	}
 
 	// Honor override flag for file collisions.
-	if !opts.Override {
-		if exists, _ := afero.Exists(opts.Fs, outPath); exists {
-			return nil
-		}
+	existed, _ := afero.Exists(opts.Fs, outPath)
+	if existed && !opts.Override {
+		return nil
 	}
 
-	// Per-file uncompressed size cap (declared size, when known).
-	if e.declaredSize > 0 && uint64(e.declaredSize) > opts.MaxUncompressedFileSize {
-		return fberrors.ErrUncompressSizeIsTooLarge
-	}
-
-	// Open the archive entry.
-	rc, openErr := e.open()
-	if openErr != nil {
-		return openErr
-	}
-
-	outFile, outErr := opts.Fs.OpenFile(outPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, opts.FileMode)
-	if outErr != nil {
-		_ = rc.Close()
-		return outErr
-	}
-
-	// Bounded copy — caps written bytes even if the entry streams more than its
-	// declared size.
-	limited := io.LimitReader(rc, int64(opts.MaxUncompressedFileSize))
-	n, copyErr := io.Copy(outFile, limited)
-
-	closeOutErr := outFile.Close()
-	_ = rc.Close()
-
-	if copyErr != nil {
-		return copyErr
-	}
-	if closeOutErr != nil {
-		return closeOutErr
-	}
-
-	// "Lying header" check — entry declared N bytes but streamed more.
-	if e.declaredSize > 0 && n > e.declaredSize {
-		return fberrors.ErrInvalidZipEntry
-	}
-
-	// Cumulative uncompressed cap.
-	c.totalBytes += uint64(n)
-	if c.totalBytes > opts.MaxTotalUncompressed {
-		return fberrors.ErrUncompressSizeIsTooLarge
-	}
-
-	return nil
+	return job.writeEntry(outPath, e, existed)
 }
 
 // passwordErr distinguishes "encrypted, no password given" (Required) from

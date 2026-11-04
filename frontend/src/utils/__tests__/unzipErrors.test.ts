@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { StatusError } from "@/api/utils";
 import {
   mapUnzipError,
+  isArchivePasswordError,
   deriveSubfolderName,
   buildBatchDests,
 } from "@/utils/unzipErrors";
@@ -74,11 +75,68 @@ describe("mapUnzipError — status fallbacks for non-text payloads", () => {
     );
     expect(mapUnzipError(se("missing", 404))).toBe("Archive not found.");
     expect(mapUnzipError(se("kaboom", 500))).toBe(
-      "Extraction failed — check the server logs for details."
+      "Extraction failed because of a server error."
     );
     expect(mapUnzipError(se("nope", 400))).toBe(
       "The archive couldn't be extracted."
     );
+  });
+});
+
+describe("mapUnzipError — the server's own reason (4.0)", () => {
+  it("shows why there isn't enough space", () => {
+    expect(
+      mapUnzipError(
+        se(
+          "507 Insufficient Storage (not enough space: needs 48.2 GB, 31.0 GB free)",
+          507
+        )
+      )
+    ).toBe("Not enough space: needs 48.2 GB, 31.0 GB free.");
+  });
+
+  it("shows why an archive was refused", () => {
+    expect(
+      mapUnzipError(
+        se(
+          '422 Unprocessable Entity (archive entry "zeros.bin" exceeds safe compression ratio)',
+          422
+        )
+      )
+    ).toBe('Archive entry "zeros.bin" exceeds safe compression ratio.');
+  });
+
+  it("falls back to a plain line when the reason is missing", () => {
+    expect(mapUnzipError(se("507 Insufficient Storage", 507))).toBe(
+      "Not enough space on the server to extract this archive."
+    );
+    expect(mapUnzipError(se("422 Unprocessable Entity", 422))).toBe(
+      "This archive was refused as unsafe."
+    );
+  });
+});
+
+describe("isArchivePasswordError", () => {
+  it("is a 422 about a password, not any 422", () => {
+    expect(
+      isArchivePasswordError(
+        se("422 Unprocessable Entity (this archive is password-protected)", 422)
+      )
+    ).toBe(true);
+    expect(
+      isArchivePasswordError(
+        se("422 Unprocessable Entity (the archive password is incorrect)", 422)
+      )
+    ).toBe(true);
+    expect(
+      isArchivePasswordError(
+        se(
+          "422 Unprocessable Entity (archive exceeds safe compression ratio)",
+          422
+        )
+      )
+    ).toBe(false);
+    expect(isArchivePasswordError(se("password", 400))).toBe(false);
   });
 });
 

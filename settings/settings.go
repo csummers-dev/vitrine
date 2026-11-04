@@ -16,28 +16,35 @@ const DefaultMinimumPasswordLength = 12
 const DefaultFileMode = 0640
 const DefaultDirMode = 0750
 
-// Archive-extraction safety limits (PR #5746, fork variant). Originally
-// zip-only; now apply to every supported archive format (zip / 7z / rar /
-// tar family) — the field names keep the historical "Zip" spelling so config
-// keys / CLI flags stay backward-compatible. Surfaces in the admin Server
-// settings; operators may override via `--unzipEnabled=false` / config to
-// disable extraction entirely.
-//   - MaxZipFileSize: pre-open cap on the archive itself (5 GB). For a
-//     multi-volume set this caps the clicked volume only.
-//   - MaxZipFileEntries: refuses archives with more than ~100k entries
-//     (enforced as a running count during the streaming walk).
-//   - MaxTotalUncompressedSize: cumulative cap across all entries (20 GB).
-//   - MaxUncompressedSizeRate: zip-bomb defense — rejects entries whose
-//     compression ratio (compressed/uncompressed) is below this floor.
-//     0.01 means "compressed must be at least 1% of declared uncompressed".
-//     Zip-only: other formats don't expose per-entry compressed size, so they
-//     rely on the total / per-file / entry-count / outer-size caps instead.
-//   - MaxUncompressedFileSize: per-entry decompressed cap (5 GB).
-const DefaultMaxZipFileSize = 5 * 1024 * 1024 * 1024            // 5GB
-const DefaultMaxZipFileEntries = 100000                         // 100k files
-const DefaultMaxTotalUncompressedSize = 20 * 1024 * 1024 * 1024 // 20GB
-const DefaultMaxUncompressedSizeRate = 0.01                     // 1%
-const DefaultMaxUncompressedFileSize = 5 * 1024 * 1024 * 1024   // 5GB
+// Archive-extraction limits. The field names keep the historical "Zip"
+// spelling so config keys stay compatible; they apply to every supported
+// format (zip / 7z / rar / tar family). Since 4.0 extraction is guarded by
+// free space and compression ratio rather than fixed sizes, which refused
+// the multi-gigabyte disk images a NAS holds:
+//   - ExtractMaxRatio: largest uncompressed/compressed ratio, per entry
+//     where the compressed size is known (zip) and for the whole archive
+//     (all formats). Default 100:1; 0 turns the ratio checks off.
+//   - ExtractFreeSpaceMargin: bytes kept free on the destination disk;
+//     an extraction that wouldn't fit fails before writing (default 1 GiB).
+//   - MaxUncompressedFileSize, MaxTotalUncompressedSize, MaxZipFileSize:
+//     optional absolute caps per file, per archive and on the archive
+//     itself. 0 (the default) means none. The comic reader keeps 5 GB as
+//     its own archive cap when MaxZipFileSize is 0.
+//   - MaxZipFileEntries: refuses archives with more than ~100k entries.
+//   - MaxUncompressedSizeRate: the 3.x ratio setting (compressed divided by
+//     uncompressed, 0.01 = 100:1); read only when ExtractMaxRatio is unset.
+const DefaultMaxZipFileSize = 5 * 1024 * 1024 * 1024 // 5GB, the comic reader's cap
+const DefaultMaxZipFileEntries = 100000              // 100k files
+const DefaultExtractMaxRatio = 100.0
+const DefaultExtractFreeSpaceMargin = 1 << 30 // 1 GiB
+
+// The 3.x defaults, cleared by the 4.0 migration so upgraded servers get
+// the new checks instead of the old fixed caps.
+const (
+	OldDefaultMaxZipFileSize           = 5 * 1024 * 1024 * 1024
+	OldDefaultMaxTotalUncompressedSize = 20 * 1024 * 1024 * 1024
+	OldDefaultMaxUncompressedFileSize  = 5 * 1024 * 1024 * 1024
+)
 
 // AuthMethod describes an authentication method.
 type AuthMethod string
@@ -128,6 +135,8 @@ type Server struct {
 	MaxTotalUncompressedSize uint64  `json:"maxTotalUncompressedSize"`
 	MaxUncompressedSizeRate  float64 `json:"maxUncompressedSizeRate"`
 	MaxUncompressedFileSize  uint64  `json:"maxUncompressedFileSize"`
+	ExtractMaxRatio          float64 `json:"extractMaxRatio"`
+	ExtractFreeSpaceMargin   uint64  `json:"extractFreeSpaceMargin"`
 }
 
 // Clean cleans any variables that might need cleaning.

@@ -55,3 +55,46 @@ type ErrShortPassword struct {
 func (e ErrShortPassword) Error() string {
 	return fmt.Sprintf("password is too short, minimum length is %d", e.MinimumLength)
 }
+
+// InsufficientSpaceError means an extraction would not fit on the
+// destination's disk (4.0). Need and Free are bytes; Free is what's left
+// after the configured safety margin.
+type InsufficientSpaceError struct {
+	Need uint64
+	Free uint64
+}
+
+func (e *InsufficientSpaceError) Error() string {
+	return fmt.Sprintf("not enough space: needs %s, %s free", HumanBytes(e.Need), HumanBytes(e.Free))
+}
+
+// UnsafeArchiveError means an archive was refused as unsafe: an entry, or
+// the archive as a whole, expands far beyond its compressed size, an entry
+// is bigger than its header says, or a path points outside the destination.
+// Entry is the archive member, "" for the archive as a whole.
+type UnsafeArchiveError struct {
+	Entry  string
+	Reason string
+}
+
+func (e *UnsafeArchiveError) Error() string {
+	if e.Entry == "" {
+		return "archive " + e.Reason
+	}
+	return fmt.Sprintf("archive entry %q %s", e.Entry, e.Reason)
+}
+
+// HumanBytes formats a byte count in decimal units, as disks are sold:
+// 48200000000 → "48.2 GB".
+func HumanBytes(n uint64) string {
+	const unit = 1000
+	if n < unit {
+		return fmt.Sprintf("%d B", n)
+	}
+	div, exp := uint64(unit), 0
+	for m := n / unit; m >= unit; m /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(n)/float64(div), "kMGTPE"[exp])
+}

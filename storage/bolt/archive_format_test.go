@@ -53,3 +53,33 @@ func TestAskArchiveFormatDefaultsOff(t *testing.T) {
 		}
 	})
 }
+
+// The 4.0 migration clears the 3.x fixed extraction caps that still hold
+// their old defaults, and keeps values an admin chose.
+func TestMigrateClearsOldExtractionCaps(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "vitrine.db")
+	db := openDB(t, path)
+	seed3x(t, db)
+	if err := save(db, "server", &settings.Server{
+		Root:                     "/srv",
+		MaxZipFileSize:           settings.OldDefaultMaxZipFileSize,
+		MaxTotalUncompressedSize: settings.OldDefaultMaxTotalUncompressedSize,
+		MaxUncompressedFileSize:  100 << 30, // chosen by an admin
+		MaxZipFileEntries:        5000,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Migrate(db, path, Migrations, nil); err != nil {
+		t.Fatal(err)
+	}
+	srv, err := (settingsBackend{db: db}).GetServer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if srv.MaxZipFileSize != 0 || srv.MaxTotalUncompressedSize != 0 {
+		t.Errorf("old default caps kept: %+v", srv)
+	}
+	if srv.MaxUncompressedFileSize != 100<<30 || srv.MaxZipFileEntries != 5000 || srv.Root != "/srv" {
+		t.Errorf("admin's values changed: %+v", srv)
+	}
+}

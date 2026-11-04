@@ -22,6 +22,7 @@ import (
 
 	fberrors "github.com/csummers-dev/vitrine/v4/errors"
 	"github.com/csummers-dev/vitrine/v4/files"
+	"github.com/csummers-dev/vitrine/v4/settings"
 )
 
 // Comic reader — paged CBZ (zip) / CBR (rar) image viewing, read-only.
@@ -125,8 +126,14 @@ func comicFileInfo(r *http.Request, d *data) (*files.FileInfo, int, error) {
 		return nil, errToStatus(err), err
 	}
 	// Cheap pre-filter on the outer archive size (the real per-page bound is
-	// applied while reading each page).
-	if file.Size > d.server.MaxZipFileSize {
+	// applied while reading each page). The comic reader keeps the 5 GB
+	// default when maxZipFileSize is off (0), which since 4.0 only lifts the
+	// cap for extraction.
+	limit := d.server.MaxZipFileSize
+	if limit <= 0 {
+		limit = settings.DefaultMaxZipFileSize
+	}
+	if file.Size > limit {
 		return nil, http.StatusBadRequest, fberrors.ErrZipFileIsTooLarge
 	}
 	return file, 0, nil
