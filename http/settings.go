@@ -26,6 +26,7 @@ type settingsData struct {
 	UploadSharesEnabled   bool                  `json:"uploadSharesEnabled"`
 	UploadConcurrencyMax  uint                  `json:"uploadConcurrencyMax"`
 	RequireAdminTwoFactor bool                  `json:"requireAdminTwoFactor"`
+	AskArchiveFormat      bool                  `json:"askArchiveFormat"`
 }
 
 var settingsGetHandler = withAdmin(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
@@ -46,6 +47,7 @@ var settingsGetHandler = withAdmin(func(w http.ResponseWriter, r *http.Request, 
 		UploadSharesEnabled:   d.settings.UploadSharesEnabled,
 		UploadConcurrencyMax:  d.settings.UploadConcurrencyMax,
 		RequireAdminTwoFactor: d.settings.RequireAdminTwoFactor,
+		AskArchiveFormat:      d.settings.AskArchiveFormat,
 	}
 
 	return renderJSON(w, r, data)
@@ -72,6 +74,7 @@ var settingsPutHandler = withAdmin(func(_ http.ResponseWriter, r *http.Request, 
 	d.settings.HideLoginButton = req.HideLoginButton
 	d.settings.UploadSharesEnabled = req.UploadSharesEnabled
 	d.settings.UploadConcurrencyMax = min(req.UploadConcurrencyMax, 10)
+	d.settings.AskArchiveFormat = req.AskArchiveFormat
 	// Turning the requirement on while your own account has no second
 	// factor would lock you out of these settings on the next request.
 	if req.RequireAdminTwoFactor && !d.settings.RequireAdminTwoFactor &&

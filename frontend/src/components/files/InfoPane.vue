@@ -206,7 +206,7 @@
             v-if="canDownload"
             size="sm"
             icon="download"
-            @click="act('download')"
+            @click="downloadSelected"
             >Download</UiButton
           >
           <UiButton v-if="canMove" size="sm" icon="forward" @click="act('move')"
@@ -334,6 +334,7 @@ import {
 import { isExtractable } from "@/utils/archive";
 import { isAudioTaggable } from "@/utils/audio";
 import { files as api, audiotags as audioTagsApi } from "@/api";
+import { downloadSelection, startDownload } from "@/utils/download";
 import type { Book } from "epubjs";
 import dayjs from "dayjs";
 import {
@@ -580,8 +581,21 @@ const open = () => {
   if (mode.value !== "docked") panel.hide();
   void router.push(item.value.url);
 };
+// One file downloads as it is; a folder goes through the shared helper
+// (zip, or the format prompt when an admin asked for it).
 const download = () => {
-  if (item.value) window.open(api.getDownloadURL(item.value, false));
+  const it = item.value;
+  if (!it) return;
+  startDownload({
+    file: it.isDir
+      ? undefined
+      : () => window.open(api.getDownloadURL(it, false)),
+    archive: (format) => api.download(format, it.url),
+  });
+};
+const downloadSelected = () => {
+  if (mode.value !== "docked") panel.hide();
+  downloadSelection();
 };
 
 const copiedPath = ref(false);

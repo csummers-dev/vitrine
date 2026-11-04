@@ -5,6 +5,8 @@ interface ISettings {
   /** 4.1: drop-box shares turned off server-wide. */
   uploadSharesEnabled?: boolean;
   requireAdminTwoFactor?: boolean;
+  /** Ask for the archive format on folder and multi-item downloads. */
+  askArchiveFormat?: boolean;
   /** 5.4: most files a user may upload at once (0 = no cap beyond 10). */
   uploadConcurrencyMax?: number;
   rememberLastPage: boolean;

@@ -25,6 +25,7 @@ import { useShortcutsOverlay } from "@/composables/useShortcutsOverlay";
 import { usePanesStore } from "@/stores/panes";
 import { usePreferences } from "@/composables/usePreferences";
 import { useDetailsPanel } from "@/composables/useDetailsPanel";
+import { downloadSelection } from "@/utils/download";
 import {
   VIEW_BY_FOLDER_PREF,
   folderViewKey,
@@ -250,7 +251,7 @@ export function buildStaticCommands(ctx: CommandContext): Command[] {
         label: `Download ${selCount} selected`,
         icon: "download",
         keywords: ["save", "get"],
-        run: () => layoutStore.showHover("download"),
+        run: () => downloadSelection(),
       });
     }
     if (canRename && selCount === 1) {

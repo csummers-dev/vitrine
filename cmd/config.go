@@ -35,6 +35,7 @@ func addConfigFlags(flags *pflag.FlagSet) {
 	flags.Bool("hideLoginButton", false, "hide login button from public pages")
 	flags.Bool("createUserDir", false, "generate user's home directory automatically")
 	flags.Bool("requireAdminTwoFactor", false, "make admins set up two-factor sign-in before using admin features (password sign-in only)")
+	flags.Bool("askArchiveFormat", false, "ask which archive format to use when downloading a folder or several items (off: zip)")
 	flags.Uint("minimumPasswordLength", settings.DefaultMinimumPasswordLength, "minimum password length for new users")
 	flags.String("shell", "", "shell command to which other commands should be appended")
 
@@ -284,6 +285,7 @@ func printSettings(ser *settings.Server, set *settings.Settings, auther auth.Aut
 	fmt.Fprintf(w, "Hide Login Button:\t%t\n", set.HideLoginButton)
 	fmt.Fprintf(w, "Create User Dir:\t%t\n", set.CreateUserDir)
 	fmt.Fprintf(w, "Require Admin Two-Factor:\t%t\n", set.RequireAdminTwoFactor)
+	fmt.Fprintf(w, "Ask Archive Format:\t%t\n", set.AskArchiveFormat)
 	fmt.Fprintf(w, "Logout Page:\t%s\n", set.LogoutPage)
 	fmt.Fprintf(w, "Minimum Password Length:\t%d\n", set.MinimumPasswordLength)
 	fmt.Fprintf(w, "Auth Method:\t%s\n", set.AuthMethod)
@@ -417,6 +419,8 @@ func getSettings(flags *pflag.FlagSet, set *settings.Settings, ser *settings.Ser
 			set.CreateUserDir, err = flags.GetBool(flag.Name)
 		case "requireAdminTwoFactor":
 			set.RequireAdminTwoFactor, err = flags.GetBool(flag.Name)
+		case "askArchiveFormat":
+			set.AskArchiveFormat, err = flags.GetBool(flag.Name)
 		case "minimumPasswordLength":
 			set.MinimumPasswordLength, err = flags.GetUint(flag.Name)
 		case "shell":

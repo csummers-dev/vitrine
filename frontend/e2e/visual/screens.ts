@@ -492,6 +492,15 @@ export const SCREENS: Screen[] = [
     name: "prompt-download",
     sizes: ["desktop"],
     open: async (c) => {
+      // The prompt only shows when an admin asks for it (4.0).
+      await c.page.addInitScript(`(() => {
+        let fb = {};
+        Object.defineProperty(window, "FileBrowser", {
+          configurable: true,
+          get: () => fb,
+          set: (v) => { fb = { ...v, AskArchiveFormat: true }; },
+        });
+      })()`);
       await signedIn(c);
       await row(c.page, "Documents").click({ button: "right" });
       await c.page

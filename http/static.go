@@ -68,7 +68,10 @@ func handleWithStaticData(w http.ResponseWriter, _ *http.Request, d *data, fSys 
 		"UploadShares": d.settings.UploadSharesEnabled,
 		// 5.4: admin cap on simultaneous uploads (0 = no cap beyond 10).
 		"UploadConcurrencyMax": d.settings.UploadConcurrencyMax,
-		"MapAttribution":       mapAttribution(d.server.MapTileURL()),
+		// Ask which archive format to use for folder and multi-item
+		// downloads (off: zip straight away). Share pages read it too.
+		"AskArchiveFormat": d.settings.AskArchiveFormat,
+		"MapAttribution":   mapAttribution(d.server.MapTileURL()),
 	}
 
 	if d.settings.Branding.Files != "" {

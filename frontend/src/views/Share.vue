@@ -162,7 +162,21 @@
             }}
           </p>
           <div class="share__info-actions">
+            <!-- A shared folder downloads through the shared helper (zip, or
+                 the format prompt when the admin asked for it); a file is a
+                 plain link. -->
+            <button
+              v-if="req.isDir"
+              type="button"
+              class="share-btn share-btn--primary share__info-action"
+              data-testid="share-download-all"
+              @click="download"
+            >
+              <Icon name="download" :size="13" />
+              <span>{{ t("buttons.download") }}</span>
+            </button>
             <a
+              v-else
               :href="link"
               target="_blank"
               rel="noopener"
@@ -328,6 +342,7 @@ import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { StatusError } from "@/api/utils";
 import { copy } from "@/utils/clipboard";
+import { startDownload } from "@/utils/download";
 
 const error = ref<StatusError | null>(null);
 const showLimit = ref<number>(100);
@@ -462,28 +477,18 @@ const isSingleFile = () =>
   fileStore.selectedCount === 1 &&
   !req.value?.items[fileStore.selected[0]].isDir;
 
+// One file downloads as it is; several, or the whole share, go through the
+// shared helper (zip, or the format prompt when the admin asked for it).
 const download = () => {
   if (!req.value) return;
-  if (isSingleFile()) {
-    api.download(
-      null,
-      hash.value,
-      token.value,
-      req.value.items[fileStore.selected[0]].path
-    );
-    return;
-  }
-  layoutStore.showHover({
-    prompt: "download",
-    confirm: (format: DownloadFormat) => {
-      if (req.value === null) return;
-      layoutStore.closeHovers();
-      const files: string[] = [];
-      for (const i of fileStore.selected) {
-        files.push(req.value.items[i].path);
-      }
-      api.download(format, hash.value, token.value, ...files);
-    },
+  const r = req.value;
+  const paths = fileStore.selected.map((i) => r.items[i].path);
+  startDownload({
+    file: isSingleFile()
+      ? () => api.download(null, hash.value, token.value, paths[0])
+      : undefined,
+    archive: (format) =>
+      api.download(format, hash.value, token.value, ...paths),
   });
 };
 

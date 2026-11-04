@@ -236,6 +236,7 @@ export class FakeServer {
     hideLoginButton: false,
     uploadSharesEnabled: false,
     requireAdminTwoFactor: false,
+    askArchiveFormat: false,
     uploadConcurrencyMax: 0,
     rememberLastPage: false,
     minimumPasswordLength: 12,

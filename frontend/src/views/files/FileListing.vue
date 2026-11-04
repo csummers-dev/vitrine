@@ -1122,6 +1122,7 @@ import { useTouchDevice } from "@/composables/useTouchDevice";
 import { usePullToRefresh } from "@/composables/usePullToRefresh";
 import { copy } from "@/utils/clipboard";
 import { removeLastDir } from "@/utils/url";
+import { downloadSelection } from "@/utils/download";
 import { sortListing } from "@/utils/secondarySort";
 import { useFolderSizes } from "@/composables/useFolderSizes";
 import { useFolderRename } from "@/composables/listing/useFolderRename";
@@ -1146,7 +1147,6 @@ import { useDragAutoScroll } from "@/composables/useDragAutoScroll";
 import { useListingClipboard } from "@/composables/listing/useListingClipboard";
 import { buildRowMenu, buildBackgroundMenu } from "@/utils/listingMenus";
 
-import { files as api } from "@/api";
 import { enableExec, unzipEnabled } from "@/utils/constants";
 import { isExtractable } from "@/utils/archive";
 import { isAudioTaggable } from "@/utils/audio";
@@ -2536,7 +2536,7 @@ const keyEvent = (event: KeyboardEvent) => {
       break;
     case "s":
       event.preventDefault();
-      document.getElementById("download-button")?.click();
+      if (headerButtons.value.download) download();
       break;
     case "i":
     case "I":
@@ -2620,45 +2620,9 @@ const windowsResize = throttle(() => {
   fillWindow();
 }, 100);
 
-const download = () => {
-  if (fileStore.req === null) return;
-
-  if (
-    fileStore.selectedCount === 1 &&
-    !fileStore.req.items[fileStore.selected[0]].isDir
-  ) {
-    api.download(null, fileStore.req.items[fileStore.selected[0]].url);
-    return;
-  }
-
-  // Nothing selected → confirm before downloading the entire folder
-  if (fileStore.selectedCount === 0) {
-    const folderName = fileStore.req.name || "this folder";
-    const ok = window.confirm(
-      `Nothing is selected. This will download the entire contents of "${folderName}" as an archive. Continue?`
-    );
-    if (!ok) return;
-  }
-
-  layoutStore.showHover({
-    prompt: "download",
-    confirm: (format: DownloadFormat) => {
-      layoutStore.closeHovers();
-
-      const files = [];
-
-      if (fileStore.selectedCount > 0 && fileStore.req !== null) {
-        for (const i of fileStore.selected) {
-          files.push(fileStore.req.items[i].url);
-        }
-      } else {
-        files.push(route.path);
-      }
-
-      api.download(format, ...files);
-    },
-  });
-};
+// The selection, or the whole folder (shared helper: zip, or the format
+// prompt when an admin asked for it).
+const download = () => downloadSelection(route.path);
 
 const totalItems = computed(
   () => (fileStore.req?.numDirs ?? 0) + (fileStore.req?.numFiles ?? 0)

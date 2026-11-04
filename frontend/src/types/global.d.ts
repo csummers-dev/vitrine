@@ -38,6 +38,9 @@ interface VitrineGlobals {
   SSOName?: string;
   /** 4.5: password sign-in is still offered beside SSO. */
   PasswordLogin?: boolean;
+  /** Ask which archive format to use for folder and multi-item downloads
+   *  (off: zip). Updated in place when an admin saves Global settings. */
+  AskArchiveFormat?: boolean;
   /** 5.4: admin cap on simultaneous uploads (0 = default 10). */
   UploadConcurrencyMax?: number;
   Version: string;

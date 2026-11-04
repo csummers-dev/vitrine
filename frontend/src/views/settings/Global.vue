@@ -134,8 +134,20 @@
            per-user theme switcher lives in Profile settings (unaffected). -->
       <SettingsSection
         title="Interface"
-        description="Hide optional UI elements."
+        description="Optional prompts and UI elements, for everyone."
       >
+        <SettingsRow
+          :label="t('settings.askArchiveFormat')"
+          :description="t('settings.askArchiveFormatHelp')"
+        >
+          <Toggle
+            :model-value="!!settings.askArchiveFormat"
+            data-testid="ask-archive-format"
+            @update:model-value="
+              (v: boolean) => settings && (settings.askArchiveFormat = v)
+            "
+          />
+        </SettingsRow>
         <SettingsRow
           :label="t('settings.disableExternalLinks')"
           description="Suppress links pointing off-site (help, GitHub, etc.)."
@@ -393,6 +405,8 @@ const save = async () => {
   twoFactorError.value = "";
   try {
     await api.update(newSettings);
+    // Downloads read this live, so the change applies without a reload.
+    window.FileBrowser.AskArchiveFormat = !!newSettings.askArchiveFormat;
     $showSuccess(t("settings.settingsUpdated"));
   } catch (e) {
     // The server refuses to require two-factor sign-in while your own

@@ -156,6 +156,8 @@
     "administrator": "Administrator",
     "allowSignup": "Allow users to sign up",
     "hideLoginButton": "Hide the sign-in button on public pages",
+    "askArchiveFormat": "Ask for archive format on download",
+    "askArchiveFormatHelp": "When someone downloads a folder or several items, ask which format to use (zip, tar, tar.gz, …). Off: they download as a zip straight away. Single files always download as they are.",
     "avoidChanges": "(leave blank to keep unchanged)",
     "branding": "Branding",
     "brandingDirectoryPath": "Branding directory path",

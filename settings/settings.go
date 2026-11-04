@@ -87,6 +87,11 @@ type Settings struct {
 	// Recover with "vitrine users reset-2fa" or "config set
 	// --requireAdminTwoFactor=false" if an admin is stuck.
 	RequireAdminTwoFactor bool `json:"requireAdminTwoFactor"`
+	// AskArchiveFormat shows the archive-format prompt (zip, tar, tar.gz, …)
+	// when someone downloads a folder or several items (4.0). Off by
+	// default: those downloads are zipped straight away. Existing databases
+	// unmarshal to false. Single files always download as they are.
+	AskArchiveFormat bool `json:"askArchiveFormat"`
 	// UploadConcurrencyMax caps how many files one user uploads at once
 	// (4.0 Phase 5.4); 0 means the built-in maximum of 10.
 	UploadConcurrencyMax uint `json:"uploadConcurrencyMax"`

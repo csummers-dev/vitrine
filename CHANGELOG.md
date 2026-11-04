@@ -65,6 +65,15 @@ All notable changes to **vitrine**.
     Windows high-contrast mode keeps focus and selection visible.
   - **Admins** see a notice after the upgrade, naming the database backup
     it made, until they dismiss it.
+- **Folder downloads skip the format question.** Downloading a folder or
+  several items now gives you a zip straight away, everywhere: the
+  selection bar, right-click menus, ⌘S / Ctrl+S, the command palette, the
+  details panel, split view and public share pages. Admins who want the
+  choice of tar, tar.gz and the rest back can turn on *Ask for archive
+  format on download* (Settings → Global, or `vitrine config set
+  --askArchiveFormat`). Single files download as they are, as before. Also
+  fixed on the way: ⌘S, the palette's "Download N selected" and the
+  details panel's Download for several items did nothing.
 - **Live updates.** vitrine now watches the folders it serves. Files added,
   renamed or removed by anything — a downloader, an SMB copy, the host shell,
   another user — appear in open tabs (both panes in split view), in search and

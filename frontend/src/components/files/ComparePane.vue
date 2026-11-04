@@ -487,6 +487,7 @@ import { pressStartedOnEmptyListing } from "@/utils/listingPress";
 import { copy as copyToClipboard } from "@/utils/clipboard";
 import * as upload from "@/utils/upload";
 import { files as api } from "@/api";
+import { startDownload } from "@/utils/download";
 import { isExtractable } from "@/utils/archive";
 import { unzipEnabled } from "@/utils/constants";
 import urlUtil from "@/utils/url";
@@ -1209,8 +1210,13 @@ const extractSelection = () => {
 const downloadSelection = () => {
   const items = selectionItems();
   if (items.length === 0) return;
-  if (items.length === 1 && !items[0].isDir) api.download(null, items[0].url);
-  else api.download("zip", ...items.map((i) => i.url));
+  startDownload({
+    file:
+      items.length === 1 && !items[0].isDir
+        ? () => api.download(null, items[0].url)
+        : undefined,
+    archive: (format) => api.download(format, ...items.map((i) => i.url)),
+  });
 };
 
 const clearSelection = () => {
