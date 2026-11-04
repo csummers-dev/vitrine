@@ -13,10 +13,18 @@ const press = (page: Page, ...keys: string[]) =>
     Promise.resolve()
   );
 
-/** Tab forwards until the focused element matches, like a person would. */
-async function tabTo(page: Page, name: RegExp, max = 40): Promise<void> {
+/**
+ * Tab (or Shift+Tab with `back`) until the focused element matches, like a
+ * person would. Firefox stops on scrollable areas too, so the allowance is
+ * generous.
+ */
+async function tabTo(
+  page: Page,
+  name: RegExp,
+  { back = false, max = 80 }: { back?: boolean; max?: number } = {}
+): Promise<void> {
   for (let i = 0; i < max; i++) {
-    await page.keyboard.press("Tab");
+    await page.keyboard.press(back ? "Shift+Tab" : "Tab");
     const label = await page.evaluate(
       `(() => { const e = document.activeElement; return e ? (e.getAttribute("aria-label") || e.textContent || "").trim() : ""; })()`
     );
@@ -130,7 +138,8 @@ test("browse, rename, move, share, upload, search, settings and sign out", async
   // upload requests to the fake server, so this step runs elsewhere.)
   if (browserName !== "webkit") {
     const chooser = page.waitForEvent("filechooser");
-    await tabTo(page, /^Upload$/);
+    // Focus is back on the shared file's row; the toolbar is above it.
+    await tabTo(page, /^Upload$/, { back: true });
     await press(page, "Enter");
     // The upload prompt opens on "File".
     await expect(page.getByRole("dialog", { name: "Upload" })).toBeVisible();
