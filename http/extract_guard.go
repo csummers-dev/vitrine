@@ -18,7 +18,6 @@ package fbhttp
 
 import (
 	"archive/tar"
-	"context"
 	"fmt"
 	"io"
 	"os"
