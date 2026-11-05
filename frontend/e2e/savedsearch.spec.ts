@@ -78,6 +78,17 @@ test.describe("with a saved search", () => {
       .getByRole("link", { name: "Recent photos" })
       .click();
     await expect(app).toHaveURL(/\/files\/\?saved=s1$/);
+    // The smart folder is the current place, not My files.
+    await expect(
+      app
+        .getByTestId("saved-searches")
+        .getByRole("link", { name: "Recent photos" })
+    ).toHaveAttribute("aria-current", "page");
+    await expect(
+      app
+        .getByRole("navigation", { name: "Places" })
+        .getByRole("button", { name: "My files" })
+    ).not.toHaveAttribute("aria-current", "page");
     // The poster was just written, so it's within "added:30d"; only images.
     await expect(row(app, "poster.jpg")).toBeVisible();
     await expect(row(app, "trip.mp4")).toHaveCount(0);

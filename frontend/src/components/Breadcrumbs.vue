@@ -2,7 +2,11 @@
   <nav
     ref="navEl"
     class="breadcrumbs-nav flex items-center gap-0.5 text-[13px] min-w-0 text-ink-2"
-    :class="{ 'breadcrumbs-nav--drag': isDragActive, 'is-title': title }"
+    :class="{
+      'breadcrumbs-nav--drag': isDragActive,
+      'breadcrumbs-nav--squeezed': squeezed,
+      'is-title': title,
+    }"
     :aria-label="t('files.home')"
   >
     <component
@@ -21,88 +25,74 @@
       <Icon name="house" :size="14" class="text-[var(--color-accent-ink)]" />
     </component>
 
-    <!-- Compact ellipsis shown only at narrow widths when there are intermediate
-         segments (i.e. more than just the current folder). Saves horizontal room. -->
-    <template v-if="items.length > 1">
-      <span class="text-ink-3 px-0.5 hidden max-md:flex items-center">
-        <Icon name="chevron-right" :size="12" />
-      </span>
-      <span
-        class="px-1.5 py-1 rounded text-ink-3 hidden max-md:inline-flex items-center"
-        :title="
-          items
-            .slice(0, -1)
-            .map((l) => l.name)
-            .join(' / ')
-        "
-      >
-        …
-      </span>
-    </template>
+    <!-- When the path doesn't fit, the middle folds into "…" (a menu of the
+         folders it hides): first the folders after the top one, then the
+         top one too, so the current folder always shows. Phones always fold
+         everything but the current folder. -->
+    <template v-for="(entry, index) in items" :key="entry.url">
+      <template v-if="index === foldAt">
+        <span class="text-ink-3 px-0.5 flex items-center" aria-hidden="true">
+          <Icon name="chevron-right" :size="12" />
+        </span>
+        <button
+          type="button"
+          class="breadcrumb-link breadcrumb-fold text-ink-2"
+          :aria-label="`${hiddenItems.length} more folders`"
+          :title="hiddenItems.map((l) => l.name).join(' / ')"
+          aria-haspopup="menu"
+          data-testid="breadcrumb-fold"
+          @click.stop.prevent="openFoldMenu"
+        >
+          <span class="breadcrumb-link__text">…</span>
+        </button>
+      </template>
+      <template v-if="!hidden.has(index)">
+        <!-- The separator chevron doubles as a SIBLING-FOLDER menu trigger
+             (v2.7): clicking the chevron before a crumb lists that level's
+             folders, so lateral moves (/Media/Comics → /Media/Music) are one
+             click instead of two navigations. Only in the real files tree —
+             share views + noLink renders keep the plain separator. -->
+        <button
+          v-if="siblingMenusEnabled"
+          type="button"
+          class="breadcrumb-sep text-ink-3 px-0.5 flex items-center"
+          :aria-label="`Show folders in ${index === 0 ? t('files.home') : items[index - 1].name}`"
+          aria-haspopup="menu"
+          @click.stop.prevent="openSiblingMenu(index, $event)"
+        >
+          <Icon name="chevron-right" :size="12" />
+        </button>
+        <span v-else class="text-ink-3 px-0.5 flex items-center">
+          <Icon name="chevron-right" :size="12" />
+        </span>
 
-    <!-- Desktop: every segment is shown in full (no middle "…" fold) — when the
-         path is wider than the bar the strip scrolls horizontally instead, with
-         the scroll pinned to the current folder. Mobile keeps the compact "…"
-         above and hides the intermediate crumbs (`max-md:hidden`). -->
-    <template v-for="(entry, index) in items" :key="index">
-      <!-- The separator chevron doubles as a SIBLING-FOLDER menu trigger
-           (v2.7): clicking the chevron before a crumb lists that level's
-           folders, so lateral moves (/Media/Comics → /Media/Music) are one
-           click instead of two navigations. Only in the real files tree —
-           share views + noLink renders keep the plain separator. -->
-      <button
-        v-if="siblingMenusEnabled"
-        type="button"
-        :class="[
-          'breadcrumb-sep text-ink-3 px-0.5 flex items-center',
-          index !== items.length - 1 && 'max-md:hidden',
-        ]"
-        :aria-label="`Show folders in ${index === 0 ? t('files.home') : items[index - 1].name}`"
-        aria-haspopup="menu"
-        @click.stop.prevent="openSiblingMenu(index, $event)"
-      >
-        <Icon name="chevron-right" :size="12" />
-      </button>
-      <span
-        v-else
-        :class="[
-          'text-ink-3 px-0.5 flex items-center',
-          // Hide the chevron preceding non-final items on mobile —
-          // mobile already collapses everything but the last crumb
-          // into the compact ellipsis up top.
-          index !== items.length - 1 && 'max-md:hidden',
-        ]"
-      >
-        <Icon name="chevron-right" :size="12" />
-      </span>
-
-      <component
-        :is="element"
-        :to="entry.url"
-        :class="[
-          'breadcrumb-link',
-          index === items.length - 1
-            ? 'breadcrumb-link--current text-ink-1 font-semibold'
-            : 'breadcrumb-link--crumb text-ink-2 max-md:hidden',
-          dragOver === entry.url && 'is-drop-target',
-        ]"
-        :title="entry.name"
-        :data-drop-url="entry.url"
-        @dragenter="onDragEnter(entry.url, $event)"
-        @dragover="onDragOver($event)"
-        @dragleave="onDragLeave(entry.url)"
-        @drop="onDrop(entry.url, entry.url, $event)"
-      >
-        <!-- Text lives in a block span so `text-overflow: ellipsis` actually
-             truncates — an inline-flex link can't ellipsize its own text node
-             (it hard-clips). Ancestor crumbs cap + ellipsize at a fixed width;
-             the current crumb shows in full and the bar scrolls if it overflows. -->
-        <span class="breadcrumb-link__text">{{ entry.name }}</span>
-      </component>
+        <component
+          :is="element"
+          :to="entry.url"
+          :class="[
+            'breadcrumb-link',
+            index === items.length - 1
+              ? 'breadcrumb-link--current text-ink-1 font-semibold'
+              : 'breadcrumb-link--crumb text-ink-2',
+            dragOver === entry.url && 'is-drop-target',
+          ]"
+          :title="entry.name"
+          :data-drop-url="entry.url"
+          @dragenter="onDragEnter(entry.url, $event)"
+          @dragover="onDragOver($event)"
+          @dragleave="onDragLeave(entry.url)"
+          @drop="onDrop(entry.url, entry.url, $event)"
+        >
+          <!-- Text lives in a block span so `text-overflow: ellipsis` actually
+               truncates — an inline-flex link can't ellipsize its own text
+               node (it hard-clips). -->
+          <span class="breadcrumb-link__text">{{ entry.name }}</span>
+        </component>
+      </template>
     </template>
   </nav>
 
-  <!-- Sibling-folder popover (teleports to <body> itself). -->
+  <!-- Sibling-folder and folded-crumb popover (teleports to <body> itself). -->
   <ContextMenu
     :show="siblingMenu.show"
     :pos="siblingMenu.pos"
@@ -114,12 +104,21 @@
 <script setup lang="ts">
 import Icon from "@/components/Icon.vue";
 import ContextMenu, { type MenuItem } from "@/components/ContextMenu.vue";
-import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
+import { useMediaQuery } from "@vueuse/core";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { useFileStore } from "@/stores/file";
 import { useDropTarget } from "@/composables/useDropTarget";
 import { files as filesApi } from "@/api";
+import { foldedCrumbs } from "@/utils/breadcrumbFold";
 
 const { t } = useI18n();
 
@@ -128,18 +127,7 @@ const router = useRouter();
 const fileStore = useFileStore();
 const { performDrop } = useDropTarget();
 
-// When the path is too long for the bar it scrolls horizontally; default the
-// scroll to the FAR RIGHT so the current folder (last crumb) is visible by
-// default, and the user can scroll left to reach ancestors.
 const navEl = ref<HTMLElement | null>(null);
-watch(
-  () => route.path,
-  () =>
-    void nextTick(() => {
-      if (navEl.value) navEl.value.scrollLeft = navEl.value.scrollWidth;
-    }),
-  { immediate: true }
-);
 
 const props = defineProps<{
   base: string;
@@ -178,6 +166,96 @@ const items = computed(() => {
 
   return breadcrumbs;
 });
+
+// ── Middle fold (Phase 6, 3.3) ──────────────────────────────────────
+// `folded` counts how many crumbs are tucked into "…", in the order
+// foldedCrumbs() gives. fit() starts from nothing folded and folds one more
+// until the strip fits its container; phones always fold everything but the
+// current folder.
+const phone = useMediaQuery("(max-width: 767px)");
+const folded = ref(0);
+const maxFold = computed(() => Math.max(0, items.value.length - 1));
+const hidden = computed(
+  () => new Set(foldedCrumbs(items.value.length, folded.value))
+);
+const hiddenItems = computed(() =>
+  items.value.filter((_, i) => hidden.value.has(i))
+);
+/** Index of the first crumb after the folded run: "…" renders before it. */
+const foldAt = computed(() => {
+  if (hidden.value.size === 0) return -1;
+  return Math.max(...hidden.value) + 1;
+});
+/** Everything that can fold has, and it still doesn't fit: the current
+ *  folder's name gives way (ellipsis) instead. */
+const squeezed = ref(false);
+
+const overflowing = () => {
+  const el = navEl.value;
+  return !!el && el.scrollWidth > el.clientWidth + 1;
+};
+
+let fitting = false;
+let observedWidth = -1;
+const fit = async () => {
+  if (fitting) return;
+  fitting = true;
+  try {
+    squeezed.value = false;
+    folded.value = phone.value ? maxFold.value : 0;
+    await nextTick();
+    while (overflowing() && folded.value < maxFold.value) {
+      folded.value++;
+      await nextTick();
+    }
+    squeezed.value = overflowing();
+    await nextTick();
+  } finally {
+    observedWidth = navEl.value?.parentElement?.clientWidth ?? -1;
+    fitting = false;
+  }
+};
+
+watch([() => items.value.length, () => route.path, phone], () => void fit());
+
+let ro: ResizeObserver | null = null;
+const onWindowResize = () => void fit();
+onMounted(() => {
+  void fit();
+  window.addEventListener("resize", onWindowResize);
+  const parent = navEl.value?.parentElement;
+  if (parent && typeof ResizeObserver !== "undefined") {
+    // Our own folding can change the container's width when it hugs the
+    // path (the split view's footer bar); only a change we didn't cause
+    // re-fits.
+    ro = new ResizeObserver(() => {
+      if (fitting || parent.clientWidth === observedWidth) return;
+      void fit();
+    });
+    ro.observe(parent);
+  }
+});
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", onWindowResize);
+  ro?.disconnect();
+});
+
+const openFoldMenu = (event: MouseEvent) => {
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  siblingFetchSeq++; // a pending sibling fetch must not replace this menu
+  siblingMenu.value = {
+    show: true,
+    pos: { x: rect.left, y: rect.bottom + 6 },
+    items: hiddenItems.value.map((entry) => ({
+      label: entry.name,
+      icon: "folder",
+      action: () => {
+        siblingMenu.value.show = false;
+        if (!props.noLink) void router.push({ path: entry.url });
+      },
+    })),
+  };
+};
 
 const element = computed(() => {
   if (props.noLink) {
@@ -352,25 +430,29 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-/* The breadcrumb strip scrolls horizontally instead of overflowing under the
-   search box / header actions when the path is too long for the available
-   width (the reported "covered up" bug, most visible on mobile / narrow
-   windows). The scrollbar is hidden so it stays clean; children don't shrink
-   so the full path can be revealed by scrolling. */
+/* A path that doesn't fit folds its middle into "…" (see fit()); nothing
+   shrinks while it measures, so the overflow is visible to it. */
 .breadcrumbs-nav {
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
   flex-wrap: nowrap;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  /* Smooth momentum scrolling on iOS. */
-  -webkit-overflow-scrolling: touch;
-}
-.breadcrumbs-nav::-webkit-scrollbar {
-  display: none;
 }
 .breadcrumbs-nav > * {
   flex-shrink: 0;
+}
+/* Fully folded and still too wide: the current folder's name ellipsizes. */
+.breadcrumbs-nav--squeezed > .breadcrumb-link--current {
+  flex-shrink: 1;
+}
+
+.breadcrumb-fold {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+.breadcrumb-fold:focus-visible {
+  outline: 2px solid var(--color-accent-ring);
+  outline-offset: 1px;
 }
 
 /* The separator chevron is a real button when sibling menus are enabled —
@@ -428,12 +510,7 @@ onBeforeUnmount(() => {
   max-width: 180px;
 }
 
-/* The current folder does NOT shrink (matches the nav's `> * { flex-shrink: 0 }`)
-   so when the path is too long the strip OVERFLOWS and the nav scrolls
-   horizontally (scroll pinned to the current folder), instead of the name being
-   silently ellipsized to fit. */
 .breadcrumb-link--current {
-  flex-shrink: 0;
   min-width: 0;
 }
 

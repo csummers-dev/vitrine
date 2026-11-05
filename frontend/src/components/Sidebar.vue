@@ -436,6 +436,8 @@
       <button
         @click="toAccountSettings"
         class="flex-1 flex items-center gap-2 px-1.5 py-1.5 rounded-md hover:bg-hover transition min-w-0 max-md:flex-none max-md:p-0 s-rail-btn"
+        :class="onSettings ? 'bg-hover' : ''"
+        :aria-current="onSettings ? 'page' : undefined"
         :title="user.username"
       >
         <img
@@ -979,7 +981,12 @@ export default {
     // the file views AND while the user is in Settings (Settings is reached via
     // the account row, so nothing else in the nav would otherwise be lit).
     mainNavActive() {
-      return this.isFiles || this.$route.path.startsWith("/settings");
+      // A saved search highlights its own row under Smart folders, and
+      // Settings highlights the account row, so neither lights up My files.
+      return this.isFiles && !this.$route.query.saved;
+    },
+    onSettings() {
+      return this.$route.path.startsWith("/settings");
     },
     trashNavActive() {
       return this.$route.path.startsWith("/trash");

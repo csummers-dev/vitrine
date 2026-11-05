@@ -260,7 +260,15 @@ onMounted(() => {
   // Focus the edit surface so typing works immediately (skip for the
   // read-only rendered view / immutable files).
   if (!isReadOnly.value) {
-    void nextTick(() => textareaEl.value?.focus());
+    // Start at the top: setting the value leaves the caret at the end, and
+    // focusing would scroll there, cutting off the start of the file.
+    void nextTick(() => {
+      const el = textareaEl.value;
+      if (!el) return;
+      el.setSelectionRange(0, 0);
+      el.focus({ preventScroll: true });
+      el.scrollTop = 0;
+    });
   }
 });
 

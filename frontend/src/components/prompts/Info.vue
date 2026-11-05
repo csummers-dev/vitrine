@@ -13,7 +13,7 @@
         <div class="info-prompt__eyebrow">
           {{
             selected.length > 1
-              ? $t("prompts.filesSelected", { count: selected.length })
+              ? $t("prompts.filesSelected", selected.length)
               : dir
                 ? "Folder"
                 : "File"

@@ -397,8 +397,11 @@ const commands = computed<Command[]>(() => {
   // grouping pass below sorts by group order regardless of order
   // here, but keeping the array in display order makes the pipeline
   // easier to reason about.
+  // A command surfaced under Quick actions isn't listed again below it.
+  const quick = quickActionCommands.value;
+  const shown = new Set(quick.map((c) => c.id));
   return [
-    ...quickActionCommands.value,
+    ...quick,
     ...recentCommands.value,
     ...fileResults.value,
     ...buildStaticCommands({
@@ -406,7 +409,7 @@ const commands = computed<Command[]>(() => {
       authStore,
       fileStore,
       layoutStore,
-    }),
+    }).filter((c) => !shown.has(c.id)),
   ];
 });
 

@@ -25,6 +25,17 @@ test.describe("sidebar", () => {
     ).toHaveAttribute("aria-current", "page");
   });
 
+  test("marks the account row, not My files, in Settings", async ({ app }) => {
+    await app.goto("/settings/profile");
+    const places = app.getByRole("navigation", { name: "Places" });
+    await expect(
+      places.getByRole("button", { name: "My files" })
+    ).not.toHaveAttribute("aria-current", "page");
+    await expect(
+      app.getByRole("button", { name: "admin" }).first()
+    ).toHaveAttribute("aria-current", "page");
+  });
+
   test.describe("favorites", () => {
     test.use({ prefs: { favorites: ["/files/Music/"] } });
 
@@ -150,11 +161,34 @@ test.describe("phone", () => {
     await expect(app).toHaveURL(/\/storage/);
   });
 
+  test("opens the drawer from the other pages too @mobile", async ({ app }) => {
+    for (const path of ["/recent", "/storage", "/duplicates", "/trash"]) {
+      await app.goto(path);
+      await app.getByRole("button", { name: "Open navigation menu" }).click();
+      const drawer = app.getByRole("dialog");
+      await expect(drawer.getByRole("button", { name: "Trash" })).toBeVisible();
+      await app.keyboard.press("Escape");
+      await expect(drawer).toHaveCount(0);
+    }
+  });
+
   test("puts Upload in the More menu @mobile", async ({ app }) => {
     await expect(
       app.getByRole("button", { name: "Upload", exact: true })
     ).toBeHidden();
     await app.getByRole("button", { name: "More", exact: true }).click();
     await expect(app.getByRole("menuitem", { name: "Upload" })).toBeVisible();
+  });
+});
+
+test.describe("command palette", () => {
+  test("lists each command once when the query is empty", async ({ app }) => {
+    await app.keyboard.press("ControlOrMeta+k");
+    const dialog = app.getByRole("dialog", { name: "Command palette" });
+    await expect(dialog.getByRole("option").first()).toBeVisible();
+    const names = await dialog.getByRole("option").allInnerTexts();
+    const labels = names.map((n) => n.split("\n")[0].trim());
+    expect(labels.length).toBeGreaterThan(5);
+    expect(new Set(labels).size).toBe(labels.length);
   });
 });
