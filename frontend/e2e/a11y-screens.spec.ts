@@ -20,8 +20,18 @@ for (const screen of SCREENS) {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await screen.open({ page, fake });
     await test.step("light", () => expectAccessible(page));
+    // Reduced motion still leaves 0.01 ms transitions, and a colour read in
+    // the same frame as the switch is the old one: turn transitions off
+    // outright and let two frames pass before checking dark.
+    await page.addStyleTag({
+      content:
+        "*, *::before, *::after { transition: none !important; animation: none !important; }",
+    });
     await page.emulateMedia({ colorScheme: "dark" });
     await expect(page.locator("html")).toHaveClass(/\bdark\b/);
+    await page.evaluate(
+      "new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))"
+    );
     await test.step("dark", () => expectAccessible(page));
   });
 }
