@@ -108,12 +108,10 @@ test("hovering a folder keeps its contents on top", async ({ app }) => {
   const movies = map.locator('[data-path="/Movies"]').first();
   const film = map.locator('[data-path="/Movies/film.mp4"]').first();
   await expect(film).toBeVisible();
-  // Hover the folder's label strip, then check what's painted over the file.
+  // Hover the folder's label strip. A raised frame would sit over the file
+  // and take the pointer, so a trial click on the file (Playwright's own
+  // hit test, the same in every engine) would fail.
   const strip = (await movies.boundingBox())!;
   await app.mouse.move(strip.x + 20, strip.y + 8);
-  const box = (await film.boundingBox())!;
-  const topPath = await app.evaluate(
-    `document.elementFromPoint(${box.x + box.width / 2}, ${box.y + box.height / 2})?.closest("[data-path]")?.getAttribute("data-path")`
-  );
-  expect(topPath).toBe("/Movies/film.mp4");
+  await film.click({ trial: true, timeout: 3000 });
 });
