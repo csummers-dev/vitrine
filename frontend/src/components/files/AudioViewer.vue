@@ -9,8 +9,18 @@
         :class="{ 'audio-viewer__art--fallback': !artworkUrl }"
         :style="artworkUrl ? { backgroundImage: `url('${artworkUrl}')` } : {}"
         :aria-label="artworkUrl ? 'Album artwork' : undefined"
-        role="img"
-      ></div>
+        :role="artworkUrl ? 'img' : undefined"
+      >
+        <!-- No artwork: the audio kind's note, as the details pane shows,
+             rather than an empty tinted square. -->
+        <Icon
+          v-if="!artworkUrl"
+          name="music"
+          :size="48"
+          :stroke-width="1.5"
+          aria-hidden="true"
+        />
+      </div>
 
       <!-- Everything except the art lives in __body so a wide preview area
            can lay art + body out side-by-side (see the container query). -->
@@ -646,6 +656,9 @@ onBeforeUnmount(() => {
 /* Fallback gradient when no embedded artwork was found in the file. */
 .audio-viewer__art--fallback {
   /* No embedded artwork: the audio kind tile. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: var(--tint-audio-bg);
   color: var(--tint-audio-fg);
 }

@@ -1,7 +1,11 @@
 <template>
   <div
     class="ui-field"
-    :class="{ 'is-invalid': !!error, 'is-disabled': disabled }"
+    :class="[
+      { 'is-invalid': !!error, 'is-disabled': disabled },
+      rootAttrs.class,
+    ]"
+    :style="rootAttrs.style"
   >
     <label v-if="label" :for="inputId" class="ui-field__label">{{
       label
@@ -40,7 +44,7 @@
         :aria-labelledby="
           label || ariaLabel ? undefined : row?.labelId || undefined
         "
-        v-bind="$attrs"
+        v-bind="controlAttrs"
         @input="
           emit('update:modelValue', ($event.target as HTMLInputElement).value)
         "
@@ -73,8 +77,10 @@ import { computed, ref } from "vue";
 import Icon from "@/components/Icon.vue";
 import { useFieldIds } from "./useFieldIds";
 import { useFieldContext } from "./fieldContext";
+import { useSplitAttrs } from "./splitAttrs";
 
 defineOptions({ inheritAttrs: false });
+const { rootAttrs, controlAttrs } = useSplitAttrs();
 
 const props = withDefaults(
   defineProps<{

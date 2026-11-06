@@ -9,6 +9,7 @@
  */
 import type { MenuItem } from "@/components/ContextMenu.vue";
 import { isAudioTaggable } from "@/utils/audio";
+import { keyLabel } from "@/utils/keys";
 
 /** Which selection actions are allowed (the bulk pill's `headerButtons`). */
 export interface SelectionGates {
@@ -208,7 +209,7 @@ export function buildRowMenu(
     items.push({
       label: sel === 1 ? "Cut" : `Cut ${sel} items`,
       icon: "scissors",
-      kbd: "⌘X",
+      kbd: keyLabel("⌘X"),
       action: () => act.cut(),
     });
   }
@@ -216,7 +217,7 @@ export function buildRowMenu(
     items.push({
       label: sel === 1 ? "Copy" : `Copy ${sel} items`,
       icon: "copy",
-      kbd: "⌘C",
+      kbd: keyLabel("⌘C"),
       action: () => act.copy(),
     });
   }
@@ -263,7 +264,7 @@ export function buildRowMenu(
     items.push({
       label: "Copy path",
       icon: "link",
-      kbd: "⌘⇧C",
+      kbd: keyLabel("⌘⇧C"),
       action: () => act.copyPath(singleItem),
     });
   }
@@ -349,7 +350,7 @@ export function buildBackgroundMenu(
     items.push({
       label: "Paste",
       icon: "clipboard",
-      kbd: "⌘V",
+      kbd: keyLabel("⌘V"),
       action: () => act.paste(),
     });
   }

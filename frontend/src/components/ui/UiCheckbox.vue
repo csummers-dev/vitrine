@@ -1,5 +1,9 @@
 <template>
-  <label class="ui-check" :class="{ 'is-disabled': disabled }">
+  <label
+    class="ui-check"
+    :class="[{ 'is-disabled': disabled }, rootAttrs.class]"
+    :style="rootAttrs.style"
+  >
     <input
       ref="input"
       type="checkbox"
@@ -8,7 +12,7 @@
       :disabled="disabled"
       :aria-label="label ? undefined : ariaLabel"
       :aria-checked="indeterminate ? 'mixed' : undefined"
-      v-bind="$attrs"
+      v-bind="controlAttrs"
       @change="
         emit('update:modelValue', ($event.target as HTMLInputElement).checked)
       "
@@ -28,10 +32,12 @@
  * A styled native checkbox. `indeterminate` (for "select all" with some
  * selected) sets the input's own indeterminate state and aria-checked=mixed.
  */
+import { useSplitAttrs } from "./splitAttrs";
 import { onMounted, ref, watch } from "vue";
 import Icon from "@/components/Icon.vue";
 
 defineOptions({ inheritAttrs: false });
+const { rootAttrs, controlAttrs } = useSplitAttrs();
 
 const props = defineProps<{
   modelValue: boolean;

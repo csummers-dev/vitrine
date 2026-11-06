@@ -101,3 +101,19 @@ test("says so when the folder can't be measured", async ({ app }) => {
     "Couldn’t measure this folder"
   );
 });
+
+test("hovering a folder keeps its contents on top", async ({ app }) => {
+  await app.goto("/storage");
+  const map = app.getByTestId("storage-map");
+  const movies = map.locator('[data-path="/Movies"]').first();
+  const film = map.locator('[data-path="/Movies/film.mp4"]').first();
+  await expect(film).toBeVisible();
+  // Hover the folder's label strip, then check what's painted over the file.
+  const strip = (await movies.boundingBox())!;
+  await app.mouse.move(strip.x + 20, strip.y + 8);
+  const box = (await film.boundingBox())!;
+  const topPath = await app.evaluate(
+    `document.elementFromPoint(${box.x + box.width / 2}, ${box.y + box.height / 2})?.closest("[data-path]")?.getAttribute("data-path")`
+  );
+  expect(topPath).toBe("/Movies/film.mp4");
+});

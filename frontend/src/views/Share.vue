@@ -241,7 +241,11 @@
       </aside>
 
       <!-- File listing (folders only) -->
-      <section v-if="req.isDir" class="share__list">
+      <section
+        v-if="req.isDir"
+        class="share__list"
+        :class="{ 'share__list--selecting': fileStore.multiple }"
+      >
         <div v-if="req.items.length === 0" class="share__empty">
           <div class="share__empty-icon">
             <Icon name="folder-open" :size="20" :stroke-width="1.4" />
@@ -774,6 +778,9 @@ onBeforeUnmount(() => {
   gap: 24px;
   padding: 24px 32px 40px;
   align-items: start;
+  /* The body fills the page; without this its spare height went into the
+     rows, opening a gap between the stacked cards on a phone. */
+  align-content: start;
 }
 
 @media (max-width: 840px) {
@@ -937,6 +944,16 @@ onBeforeUnmount(() => {
 }
 
 /* ── File listing ──────────────────────────────────────────────────── */
+/* No checkbox column until "Select multiple" is on: it left an empty
+   indent before every name. The name takes over the checkbox's track (every
+   list layout starts with that 28px column), so the other cells keep theirs.
+   The #listing in the selectors outranks the listing's own rules. */
+.share__list:not(.share__list--selecting) :deep(#listing .item__select) {
+  display: none;
+}
+.share__list:not(.share__list--selecting) :deep(#listing .item__name) {
+  grid-column: 1 / 3;
+}
 .share__list {
   background: var(--color-surface);
   border: 1px solid var(--color-line);

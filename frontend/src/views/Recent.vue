@@ -3,6 +3,7 @@
   <div class="fb-columns flex-1 flex min-h-0 overflow-hidden">
     <div class="fb-primary flex-1 flex flex-col min-w-0 min-h-0">
       <UiPageHeader
+        eyebrow="History"
         title="Recent"
         :meta-attrs="{ 'data-testid': 'recent-summary' }"
       >

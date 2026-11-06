@@ -78,7 +78,7 @@
                 </div>
                 <div v-if="user.scope" class="users-card__scope">
                   <Icon name="folder" :size="11" />
-                  <span>{{ user.scope }}</span>
+                  <span>{{ scopeLabel(user.scope) }}</span>
                 </div>
               </div>
 
@@ -178,6 +178,12 @@ const summaryPerms = (user: IUser) => {
       icon: "terminal",
     });
   return list;
+};
+
+/** A scope of "." or "/" is the whole server root: say so, not ".". */
+const scopeLabel = (scope: string) => {
+  const s = scope.replace(/^\.\/?/, "/").replace(/\/+$/, "");
+  return s === "" || s === "/" ? "All files" : s.startsWith("/") ? s : "/" + s;
 };
 </script>
 

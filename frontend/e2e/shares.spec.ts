@@ -99,3 +99,32 @@ test.describe("with file requests turned off", () => {
     await expect(app).toHaveURL(/\/settings\/global$/);
   });
 });
+
+// A shared folder's subfolders don't ask for their size: that endpoint
+// needs a signed-in user, and its 401 used to sign a visitor out to the
+// login page.
+test("a visitor browses a shared folder with subfolders", async ({
+  page,
+  fake,
+}) => {
+  await fake.install(page);
+  fake.shares.push({
+    hash: "pubdocs",
+    path: "/Documents",
+    expire: 0,
+    userID: 1,
+    mode: "download",
+    views: 0,
+    downloads: 0,
+  });
+  const sizeCalls: string[] = [];
+  page.on("request", (r) => {
+    if (r.url().includes("/api/folder-size")) sizeCalls.push(r.url());
+  });
+  await page.goto("/share/pubdocs");
+  await expect(page.getByText("Reports")).toBeVisible();
+  await expect(page.getByText("notes.txt")).toBeVisible();
+  await page.waitForTimeout(300);
+  expect(sizeCalls).toEqual([]);
+  await expect(page).toHaveURL(/\/share\/pubdocs$/);
+});

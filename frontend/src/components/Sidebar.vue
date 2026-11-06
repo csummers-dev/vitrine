@@ -459,7 +459,7 @@
             {{ user.username }}
           </div>
           <div class="text-[11px] text-ink-3 leading-tight truncate">
-            {{ user.perm.admin ? "admin" : "user" }}
+            {{ user.perm.admin ? "Admin" : "User" }}
           </div>
         </div>
       </button>
@@ -1053,6 +1053,12 @@ export default {
       return name.slice(0, 2).toUpperCase();
     },
     filesCount() {
+      // The count is the listing's, so it only belongs beside My files while
+      // that listing IS My files (the root): in a subfolder or a saved
+      // search it named another folder's total.
+      if (!this.mainNavActive || !/^\/files\/?$/.test(this.$route.path)) {
+        return 0;
+      }
       const fileStore = useFileStore();
       return (fileStore.req?.numDirs ?? 0) + (fileStore.req?.numFiles ?? 0);
     },

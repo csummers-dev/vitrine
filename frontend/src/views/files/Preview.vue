@@ -2,7 +2,7 @@
   <PreviewShell
     :name="name"
     :info-open="infoOpen"
-    :fade-chrome="isComic || isPdf"
+    :fade-chrome="isComic || (isPdf && !pdfFailed)"
     :folder="folderLabel"
     :has-previous="hasPrevious"
     :has-next="hasNext"
@@ -20,7 +20,9 @@
            can't overlap the text. -->
 
       <!-- PDF: page counter input + zoom controls -->
-      <template v-if="isPdf">
+      <!-- Only once the document has pages: "1 / 0" while it loads (or
+           when it can't be opened) read as a broken counter. -->
+      <template v-if="isPdf && pdfTotalPages > 0 && !pdfFailed">
         <div class="preview-page">
           <input
             type="text"
@@ -242,6 +244,7 @@
             :page="pdfPage"
             @update:page="(n: number) => (pdfPage = n)"
             @update:total-pages="(n: number) => (pdfTotalPages = n)"
+            @error="pdfFailed = true"
           />
 
           <!-- Text / textImmutable: read-only TextViewer in the new
@@ -1627,6 +1630,14 @@ const toggleNavigation = throttle(function () {
 // as a no-op `.value` read until the auto-fade is either wired into
 // the new shell or formally removed.
 void showNav.value;
+
+// A PDF that won't open shows its fallback; the header stays put then
+// instead of fading like it does over a page being read.
+const pdfFailed = ref(false);
+watch(
+  () => route.path,
+  () => (pdfFailed.value = false)
+);
 
 // The folder the file is in: the preview header's Back label (6.1).
 const { rootLabel: previewRootLabel } = useRootLabel();

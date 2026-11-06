@@ -103,6 +103,7 @@
           />
           <UiCheckbox
             v-model="form.includeHidden"
+            class="dupes-form__hidden"
             label="Include hidden files"
             :disabled="running"
           />
@@ -525,15 +526,20 @@ const trashSelected = async () => {
   color: var(--color-ink-3);
   flex: none;
 }
+/* The text takes the slack, so on a phone it stays beside its icon and
+   the buttons wrap below instead of the icon sitting alone on a line. */
 .dupes-summary__text {
+  flex: 1 1 200px;
   font-size: var(--type-body);
   color: var(--color-ink-2);
   min-width: 0;
 }
+/* Labels share one top line; the checkbox and the button sit level with
+   the single-line inputs (one label line + the field gap down). */
 .dupes-form {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: var(--space-3) var(--space-4);
   padding: var(--space-4);
   margin-bottom: var(--space-4);
@@ -548,6 +554,13 @@ const trashSelected = async () => {
 }
 .dupes-form__exclude {
   flex: 1 1 260px;
+}
+.dupes-form__hidden,
+.dupes-form__actions {
+  margin-top: calc(var(--type-body-lh) + var(--space-1));
+}
+.dupes-form__hidden {
+  min-height: 34px;
 }
 .dupes-form__actions {
   margin-left: auto;

@@ -245,8 +245,11 @@ const user = computed(() => authStore.user);
 const isLoggedIn = computed(() => authStore.isLoggedIn);
 const isFiles = computed(() => fileStore.isFiles);
 
-const filesCount = computed(
-  () => (fileStore.req?.numDirs ?? 0) + (fileStore.req?.numFiles ?? 0)
+// Only at the root, where the listing's count is My files' own.
+const filesCount = computed(() =>
+  isFiles.value && /^\/files\/?$/.test(route.path) && !route.query.saved
+    ? (fileStore.req?.numDirs ?? 0) + (fileStore.req?.numFiles ?? 0)
+    : 0
 );
 
 const canLogout = computed(

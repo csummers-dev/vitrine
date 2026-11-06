@@ -36,6 +36,7 @@ import {
   useSavedSearches,
   useSaveSearchDialog,
 } from "@/composables/useSavedSearches";
+import { keyLabel } from "@/utils/keys";
 
 export type CommandGroup =
   | "quickActions"
@@ -197,7 +198,7 @@ export function buildStaticCommands(ctx: CommandContext): Command[] {
       id: "action.selectAll",
       group: "actions",
       label: "Select all",
-      hint: "⌘A",
+      hint: keyLabel("⌘A"),
       icon: "check-check",
       keywords: ["mark", "highlight"],
       run: () => {

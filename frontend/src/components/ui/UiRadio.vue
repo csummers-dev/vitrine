@@ -1,5 +1,9 @@
 <template>
-  <label class="ui-radio" :class="{ 'is-disabled': disabled }">
+  <label
+    class="ui-radio"
+    :class="[{ 'is-disabled': disabled }, rootAttrs.class]"
+    :style="rootAttrs.style"
+  >
     <input
       type="radio"
       class="ui-radio__input"
@@ -7,7 +11,7 @@
       :value="String(value)"
       :checked="modelValue === value"
       :disabled="disabled"
-      v-bind="$attrs"
+      v-bind="controlAttrs"
       @change="emit('update:modelValue', value)"
     />
     <span class="ui-radio__dot" aria-hidden="true"></span>
@@ -18,8 +22,10 @@
 </template>
 
 <script setup lang="ts" generic="T extends string | number">
+import { useSplitAttrs } from "./splitAttrs";
 /** A styled native radio button; group them with the same `name`. */
 defineOptions({ inheritAttrs: false });
+const { rootAttrs, controlAttrs } = useSplitAttrs();
 defineProps<{
   modelValue: T;
   value: T;

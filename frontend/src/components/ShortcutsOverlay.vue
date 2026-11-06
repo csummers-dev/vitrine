@@ -19,7 +19,7 @@
               <p class="shortcuts__subtitle">
                 Open this list any time from the command palette (<kbd
                   class="shortcuts__inlinekbd"
-                  >⌘K</kbd
+                  >{{ MOD === "⌘" ? "⌘K" : "Ctrl K" }}</kbd
                 >).
               </p>
             </div>

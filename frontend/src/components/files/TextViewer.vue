@@ -98,11 +98,10 @@ watchEffect(async () => {
   display: flex;
   align-items: stretch;
   justify-content: center;
-  /* 2.1 #4: drop the text card below the floating Exit button (top-left, ~44px
-     tall) so it never overlaps the card or its first lines. On wide viewports
-     the card is centred and the Exit sits in the side margin anyway; this keeps
-     it clear on narrow ones too. */
-  padding: 52px 0 0;
+  /* No top inset of its own: the preview header sits above the stage now
+     (the old floating Exit button it cleared is gone), so the card lines up
+     with the other viewers' cards. */
+  padding: 0;
 }
 
 .text-viewer__card {

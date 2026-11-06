@@ -4,9 +4,15 @@
  * motion and fonts. Run only in the Playwright Docker image (see
  * scripts/visual-docker.sh); pixels from other machines won't match.
  */
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import type { Page } from "@playwright/test";
 import { test as base, expect, trackPageErrors } from "../support/test";
 import { FakeServer } from "../support/fakeServer";
+
+const PHOTO = readFileSync(
+  fileURLToPath(new URL("../fixtures/landscape.jpg", import.meta.url))
+);
 
 /** "Now" for every visual test: a week after the newest file. */
 export const NOW = "2026-10-08T10:00:00Z";
@@ -55,6 +61,16 @@ export const test = base.extend({
     fake.clock = Date.parse(NOW);
     fake.preferences = structuredClone(prefs);
     for (const [p, iso] of Object.entries(DATES)) fake.setModified(p, iso);
+    // Real pictures behind the image files (their listed sizes stay the
+    // seed's), so tiles, previews and thumbnails show one; other files get
+    // no thumbnail, as on the real server.
+    for (const p of [
+      "/photo.jpg",
+      "/Photos/2026/harbour.jpg",
+      "/Photos/2026/meadow.jpg",
+    ])
+      fake.binary.set(p, PHOTO);
+    fake.realPreviews = true;
     await use(fake);
   },
   page: async ({ page, fake }, use) => {
@@ -77,6 +93,9 @@ export { expect };
 
 /** Waits for fonts, images and pending animation frames, then compares. */
 export async function snap(page: Page, name: string): Promise<void> {
+  // The pointer stays where the last click left it (often the Sign In
+  // button), and a hover under it isn't part of the state being shot.
+  await page.mouse.move(0, 0);
   // A string, because the e2e tsconfig has no DOM types.
   await page.evaluate(`(async () => {
     await document.fonts.ready;

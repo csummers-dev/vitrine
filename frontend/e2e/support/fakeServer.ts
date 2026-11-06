@@ -87,7 +87,13 @@ const TYPES: Record<string, string> = {
   ".pdf": "pdf",
 };
 
-/** A 1×1 transparent PNG for thumbnail and preview requests. */
+/** A 1×1 light grey PNG for map tiles: land, not a block of colour. */
+const TILE = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGN48ewhAAVpArB44nOfAAAAAElFTkSuQmCC",
+  "base64"
+);
+
+/** A 1×1 PNG (half-transparent blue) for thumbnail and preview requests. */
 const PIXEL = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
   "base64"
@@ -204,6 +210,10 @@ export class FakeServer {
 
   /** "Require two-factor for admins": tokens flag the admin until enrolled. */
   requireAdminTwoFactor = false;
+
+  /** Answer previews the way the real server does: 404 for a file with no
+   *  picture in it, instead of a placeholder pixel for everything. */
+  realPreviews = false;
 
   /** Fixed time for tokens (visual tests freeze the page clock too). */
   clock: number | null = null;
@@ -534,7 +544,7 @@ export class FakeServer {
       return route.fulfill({
         status: 200,
         contentType: "image/png",
-        body: PIXEL,
+        body: TILE,
       });
     }
     if (api.startsWith("/preview/")) {
@@ -545,6 +555,20 @@ export class FakeServer {
           this.fs.has(`${target === "/" ? "" : target}/${n}.jpg`)
         );
         if (!has) return text("404 Not Found", 404);
+      }
+      // A real picture added with putBinary previews as itself.
+      const real = this.binary.get(target);
+      if (real && /\.jpe?g$/i.test(target)) {
+        return route.fulfill({
+          status: 200,
+          contentType: "image/jpeg",
+          body: real,
+        });
+      }
+      // Like the real server: only pictures (and embedded art, which the
+      // fake files don't have) make a thumbnail.
+      if (this.realPreviews && !this.fs.get(target)?.isDir) {
+        return text("404 Not Found", 404);
       }
       return route.fulfill({
         status: 200,
@@ -927,7 +951,18 @@ export class FakeServer {
       link.lastAccessAt = Math.floor(Date.now() / 1000);
       if (kind === "share") {
         if (sub === "" || sub === "/") link.views++;
-        const body = e.isDir ? this.listing(target) : this.item(target);
+        // The real server sorts a shared folder itself (folders first, then
+        // by name); the page shows the items in the order it gets them.
+        let body: object = this.item(target);
+        if (e.isDir) {
+          const l = this.listing(target);
+          l.items.sort(
+            (a, b) =>
+              Number(b.isDir) - Number(a.isDir) ||
+              a.name.localeCompare(b.name, undefined, { numeric: true })
+          );
+          body = l;
+        }
         return route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -969,6 +1004,8 @@ export class FakeServer {
           (i) =>
             !(filesOnly && i.isDir) &&
             (!query.type || i.type === query.type) &&
+            (!query.ext ||
+              i.name.toLowerCase().endsWith("." + query.ext.toLowerCase())) &&
             (minSize < 0 || i.size >= minSize) &&
             (maxSize < 0 || i.size <= maxSize) &&
             (!newer || Date.parse(i.modified) >= newer) &&

@@ -16,7 +16,7 @@
     >
       <Icon name="search" :size="14" class="text-[var(--color-ink-2)]" />
       <span class="search-trigger__label">Search</span>
-      <kbd class="search-kbd">⌘K</kbd>
+      <kbd class="search-kbd">{{ paletteKey }}</kbd>
     </button>
 
     <!-- Active: input field overlay, mirrors the trigger's chrome -->
@@ -36,7 +36,7 @@
       <span v-show="results.length > 0" class="search-count">
         {{ results.length }}
       </span>
-      <kbd v-if="!ongoing" class="search-kbd">⌘K</kbd>
+      <kbd v-if="!ongoing" class="search-kbd">{{ paletteKey }}</kbd>
     </div>
 
     <div
@@ -99,6 +99,7 @@
 
 <script setup lang="ts">
 import Icon from "@/components/Icon.vue";
+import { keyLabel } from "@/utils/keys";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 
@@ -115,6 +116,8 @@ import {
   useSaveSearchDialog,
 } from "@/composables/useSavedSearches";
 import { dirFromFilesUrl } from "@/composables/listing/useLiveListing";
+
+const paletteKey = keyLabel("⌘K");
 
 const layoutStore = useLayoutStore();
 const fileStore = useFileStore();

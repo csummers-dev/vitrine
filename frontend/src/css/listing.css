@@ -1152,6 +1152,12 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   display: inline;
 }
 
+/* The size and date take the overlay's colour: a list-view colour on them
+   left dark text on the dark fade of an image in the light theme. */
+:is(#listing, .fb-listing).mosaic.gallery .item__meta > * {
+  color: inherit;
+}
+
 /* Tight separator — single spaces around · (matches mockup natural-text spacing) */
 :is(#listing, .fb-listing).mosaic.gallery .item__meta .item__modified::before {
   content: " · ";
@@ -1194,7 +1200,12 @@ html.dark :is(#listing, .fb-listing) .item .name.is-moving {
   color: var(--media-ink);
 }
 
-:is(#listing, .fb-listing).mosaic.gallery .item__select .item__checkbox {
+/* Only over a picture: folder and document tiles are light, where the
+   dark chrome read as a solid grey block, so they keep the normal box. */
+:is(#listing, .fb-listing).mosaic.gallery
+  .item:is([data-type="image"], [data-type="video"])
+  .item__select
+  .item__checkbox {
   background: var(--media-chrome-soft);
   border-color: var(--media-ink-2);
   -webkit-backdrop-filter: blur(4px);

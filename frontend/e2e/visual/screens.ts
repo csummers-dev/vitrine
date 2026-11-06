@@ -166,7 +166,7 @@ export const SCREENS: Screen[] = [
     open: async (c) => {
       c.fake.preferences = {
         "search.saved": [
-          { id: "s1", name: "Text files", query: "ext:md", folder: "/" },
+          { id: "s1", name: "Text files", query: "type:text", folder: "/" },
         ],
       };
       await signedIn(c);

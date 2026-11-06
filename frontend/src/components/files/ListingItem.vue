@@ -563,7 +563,10 @@ const onThumbError = () => {
 watch(
   () => [props.url, props.isDir, props.modified] as const,
   () => {
-    if (props.isDir && props.url) {
+    // Only for the user's own files: a shared folder's row has a /share/
+    // URL that /api/folder-size can't resolve, and for a visitor who isn't
+    // signed in the call came back 401, which signs out (to the login page).
+    if (props.isDir && props.url?.startsWith("/files/")) {
       void folderSizes.ensure(props.url, String(props.modified ?? ""));
     }
   },

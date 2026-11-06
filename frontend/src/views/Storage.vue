@@ -832,6 +832,12 @@ const menuItems = computed<MenuItem[]>(() => {
 .storage-block:focus-visible {
   box-shadow: var(--ring-accent-ink-inset);
 }
+/* A folder frame stays under its own blocks when hovered or focused:
+   raised, it painted over them and its contents vanished. */
+.storage-block--group:hover,
+.storage-block--group:focus-visible {
+  z-index: auto;
+}
 .storage-block--group {
   background: color-mix(in srgb, var(--k) 30%, var(--color-surface));
   color: var(--color-ink-1);
