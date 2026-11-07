@@ -1563,9 +1563,11 @@ const updatePreview = async () => {
   }
 
   // Image: kick off client-side EXIF extraction (E3). exifr uses a
-  // Range request internally so we don't download the full image.
-  if (fileStore.req?.type === "image" && previewUrl.value) {
-    void loadImageExif(previewUrl.value);
+  // Range request internally so we don't download the full image. It reads
+  // the original, not the picture on screen: that's a server-made JPEG for
+  // HEIC/AVIF (and a resize otherwise), which carries no EXIF.
+  if (fileStore.req?.type === "image") {
+    void loadImageExif(api.getDownloadURL(fileStore.req, true));
   }
 
   // EPUB: resume at the saved per-book position (S5-6). Set BEFORE the

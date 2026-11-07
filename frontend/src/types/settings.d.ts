@@ -7,6 +7,8 @@ interface ISettings {
   requireAdminTwoFactor?: boolean;
   /** Ask for the archive format on folder and multi-item downloads. */
   askArchiveFormat?: boolean;
+  /** Read-only: the file watcher's state (4.0 2.1). */
+  fileWatch?: { mode: string; polling: boolean; limitHit: boolean };
   /** 5.4: most files a user may upload at once (0 = no cap beyond 10). */
   uploadConcurrencyMax?: number;
   rememberLastPage: boolean;

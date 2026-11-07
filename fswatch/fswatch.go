@@ -131,6 +131,41 @@ func DefaultSkip(rel string) bool {
 	return false
 }
 
+// SkipUnder is DefaultSkip plus the given directories (vitrine's own cache,
+// say) and everything below them. Directories are matched by absolute path;
+// any outside root, or root itself, are ignored.
+func SkipUnder(root string, dirs ...string) func(rel string) bool {
+	var prefixes []string
+	absRoot, err := filepath.Abs(root)
+	if err == nil {
+		for _, d := range dirs {
+			if d == "" {
+				continue
+			}
+			abs, err := filepath.Abs(d)
+			if err != nil {
+				continue
+			}
+			r, err := filepath.Rel(absRoot, abs)
+			if err != nil || r == "." || r == ".." || strings.HasPrefix(r, ".."+string(filepath.Separator)) {
+				continue
+			}
+			prefixes = append(prefixes, "/"+filepath.ToSlash(r))
+		}
+	}
+	return func(rel string) bool {
+		if DefaultSkip(rel) {
+			return true
+		}
+		for _, p := range prefixes {
+			if rel == p || strings.HasPrefix(rel, p+"/") {
+				return true
+			}
+		}
+		return false
+	}
+}
+
 // Status describes what the Watcher is doing, for logs and the settings UI.
 type Status struct {
 	Mode     Mode // the mode actually in effect

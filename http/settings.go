@@ -27,7 +27,23 @@ type settingsData struct {
 	UploadConcurrencyMax  uint                  `json:"uploadConcurrencyMax"`
 	RequireAdminTwoFactor bool                  `json:"requireAdminTwoFactor"`
 	AskArchiveFormat      bool                  `json:"askArchiveFormat"`
+	// FileWatch is read-only: what the file watcher is doing right now.
+	FileWatch *WatchStatus `json:"fileWatch,omitempty"`
 }
+
+// WatchStatus is the file watcher's state as Global Settings shows it.
+type WatchStatus struct {
+	Mode     string `json:"mode"`     // auto, poll or off
+	Polling  bool   `json:"polling"`  // checking folders on a timer
+	LimitHit bool   `json:"limitHit"` // fell back to polling: OS watch limit
+}
+
+// watchStatus reports the watcher's state; nil until SetWatchStatus.
+var watchStatus func() WatchStatus
+
+// SetWatchStatus lets Global Settings report the file watcher's state.
+// Call once at startup, before serving.
+func SetWatchStatus(f func() WatchStatus) { watchStatus = f }
 
 var settingsGetHandler = withAdmin(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 	data := &settingsData{
@@ -48,6 +64,10 @@ var settingsGetHandler = withAdmin(func(w http.ResponseWriter, r *http.Request, 
 		UploadConcurrencyMax:  d.settings.UploadConcurrencyMax,
 		RequireAdminTwoFactor: d.settings.RequireAdminTwoFactor,
 		AskArchiveFormat:      d.settings.AskArchiveFormat,
+	}
+	if watchStatus != nil {
+		ws := watchStatus()
+		data.FileWatch = &ws
 	}
 
 	return renderJSON(w, r, data)

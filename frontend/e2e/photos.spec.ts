@@ -38,6 +38,34 @@ test("slideshow from a photo steps, wraps and closes with Esc", async ({
   await expect(show).toHaveCount(0);
 });
 
+test("slideshow follows swipes on a touch screen @mobile", async ({ app }) => {
+  await openPhotos(app);
+  await contextAction(app, "b.jpg", "Slideshow from here");
+  const show = app.getByTestId("slideshow");
+  const counter = show.getByTestId("slideshow-counter");
+  await expect(counter).toHaveText("2 / 3");
+  await show.getByRole("button", { name: "Pause" }).click();
+  // A horizontal swipe as touch events (Playwright has no swipe gesture).
+  // A string, because the e2e tsconfig has no DOM types.
+  const swipe = (dx: number) =>
+    app.evaluate(`(() => {
+      const el = document.querySelector('[data-testid="slideshow"]');
+      const at = (x) => [new Touch({ identifier: 1, target: el, clientX: x, clientY: 300 })];
+      const fire = (type, x) => el.dispatchEvent(new TouchEvent(type, {
+        bubbles: true, cancelable: true,
+        touches: type === "touchend" ? [] : at(x), changedTouches: at(x),
+      }));
+      fire("touchstart", 200);
+      fire("touchmove", 200 + ${dx} / 2);
+      fire("touchmove", 200 + ${dx});
+      fire("touchend", 200 + ${dx});
+    })()`);
+  await swipe(-150);
+  await expect(counter).toHaveText("3 / 3");
+  await swipe(150);
+  await expect(counter).toHaveText("2 / 3");
+});
+
 test("photo map places located photos", async ({ app }) => {
   await openPhotos(app);
   await app

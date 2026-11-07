@@ -334,6 +334,9 @@ user created with the credentials from options "username" and "password".`,
 			NewBackend: fswatch.NewFsnotifyBackend,
 			OnChange:   newWatchPublisher(st.Users, server.Root).OnChange,
 			Logf:       log.Printf,
+			// The disk cache can live inside the served folder (a Docker
+			// volume under /srv, say); its churn isn't a user's change.
+			Skip: fswatch.SkipUnder(server.Root, cacheDir),
 		})
 		if err != nil {
 			return err
@@ -341,6 +344,11 @@ user created with the credentials from options "username" and "password".`,
 		watcher.Start()
 		defer watcher.Close()
 		log.Printf("File watching: %s", watchMode)
+		// Global Settings shows when the OS watch limit forced polling.
+		fbhttp.SetWatchStatus(func() fbhttp.WatchStatus {
+			ws := watcher.Status()
+			return fbhttp.WatchStatus{Mode: string(ws.Mode), Polling: ws.Polling, LimitHit: ws.LimitHit}
+		})
 
 		// Age-based trash auto-purge (settings.TrashRetentionDays; 0 = off).
 		// Runs at startup and every 6h; the setting is re-read each tick so an

@@ -125,6 +125,21 @@
             "
           />
         </SettingsRow>
+        <!-- Read-only: set with the fileWatching flag. Shown so a watch-limit
+             fallback to polling doesn't go unnoticed (4.0 2.1). -->
+        <SettingsRow
+          v-if="settings.fileWatch"
+          label="File watching"
+          description="Changes made outside vitrine (downloads, other computers, the server's shell) appear without a refresh. Set with the fileWatching option."
+          :risk="
+            settings.fileWatch.limitHit
+              ? 'The server ran out of folder watches, so it checks folders every minute instead. Raise the limit on the host: sysctl fs.inotify.max_user_watches=524288'
+              : undefined
+          "
+          data-testid="file-watch-status"
+        >
+          <span class="file-watch-state">{{ fileWatchLabel }}</span>
+        </SettingsRow>
       </SettingsSection>
 
       <!-- ── Interface ──────────────────────────────────────────────────
@@ -326,6 +341,13 @@ import Rules from "@/components/settings/Rules.vue";
 import UserForm from "@/components/settings/UserForm.vue";
 import Icon from "@/components/Icon.vue";
 
+/** What the file watcher is doing, in words. */
+const fileWatchLabel = computed(() => {
+  const w = settings.value?.fileWatch;
+  if (!w || w.mode === "off") return "Off";
+  return w.polling ? "Every minute" : "Instant";
+});
+
 const UPLOAD_CAPS = Array.from({ length: 10 }, (_, i) => ({
   value: i + 1,
   label: String(i + 1),
@@ -478,6 +500,11 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.file-watch-state {
+  font-size: var(--type-body);
+  color: var(--color-ink-2);
+  white-space: nowrap;
+}
 /* See note in Profile.vue — let global .fb-select chrome win. */
 .settings-select {
   width: 100%;

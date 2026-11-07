@@ -349,3 +349,24 @@ func TestForUsers(t *testing.T) {
 		t.Errorf("ForUsers reported a change above the scope: %+v", got)
 	}
 }
+
+func TestSkipUnder(t *testing.T) {
+	root := t.TempDir()
+	cache := filepath.Join(root, "appdata", "cache")
+	outside := t.TempDir()
+	skip := SkipUnder(root, cache, outside, root, "")
+	cases := map[string]bool{
+		"/appdata/cache":             true,
+		"/appdata/cache/thumbs":      true,
+		"/appdata":                   false,
+		"/appdata/cache-old":         false,
+		"/Movies/.trash":             true, // DefaultSkip still applies
+		"/Movies":                    false,
+		"/" + filepath.Base(outside): false, // outside root: ignored
+	}
+	for rel, want := range cases {
+		if got := skip(rel); got != want {
+			t.Errorf("skip(%q) = %v, want %v", rel, got, want)
+		}
+	}
+}

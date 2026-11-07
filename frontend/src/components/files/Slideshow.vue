@@ -116,6 +116,7 @@
 
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, ref, watch } from "vue";
+import { useSwipe } from "@vueuse/core";
 import Icon from "@/components/Icon.vue";
 import {
   SLIDE_INTERVALS,
@@ -126,6 +127,17 @@ import { files as api } from "@/api";
 
 const show = useSlideshow();
 const root = ref<HTMLElement | null>(null);
+
+// Touch: swipe left for the next photo, right for the previous one. The
+// slideshow is fullscreen with nothing to scroll, so a horizontal swipe
+// can't be mistaken for anything else. (useSwipe only listens to touch.)
+useSwipe(root, {
+  threshold: 50,
+  onSwipeEnd(_e, direction) {
+    if (direction === "left") show.next();
+    else if (direction === "right") show.prev();
+  },
+});
 
 // Big previews: resized server-side, and HEIC/AVIF converted to JPEG.
 const urlOf = (s: Slide) =>

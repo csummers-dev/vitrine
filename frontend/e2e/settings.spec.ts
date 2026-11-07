@@ -42,6 +42,22 @@ test("Global groups the sharing settings, each with its risk", async ({
   await expect(group.getByRole("alert")).toHaveCount(0);
 });
 
+test("Global says when file watching fell back to polling", async ({
+  app,
+  fake,
+}) => {
+  fake.settings.fileWatch = { mode: "auto", polling: false, limitHit: false };
+  await app.goto("/settings/global");
+  const row = app.getByTestId("file-watch-status");
+  await expect(row).toContainText("Instant");
+  await expect(row).not.toContainText("max_user_watches");
+
+  fake.settings.fileWatch = { mode: "auto", polling: true, limitHit: true };
+  await app.reload();
+  await expect(row).toContainText("Every minute");
+  await expect(row).toContainText("fs.inotify.max_user_watches");
+});
+
 test("the rail marks the current section", async ({ app }) => {
   await app.goto("/settings/sessions");
   const rail = app.getByRole("navigation", { name: "Settings sections" });

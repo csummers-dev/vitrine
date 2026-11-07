@@ -82,6 +82,7 @@ const TYPES: Record<string, string> = {
   ".md": "text",
   ".jpg": "image",
   ".png": "image",
+  ".heic": "image",
   ".mp3": "audio",
   ".mp4": "video",
   ".pdf": "pdf",
