@@ -38,7 +38,14 @@ test("slideshow from a photo steps, wraps and closes with Esc", async ({
   await expect(show).toHaveCount(0);
 });
 
-test("slideshow follows swipes on a touch screen @mobile", async ({ app }) => {
+test("slideshow follows swipes on a touch screen @mobile", async ({
+  app,
+  browserName,
+}) => {
+  // The swipe is built from Touch/TouchEvent constructors, which only
+  // Chromium offers to a page without a touch screen (Firefox lacks them,
+  // WebKit refuses to construct them).
+  test.skip(browserName !== "chromium", "synthetic touch events need Chromium");
   await openPhotos(app);
   await contextAction(app, "b.jpg", "Slideshow from here");
   const show = app.getByTestId("slideshow");
