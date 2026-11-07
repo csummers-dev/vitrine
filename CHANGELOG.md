@@ -218,6 +218,9 @@ All notable changes to **vitrine**.
 - **Security: brotli 1.2.7 and klauspost/compress 1.20.2** (were 1.2.0 and
   1.18.0), for GO-2026-6888 (excessive memory on crafted brotli streams)
   and GO-2026-6865 (a panic on two-block compressed frames).
+- **Security: golang.org/x/net 0.62.0** (was 0.60.0), for CVE-2026-78661
+  (crafted HTML could exhaust the HTML parser); x/crypto, x/sync, x/text and
+  x/sys move up with it.
 - **Go module path is now `github.com/csummers-dev/vitrine/v4`**, matching
   the major version. Only matters if you build from source with custom
   `-ldflags`.
