@@ -8,8 +8,11 @@ Self-hosted file management.
 
 </div>
 
-- **List view** — Dense, scannable, color-coded.
-- **Grid + Gallery** — Comfortable file listings with previews.
+- **Live updates** — Files added by a downloader, an SMB copy or another user appear on their own, in every open tab, in search and in folder sizes.
+- **List, Icons + Gallery** — Dense lists, large tiles, or photo-first browsing; a details panel shows a preview, metadata, tags and actions.
+- **Storage** — A treemap of what uses your disk, the largest files, and free space per drive.
+- **Duplicate finder** — Find files with identical content, pick which copies to keep, and send the rest to the Trash.
+- **Smart folders** — Save a search (`type:video size:>4GB`, `added:7d`, …) and it stays in the sidebar, updating as files change.
 - **Split pane view** — Navigate multiple folders at once.
 - **Image + EXIF** — Pixel-perfect previews with EXIF details.
 - **Slideshow + photo map** — Full-screen slideshows of a folder; see where your photos were taken on a map.
@@ -26,17 +29,18 @@ Self-hosted file management.
 - **Comic** reader — Read CBZ and CBR, optionally read manga right-to-left.
 - **Text** — Read and edit text files.
 - **Markdown** — Markdown, rendered or raw.
-- **Command palette** — ⌘K to open command palette, navigate files, folders, and actions.
+- **Command palette** — ⌘K (Ctrl+K) to open command palette, navigate files, folders, and actions.
 - **Search-as-you-type** — Results the moment you start typing.
 - **Breadcrumb navigation** — Move between folders without backtracking.
 - **Context menu** — Context-aware right-click options throughout.
-- **Favorites** + Recents — Pin favorites, rename them, track recent files.
+- **Favorites + Recent** — Pin favorites with a colour, rename them, and reopen recent files from their own page.
 - **Drag & drop** — Drag to move. Folders spring open, quick access to parent directory.
 - **Multi-select + lasso** — Select in bulk, click through or lasso a whole region.
 - **Move/Copy + transfer dock** — Moves and copies run in the background.
 - **Bulk rename** — Rename multiple files at once with a live preview.
 - **Conflict resolution** — File and folder conflicts handled. Keep, replace, or skip.
 - **Tagging** — Tag anything in color. Persistent across moves.
+- **Trash** — Deleted files can be restored; old items are purged after a set number of days.
 - **Extract** — Extract ZIP, 7z, and RAR files in-app.
 - **Password-protected archive** — Support for extracting password-protected archives.
 - **Upload dock** — Displays per-file progress, and resumes if the connection drops.
@@ -48,11 +52,11 @@ Self-hosted file management.
 - **Sessions** — View active sessions and sign out everywhere.
 - **Two-factor sign-in** — Codes from any authenticator app, with recovery codes.
 - **Single sign-on** — Sign in through Authelia, Authentik, Keycloak or any OpenID Connect provider.
-- **Shares** — Share a link in seconds, see how often it's opened and downloaded, make it one-time, or turn a folder into a file request.
+- **Shares** — Share a link in seconds, see how often it's opened and downloaded, make it one-time, or turn a folder into a file request that anyone with the link can upload to.
 - **Mobile** — Mobile design prioritized.
 - **Mobile upload / pull-to-refresh** — Upload from your camera roll; pull to refresh.
 
-[![Version](https://img.shields.io/badge/version-3.1.1-6e72d9?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-4.0.0-6e72d9?style=flat-square)](#)
 [![Go](https://img.shields.io/badge/Go-1.26-00ADD8?style=flat-square&logo=go&logoColor=white)](#)
 [![Vue](https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js&logoColor=white)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
@@ -235,6 +239,8 @@ vitrine watches the folders it serves, so files added, renamed or removed by any
 
 - **Linux file-watch limit.** Watching uses inotify, which needs one watch per folder. Very large libraries can exceed the host's limit (`fs.inotify.max_user_watches`, often 8,192 or 65,536). vitrine then logs a warning and falls back to checking folders every minute. Raise the limit on the host for instant updates: `sudo sysctl fs.inotify.max_user_watches=524288` (add it to `/etc/sysctl.conf` to keep it).
 - **Network mounts.** inotify can't see changes other machines make on NFS or SMB mounts. Set `--fileWatching=poll` (env `VITRINE_FILE_WATCHING=poll`) to check folders every minute instead, or `off` to disable watching.
+- **Status.** Settings → Global → *File watching* shows whether changes arrive instantly or every minute, and the command to raise the limit if it was reached.
+- **Disk cache.** If `--cacheDir` is inside a served folder, vitrine doesn't watch it, so thumbnails being written don't count as changes.
 - **Reverse proxies.** Live updates use a long-lived server-sent-events connection at `/api/events/stream`. vitrine disables proxy buffering with `X-Accel-Buffering: no`; if your proxy still holds responses, turn buffering off for that path.
 
 Search answers from an in-memory index that updates as changes are reported. As a backstop, an index older than 10 minutes is rebuilt in the background on the next search. Tune this with `--searchIndexMaxAge` (env `VITRINE_SEARCH_INDEX_MAX_AGE`, e.g. `5m`; `0` turns it off). The **Rebuild search index** action in the command palette (⌘K) forces an immediate refresh.
@@ -247,6 +253,12 @@ Search answers from an in-memory index that updates as changes are reported. As 
 - **Slideshow.** Right-click empty space in a folder → *Slideshow*, or a photo → *Slideshow from here*. ←/→ step, Space pauses, F goes full screen, Esc leaves.
 - **Photo map.** Right-click empty space → *Photo map* to see the folder's photos where they were taken (from their EXIF GPS position). Map tiles are fetched and cached by the vitrine server, so browsers only ever talk to vitrine. The map is off until an admin picks a tile source with `--mapTiles` (env `VITRINE_MAP_TILES`): `osm` for OpenStreetMap's public tiles, or a `{z}/{x}/{y}` URL of your own tile server. It's off by default because the tiles requested reveal roughly where your photos were taken to whoever serves them, and OpenStreetMap's servers are donation-run (see their tile usage policy).
 - **Resume and watched.** Videos of five minutes or more resume where you stopped (with a *Start over* button); reaching 98% marks a video watched. Right-click videos to mark them watched or unwatched. Positions, like book and comic positions, are saved to your account and follow renames and moves.
+
+#### Storage, duplicates and smart folders
+
+- **Storage** (sidebar) maps the open folder as a treemap coloured by file type, with the largest files beside it and the drive's free space above. Click a folder to go into it; right-click a block to open it, show it in the listing or move it to the Trash. The ranked list is the keyboard and screen-reader equivalent of the map.
+- **Duplicates** compares files by content, not name: only files of the same size are read, and their hashes are cached (in `vitrine-hashes.db`), so a second scan is quick. Choose a folder, a smallest size and folders to skip; then keep the newest, the oldest or the copies in a chosen folder with one click. Nothing is selected for you, and deleting goes to the Trash.
+- **Smart folders.** Search, then *Save this search* to keep it in the sidebar. Searches understand `type:` (image, video, audio, pdf, text, archive), `ext:`, `size:>4GB` / `size:<1MB`, `added:7d` and plain words. A smart folder opens as an ordinary listing and stays current as files change.
 
 #### Extracting archives
 
@@ -331,13 +343,15 @@ Sessions from SSO are ordinary vitrine sessions: they show under Settings → Se
 │  │    comic (CBZ·CBR) / marked (Markdown) /                 │  │
 │  │    music-metadata / exifr                                │  │
 │  └──────────────────────────────────────────────────────────┘  │
-│                       │ HTTP / WebSocket                       │
+│                │ HTTP · server-sent events (live updates)      │
 │                               ▼                                │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │  Go backend                                              │  │
 │  │  • Gorilla mux router                                    │  │
 │  │  • Storm v3 / bbolt — users · shares · settings ·        │  │
-│  │    tags · audit · webhooks · sessions                    │  │
+│  │    tags · audit · webhooks · sessions · trash · hashes   │  │
+│  │  • fsnotify file watcher → events bus → search index,    │  │
+│  │    folder sizes, open tabs, webhooks                     │  │
 │  │  • afero filesystem abstraction                          │  │
 │  │  • JWT auth (or proxy / noauth / hooks)                  │  │
 │  │  • Embedded frontend assets (one binary deploys)         │  │
@@ -368,6 +382,10 @@ Sessions from SSO are ordinary vitrine sessions: they show under Settings → Se
 | Code / text edit | **native `<textarea>`** |
 | Markdown | **marked + KaTeX** |
 | EXIF | **exifr 7** |
+| File watching | **fsnotify** (inotify), polling fallback |
+| Maps | **Leaflet** (tiles proxied and cached by the server) |
+| Sign-in | **TOTP** two-factor · **OpenID Connect** with PKCE (built in) |
+| Fonts | **Figtree** + **JetBrains Mono** (self-hosted) |
 
 ---
 
