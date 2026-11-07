@@ -101,8 +101,10 @@ All notable changes to **vitrine**.
   dragging or have a panel open. Uses OS file notifications (inotify), falling
   back to checking folders every minute if the host's watch limit is reached;
   `--fileWatching` / `VITRINE_FILE_WATCHING` = `auto` (default), `poll` (for
-  network mounts) or `off`. See the README for the inotify limit and reverse
-  proxies.
+  network mounts) or `off`. Settings → Global shows what the watcher is
+  doing and, if the watch limit was reached, how to raise it. A disk cache
+  kept inside the served folder is not watched. See the README for the
+  inotify limit and reverse proxies.
 - **Single sign-on (OpenID Connect).** A new auth method, `oidc`, signs
   people in through Authelia, Authentik, Keycloak or any OpenID provider
   (authorization code with PKCE; ID tokens verified against the provider's
@@ -151,7 +153,8 @@ All notable changes to **vitrine**.
   the lock screen. Folders that are mostly audio get an album header with
   Play, Shuffle and Add to queue.
 - **Slideshow.** A full-screen slideshow of a folder's photos (or from a
-  chosen photo), with 3–20 second intervals, shuffle and full screen.
+  chosen photo), with 3–20 second intervals, shuffle and full screen; on a
+  touch screen, swipe for the next or previous photo.
 - **Photo map.** See a folder's photos on a map, from their EXIF GPS
   positions; nearby photos group together, and a group can play as a
   slideshow. Tiles come through vitrine and are cached on the server
@@ -171,6 +174,8 @@ All notable changes to **vitrine**.
 - **WebP, HEIC and AVIF thumbnails.** WebP thumbnails are built in; HEIC,
   HEIF and AVIF thumbnails and previews are converted to JPEG with ffmpeg
   (in the Docker image) or `heif-convert`, so they display in every browser.
+  The details panel reads camera details from the original file, so they
+  show for HEIC and AVIF photos too.
 - **Fixed: search missed files added outside vitrine.** The search index only
   refreshed when a file changed *through* vitrine, so anything a downloader,
   an SMB copy, or the host shell added never showed up in search until a
@@ -187,6 +192,19 @@ All notable changes to **vitrine**.
 - **Removed the deprecated flag names and `VITRINE_BASEURL`** (scheduled for
   removal after July 2026). Using one now fails fast with the replacement's
   name instead of being silently remapped.
+- **Fixed: a visitor opening a shared folder with subfolders could be sent
+  to the login page.** Each subfolder row asked for its size from an
+  endpoint that needs a signed-in user, and the refusal signed the visitor
+  out. Shared folders no longer ask; their folders show "—" for size.
+- **Fixed: in Storage, pointing at a folder hid what's inside it.** The
+  folder's frame was raised over its own blocks while hovered or focused.
+- **Fixed: picture tiles in Gallery view had unreadable size and date** in
+  the light theme, and folder and document tiles showed a grey block for
+  their checkbox.
+- **Fixed: the My files count in the sidebar showed the open folder's or a
+  saved search's total.** It now only appears at the top level.
+- **Shortcut labels match your computer:** Ctrl on Windows and Linux, ⌘ on
+  a Mac (they showed ⌘ everywhere).
 - **Releases are automated.** Pushing a `v*` tag runs the tests, blocks on
   `govulncheck`, `pnpm audit --prod` and a Trivy image scan, then publishes
   the multi-arch image and a GitHub Release with this changelog's notes.
@@ -197,6 +215,9 @@ All notable changes to **vitrine**.
   GO-2026-6599/6600 in html/template, and GO-2026-6809, which distrusts
   compromised intermediate certificates in crypto/x509). Toolchain bump
   only.
+- **Security: brotli 1.2.7 and klauspost/compress 1.20.2** (were 1.2.0 and
+  1.18.0), for GO-2026-6888 (excessive memory on crafted brotli streams)
+  and GO-2026-6865 (a panic on two-block compressed frames).
 - **Go module path is now `github.com/csummers-dev/vitrine/v4`**, matching
   the major version. Only matters if you build from source with custom
   `-ldflags`.
