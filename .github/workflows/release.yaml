@@ -164,7 +164,10 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          # GHCR_TOKEN (a classic token with write:packages) when set: a
+          # package first pushed by hand only takes the workflow token once
+          # it grants this repo Actions write access in its settings.
+          password: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Build and push multi-arch image
         uses: docker/build-push-action@v6
